@@ -589,14 +589,7 @@ template SecondHalf(T...) if (T.length % 2 == 0)
         alias TypeTuple!(T[1], SecondHalf!(T[2..$])) SecondHalf;
 }
 
-/// Helper template: (T,T, ..., T), n times
-template TypeNuple(T, size_t n)
-{
-    static if (n == 0)
-        alias TypeTuple!() TypeNuple;
-    else
-        alias TypeTuple!(T, TypeNuple!(T, n-1)) TypeNuple;
-}
+
 
 @property string grammarCode(rules...)() if (rules.length > 0)
 {
