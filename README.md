@@ -24,7 +24,7 @@ mixin Grammar!( "Expr     <- Factor AddExpr*"
               , "Variable <- Identifier");
 ```
 
-This creates the `Expr`, `Mult` (and so on) parsers for basic arithmetic expressions with operator precedence ('*' and '/' bind stronger than '+' or '-'). `Identifier` is a pre-defined parser recognizing your basic C-style identifier (first a letter or underscore, then digits, letters or underscores). In the rest of this document, I'll call 'rule' a `Parser <- Parsing Expression` expression and I'll use 'grammar' to designate the entire group of rules given to `Grammar`.
+This creates the `Expr`, `AddExpr`, `Factor` (and so on) parsers for basic arithmetic expressions with operator precedence ('*' and '/' bind stronger than '+' or '-'). `Identifier` is a pre-defined parser recognizing your basic C-style identifier (first a letter or underscore, then digits, letters or underscores). In the rest of this document, I'll call 'rule' a `Parser <- Parsing Expression` expression and I'll use 'grammar' to designate the entire group of rules given to `Grammar`.
 
 To use a parser, use the `.parse` method. It will return a parse tree containing the calls to the different rules:
 
