@@ -13,12 +13,15 @@ To use **Pegged**, just call the `Grammar` template with a PEG (one string per r
 ```d
 import pegged.grammar;
 
-mixin Grammar!("Expr     <- Mult ( ('+'/'-') Mult)*"
-              ,"Mult     <- Primary ( ('*'/'/') Primary )*"
-              ,"Primary  <- Parens / Number / Variable / '-' Primary"
-              ,"Parens   <- '(' Expr ')'"
-              ,"Number   <- [0-9]+"
-              ,"Variable <- Identifier");
+mixin Grammar!( "Expr     <- Factor AddExpr*"
+              , "AddExpr  <- ('+'/'-') Factor"
+              , "Factor   <- Primary MulExpr*"
+              , "MulExpr  <- ('*'/'/') Primary"
+              , "Primary  <- Parens / Number / Variable / '-' Primary"
+              
+              , "Parens   <- '(' Expr ')'"
+              , "Number   <~ [0-9]+"
+              , "Variable <- Identifier");
 ```
 
 This creates the `Expr`, `Mult` (and so on) parsers for basic arithmetic expressions with operator precedence ('*' and '/' bind stronger than '+' or '-'). `Identifier` is a pre-defined parser recognizing your basic C-style identifier (first a letter or underscore, then digits, letters or underscores). In the rest of this document, I'll call 'rule' a `Parser <- Parsing Expression` expression and I'll use 'grammar' to designate the entire group of rules given to `Grammar`.
@@ -27,16 +30,17 @@ To use a parser, use the `.parse` method. It will return a parse tree containing
 
 ```d
 // Work at compile-time:
-enum parseTree1 = Expr.parse("1 + 2 - (3 * 4 - 5)*6");
+enum parseTree1 = Expr.parse("1 + 2 - (3*x-5)*6");
 
 pragma(msg, parseTree1.capture);
+writeln(parseTree1);
 
 // And at runtime too:
 auto parseTree2 = Expr.parse(" 0 + 123 - 456 ");
 assert(parseTree2.capture == ["0", "+", "123", "-", "456"]);
 ```
 
-By default, the grammars are not space-sensitive, because I found it to be what I want most of the time. There is an opt-out, though.
+By default, the grammars are not space-sensitive, because I found it to be what I want most of the time. There is an opt-out, though. This may change in the future.
 
 Here is a little [tutorial](https://github.com/PhilippeSigaud/Pegged/wiki/Pegged-Tutorial).
 
@@ -81,7 +85,9 @@ Future features (aka, my todo list)
 * Transforming the function responsible for the PEG-to-Expression template conversion into a **Pegged** grammar and then use the parse tree to build the expression template. The PEG grammar is well-defined, so it's doable and probably cleaner / easier to extend compared to what I have now. Aka: eat my own dogfood. If **Pegged** cannot bootstrap itself, I failed.
 * Making automatic rule simplification and optimization : zero-element sequences and choices should be dropped, one-element sequences and choices should be replaced by their only element and sequences of sequences should be flattened, the same for ordered choices.
 * A better error reporting would be good. Maybe with threading some error stack.
-* Right now, grammars are 'open' in that you cannot defined multiple rules with the same name in the same module. Use D modules to, well, do modularization of your code. But I intend to put different levels of 'openness'. See [[The Four Levels]]. You can use qualified identifiers for the rules names, though.
+* Better rules to control the parse tree: right now, the 'fuse' (~) and 'discard' (:) rules are there, 
+* A way to indicate rule-level space sensitivity
+* Right now, grammars are 'open' in that you cannot defined multiple rules with the same name in the same module. Use D modules to, well, do modularization of your code. But I intend to put different levels of 'openness'. See [The Four Levels](https://github.com/PhilippeSigaud/Pegged/wiki/Four-Levels). You can use qualified identifiers for the rules names, though.
 * Using a policy for the parse tree construction and the level of simplification before presenting it to the user.
 * Parsing wstrings, dstrings and maybe also ranges.
 * [Packrat parsing](http://pdos.csail.mit.edu/~baford/packrat/icfp02/)?
@@ -97,16 +103,16 @@ Long-Term Goals (the Right to Dream)
 References
 ----------
 
-The seed article from Bryan Ford: http://bford.info/pub/lang/peg
-Packrat parsing: http://pdos.csail.mit.edu/~baford/packrat/icfp02/
-OMeta: www.vpri.org/pdf/tr2007003_ometa.pdf
+Articles:
+* The seed article from Bryan Ford: http://bford.info/pub/lang/peg
+* Packrat parsing: http://pdos.csail.mit.edu/~baford/packrat/icfp02/
+* OMeta: www.vpri.org/pdf/tr2007003_ometa.pdf
 
-[CTPG](https://github.com/youkei/ctpg), very similar, also done in D. Have a look!
-
-[pegtl](http://code.google.com/p/pegtl/), the PEG Template Library, in C++.
-[chilon::parser](http://chilon.net/library.html) in C++ also.
-
-[Parslet](http://kschiess.github.com/parslet/) in Ruby
+Code:
+* [CTPG](https://github.com/youkei/ctpg), very similar, also done in D. Have a look!
+* [pegtl](http://code.google.com/p/pegtl/), the PEG Template Library, in C++.
+* [chilon::parser](http://chilon.net/library.html) in C++ also.
+* [Parslet](http://kschiess.github.com/parslet/) in Ruby
 and [Treetop](http://treetop.rubyforge.org/), in Ruby also.
 
 Licence
