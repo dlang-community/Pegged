@@ -1,6 +1,8 @@
 module pegged.bootstrap;
 
 import std.algorithm: startsWith;
+import std.conv;
+
 import pegged.grammar; 
 
 mixin Grammar!(
@@ -36,7 +38,7 @@ mixin Grammar!(
     ,`Comment    <~ '#'>(!EOL>_)*>(EOL/EOI)`
 );
 
-string PEGtoCode(ParseResult p)
+string PEGtoCode(ParseResult p, string[] names = [""])
 {
     string result;
     auto ch = p.children;
@@ -49,26 +51,51 @@ string PEGtoCode(ParseResult p)
     switch (p.name)
     {
         case "PEGrammar":
-            recurse();
+            
+            foreach(child; ch) result ~= PEGtoCode(child, names);
             break;
         case "Definition":
             if (ch.length < 3)
                 return "ERROR, Bad Definition";
-            auto code = 
-"
+            string ruleNames = "    enum ruleNames = [";
+            foreach(name; names)
+                ruleNames ~= "\"" ~ name ~ "\":true,";
+            ruleNames = ruleNames[0..$-1] ~ "];\n";
+            auto code = ruleNames ~
+"   static ParseResult[] filterChildren(ParseResult p)
+    {
+        ParseResult[] filteredChildren;
+        foreach(child; p.children)
+        {
+            if (child.name in ruleNames)
+                filteredChildren ~= child;
+            else
+            {
+                if (child.children.length > 0)
+                    filteredChildren ~= filterChildren(child);
+            }
+        }
+        return filteredChildren;
+    }
+
     static Output parse(Input input)
     {
         auto p = typeof(super).parse(input);
-        return Output(p.next,
-                      p.namedCaptures,
-                      ParseResult(\"" ~ ch[0].capture[0] ~ "\", p.success, p.capture, [p.parseTree]));
+        if (p.name in ruleNames) // it's a grammar rule
+            return Output(p.next,
+                        p.namedCaptures,
+                        ParseResult(\""~ch[0].capture[0]~"\", p.success, p.capture, [p.parseTree]));
+        else
+            return Output(p.next,
+                        p.namedCaptures,
+                        ParseResult(\""~ch[0].capture[0]~"\", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
-";
+}\n";
 
             result = "class " ~ ch[0].capture[0] ~ " : " ~ PEGtoCode(ch[2]) 
-                   ~ " {" ~ code ~ "}\n\n";
+                   ~ " {\n" ~ code;
             break;
         case "Expression":
             if (ch.length > 1) // OR present
@@ -118,13 +145,13 @@ string PEGtoCode(ParseResult p)
                 switch (ch[1].name)
                 {
                     case "OPTION":
-                        result ~= "Option!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        result ~= "Option!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
                     case "ZEROORMORE":
-                        result ~= "ZeroOrMore!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        result ~= "ZeroOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
                     case "ONEORMORE":
-                        result ~= "OneOrMore!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        result ~= "OneOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
                     default:
                         break;
@@ -205,7 +232,15 @@ string PEGtoCode(ParseResult p)
         case "Comment":
             break;
         default:
-            result ~= "ERROR(" ~ p.name ~ ")";
+            result ~= "ERROR: Unknown name: " ~ p.name;
     }
     return result;
+}
+
+string toCode(Output grammarAsOutput)
+{    
+    string[] names;
+    foreach(definition; grammarAsOutput.parseTree.children)
+        names ~= definition.children[0].capture[0];
+    return PEGtoCode(grammarAsOutput.parseTree, names);
 }
