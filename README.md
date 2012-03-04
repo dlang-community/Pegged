@@ -106,6 +106,8 @@ Examples to add
 * parsing writefln format string ("%s, %.8f, %d")
 * parsing csv ?
 * parsing command-line options ("-d --debug -ofMyFile")
+* D code, to get documentation comments
+* A literal programming example?
 
 References
 ----------
