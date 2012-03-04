@@ -100,6 +100,13 @@ Long-Term Goals (the Right to Dream)
 * As a longer-term goal: implementing the complete D grammar and see if that flies.
 * As an even longer-term goal: macros in D. Think Lisp and [talking to God](http://xkcd.com/224/).
 
+Examples to add
+---------------
+
+* parsing writefln format string ("%s, %.8f, %d")
+* parsing csv ?
+* parsing command-line options ("-d --debug -ofMyFile")
+
 References
 ----------
 
