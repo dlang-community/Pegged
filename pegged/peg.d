@@ -560,11 +560,11 @@ class NegLookAhead(Expr) : Parser
     mixin(stringToInputMixin());    
 }
 
-class Forget(Expr) : Parser
+class Drop(Expr) : Parser
 {
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Forget!(" ~ Expr.stringof ~ ")")); 
+        mixin(okfailMixin("Drop!(" ~ Expr.stringof ~ ")")); 
         
         auto p = Expr.parse(input);
         p.capture = null; 
@@ -621,7 +621,7 @@ alias Lit!"\n" LF;
 alias Lit!"\r" CR;
 alias Lit!"\r\n" CRLF;
 mixin(wrapMixin("EOL", `Or!(CRLF, LF, CR)`));
-mixin(wrapMixin("Spacing", `Forget!(ZeroOrMore!(Or!(Blank, EOL)))`));
+mixin(wrapMixin("Spacing", `Drop!(ZeroOrMore!(Or!(Blank, EOL)))`));
 mixin(wrapMixin("Spaces", `Fuse!(ZeroOrMore!(Or!(Blank, EOL)))`));
 
 alias Char!'"' DoubleQuote;

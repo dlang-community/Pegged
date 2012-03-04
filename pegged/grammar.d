@@ -61,7 +61,7 @@ string[2] parseGlobalRule(string rule)
     ruleParts[1] = parseRightHandSide(rule);
     
     if (squiggly) ruleParts[1] = "Fuse!("~ruleParts[1]~")";
-    if (colon) ruleParts[1] = "Forget!("~ruleParts[1]~")";
+    if (colon) ruleParts[1] = "Drop!("~ruleParts[1]~")";
     return ruleParts;
 }
 
@@ -77,7 +77,7 @@ string parseRightHandSide(string rule)
     bool posLookAhead = false;
     bool negLookAhead = false;
     bool addFuse = false;
-    bool addForget = false;
+    bool addDrop = false;
     bool inOr = false;
     
     void munchSpace()
@@ -190,10 +190,10 @@ string parseRightHandSide(string rule)
             ruleParts ~= ("Fuse!(" ~ newRule ~ ")");
             addFuse = false;
         }
-        else if (addForget)
+        else if (addDrop)
         {
-            ruleParts ~= ("Forget!(" ~ newRule ~ ")");
-            addForget = false;
+            ruleParts ~= ("Drop!(" ~ newRule ~ ")");
+            addDrop = false;
         }
         else
         {
@@ -435,8 +435,8 @@ string parseRightHandSide(string rule)
                 break;
             case ':':
                 rule = rule[1..$];
-                //addRule("Forget", rule);
-                addForget = true;
+                //addRule("Drop", rule);
+                addDrop = true;
                 break;
             default:
 				//writeln("Entering default: [", rule,"]");
@@ -622,7 +622,7 @@ template cutRules(rules...)
     }
 	
 	namesAA ~= "];\n";
-	alias Seq!(Identifier, Forget!(Lit!"("), Identifier, ZeroOrMore!(Seq!(Forget!(Lit!","), Identifier)), Forget!(Lit!")")) ParamRule; 
+	alias Seq!(Identifier, Drop!(Lit!"("), Identifier, ZeroOrMore!(Seq!(Drop!(Lit!","), Identifier)), Drop!(Lit!")")) ParamRule; 
 	
 	// We put the parameterized rules first, to avoid any forward declaration problem.
 	foreach(i,rule; trueRules)
