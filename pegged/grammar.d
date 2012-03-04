@@ -72,7 +72,7 @@ string parseRightHandSide(string rule)
     string[] ruleParts;
     
 	bool inSequence = false;
-	bool inGroup = false;
+	bool inJoin = false;
 	
     bool posLookAhead = false;
     bool negLookAhead = false;
@@ -264,14 +264,14 @@ string parseRightHandSide(string rule)
             }
         }
  
-		if (inGroup) // Space-sensitive sequence
+		if (inJoin) // Space-sensitive sequence
         {
-            if (ruleParts[$-2].startsWith("Group!("))
+            if (ruleParts[$-2].startsWith("Join!("))
                 ruleParts = ruleParts[0..$-2] ~ (ruleParts[$-2][0..$-1] ~ ", " ~ ruleParts[$-1] ~ ")");
             else
-                ruleParts = ruleParts[0..$-2] ~ ("Group!(" ~ ruleParts[$-2] ~ "," ~ ruleParts[$-1] ~ ")");
+                ruleParts = ruleParts[0..$-2] ~ ("Join!(" ~ ruleParts[$-2] ~ "," ~ ruleParts[$-1] ~ ")");
 
-			inGroup = false;
+			inJoin = false;
         }
 		
  
@@ -318,12 +318,12 @@ string parseRightHandSide(string rule)
                 rule = rule[1..$];
                 string group = findClosing(rule);
                 group = group[0..$-1];
-                //writeln("Group: ", group);
+                //writeln("Join: ", group);
                 //writeln("rule before: ", rule);
                 rule = rule[group.length+1..$];
                 //writeln("Rule after: ", rule);
                 auto groupRule = parseRightHandSide(group);
-                //writeln("GroupRule: ", groupRule);
+                //writeln("JoinRule: ", groupRule);
                 
                 addRule(groupRule, rule);
                 break;
@@ -337,11 +337,11 @@ string parseRightHandSide(string rule)
                     //writeln("End of rule");
                     break;
                 }
-				if (rule[0] == '>') // space-sensitive sequence: Group
+				if (rule[0] == '>') // space-sensitive sequence: Join
 				{
 					rule = rule[1..$]; // skip '>'
 					munchSpace();
-					inGroup = true;
+					inJoin = true;
 					break;
 				}
                 if (rule[0] == '/')
@@ -359,10 +359,10 @@ string parseRightHandSide(string rule)
                     inSequence = true; 
                     break;
                 }
-			case '>': // space-sensitive sequence: Group
+			case '>': // space-sensitive sequence: Join
 					rule = rule[1..$]; // skip '>'
 					munchSpace();
-					inGroup = true;
+					inJoin = true;
 					break;
             case '/': // or sequence
                     //writeln("Found /");
@@ -405,12 +405,12 @@ string parseRightHandSide(string rule)
                 rule = rule[1..$];
                 string group = findClosing(rule, '[', ']');
                 group = group[0..$-1];
-                //writeln("Group: ", group);
+                //writeln("Join: ", group);
                 //writeln("rule before: ", rule);
                 rule = rule[group.length+1..$];
                 //writeln("Rule after: ", rule);
                 auto groupRule = parseRange(group);
-                //writeln("GroupRule: ", groupRule);
+                //writeln("JoinRule: ", groupRule);
     
                 addRule(groupRule, rule);
                 break;
@@ -589,7 +589,10 @@ template SecondHalf(T...) if (T.length % 2 == 0)
         alias TypeTuple!(T[1], SecondHalf!(T[2..$])) SecondHalf;
 }
 
-
+template cutRules(rules...)
+{
+    
+}
 
 @property string grammarCode(rules...)() if (rules.length > 0)
 {

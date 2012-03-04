@@ -55,7 +55,7 @@ struct Output
 
     string toString() @property
     {
-        return "Parse output:\n"
+        return "Parse output: " ~ (parseTree.success ? "success" : "failure") ~ "\n"
              ~ "not parsed: `"~next~"`\n"
              ~ "named captures: " ~ namedCaptures.toString ~ "\n"
              ~ parseTree.toString()
@@ -272,11 +272,11 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
 /**
  * Like a Seq, but space-sensitive: it doesn't munch spaces.
  */
-class Group(Exprs...) if (Exprs.length > 0) : Parser
+class Join(Exprs...) if (Exprs.length > 0) : Parser
 {
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Group!" ~ Exprs.stringof));
+        mixin(okfailMixin("Join!" ~ Exprs.stringof));
         Output result = ok((string[]).init, input);
 
         foreach(i,expr; Exprs)
@@ -295,7 +295,7 @@ class Group(Exprs...) if (Exprs.length > 0) : Parser
             else
             {
                 int pos = input.length-result.next.length;
-                return fail("Group fail for expression #"~to!string(i)~" (" ~ expr.stringof ~") at position " 
+                return fail("Join fail for expression #"~to!string(i)~" (" ~ expr.stringof ~") at position " 
                           ~ to!string(pos) ~ " [" ~ input[0..pos] ~ "]/[" ~ input[pos..$] ~ "]");
             }
         }
@@ -483,15 +483,18 @@ class ZeroOrMore(Expr) : Parser
         
         string[] capture;
         ParseResult[] children;
+        int len = input.length; 
         auto p = Expr.parse(input);
         if (!p.success)
             return ok(capture, input.text);
         //writeln("Before while loop: ", p);
-        while (p.success)
+        while (p.success
+            && p.next.length < len) // to avoid an infinite loop if nothing is consumed by p
         {
             //writeln("In while loop: ", p);
             capture ~= p.capture;
             children ~= p;
+            len = p.next.length;
             p = Expr.parse(p);
             //writeln("End of while loop: ", p);
         }
@@ -512,14 +515,18 @@ class OneOrMore(Expr) : Parser
         
         string[] capture;
         ParseResult[] children;
+        int len = input.length;
         auto p = Expr.parse(input);
         if (!p.success) 
             return fail("OneOrMore!("~Expr.stringof~") failure on first parse.");
         
-        while (p.success)
+        
+        while (p.success
+            && p.next.length < len)
         {
             capture ~= p.capture;
             children ~= p;
+            len = p.next.length;
             p = Expr.parse(p);
         }
                 
@@ -604,11 +611,16 @@ mixin(wrapMixin("Letter", `Range!('A','Z')`));
 mixin(wrapMixin("Alpha", `Or!(letter, Letter, Lit!"_")`));
 mixin(wrapMixin("Digit", "Range!('0','9')"));
 mixin(wrapMixin("Alphanum", "Or!(Alpha, Digit)"));
-mixin(wrapMixin("Identifier", "Fuse!(Group!(Alpha, ZeroOrMore!(Alphanum)))"));
-mixin(wrapMixin("QualifiedIdentifier", `Fuse!(Group!(Identifier, ZeroOrMore!(Seq!(Lit!".", Identifier))))`));
+
+mixin(wrapMixin("Identifier", "Fuse!(Join!(Alpha, ZeroOrMore!(Alphanum)))"));
+mixin(wrapMixin("QualifiedIdentifier", `Fuse!(Join!(Identifier, ZeroOrMore!(Seq!(Lit!".", Identifier))))`));
+
 mixin(wrapMixin("Space", `Lit!" "`));
-mixin(wrapMixin("EOL", `Or!(Lit!"\r\n", Lit!"\n", Lit!"\r")`));
 mixin(wrapMixin("Blank", `Or!(Space, Lit!"\t")`));
+alias Lit!"\n" LF;
+alias Lit!"\r" CR;
+alias Lit!"\r\n" CRLF;
+mixin(wrapMixin("EOL", `Or!(CRLF, LF, CR)`));
 mixin(wrapMixin("Spacing", `Forget!(ZeroOrMore!(Or!(Blank, EOL)))`));
 mixin(wrapMixin("Spaces", `Fuse!(ZeroOrMore!(Or!(Blank, EOL)))`));
 
@@ -617,6 +629,9 @@ alias Lit!"'"  Quote;
 alias Lit!"`" BackQuote;
 alias Lit!"/" Slash;
 alias Lit!(`\\`) BackSlash;
+
+alias Fuse!(Join!(ZeroOrMore!(Join!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI))) Line;
+alias OneOrMore!Line Lines;
 
 string[] leaves(ParseResult p)
 {
