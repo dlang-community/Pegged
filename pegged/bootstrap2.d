@@ -1,6 +1,6 @@
 /**
- * This module describe the extended PEG syntax used by Pegged itself.
- * It's used to bootstrap pegged. To compile Pegged grammars using a Pegged grammar
+ * This module describes the extended PEG syntax used by Pegged itself.
+ * It's used to bootstrap Pegged. To compile Pegged grammars using a Pegged grammar
  * and generate the corresponding code, if you prefer.
  */
 module pegged.bootstrap2;
@@ -11,12 +11,8 @@ import std.conv;
 import pegged.grammar;
 
 /**
- * TODO : anonymous push ('=' by itself)
- *        action implementation, 
- *        action on rule names,
- *        join (A > B)
- *        parameterized rules A(B,C)
- *        compare ('@')
+ * TODO : inline grammar a bit
+ *        itcompare ('@')
  *        anonymous compare ('@')
  *        compare parsetree (^)  
  * 
@@ -24,17 +20,20 @@ import pegged.grammar;
  */
 
 mixin Grammar!(
-     "PEGrammar2  <- S Definition+ EOI"
-    ,"Definition <- Ident Arrow Expression"
+     "PEGrammar2 <- S Definition+ EOI"
+    ,"Definition <- RuleName Arrow Expression"
+    ,"RuleName   <- QualifiedIdentifier>(ParamList?)"
     ,"Expression <- Sequence (OR Sequence)*"
-    ,"Sequence   <- Prefix*"
+    ,"Sequence   <- Element*"
+    ,"Element    <- Prefix (JOIN Prefix)*"
     ,"Prefix     <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix"
-    ,"Suffix     <- Primary (OPTION / ONEORMORE / ZEROORMORE / NamedExpr / Action)?"
-    ,"Primary    <- Ident !Arrow
+    ,"Suffix     <- Primary (OPTION / ONEORMORE / ZEROORMORE / NamedExpr / WithAction)?"
+    ,"Primary    <- Name !Arrow
                   / GroupExpr
                   / Literal / Class / ANY"
+    ,"Name       <- Identifier>(ArgList?)"
     ,"GroupExpr  <- :OPEN Expression :CLOSE"
-    ,"Ident      <- QualifiedIdentifier S"
+    //,"Ident      <- QualifiedIdentifier S"
     ,"Literal    <~ :Quote (!Quote Char)* :Quote S
                   / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S"
     ,"Class      <- :'[' (!']' Range)* :']' S"
@@ -42,14 +41,17 @@ mixin Grammar!(
     ,"Char       <~ BackSlash [nrt]
                   / !BackSlash _"
     
-    ,`NamedExpr  <- :NAME Identifier`
+    ,"ParamList  <~ OPEN Identifier (',' Identifier)* CLOSE"
+    ,"ArgList    <- :OPEN Expression (:',' Expression)* :CLOSE"
+    ,"NamedExpr  <- NAME>Identifier?"
     
-    ,`Action     <- :ACTIONOPEN QualifiedIdentifier S :ACTIONCLOSE`
+    ,"WithAction <~ :ACTIONOPEN Identifier :ACTIONCLOSE"
     
-    ,`Arrow      <- LEFTARROW / FUSEARROW / DROPARROW`
+    ,`Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW`
     ,`LEFTARROW  <- "<-" S`
-    ,`FUSEARROW  <- "<~" S`
+    ,`FUSEARROW  <- "<:" S`
     ,`DROPARROW  <- "<:" S`
+    ,`ACTIONARROW <- "<">WithAction`
     
     ,`OR         <- '/' S`
     
@@ -71,7 +73,7 @@ mixin Grammar!(
     ,`OPEN       <- '(' S`
     ,`CLOSE      <- ')' S`
     
-    ,`ANY        <- '_' S`
+    ,`ANY        <- '.' S`
     
     ,`S          <: (Blank / Comment)*`
     ,`Blank      <- ' ' / "\t" / EOL`
@@ -96,12 +98,15 @@ string PEGtoCode(ParseResult p, string[] names = [""])
         case "Definition":
             if (ch.length < 3)
                 return "ERROR, Bad Definition";
-            string ruleNames = "    enum ruleNames = [";
-            foreach(name; names)
-                ruleNames ~= "\"" ~ name ~ "\":true,";
-            ruleNames = ruleNames[0..$-1] ~ "];\n";
-            auto code = ruleNames ~
-"   static ParseResult[] filterChildren(ParseResult p)
+            string code;
+            if (names.length > 1)
+            {
+                string ruleNames = "    enum ruleNames = [";
+                foreach(name; names)
+                    ruleNames ~= "\"" ~ name ~ "\":true,";
+                ruleNames = ruleNames[0..$-1] ~ "];\n";
+                code = ruleNames ~
+"    static ParseResult[] filterChildren(ParseResult p)
     {
         ParseResult[] filteredChildren;
         foreach(child; p.children)
@@ -130,11 +135,22 @@ string PEGtoCode(ParseResult p, string[] names = [""])
                         ParseResult(\""~ch[0].capture[0]~"\", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
-    mixin(stringToInputMixin());
-}\n";
-
+    mixin(stringToInputMixin());";
+            }
+            else
+            {
+                code =
+"    static Output parse(Input input)
+    {
+        auto p = typeof(super).parse(input);
+        p.name = \""~ch[0].capture[0]~"\";
+        return p;
+    }
+    
+    mixin(stringToInputMixin());";                
+            }
             string inheritance;
-            switch(ch[1].children[0].name)
+            switch(ch[1].children[0].name) // ch[1] is the arrow symbol
             {
                 case "LEFTARROW":
                     inheritance = PEGtoCode(ch[2]);
@@ -145,12 +161,21 @@ string PEGtoCode(ParseResult p, string[] names = [""])
                 case "DROPARROW":
                     inheritance = "Drop!(" ~ PEGtoCode(ch[2]) ~ ")";
                     break;
+                case "ACTIONARROW":
+                    inheritance = "Action!(" ~ PEGtoCode(ch[2]) ~ ", " ~ ch[1].capture[1] ~ ")";
+                    break;
                 default:
+                    inheritance ="ERROR: Bad arrow: " ~ ch[1].name;
                     break;
             }
 
-            result = "class " ~ ch[0].capture[0] ~ " : " ~ inheritance 
-                   ~ " {\n" ~ code;
+            result = "class " 
+                   ~ ch[0].capture[0] // name 
+                   ~ (ch[0].capture.length == 2 ? ch[0].capture[1] : "") // parameter list
+                   ~ " : " ~ inheritance // inheritance code
+                   ~ "\n{\n" 
+                   ~ code // inner code
+                   ~ "\n}\n";
             break;
         case "Expression":
             if (ch.length > 1) // OR present
@@ -173,6 +198,25 @@ string PEGtoCode(ParseResult p, string[] names = [""])
                     if (temp.startsWith("Seq!("))
                         temp = temp[5..$-1];
                     result ~= temp ~ ",";
+                }
+                result = result[0..$-1] ~ ")";
+            }
+            else
+                result ~= PEGtoCode(ch[0]);
+            break;
+        case "Element":
+            if (ch.length > 1)
+            {
+                result ~= "Join!(";
+                foreach(i,child; ch) 
+                {
+                    if (i%2 == 0) // "Suffix JOIN Suffix JOIN ..."
+                    {
+                        auto temp = PEGtoCode(child);
+                        if (temp.startsWith("Join!("))
+                            temp = temp[6..$-1];
+                        result ~= temp ~ ",";
+                    }
                 }
                 result = result[0..$-1] ~ ")";
             }
@@ -215,10 +259,13 @@ string PEGtoCode(ParseResult p, string[] names = [""])
                         result ~= "OneOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
                     case "NamedExpr":
-                        result ~= "Named!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[0] ~ "\")";
+                        if (ch[1].capture.length == 2)
+                            result ~= "Named!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[1] ~ "\")";
+                        else
+                            result ~= "PushName!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
-                    case "Action":
-                        result ~= "Action!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[0] ~ "\")";
+                    case "WithAction":
+                        result ~= "Action!(" ~ PEGtoCode(ch[0]) ~ ", " ~ ch[1].capture[0] ~ ")";
                         break;
                     default:
                         break;
@@ -228,6 +275,17 @@ string PEGtoCode(ParseResult p, string[] names = [""])
             break;
         case "Primary":
             recurse();
+            break;
+        case "Name":
+            result ~= p.capture[0];
+            if (ch.length == 1)
+                result ~= PEGtoCode(ch[0]);
+            break;
+        case "ArgList":
+            result ~= "!(";
+            foreach(child; ch)
+                result ~= PEGtoCode(child) ~ ","; // Wow! Allow  A <- List('A'*,',') 
+            result = result[0..$-1] ~ ")";
             break;
         case "GroupExpr":
             if (ch.length == 0) return "ERROR: Empty group ()";
@@ -304,10 +362,25 @@ string PEGtoCode(ParseResult p, string[] names = [""])
     return result;
 }
 
+version(none)
+{
+ // Hmm, no
+    string[2][] findActions(ParseResult p)
+    {
+        if (p.name == "Suffix" && p.children.length > 1 && p.children[1].name == "Action")
+            return [[p.children[0].capture[0], p.children[1].capture[0]]];
+        if (p.children.length == 0) return null;
+        string[2][] actions;
+        foreach(child; p.children)
+            actions ~= findActions(child);
+        return actions;
+    }
+}
+
 string toCode(Output grammarAsOutput)
 {    
     string[] names;
     foreach(definition; grammarAsOutput.parseTree.children)
-        names ~= definition.children[0].capture[0];
+        names ~= definition.capture[0];
     return PEGtoCode(grammarAsOutput.parseTree, names);
 }
