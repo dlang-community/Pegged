@@ -238,7 +238,8 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
             //writeln("Testing expr #", i, " (", expr.stringof, ")");
             
             // munch space
-            result.next = Spaces.parse(result.next).next;
+            static if (i>0)
+                result.next = Spaces.parse(result.next).next;
             
             //writeln("Seq: expr #", to!string(i));
             auto p = expr.parse(result);
@@ -302,6 +303,23 @@ class Join(Exprs...) if (Exprs.length > 0) : Parser
         return result;
     }
 
+    mixin(stringToInputMixin());
+}
+
+/**
+ * Trying to replace the old action system
+ */
+class Action(Expr, alias action)
+{
+    static Output parse(Input input)
+    {
+        mixin(okfailMixin("Action!("~Expr.stringof~", "~__traits(identifier, action)~")"));
+        auto p = Expr.parse(input);
+        if (p.success)
+            return action(p);
+        return p;
+    }
+    
     mixin(stringToInputMixin());
 }
 
