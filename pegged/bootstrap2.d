@@ -12,7 +12,7 @@ import pegged.grammar;
 
 /**
  * TODO : inline grammar a bit
- *        itcompare ('@')
+ *        compare ('@')
  *        anonymous compare ('@')
  *        compare parsetree (^)  
  * 
@@ -22,7 +22,7 @@ import pegged.grammar;
 mixin Grammar!(
      "PEGrammar2 <- S Definition+ EOI"
     ,"Definition <- RuleName Arrow Expression"
-    ,"RuleName   <- QualifiedIdentifier>(ParamList?)"
+    ,"RuleName   <- Identifier>(ParamList?)"
     ,"Expression <- Sequence (OR Sequence)*"
     ,"Sequence   <- Element*"
     ,"Element    <- Prefix (JOIN Prefix)*"
@@ -31,7 +31,7 @@ mixin Grammar!(
     ,"Primary    <- Name !Arrow
                   / GroupExpr
                   / Literal / Class / ANY"
-    ,"Name       <- Identifier>(ArgList?)"
+    ,"Name       <- QualifiedIdentifier>(ArgList?)"
     ,"GroupExpr  <- :OPEN Expression :CLOSE"
     //,"Ident      <- QualifiedIdentifier S"
     ,"Literal    <~ :Quote (!Quote Char)* :Quote S
