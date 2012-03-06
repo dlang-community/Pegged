@@ -2,3 +2,4 @@
 *.deps
 *.obj
 *.o
+test.d
