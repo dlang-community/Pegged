@@ -1,5 +1,6 @@
+*test.d
 *~
 *.deps
 *.obj
 *.o
-test.d
+
