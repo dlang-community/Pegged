@@ -19,8 +19,8 @@ import pegged.grammar;
  *        using pegged.bootstrap to simplify the code below: one string and comments
  */
 
-mixin Grammar!(
-     "PEGrammar2 <- S Definition+ EOI"
+enum PEGCode = grammarCode!(
+     "Grammar <- S Definition+ EOI"
     ,"Definition <- RuleName Arrow Expression"
     ,"RuleName   <- Identifier>(ParamList?)"
     ,"Expression <- Sequence (OR Sequence)*"
