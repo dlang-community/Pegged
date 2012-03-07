@@ -7,9 +7,10 @@ import std.traits;
 import pegged.grammar;
 import pegged.examples.dgrammar;
 
-mixin Grammar!(
-    `ExtractConstraint <~ :(!") if (" _)* :") if (" ConstraintCode :")" EOI`
-  , `ConstraintCode    <~ (!(")" EOI) _)*`);
+mixin(grammar(
+   `ExtractConstraint <~ :(!") if (" _)* :") if (" ConstraintCode :")" EOI
+    ConstraintCode    <~ (!(")" EOI) _)*`
+));
 
 string getConstraint(alias templateName)() @property
 {
@@ -17,23 +18,25 @@ string getConstraint(alias templateName)() @property
     return ExtractConstraint.parse(fullName).capture[0];
 }
 
-mixin Grammar!( 
-    `ExtractTemplateArgumentList <- :(!Name _)* :Name ArgList :BeginConstraint`
-  , `Name                        <- QualifiedIdentifier "("`
-  , `ArgList                     <~ (!BeginConstraint _)*`
-  , `BeginConstraint             <- ") if ("`);
+mixin(grammar( 
+   `ExtractTemplateArgumentList <- :(!Name _)* :Name ArgList :BeginConstraint
+    Name                        <- QualifiedIdentifier "("
+    ArgList                     <~ (!BeginConstraint _)*
+    BeginConstraint             <- ") if ("`
+));
 
-mixin Grammar!(
-    `ConstraintExp <- Spacing AndExp (Spacing "||" Spacing AndExp)* Spacing`
-  , `AndExp  <- Primary (Spacing "&&" Spacing Primary)* Spacing`
-  , `Primary <- NotExp 
-              / Parens 
-              / Ident`
-  , `NotExp  <- :'!' Primary`
-  , `Parens  <- '(' ConstraintExp ')'`
-  , `Ident   <~ IsExpr
-              / Type`
-  , `IsExpr  <- "is(" Spacing Type Spaces QualifiedIdentifier? Spacing ((":" / "==") Spacing Type)? ")"`);
+mixin(grammar(
+   `ConstraintExp <- Spacing AndExp (Spacing "||" Spacing AndExp)* Spacing
+    AndExp  <- Primary (Spacing "&&" Spacing Primary)* Spacing
+    Primary <- NotExp 
+             / Parens 
+             / Ident
+    NotExp  <- :'!' Primary
+    Parens  <- '(' ConstraintExp ')'
+    Ident   <~ IsExpr
+              / Type
+    IsExpr  <- "is(" Spacing Type Spaces QualifiedIdentifier? Spacing ((":" / "==") Spacing Type)? ")"`
+));
 
 string constraintToCode(ParseResult p)
 {
