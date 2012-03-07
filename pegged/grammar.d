@@ -5,6 +5,15 @@ import std.conv;
 
 public import pegged.peg;
 
+void asModule(string grammarString, string moduleName)
+{
+    import std.stdio;
+    auto f = File(moduleName~".d","w");
+    f.write("module " ~ moduleName ~ ";\n\n");
+    f.write("import pegged.peg;\n\n");
+    f.write(grammar(grammarString));
+}
+
 class Grammar : Seq!(S,OneOrMore!(Definition), EOI)
 {
    
