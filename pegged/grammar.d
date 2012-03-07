@@ -8,7 +8,7 @@ public import pegged.peg;
 class Grammar : Seq!(S,OneOrMore!(Definition), EOI)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -45,7 +45,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Definition : Seq!(RuleName,Arrow, Expression)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -82,7 +82,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class RuleName : Join!(Identifier,Option!(ParamList))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -119,7 +119,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -156,7 +156,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Sequence : ZeroOrMore!(Element)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -193,7 +193,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Element : Seq!(Prefix,ZeroOrMore!(Seq!(JOIN,Prefix)))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -230,7 +230,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Prefix : Seq!(Option!(Or!(LOOKAHEAD, NOT, DROP, FUSE)),Suffix)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -267,7 +267,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Suffix : Seq!(Primary,Option!(Or!(OPTION, ONEORMORE, ZEROORMORE, NamedExpr, WithAction)))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -304,7 +304,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)), GroupExpr, Literal, Class, ANY)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -341,7 +341,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Name : Join!(QualifiedIdentifier,Option!(ArgList))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -378,7 +378,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class GroupExpr : Seq!(Drop!(OPEN),Expression, Drop!(CLOSE))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -415,7 +415,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote),Char)), Drop!(Quote), S), Seq!(Drop!(DoubleQuote),ZeroOrMore!(Seq!(NegLookAhead!(DoubleQuote),Char)), Drop!(DoubleQuote), S)))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -449,10 +449,10 @@ static ParseResult[] filterChildren(ParseResult p)
     mixin(stringToInputMixin());
 }
 
-class Class : Seq!(Drop!(Lit!"["),ZeroOrMore!(Seq!(NegLookAhead!(Lit!"]"),Range)), Drop!(Lit!"]"), S)
+class Class : Seq!(Drop!(Lit!"["),ZeroOrMore!(Seq!(NegLookAhead!(Lit!"]"),CharRange)), Drop!(Lit!"]"), S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -486,10 +486,10 @@ static ParseResult[] filterChildren(ParseResult p)
     mixin(stringToInputMixin());
 }
 
-class Range : Or!(Seq!(Char,Drop!(Lit!"-"), Char), Char)
+class CharRange : Or!(Seq!(Char,Drop!(Lit!"-"), Char), Char)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -513,11 +513,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Range", p.success, p.capture, [p.parseTree]));
+                                ParseResult("CharRange", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Range", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseResult("CharRange", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -526,7 +526,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Lit!"n", Lit!"r", Lit!"t")), Seq!(NegLookAhead!(BackSlash),Any)))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -563,7 +563,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class ParamList : Fuse!(Seq!(OPEN,Identifier, ZeroOrMore!(Seq!(Lit!",",Identifier)), CLOSE))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -600,7 +600,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class ArgList : Seq!(Drop!(OPEN),Expression, ZeroOrMore!(Seq!(Drop!(Lit!","),Expression)), Drop!(CLOSE))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -637,7 +637,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class NamedExpr : Join!(NAME,Option!(Identifier))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -674,7 +674,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier, Drop!(ACTIONCLOSE)))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -711,7 +711,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Arrow : Or!(LEFTARROW, FUSEARROW, DROPARROW, ACTIONARROW)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -748,7 +748,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class LEFTARROW : Seq!(Lit!"<-",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -785,7 +785,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class FUSEARROW : Seq!(Lit!"<:",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -822,7 +822,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class DROPARROW : Seq!(Lit!"<:",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -859,7 +859,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class ACTIONARROW : Join!(Lit!"<",WithAction)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -896,7 +896,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class OR : Seq!(Lit!"/",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -933,7 +933,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class LOOKAHEAD : Seq!(Lit!"&",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -970,7 +970,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class NOT : Seq!(Lit!"!",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1007,7 +1007,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class DROP : Seq!(Lit!":",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1044,7 +1044,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class FUSE : Seq!(Lit!"~",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1081,7 +1081,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class JOIN : Lit!">"
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1118,7 +1118,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class NAME : Seq!(Lit!"=",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1155,7 +1155,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class ACTIONOPEN : Seq!(Lit!"{",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1192,7 +1192,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class ACTIONCLOSE : Seq!(Lit!"}",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1229,7 +1229,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class OPTION : Seq!(Lit!"?",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1266,7 +1266,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class ZEROORMORE : Seq!(Lit!"*",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1303,7 +1303,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class ONEORMORE : Seq!(Lit!"+",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1340,7 +1340,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class OPEN : Seq!(Lit!"(",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1377,7 +1377,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class CLOSE : Seq!(Lit!")",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1414,7 +1414,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class ANY : Seq!(Lit!".",S)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1451,7 +1451,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class S : Drop!(ZeroOrMore!(Or!(Blank, Comment)))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1488,7 +1488,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Blank : Or!(Lit!" ", Lit!"\t", EOL)
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1525,7 +1525,7 @@ static ParseResult[] filterChildren(ParseResult p)
 class Comment : Fuse!(Join!(Lit!"#",ZeroOrMore!(Join!(NegLookAhead!(EOL),Any)), Or!(EOL, EOI)))
 {
    
-enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "Range":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
+enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
 static ParseResult[] filterChildren(ParseResult p)
     {
@@ -1796,7 +1796,7 @@ string PEGtoCode(ParseResult p, string[] names = [""])
                 result = result[0..$-1] ~ ")";
             }
             break;
-        case "Range":
+        case "CharRange":
             if (ch.length == 2)
             {
                 result ~= "Range!('" ~ ch[0].capture[0] 
