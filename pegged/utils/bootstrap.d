@@ -19,8 +19,8 @@ mixin Grammar!(
     ,"Ident      <- Identifier S"
     ,"Literal    <~ :Quote (!Quote Char)* :Quote S
                   / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S"
-    ,"Class      <- :'[' (!']' Range)* :']' S"
-    ,"Range      <- Char :'-' Char / Char"
+    ,"Class      <- :'[' (!']' CharRange)* :']' S"
+    ,"CharRange  <- Char :'-' Char / Char"
     ,"Char       <~ BackSlash [nrt]
                   / !BackSlash _"
     ,`LEFTARROW  <- "<-" S`
