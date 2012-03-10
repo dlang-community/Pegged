@@ -49,7 +49,7 @@ enum PEGCode = grammarCode!(
     
     ,`Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW`
     ,`LEFTARROW  <- "<-" S`
-    ,`FUSEARROW  <- "<:" S`
+    ,`FUSEARROW  <- "<~" S`
     ,`DROPARROW  <- "<:" S`
     ,`ACTIONARROW <- "<">WithAction`
     
