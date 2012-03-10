@@ -8,12 +8,12 @@ import std.typetuple;
 
 import pegged.utils.associative; // as long as associative arrays do not function correctly at CT.
 
-struct ParseResult
+struct ParseTree
 {
     string name;
     bool success;
     string[] capture;
-    ParseResult[] children;
+    ParseTree[] children;
     
     string toString(int level = 0) @property
     {
@@ -29,8 +29,8 @@ struct ParseResult
     }
 }
 
-alias Tuple!(string, ParseResult) NamedCapture;
-alias AssociativeList!(string, ParseResult) NamedCaptures;
+alias Tuple!(string, ParseTree) NamedCapture;
+alias AssociativeList!(string, ParseTree) NamedCaptures;
 
 struct Input
 {
@@ -50,7 +50,7 @@ struct Output
     string next;
     NamedCaptures namedCaptures;
     
-    ParseResult parseTree;
+    ParseTree parseTree;
     alias parseTree this; // automatic 'conversion' into parseTree, to simplify some expressions
 
     string toString() @property
@@ -100,20 +100,20 @@ string wrapMixin(string name, string code)
 string okfailMixin(string name)
 {
     return
-    "Output ok(string[] capture, string next, ParseResult[] children = (ParseResult[]).init, NamedCaptures newCaptures = NamedCaptures.init)
+    "Output ok(string[] capture, string next, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
     {
         if (newCaptures.length > 0)
             input.namedCaptures ~= newCaptures;
         return Output(next,
                       input.namedCaptures,
-                      ParseResult(\""~name~"\", true, capture, children));
+                      ParseTree(\""~name~"\", true, capture, children));
     }
    
     Output fail(string message = string.init)
     {
         return Output(input.text,
                       input.namedCaptures,
-                      ParseResult(\""~name~"\", false, [message], (ParseResult[]).init));
+                      ParseTree(\""~name~"\", false, [message], (ParseTree[]).init));
     }
     ";
 }
@@ -500,7 +500,7 @@ class ZeroOrMore(Expr) : Parser
         mixin(okfailMixin("ZeroOrMore!("~Expr.stringof~")"));
         
         string[] capture;
-        ParseResult[] children;
+        ParseTree[] children;
         int len = input.length; 
         auto p = Expr.parse(input);
         if (!p.success)
@@ -532,7 +532,7 @@ class OneOrMore(Expr) : Parser
         mixin(okfailMixin("OneOrMore!("~Expr.stringof~")"));
         
         string[] capture;
-        ParseResult[] children;
+        ParseTree[] children;
         int len = input.length;
         auto p = Expr.parse(input);
         if (!p.success) 
@@ -651,7 +651,7 @@ alias Lit!(`\\`) BackSlash;
 alias Fuse!(Join!(ZeroOrMore!(Join!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI))) Line;
 alias OneOrMore!Line Lines;
 
-string[] leaves(ParseResult p)
+string[] leaves(ParseTree p)
 {
     string[] result;
     if (p.children.length == 0)
@@ -664,7 +664,7 @@ string[] leaves(ParseResult p)
     return result;
 }
 
-string[2][] treeUnification(ParseResult p1, ParseResult p2)
+string[2][] treeUnification(ParseTree p1, ParseTree p2)
 {
     string[2][] result;
     
@@ -687,22 +687,22 @@ string[2][] treeUnification(ParseResult p1, ParseResult p2)
     return result;
 }
 
-ParseResult regenerateCaptures(ParseResult p)
+ParseTree regenerateCaptures(ParseTree p)
 {
     if (p.children.length == 0)
         return p;
     
     string[] capture = p.capture;
-    ParseResult[] children;
+    ParseTree[] children;
     foreach(child; p.children)
     {
         children ~= regenerateCaptures(child);
         capture ~= children[$-1].capture;
     }
-    return ParseResult(p.name, p.success, capture, children);
+    return ParseTree(p.name, p.success, capture, children);
 }
 
-ParseResult fuseCaptures(ParseResult p)
+ParseTree fuseCaptures(ParseTree p)
 {
     if (p.capture.length < 2) return p;
     foreach(capt; p.capture[1..$])

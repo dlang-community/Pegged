@@ -5,7 +5,7 @@ import std.conv;
 
 public import pegged.peg;
 
-void asModule(string grammarString, string moduleName)
+void asModule(string moduleName, string grammarString)
 {
     import std.stdio;
     auto f = File(moduleName~".d","w");
@@ -14,14 +14,24 @@ void asModule(string grammarString, string moduleName)
     f.write(grammar(grammarString));
 }
 
+string grammar(string g)
+{    
+    auto grammarAsOutput = Grammar.parse(g);
+    string[] names;
+    foreach(definition; grammarAsOutput.parseTree.children)
+        names ~= definition.capture[0];
+    return PEGtoCode(grammarAsOutput.parseTree, names);
+}
+
+
 class Grammar : Seq!(S,OneOrMore!(Definition), EOI)
 {
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -41,11 +51,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Grammar", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Grammar", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Grammar", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Grammar", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -56,9 +66,9 @@ class Definition : Seq!(RuleName,Arrow, Expression)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -78,11 +88,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Definition", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Definition", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Definition", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Definition", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -93,9 +103,9 @@ class RuleName : Join!(Identifier,Option!(ParamList))
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -115,11 +125,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("RuleName", p.success, p.capture, [p.parseTree]));
+                                ParseTree("RuleName", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("RuleName", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("RuleName", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -130,9 +140,9 @@ class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -152,11 +162,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Expression", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Expression", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Expression", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Expression", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -167,9 +177,9 @@ class Sequence : ZeroOrMore!(Element)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -189,11 +199,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Sequence", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Sequence", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Sequence", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Sequence", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -204,9 +214,9 @@ class Element : Seq!(Prefix,ZeroOrMore!(Seq!(JOIN,Prefix)))
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -226,11 +236,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Element", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Element", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Element", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Element", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -241,9 +251,9 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD, NOT, DROP, FUSE)),Suffix)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -263,11 +273,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Prefix", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Prefix", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Prefix", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Prefix", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -278,9 +288,9 @@ class Suffix : Seq!(Primary,Option!(Or!(OPTION, ONEORMORE, ZEROORMORE, NamedExpr
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -300,11 +310,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Suffix", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Suffix", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Suffix", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Suffix", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -315,9 +325,9 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)), GroupExpr, Literal, Class, 
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -337,11 +347,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Primary", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Primary", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Primary", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Primary", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -352,9 +362,9 @@ class Name : Join!(QualifiedIdentifier,Option!(ArgList))
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -374,11 +384,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Name", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Name", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Name", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Name", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -389,9 +399,9 @@ class GroupExpr : Seq!(Drop!(OPEN),Expression, Drop!(CLOSE))
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -411,11 +421,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("GroupExpr", p.success, p.capture, [p.parseTree]));
+                                ParseTree("GroupExpr", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("GroupExpr", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("GroupExpr", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -426,9 +436,9 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -448,11 +458,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Literal", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Literal", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Literal", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Literal", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -463,9 +473,9 @@ class Class : Seq!(Drop!(Lit!"["),ZeroOrMore!(Seq!(NegLookAhead!(Lit!"]"),CharRa
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -485,11 +495,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Class", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Class", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Class", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Class", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -500,9 +510,9 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!"-"), Char), Char)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -522,11 +532,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("CharRange", p.success, p.capture, [p.parseTree]));
+                                ParseTree("CharRange", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("CharRange", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("CharRange", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -537,9 +547,9 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Lit!"n", Lit!"r", Lit!"t")), Seq!(NegL
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -559,11 +569,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Char", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Char", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Char", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Char", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -574,9 +584,9 @@ class ParamList : Fuse!(Seq!(OPEN,Identifier, ZeroOrMore!(Seq!(Lit!",",Identifie
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -596,11 +606,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ParamList", p.success, p.capture, [p.parseTree]));
+                                ParseTree("ParamList", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ParamList", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("ParamList", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -611,9 +621,9 @@ class ArgList : Seq!(Drop!(OPEN),Expression, ZeroOrMore!(Seq!(Drop!(Lit!","),Exp
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -633,11 +643,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ArgList", p.success, p.capture, [p.parseTree]));
+                                ParseTree("ArgList", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ArgList", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("ArgList", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -648,9 +658,9 @@ class NamedExpr : Join!(NAME,Option!(Identifier))
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -670,11 +680,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("NamedExpr", p.success, p.capture, [p.parseTree]));
+                                ParseTree("NamedExpr", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("NamedExpr", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("NamedExpr", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -685,9 +695,9 @@ class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier, Drop!(ACTIONCLOSE)))
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -707,11 +717,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("WithAction", p.success, p.capture, [p.parseTree]));
+                                ParseTree("WithAction", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("WithAction", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("WithAction", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -722,9 +732,9 @@ class Arrow : Or!(LEFTARROW, FUSEARROW, DROPARROW, ACTIONARROW)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -744,11 +754,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Arrow", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Arrow", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Arrow", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Arrow", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -759,9 +769,9 @@ class LEFTARROW : Seq!(Lit!"<-",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -781,11 +791,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("LEFTARROW", p.success, p.capture, [p.parseTree]));
+                                ParseTree("LEFTARROW", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("LEFTARROW", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("LEFTARROW", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -796,9 +806,9 @@ class FUSEARROW : Seq!(Lit!"<:",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -818,11 +828,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("FUSEARROW", p.success, p.capture, [p.parseTree]));
+                                ParseTree("FUSEARROW", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("FUSEARROW", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("FUSEARROW", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -833,9 +843,9 @@ class DROPARROW : Seq!(Lit!"<:",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -855,11 +865,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("DROPARROW", p.success, p.capture, [p.parseTree]));
+                                ParseTree("DROPARROW", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("DROPARROW", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("DROPARROW", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -870,9 +880,9 @@ class ACTIONARROW : Join!(Lit!"<",WithAction)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -892,11 +902,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ACTIONARROW", p.success, p.capture, [p.parseTree]));
+                                ParseTree("ACTIONARROW", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ACTIONARROW", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("ACTIONARROW", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -907,9 +917,9 @@ class OR : Seq!(Lit!"/",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -929,11 +939,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("OR", p.success, p.capture, [p.parseTree]));
+                                ParseTree("OR", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("OR", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("OR", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -944,9 +954,9 @@ class LOOKAHEAD : Seq!(Lit!"&",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -966,11 +976,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("LOOKAHEAD", p.success, p.capture, [p.parseTree]));
+                                ParseTree("LOOKAHEAD", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("LOOKAHEAD", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("LOOKAHEAD", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -981,9 +991,9 @@ class NOT : Seq!(Lit!"!",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1003,11 +1013,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("NOT", p.success, p.capture, [p.parseTree]));
+                                ParseTree("NOT", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("NOT", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("NOT", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1018,9 +1028,9 @@ class DROP : Seq!(Lit!":",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1040,11 +1050,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("DROP", p.success, p.capture, [p.parseTree]));
+                                ParseTree("DROP", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("DROP", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("DROP", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1055,9 +1065,9 @@ class FUSE : Seq!(Lit!"~",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1077,11 +1087,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("FUSE", p.success, p.capture, [p.parseTree]));
+                                ParseTree("FUSE", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("FUSE", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("FUSE", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1092,9 +1102,9 @@ class JOIN : Lit!">"
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1114,11 +1124,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("JOIN", p.success, p.capture, [p.parseTree]));
+                                ParseTree("JOIN", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("JOIN", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("JOIN", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1129,9 +1139,9 @@ class NAME : Seq!(Lit!"=",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1151,11 +1161,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("NAME", p.success, p.capture, [p.parseTree]));
+                                ParseTree("NAME", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("NAME", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("NAME", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1166,9 +1176,9 @@ class ACTIONOPEN : Seq!(Lit!"{",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1188,11 +1198,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ACTIONOPEN", p.success, p.capture, [p.parseTree]));
+                                ParseTree("ACTIONOPEN", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ACTIONOPEN", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("ACTIONOPEN", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1203,9 +1213,9 @@ class ACTIONCLOSE : Seq!(Lit!"}",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1225,11 +1235,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ACTIONCLOSE", p.success, p.capture, [p.parseTree]));
+                                ParseTree("ACTIONCLOSE", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ACTIONCLOSE", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("ACTIONCLOSE", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1240,9 +1250,9 @@ class OPTION : Seq!(Lit!"?",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1262,11 +1272,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("OPTION", p.success, p.capture, [p.parseTree]));
+                                ParseTree("OPTION", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("OPTION", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("OPTION", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1277,9 +1287,9 @@ class ZEROORMORE : Seq!(Lit!"*",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1299,11 +1309,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ZEROORMORE", p.success, p.capture, [p.parseTree]));
+                                ParseTree("ZEROORMORE", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ZEROORMORE", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("ZEROORMORE", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1314,9 +1324,9 @@ class ONEORMORE : Seq!(Lit!"+",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1336,11 +1346,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ONEORMORE", p.success, p.capture, [p.parseTree]));
+                                ParseTree("ONEORMORE", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ONEORMORE", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("ONEORMORE", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1351,9 +1361,9 @@ class OPEN : Seq!(Lit!"(",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1373,11 +1383,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("OPEN", p.success, p.capture, [p.parseTree]));
+                                ParseTree("OPEN", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("OPEN", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("OPEN", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1388,9 +1398,9 @@ class CLOSE : Seq!(Lit!")",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1410,11 +1420,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("CLOSE", p.success, p.capture, [p.parseTree]));
+                                ParseTree("CLOSE", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("CLOSE", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("CLOSE", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1425,9 +1435,9 @@ class ANY : Seq!(Lit!".",S)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1447,11 +1457,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ANY", p.success, p.capture, [p.parseTree]));
+                                ParseTree("ANY", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("ANY", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("ANY", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1462,9 +1472,9 @@ class S : Drop!(ZeroOrMore!(Or!(Blank, Comment)))
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1484,11 +1494,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("S", p.success, p.capture, [p.parseTree]));
+                                ParseTree("S", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("S", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("S", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1499,9 +1509,9 @@ class Blank : Or!(Lit!" ", Lit!"\t", EOL)
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1521,11 +1531,11 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Blank", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Blank", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Blank", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Blank", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
@@ -1536,9 +1546,9 @@ class Comment : Fuse!(Join!(Lit!"#",ZeroOrMore!(Join!(NegLookAhead!(EOL),Any)), 
    
 enum bool[string] ruleNames = ["Grammar":true, "Definition":true, "RuleName":true, "Expression":true, "Sequence":true, "Element":true, "Prefix":true, "Suffix":true, "Primary":true, "Name":true, "GroupExpr":true, "Literal":true, "Class":true, "CharRange":true, "Char":true, "ParamList":true, "ArgList":true, "NamedExpr":true, "WithAction":true, "Arrow":true, "LEFTARROW":true, "FUSEARROW":true, "DROPARROW":true, "ACTIONARROW":true, "OR":true, "LOOKAHEAD":true, "NOT":true, "DROP":true, "FUSE":true, "JOIN":true, "NAME":true, "ACTIONOPEN":true, "ACTIONCLOSE":true, "OPTION":true, "ZEROORMORE":true, "ONEORMORE":true, "OPEN":true, "CLOSE":true, "ANY":true, "S":true, "Blank":true, "Comment":true];
 
-static ParseResult[] filterChildren(ParseResult p)
+static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1558,17 +1568,17 @@ static ParseResult[] filterChildren(ParseResult p)
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Comment", p.success, p.capture, [p.parseTree]));
+                                ParseTree("Comment", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                                 p.namedCaptures,
-                                ParseResult("Comment", p.success, p.capture, filterChildren(p.parseTree)));
+                                ParseTree("Comment", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());
 }
 
-string PEGtoCode(ParseResult p, string[] names = [""])
+string PEGtoCode(ParseTree p, string[] names = [""])
 {
     string result;
     auto ch = p.children;
@@ -1594,9 +1604,9 @@ string PEGtoCode(ParseResult p, string[] names = [""])
                     ruleNames ~= "\"" ~ name ~ "\":true,";
                 ruleNames = ruleNames[0..$-1] ~ "];\n";
                 code = ruleNames ~
-"    static ParseResult[] filterChildren(ParseResult p)
+"    static ParseTree[] filterChildren(ParseTree p)
     {
-        ParseResult[] filteredChildren;
+        ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             if (child.name in ruleNames)
@@ -1616,11 +1626,11 @@ string PEGtoCode(ParseResult p, string[] names = [""])
         if (p.name in ruleNames) // it's a grammar rule
             return Output(p.next,
                         p.namedCaptures,
-                        ParseResult(\""~ch[0].capture[0]~"\", p.success, p.capture, [p.parseTree]));
+                        ParseTree(\""~ch[0].capture[0]~"\", p.success, p.capture, [p.parseTree]));
         else
             return Output(p.next,
                         p.namedCaptures,
-                        ParseResult(\""~ch[0].capture[0]~"\", p.success, p.capture, filterChildren(p.parseTree)));
+                        ParseTree(\""~ch[0].capture[0]~"\", p.success, p.capture, filterChildren(p.parseTree)));
     }
     
     mixin(stringToInputMixin());";
@@ -1850,11 +1860,4 @@ string PEGtoCode(ParseResult p, string[] names = [""])
     return result;
 }
 
-string grammar(string g)
-{    
-    auto grammarAsOutput = Grammar.parse(g);
-    string[] names;
-    foreach(definition; grammarAsOutput.parseTree.children)
-        names ~= definition.capture[0];
-    return PEGtoCode(grammarAsOutput.parseTree, names);
-}
+
