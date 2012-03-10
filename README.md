@@ -49,7 +49,7 @@ Here is a little [tutorial](https://github.com/PhilippeSigaud/Pegged/wiki/Pegged
 Features
 --------
 
-* The complete set of operators described [here](en.wikipedia.org/wiki/Parsing_expression_grammar) are implemented, with the 'traditional' PEG syntax. See [Peg Operations](https://github.com/PhilippeSigaud/Pegged/wiki/Peg-Operations).
+* The complete set of operators described [here](en.wikipedia.org/wiki/Parsing_expression_grammar) are implemented, with the 'traditional' PEG syntax. See [Peg Operations](https://github.com/PhilippeSigaud/Pegged/wiki/Peg-basics).
 * **Pegged** can parse its input at compile time and generate a complete parse tree at compile time. See [Advantages of Compile-Time Parsing](https://github.com/PhilippeSigaud/Pegged/wiki/Advantages-of-Compile-Time-Parsing) for the power that gives you. In a word: compile-time string (read: D code) transformation and generation.
 * You can parse at runtime also, you lucky you.
 * Use a standard and readable PEG syntax as a DSL, not a bunch of templates that hide the parser in noise.
