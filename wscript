@@ -85,7 +85,13 @@ def _run_shell(dir, ctx, args):
     os.chdir(cwd)
 
 def test(ctx):
+    '''runs parser generator tests'''
+
     _run_shell(TOP, ctx, 'rdmd test.d')
+
+class TestContext(Build.BuildContext):
+    cmd = 'test'
+    fun = 'test'
 
 def dist(dst):
     '''makes a tarball for redistributing the sources'''
