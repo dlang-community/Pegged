@@ -24,7 +24,7 @@ mixin(grammar(
             / BackSlash>'u'>Hex>Hex>Hex>Hex
             / (!DoubleQuote>.)
     Number <~ '0'
-            / [1-9]>Digit*>('.'>Digit*)
+            / [1-9]>Digit*>('.'>Digit*)?
     Digit  <- [0-9]
     Hex    <- [0-9A-Fa-f]`
 ));
