@@ -12,5 +12,5 @@ mixin(grammar(
 
     Parens   <- '(' Expr ')'
     Number   <~ [0-9]+
-    Variable <- Identifier)"
+    Variable <- Identifier"
 ));
