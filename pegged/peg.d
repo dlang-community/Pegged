@@ -259,7 +259,7 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
             }
             else
             {
-                int pos = input.length-result.next.length;
+                size_t pos = input.length-result.next.length;
                 return fail("Seq fail for expression #"~to!string(i)~" (" ~ expr.stringof ~") at position " 
                           ~ to!string(pos) ~ " [" ~ input[0..pos] ~ "]/[" ~ input[pos..$] ~ "]");
             }
@@ -295,7 +295,7 @@ class Join(Exprs...) if (Exprs.length > 0) : Parser
             }
             else
             {
-                int pos = input.length-result.next.length;
+                size_t pos = input.length-result.next.length;
                 return fail("Join fail for expression #"~to!string(i)~" (" ~ expr.stringof ~") at position " 
                           ~ to!string(pos) ~ " [" ~ input[0..pos] ~ "]/[" ~ input[pos..$] ~ "]");
             }
@@ -501,7 +501,7 @@ class ZeroOrMore(Expr) : Parser
         
         string[] capture;
         ParseTree[] children;
-        int len = input.length; 
+        size_t len = input.length; 
         auto p = Expr.parse(input);
         if (!p.success)
             return ok(capture, input.text);
@@ -533,7 +533,7 @@ class OneOrMore(Expr) : Parser
         
         string[] capture;
         ParseTree[] children;
-        int len = input.length;
+        size_t len = input.length;
         auto p = Expr.parse(input);
         if (!p.success) 
             return fail("OneOrMore!("~Expr.stringof~") failure on first parse.");

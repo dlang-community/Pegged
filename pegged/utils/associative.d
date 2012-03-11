@@ -173,7 +173,7 @@ struct AssociativeList(Key, Value, alias pred = lessThan)
         insert(tuple(key,value));
     }
 
-    int findPos(KV pair, KV[] pairs)
+    size_t findPos(KV pair, KV[] pairs)
     {
         if (pairs.length == 0)
         {
@@ -277,7 +277,7 @@ struct AssociativeList(Key, Value, alias pred = lessThan)
         return this;
     }
     
-    int findWhere(Key key, KV[] pairs)
+    size_t findWhere(Key key, KV[] pairs)
     {
         if (pairs.length == 0)
         {
