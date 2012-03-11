@@ -3,4 +3,5 @@
 *.deps
 *.obj
 *.o
-
+*.lock*
+build/*
