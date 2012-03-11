@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, shutil, sys, tarfile, tempfile
+import os, shutil, subprocess, sys, tarfile, tempfile
 from waflib import Build, Context, Options, Scripting, Utils
 from waflib.Configure import conf
 
@@ -72,6 +72,20 @@ def build(bld):
     bld.stlib(source = bld.path.ant_glob(search_paths('pegged')),
               target = 'pegged',
               includes = [TOP])
+
+def _run_shell(dir, ctx, args):
+    cwd = os.getcwd()
+    os.chdir(dir)
+
+    code = subprocess.Popen(args, shell = True).wait()
+
+    if code != 0:
+        ctx.fatal(str(args) + ' exited with: ' + str(code))
+
+    os.chdir(cwd)
+
+def test(ctx):
+    _run_shell(TOP, ctx, 'rdmd test.d')
 
 def dist(dst):
     '''makes a tarball for redistributing the sources'''
