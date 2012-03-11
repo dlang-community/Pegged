@@ -9,6 +9,11 @@ void asModule(string moduleName, string grammarString)
 {
     import std.stdio;
     auto f = File(moduleName~".d","w");
+    
+    f.write("/**\nThis module was automatically generated from the following grammar:\n");
+    f.write(grammarString);
+    f.write("\n*/\n");
+    
     f.write("module " ~ moduleName ~ ";\n\n");
     f.write("import pegged.peg;\n\n");
     f.write(grammar(grammarString));
