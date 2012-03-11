@@ -4,3 +4,4 @@
 *.obj
 *.o
 *.lock*
+build/*
