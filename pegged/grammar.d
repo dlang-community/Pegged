@@ -25,15 +25,304 @@ string grammar(string g)
     string[] names;
     foreach(definition; grammarAsOutput.parseTree.children)
         names ~= definition.capture[0];
-    return PEGtoCode(grammarAsOutput.parseTree, names);
+    string ruleNames = "    enum ruleNames = [";
+    foreach(name; names)
+        ruleNames ~= "\"" ~ name ~ "\":true,";
+    ruleNames = ruleNames[0..$-1] ~ "];\n";
+    return PEGtoCode(grammarAsOutput.parseTree, ruleNames);
+}
+
+string PEGtoCode(ParseTree p, string names = "")
+{
+    string result;
+    auto ch = p.children;
+    
+    void recurse() 
+    {
+        foreach(child; ch) result ~= PEGtoCode(child);
+    }
+    
+    switch (p.name)
+    {
+        case "Grammar":
+            foreach(child; ch) result ~= PEGtoCode(child, names); // the only point where names is passed (for "Definition" to work upon)
+            break;
+        case "Definition":
+            if (ch.length < 3)
+                return "ERROR, Bad Definition";
+            string code;
+            if (names.length > 1)
+            {
+                
+                code = names ~
+"    static ParseTree[] filterChildren(ParseTree p)
+    {
+        ParseTree[] filteredChildren;
+        foreach(child; p.children)
+        {
+            if (child.name in ruleNames)
+                filteredChildren ~= child;
+            else
+            {
+                if (child.children.length > 0)
+                    filteredChildren ~= filterChildren(child);
+            }
+        }
+        return filteredChildren;
+    }
+
+    static Output parse(Input input)
+    {
+        auto p = typeof(super).parse(input);
+        if (p.name in ruleNames) // it's a grammar rule
+            return Output(p.next,
+                        p.namedCaptures,
+                        ParseTree(\""~ch[0].capture[0]~"\", p.success, p.capture, [p.parseTree]));
+        else
+            return Output(p.next,
+                        p.namedCaptures,
+                        ParseTree(\""~ch[0].capture[0]~"\", p.success, p.capture, filterChildren(p.parseTree)));
+    }
+    
+    mixin(stringToInputMixin());";
+            }
+            else
+            {
+                code =
+"    static Output parse(Input input)
+    {
+        auto p = typeof(super).parse(input);
+        p.name = \""~ch[0].capture[0]~"\";
+        return p;
+    }
+    
+    mixin(stringToInputMixin());";                
+            }
+            string inheritance;
+            switch(ch[1].children[0].name) // ch[1] is the arrow symbol
+            {
+                case "LEFTARROW":
+                    inheritance = PEGtoCode(ch[2]);
+                    break;
+                case "FUSEARROW":
+                    inheritance = "Fuse!(" ~ PEGtoCode(ch[2]) ~ ")";
+                    break;
+                case "DROPARROW":
+                    inheritance = "Drop!(" ~ PEGtoCode(ch[2]) ~ ")";
+                    break;
+                case "ACTIONARROW":
+                    inheritance = "Action!(" ~ PEGtoCode(ch[2]) ~ ", " ~ ch[1].capture[1] ~ ")";
+                    break;
+                default:
+                    inheritance ="ERROR: Bad arrow: " ~ ch[1].name;
+                    break;
+            }
+
+            result = "class " 
+                   ~ ch[0].capture[0] // name 
+                   ~ (ch[0].capture.length == 2 ? ch[0].capture[1] : "") // parameter list
+                   ~ " : " ~ inheritance // inheritance code
+                   ~ "\n{\n" 
+                   ~ code // inner code
+                   ~ "\n}\n";
+            break;
+        case "Expression":
+            if (ch.length > 1) // OR present
+            {
+                result ~= "Or!(";
+                foreach(i,child; ch)
+                    if (i%2 == 0) result ~= PEGtoCode(child) ~ ",";
+                result = result[0..$-1] ~ ")";
+            }
+            else
+                result ~= PEGtoCode(ch[0]);
+            break;
+        case "Sequence":
+            if (ch.length > 1)
+            {
+                result ~= "Seq!(";
+                foreach(child; ch) 
+                {
+                    auto temp = PEGtoCode(child);
+                    if (temp.startsWith("Seq!("))
+                        temp = temp[5..$-1];
+                    result ~= temp ~ ",";
+                }
+                result = result[0..$-1] ~ ")";
+            }
+            else
+                result ~= PEGtoCode(ch[0]);
+            break;
+        case "Element":
+            if (ch.length > 1)
+            {
+                result ~= "Join!(";
+                foreach(i,child; ch) 
+                {
+                    if (i%2 == 0) // "Suffix JOIN Suffix JOIN ..."
+                    {
+                        auto temp = PEGtoCode(child);
+                        if (temp.startsWith("Join!("))
+                            temp = temp[6..$-1];
+                        result ~= temp ~ ",";
+                    }
+                }
+                result = result[0..$-1] ~ ")";
+            }
+            else
+                result ~= PEGtoCode(ch[0]);
+            break;
+        case "Prefix":
+            if (ch.length > 1)
+                switch (ch[0].name)
+                {
+                    case "NOT":
+                        result ~= "NegLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        break;
+                    case "LOOKAHEAD":
+                        result ~= "PosLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        break;
+                    case "DROP":
+                        result ~= "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        break;
+                    case "JOIN":
+                        result ~= "Join!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        break;
+                    default:
+                        break;
+                }
+            else
+                result ~= PEGtoCode(ch[0]);
+            break;
+        case "Suffix":
+            if (ch.length > 1)
+                switch (ch[1].name)
+                {
+                    case "OPTION":
+                        result ~= "Option!(" ~ PEGtoCode(ch[0]) ~ ")";
+                        break;
+                    case "ZEROORMORE":
+                        result ~= "ZeroOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
+                        break;
+                    case "ONEORMORE":
+                        result ~= "OneOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
+                        break;
+                    case "NamedExpr":
+                        if (ch[1].capture.length == 2)
+                            result ~= "Named!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[1] ~ "\")";
+                        else
+                            result ~= "PushName!(" ~ PEGtoCode(ch[0]) ~ ")";
+                        break;
+                    case "WithAction":
+                        result ~= "Action!(" ~ PEGtoCode(ch[0]) ~ ", " ~ ch[1].capture[0] ~ ")";
+                        break;
+                    default:
+                        break;
+                }
+            else
+                result ~= PEGtoCode(ch[0]);
+            break;
+        case "Primary":
+            recurse();
+            break;
+        case "Name":
+            result ~= p.capture[0];
+            if (ch.length == 1)
+                result ~= PEGtoCode(ch[0]);
+            break;
+        case "ArgList":
+            result ~= "!(";
+            foreach(child; ch)
+                result ~= PEGtoCode(child) ~ ","; // Wow! Allow  A <- List('A'*,',') 
+            result = result[0..$-1] ~ ")";
+            break;
+        case "GroupExpr":
+            if (ch.length == 0) return "ERROR: Empty group ()";
+            auto temp = PEGtoCode(ch[0]);
+            if (ch.length == 1 || temp.startsWith("Seq!(")) return temp;
+            result ~= "Seq!(" ~ temp ~ ")";
+            break;
+        case "Ident":
+            result ~= p.capture[0];
+            break;
+        case "Literal":
+            if (p.capture[0].length == 0)
+                return "ERROR: empty literal";
+            result ~= "Lit!(\"" ~ p.capture[0] ~ "\")";
+            break;
+        case "Class":
+            
+            if (ch.length == 0)
+                return "ERROR: Empty Class of chars []";
+            else 
+            {
+                if (ch.length > 1)
+                {
+                    result ~= "Or!(";
+                    foreach(child; ch)
+                    {
+                        auto temp = PEGtoCode(child);
+                        if (temp.startsWith("Or!("))
+                            temp = temp[4..$-1];
+                        result ~= temp ~ ",";
+                    }
+                    result = result[0..$-1] ~ ")";
+                }
+                else
+                    result ~= PEGtoCode(ch[0]);
+            }
+            break;
+        case "CharRange":
+            if (ch.length == 2)
+            {
+                result ~= "Range!('" ~ ch[0].capture[0] 
+                            ~ "','" 
+                            ~ ch[1].capture[0] ~ "')";
+            }
+            else
+                result ~= "Lit!(\"" ~ ch[0].capture[0] ~ "\")"; 
+            break;
+        case "Char":
+            result ~= ch[0].capture[0];
+            break;
+        case "LEFTARROW":
+            break;
+        case "OR":
+            recurse();
+            break;
+        case "LOOKAHEAD":
+            break;
+        case "NOT":
+            break;
+        case "OPTION":
+            break;
+        case "ZEROORMORE":
+            break;
+        case "ONEORMORE":
+            break;
+        case "OPEN":
+            break;
+        case "CLOSE":
+            break;
+        case "ANY":
+            result ~= "Any";
+            break;
+        case "S":
+            break;
+        case "Comment":
+            break;
+        default:
+            result ~= "ERROR: Unknown name: " ~ p.name;
+    }
+    return result;
 }
 
 /**
 This module was automatically generated from the following grammar:
 
 Grammar    <- S Definition+ EOI
-Definition <- RuleName Arrow Expression
-RuleName   <- Identifier>(ParamList?)
+Definition <- RuleName Arrow Expression S
+RuleName   <- Identifier>(ParamList?) S
 Expression <- Sequence (OR Sequence)*
 Sequence   <- Element*
 Element    <- Prefix (JOIN Prefix)*
@@ -43,12 +332,14 @@ Suffix     <- Primary
               / ONEORMORE 
               / ZEROORMORE 
               / NamedExpr 
-              / WithAction)?
+              / WithAction)? S
 Primary    <- Name !Arrow
             / GroupExpr
-            / Literal / Class / ANY
-Name       <- QualifiedIdentifier>(ArgList?)
-GroupExpr  <- :OPEN Expression :CLOSE
+            / Literal 
+            / Class 
+            / ANY
+Name       <- QualifiedIdentifier>(ArgList?) S
+GroupExpr  <- :OPEN Expression :CLOSE S
 
 Literal    <~ :Quote (!Quote Char)* :Quote S
             / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
@@ -56,27 +347,28 @@ Class      <- :'[' (!']' CharRange)* :']' S
 CharRange  <- Char :'-' Char / Char
 Char       <~ BackSlash [nrt]
             / !BackSlash .
+
+ParamList  <~ OPEN Identifier (',' Identifier)* CLOSE S
+ArgList    <- :OPEN Expression (:',' Expression)* :CLOSE S
+NamedExpr  <- NAME>Identifier? S
+
+WithAction <~ :ACTIONOPEN Identifier :ACTIONCLOSE S
     
-ParamList  <~ OPEN Identifier (',' Identifier)* CLOSE
-ArgList    <- :OPEN Expression (:',' Expression)* :CLOSE
-NamedExpr  <- NAME>Identifier?
-    
-WithAction <~ :ACTIONOPEN Identifier :ACTIONCLOSE
-    
-Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW
+Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW S
 LEFTARROW  <- "<-" S
 FUSEARROW  <- "<~" S
 DROPARROW  <- "<:" S
-ACTIONARROW <- "<">WithAction
+ACTIONARROW <- "<">WithAction S
   
 OR         <- '/' S
     
 LOOKAHEAD  <- '&' S
 NOT        <- '!' S
+
 DROP       <- ':' S
 FUSE       <- '~' S
   
-JOIN       <- '>'
+JOIN       <- '>' S
     
 NAME       <- '=' S
 ACTIONOPEN <- '{' S
@@ -92,7 +384,7 @@ CLOSE      <- ')' S
 ANY        <- '.' S
     
 S          <: (Blank / Comment)*
-Comment    <~ '#'>(!EOL>.)*>(EOL/EOI)
+Comment    <- "#">(!EOL>.)*>(EOL/EOI)
 
 */
 
@@ -130,7 +422,7 @@ class Grammar : Seq!(S,OneOrMore!(Definition),EOI)
     
     mixin(stringToInputMixin());
 }
-class Definition : Seq!(RuleName,Arrow,Expression)
+class Definition : Seq!(RuleName,Arrow,Expression,S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -164,7 +456,7 @@ class Definition : Seq!(RuleName,Arrow,Expression)
     
     mixin(stringToInputMixin());
 }
-class RuleName : Join!(Identifier,Option!(ParamList))
+class RuleName : Seq!(Join!(Identifier,Option!(ParamList)),S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -334,7 +626,7 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,FUSE)),Suffix)
     
     mixin(stringToInputMixin());
 }
-class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,WithAction)))
+class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,WithAction)),S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -402,7 +694,7 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
     
     mixin(stringToInputMixin());
 }
-class Name : Join!(QualifiedIdentifier,Option!(ArgList))
+class Name : Seq!(Join!(QualifiedIdentifier,Option!(ArgList)),S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -436,7 +728,7 @@ class Name : Join!(QualifiedIdentifier,Option!(ArgList))
     
     mixin(stringToInputMixin());
 }
-class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE))
+class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -572,7 +864,6 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
     
     mixin(stringToInputMixin());
 }
-
 class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Lit!("n"),Lit!("r"),Lit!("t"))),Seq!(NegLookAhead!(BackSlash),Any)))
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
@@ -607,7 +898,7 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Lit!("n"),Lit!("r"),Lit!("t"))),Seq!(N
     
     mixin(stringToInputMixin());
 }
-class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),Identifier)),CLOSE))
+class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),Identifier)),CLOSE,S))
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -641,7 +932,7 @@ class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),Identifi
     
     mixin(stringToInputMixin());
 }
-class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),Expression)),Drop!(CLOSE))
+class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),Expression)),Drop!(CLOSE),S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -675,7 +966,7 @@ class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),Ex
     
     mixin(stringToInputMixin());
 }
-class NamedExpr : Join!(NAME,Option!(Identifier))
+class NamedExpr : Seq!(Join!(NAME,Option!(Identifier)),S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -709,7 +1000,7 @@ class NamedExpr : Join!(NAME,Option!(Identifier))
     
     mixin(stringToInputMixin());
 }
-class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier,Drop!(ACTIONCLOSE)))
+class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier,Drop!(ACTIONCLOSE),S))
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -743,7 +1034,7 @@ class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier,Drop!(ACTIONCLOSE)))
     
     mixin(stringToInputMixin());
 }
-class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW)
+class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,Seq!(ACTIONARROW,S))
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -879,7 +1170,7 @@ class DROPARROW : Seq!(Lit!("<:"),S)
     
     mixin(stringToInputMixin());
 }
-class ACTIONARROW : Join!(Lit!("<"),WithAction)
+class ACTIONARROW : Seq!(Join!(Lit!("<"),WithAction),S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -1083,7 +1374,7 @@ class FUSE : Seq!(Lit!("~"),S)
     
     mixin(stringToInputMixin());
 }
-class JOIN : Lit!(">")
+class JOIN : Seq!(Lit!(">"),S)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -1457,7 +1748,7 @@ class S : Drop!(ZeroOrMore!(Or!(Blank,Comment)))
     
     mixin(stringToInputMixin());
 }
-class Comment : Fuse!(Join!(Lit!("#"),ZeroOrMore!(Join!(NegLookAhead!(EOL),Any)),Or!(EOL,EOI)))
+class Comment : Join!(Lit!("#"),ZeroOrMore!(Join!(NegLookAhead!(EOL),Any)),Or!(EOL,EOI))
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
@@ -1491,293 +1782,3 @@ class Comment : Fuse!(Join!(Lit!("#"),ZeroOrMore!(Join!(NegLookAhead!(EOL),Any))
     
     mixin(stringToInputMixin());
 }
-
-string PEGtoCode(ParseTree p, string[] names = [""])
-{
-    string result;
-    auto ch = p.children;
-    
-    void recurse() 
-    {
-        foreach(child; ch) result ~= PEGtoCode(child);
-    }
-    
-    switch (p.name)
-    {
-        case "Grammar":
-            foreach(child; ch) result ~= PEGtoCode(child, names); // the only point where names is passed (for "Definition" to work upon)
-            break;
-        case "Definition":
-            if (ch.length < 3)
-                return "ERROR, Bad Definition";
-            string code;
-            if (names.length > 1)
-            {
-                string ruleNames = "    enum ruleNames = [";
-                foreach(name; names)
-                    ruleNames ~= "\"" ~ name ~ "\":true,";
-                ruleNames = ruleNames[0..$-1] ~ "];\n";
-                code = ruleNames ~
-"    static ParseTree[] filterChildren(ParseTree p)
-    {
-        ParseTree[] filteredChildren;
-        foreach(child; p.children)
-        {
-            if (child.name in ruleNames)
-                filteredChildren ~= child;
-            else
-            {
-                if (child.children.length > 0)
-                    filteredChildren ~= filterChildren(child);
-            }
-        }
-        return filteredChildren;
-    }
-
-    static Output parse(Input input)
-    {
-        auto p = typeof(super).parse(input);
-        if (p.name in ruleNames) // it's a grammar rule
-            return Output(p.next,
-                        p.namedCaptures,
-                        ParseTree(\""~ch[0].capture[0]~"\", p.success, p.capture, [p.parseTree]));
-        else
-            return Output(p.next,
-                        p.namedCaptures,
-                        ParseTree(\""~ch[0].capture[0]~"\", p.success, p.capture, filterChildren(p.parseTree)));
-    }
-    
-    mixin(stringToInputMixin());";
-            }
-            else
-            {
-                code =
-"    static Output parse(Input input)
-    {
-        auto p = typeof(super).parse(input);
-        p.name = \""~ch[0].capture[0]~"\";
-        return p;
-    }
-    
-    mixin(stringToInputMixin());";                
-            }
-            string inheritance;
-            switch(ch[1].children[0].name) // ch[1] is the arrow symbol
-            {
-                case "LEFTARROW":
-                    inheritance = PEGtoCode(ch[2]);
-                    break;
-                case "FUSEARROW":
-                    inheritance = "Fuse!(" ~ PEGtoCode(ch[2]) ~ ")";
-                    break;
-                case "DROPARROW":
-                    inheritance = "Drop!(" ~ PEGtoCode(ch[2]) ~ ")";
-                    break;
-                case "ACTIONARROW":
-                    inheritance = "Action!(" ~ PEGtoCode(ch[2]) ~ ", " ~ ch[1].capture[1] ~ ")";
-                    break;
-                default:
-                    inheritance ="ERROR: Bad arrow: " ~ ch[1].name;
-                    break;
-            }
-
-            result = "class " 
-                   ~ ch[0].capture[0] // name 
-                   ~ (ch[0].capture.length == 2 ? ch[0].capture[1] : "") // parameter list
-                   ~ " : " ~ inheritance // inheritance code
-                   ~ "\n{\n" 
-                   ~ code // inner code
-                   ~ "\n}\n";
-            break;
-        case "Expression":
-            if (ch.length > 1) // OR present
-            {
-                result ~= "Or!(";
-                foreach(i,child; ch)
-                    if (i%2 == 0) result ~= PEGtoCode(child) ~ ",";
-                result = result[0..$-1] ~ ")";
-            }
-            else
-                result ~= PEGtoCode(ch[0]);
-            break;
-        case "Sequence":
-            if (ch.length > 1)
-            {
-                result ~= "Seq!(";
-                foreach(child; ch) 
-                {
-                    auto temp = PEGtoCode(child);
-                    if (temp.startsWith("Seq!("))
-                        temp = temp[5..$-1];
-                    result ~= temp ~ ",";
-                }
-                result = result[0..$-1] ~ ")";
-            }
-            else
-                result ~= PEGtoCode(ch[0]);
-            break;
-        case "Element":
-            if (ch.length > 1)
-            {
-                result ~= "Join!(";
-                foreach(i,child; ch) 
-                {
-                    if (i%2 == 0) // "Suffix JOIN Suffix JOIN ..."
-                    {
-                        auto temp = PEGtoCode(child);
-                        if (temp.startsWith("Join!("))
-                            temp = temp[6..$-1];
-                        result ~= temp ~ ",";
-                    }
-                }
-                result = result[0..$-1] ~ ")";
-            }
-            else
-                result ~= PEGtoCode(ch[0]);
-            break;
-        case "Prefix":
-            if (ch.length > 1)
-                switch (ch[0].name)
-                {
-                    case "NOT":
-                        result ~= "NegLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
-                        break;
-                    case "LOOKAHEAD":
-                        result ~= "PosLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
-                        break;
-                    case "DROP":
-                        result ~= "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
-                        break;
-                    case "JOIN":
-                        result ~= "Join!(" ~ PEGtoCode(ch[1]) ~ ")";
-                        break;
-                    default:
-                        break;
-                }
-            else
-                result ~= PEGtoCode(ch[0]);
-            break;
-        case "Suffix":
-            if (ch.length > 1)
-                switch (ch[1].name)
-                {
-                    case "OPTION":
-                        result ~= "Option!(" ~ PEGtoCode(ch[0]) ~ ")";
-                        break;
-                    case "ZEROORMORE":
-                        result ~= "ZeroOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
-                        break;
-                    case "ONEORMORE":
-                        result ~= "OneOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
-                        break;
-                    case "NamedExpr":
-                        if (ch[1].capture.length == 2)
-                            result ~= "Named!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[1] ~ "\")";
-                        else
-                            result ~= "PushName!(" ~ PEGtoCode(ch[0]) ~ ")";
-                        break;
-                    case "WithAction":
-                        result ~= "Action!(" ~ PEGtoCode(ch[0]) ~ ", " ~ ch[1].capture[0] ~ ")";
-                        break;
-                    default:
-                        break;
-                }
-            else
-                result ~= PEGtoCode(ch[0]);
-            break;
-        case "Primary":
-            recurse();
-            break;
-        case "Name":
-            result ~= p.capture[0];
-            if (ch.length == 1)
-                result ~= PEGtoCode(ch[0]);
-            break;
-        case "ArgList":
-            result ~= "!(";
-            foreach(child; ch)
-                result ~= PEGtoCode(child) ~ ","; // Wow! Allow  A <- List('A'*,',') 
-            result = result[0..$-1] ~ ")";
-            break;
-        case "GroupExpr":
-            if (ch.length == 0) return "ERROR: Empty group ()";
-            auto temp = PEGtoCode(ch[0]);
-            if (ch.length == 1 || temp.startsWith("Seq!(")) return temp;
-            result ~= "Seq!(" ~ temp ~ ")";
-            break;
-        case "Ident":
-            result ~= p.capture[0];
-            break;
-        case "Literal":
-            if (p.capture[0].length == 0)
-                return "ERROR: empty literal";
-            result ~= "Lit!(\"" ~ p.capture[0] ~ "\")";
-            break;
-        case "Class":
-            
-            if (ch.length == 0)
-                return "ERROR: Empty Class of chars []";
-            else 
-            {
-                if (ch.length > 1)
-                {
-                    result ~= "Or!(";
-                    foreach(child; ch)
-                    {
-                        auto temp = PEGtoCode(child);
-                        if (temp.startsWith("Or!("))
-                            temp = temp[4..$-1];
-                        result ~= temp ~ ",";
-                    }
-                    result = result[0..$-1] ~ ")";
-                }
-                else
-                    result ~= PEGtoCode(ch[0]);
-            }
-            break;
-        case "CharRange":
-            if (ch.length == 2)
-            {
-                result ~= "Range!('" ~ ch[0].capture[0] 
-                            ~ "','" 
-                            ~ ch[1].capture[0] ~ "')";
-            }
-            else
-                result ~= "Lit!(\"" ~ ch[0].capture[0] ~ "\")"; 
-            break;
-        case "Char":
-            result ~= ch[0].capture[0];
-            break;
-        case "LEFTARROW":
-            break;
-        case "OR":
-            recurse();
-            break;
-        case "LOOKAHEAD":
-            break;
-        case "NOT":
-            break;
-        case "OPTION":
-            break;
-        case "ZEROORMORE":
-            break;
-        case "ONEORMORE":
-            break;
-        case "OPEN":
-            break;
-        case "CLOSE":
-            break;
-        case "ANY":
-            result ~= "Any";
-            break;
-        case "S":
-            break;
-        case "Comment":
-            break;
-        default:
-            result ~= "ERROR: Unknown name: " ~ p.name;
-    }
-    return result;
-}
-
-

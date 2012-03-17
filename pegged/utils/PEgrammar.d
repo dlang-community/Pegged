@@ -3,8 +3,8 @@ module pegged.utils.PEgrammar;
 
 enum string PEG =`
 Grammar    <- S Definition+ EOI
-Definition <- RuleName Arrow Expression
-RuleName   <- Identifier>(ParamList?)
+Definition <- RuleName Arrow Expression S
+RuleName   <- Identifier>(ParamList?) S
 Expression <- Sequence (OR Sequence)*
 Sequence   <- Element*
 Element    <- Prefix (JOIN Prefix)*
@@ -14,12 +14,14 @@ Suffix     <- Primary
               / ONEORMORE 
               / ZEROORMORE 
               / NamedExpr 
-              / WithAction)?
+              / WithAction)? S
 Primary    <- Name !Arrow
             / GroupExpr
-            / Literal / Class / ANY
-Name       <- QualifiedIdentifier>(ArgList?)
-GroupExpr  <- :OPEN Expression :CLOSE
+            / Literal 
+            / Class 
+            / ANY
+Name       <- QualifiedIdentifier>(ArgList?) S
+GroupExpr  <- :OPEN Expression :CLOSE S
 
 Literal    <~ :Quote (!Quote Char)* :Quote S
             / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
@@ -27,27 +29,28 @@ Class      <- :'[' (!']' CharRange)* :']' S
 CharRange  <- Char :'-' Char / Char
 Char       <~ BackSlash [nrt]
             / !BackSlash .
+
+ParamList  <~ OPEN Identifier (',' Identifier)* CLOSE S
+ArgList    <- :OPEN Expression (:',' Expression)* :CLOSE S
+NamedExpr  <- NAME>Identifier? S
+
+WithAction <~ :ACTIONOPEN Identifier :ACTIONCLOSE S
     
-ParamList  <~ OPEN Identifier (',' Identifier)* CLOSE
-ArgList    <- :OPEN Expression (:',' Expression)* :CLOSE
-NamedExpr  <- NAME>Identifier?
-    
-WithAction <~ :ACTIONOPEN Identifier :ACTIONCLOSE
-    
-Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW
+Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW S
 LEFTARROW  <- "<-" S
 FUSEARROW  <- "<~" S
 DROPARROW  <- "<:" S
-ACTIONARROW <- "<">WithAction
+ACTIONARROW <- "<">WithAction S
   
 OR         <- '/' S
     
 LOOKAHEAD  <- '&' S
 NOT        <- '!' S
+
 DROP       <- ':' S
 FUSE       <- '~' S
   
-JOIN       <- '>'
+JOIN       <- '>' S
     
 NAME       <- '=' S
 ACTIONOPEN <- '{' S
@@ -63,6 +66,6 @@ CLOSE      <- ')' S
 ANY        <- '.' S
     
 S          <: (Blank / Comment)*
-Comment    <~ '#'>(!EOL>.)*>(EOL/EOI)
+Comment    <- "#">(!EOL>.)*>(EOL/EOI)
 `;
 
