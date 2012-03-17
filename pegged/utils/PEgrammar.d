@@ -65,7 +65,7 @@ CLOSE      <- ')' S
     
 ANY        <- '.' S
     
-S          <: (Blank / Comment)*
+S          <: (Blank / EOL / Comment)*
 Comment    <- "#">(!EOL>.)*>(EOL/EOI)
 `;
 

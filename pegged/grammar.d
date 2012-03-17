@@ -383,11 +383,10 @@ CLOSE      <- ')' S
     
 ANY        <- '.' S
     
-S          <: (Blank / Comment)*
+S          <: (Blank / EOL / Comment)*
 Comment    <- "#">(!EOL>.)*>(EOL/EOI)
 
 */
-
 class Grammar : Seq!(S,OneOrMore!(Definition),EOI)
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
@@ -1714,7 +1713,7 @@ class ANY : Seq!(Lit!("."),S)
     
     mixin(stringToInputMixin());
 }
-class S : Drop!(ZeroOrMore!(Or!(Blank,Comment)))
+class S : Drop!(ZeroOrMore!(Or!(Blank,EOL,Comment)))
 {
     enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
