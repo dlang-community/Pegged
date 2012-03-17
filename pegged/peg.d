@@ -186,6 +186,7 @@ class End : Parser
 
 alias End EOI;
 
+
 class Char(char c) : Parser
 {
     static Output parse(Input input) 
