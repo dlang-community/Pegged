@@ -11,7 +11,7 @@ void asModule(string moduleName, string grammarString)
     auto f = File(moduleName~".d","w");
     
     f.write("/**\nThis module was automatically generated from the following grammar:\n");
-    f.write(grammarString);
+    //f.write(grammarString);
     f.write("\n*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
@@ -51,6 +51,8 @@ string PEGtoCode(ParseTree p, string names = "")
             if (ch.length < 3)
                 return "ERROR, Bad Definition";
             string code;
+
+            /+
             if (names.length > 1)
             {
                 
@@ -87,17 +89,19 @@ string PEGtoCode(ParseTree p, string names = "")
     mixin(stringToInputMixin());";
             }
             else
-            {
+            {+/
                 code =
 "    static Output parse(Input input)
     {
         auto p = typeof(super).parse(input);
-        p.name = \""~ch[0].capture[0]~"\";
-        return p;
+        return Output( p.next
+                     , p.namedCaptures
+                     , ParseTree(\""~ch[0].capture[0]~"\", p.success, p.capture,  [p])
+                     );
     }
     
     mixin(stringToInputMixin());";                
-            }
+            /+}+/
             string inheritance;
             switch(ch[1].children[0].name) // ch[1] is the arrow symbol
             {
@@ -124,7 +128,7 @@ string PEGtoCode(ParseTree p, string names = "")
                    ~ " : " ~ inheritance // inheritance code
                    ~ "\n{\n" 
                    ~ code // inner code
-                   ~ "\n}\n";
+                   ~ "\n}\n\n";
             break;
         case "Expression":
             if (ch.length > 1) // OR present
