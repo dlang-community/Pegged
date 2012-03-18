@@ -37,22 +37,17 @@ string PEGtoCode(ParseTree p, string names = "")
     string result;
     auto ch = p.children;
     
-    void recurse() 
-    {
-        foreach(child; ch) result ~= PEGtoCode(child);
-    }
-    
     switch (p.name)
     {
         case "Grammar":
             foreach(child; ch) result ~= PEGtoCode(child, names); // the only point where names is passed (for "Definition" to work upon)
-            break;
+            return result;
         case "Definition":
             if (ch.length < 3)
                 return "ERROR, Bad Definition";
+            
             string code;
 
-            /+
             if (names.length > 1)
             {
                 
@@ -89,7 +84,7 @@ string PEGtoCode(ParseTree p, string names = "")
     mixin(stringToInputMixin());";
             }
             else
-            {+/
+            {
                 code =
 "    static Output parse(Input input)
     {
@@ -101,7 +96,7 @@ string PEGtoCode(ParseTree p, string names = "")
     }
     
     mixin(stringToInputMixin());";                
-            /+}+/
+            }
             string inheritance;
             switch(ch[1].children[0].name) // ch[1] is the arrow symbol
             {
@@ -122,29 +117,28 @@ string PEGtoCode(ParseTree p, string names = "")
                     break;
             }
 
-            result = "class " 
+            return "class " 
                    ~ ch[0].capture[0] // name 
                    ~ (ch[0].capture.length == 2 ? ch[0].capture[1] : "") // parameter list
                    ~ " : " ~ inheritance // inheritance code
                    ~ "\n{\n" 
                    ~ code // inner code
                    ~ "\n}\n\n";
-            break;
         case "Expression":
             if (ch.length > 1) // OR present
             {
-                result ~= "Or!(";
+                result = "Or!(";
                 foreach(i,child; ch)
                     if (i%2 == 0) result ~= PEGtoCode(child) ~ ",";
                 result = result[0..$-1] ~ ")";
             }
-            else
-                result ~= PEGtoCode(ch[0]);
-            break;
+            else // one-element Or -> dropping the Or!( )
+                result = PEGtoCode(ch[0]);
+            return result;
         case "Sequence":
             if (ch.length > 1)
             {
-                result ~= "Seq!(";
+                result = "Seq!(";
                 foreach(child; ch) 
                 {
                     auto temp = PEGtoCode(child);
@@ -155,12 +149,12 @@ string PEGtoCode(ParseTree p, string names = "")
                 result = result[0..$-1] ~ ")";
             }
             else
-                result ~= PEGtoCode(ch[0]);
-            break;
+                result = PEGtoCode(ch[0]);
+            return result;
         case "Element":
             if (ch.length > 1)
             {
-                result ~= "Join!(";
+                result = "Join!(";
                 foreach(i,child; ch) 
                 {
                     if (i%2 == 0) // "Suffix JOIN Suffix JOIN ..."
@@ -174,95 +168,91 @@ string PEGtoCode(ParseTree p, string names = "")
                 result = result[0..$-1] ~ ")";
             }
             else
-                result ~= PEGtoCode(ch[0]);
-            break;
+                result = PEGtoCode(ch[0]);
+            return result;
         case "Prefix":
             if (ch.length > 1)
                 switch (ch[0].name)
                 {
                     case "NOT":
-                        result ~= "NegLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        result = "NegLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
                         break;
                     case "LOOKAHEAD":
-                        result ~= "PosLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        result = "PosLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
                         break;
                     case "DROP":
-                        result ~= "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        result = "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
                         break;
                     case "JOIN":
-                        result ~= "Join!(" ~ PEGtoCode(ch[1]) ~ ")";
+                        result = "Join!(" ~ PEGtoCode(ch[1]) ~ ")";
                         break;
                     default:
                         break;
                 }
             else
-                result ~= PEGtoCode(ch[0]);
-            break;
+                result = PEGtoCode(ch[0]);
+            return result;
         case "Suffix":
             if (ch.length > 1)
                 switch (ch[1].name)
                 {
                     case "OPTION":
-                        result ~= "Option!(" ~ PEGtoCode(ch[0]) ~ ")";
+                        result = "Option!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
                     case "ZEROORMORE":
-                        result ~= "ZeroOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
+                        result = "ZeroOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
                     case "ONEORMORE":
-                        result ~= "OneOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
+                        result = "OneOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
                     case "NamedExpr":
                         if (ch[1].capture.length == 2)
-                            result ~= "Named!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[1] ~ "\")";
+                            result = "Named!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[1] ~ "\")";
                         else
-                            result ~= "PushName!(" ~ PEGtoCode(ch[0]) ~ ")";
+                            result = "PushName!(" ~ PEGtoCode(ch[0]) ~ ")";
                         break;
                     case "WithAction":
-                        result ~= "Action!(" ~ PEGtoCode(ch[0]) ~ ", " ~ ch[1].capture[0] ~ ")";
+                        result = "Action!(" ~ PEGtoCode(ch[0]) ~ ", " ~ ch[1].capture[0] ~ ")";
                         break;
                     default:
                         break;
                 }
             else
-                result ~= PEGtoCode(ch[0]);
-            break;
+                result = PEGtoCode(ch[0]);
+            return result;
         case "Primary":
-            recurse();
-            break;
+            foreach(child; ch) result ~= PEGtoCode(child);
+            return result;
         case "Name":
-            result ~= p.capture[0];
-            if (ch.length == 1)
-                result ~= PEGtoCode(ch[0]);
-            break;
+            result = p.capture[0];
+            if (ch.length == 1) result ~= PEGtoCode(ch[0]);
+            return result;
         case "ArgList":
-            result ~= "!(";
+            result = "!(";
             foreach(child; ch)
                 result ~= PEGtoCode(child) ~ ","; // Wow! Allow  A <- List('A'*,',') 
             result = result[0..$-1] ~ ")";
-            break;
+            return result;
         case "GroupExpr":
             if (ch.length == 0) return "ERROR: Empty group ()";
             auto temp = PEGtoCode(ch[0]);
             if (ch.length == 1 || temp.startsWith("Seq!(")) return temp;
-            result ~= "Seq!(" ~ temp ~ ")";
-            break;
+            result = "Seq!(" ~ temp ~ ")";
+            return result;
         case "Ident":
-            result ~= p.capture[0];
-            break;
+            return p.capture[0];
         case "Literal":
             if (p.capture[0].length == 0)
                 return "ERROR: empty literal";
-            result ~= "Lit!(\"" ~ p.capture[0] ~ "\")";
-            break;
+            return "Lit!(\"" ~ p.capture[0] ~ "\")";
         case "Class":
-            
             if (ch.length == 0)
                 return "ERROR: Empty Class of chars []";
             else 
             {
                 if (ch.length > 1)
                 {
-                    result ~= "Or!(";
+                    result = "Or!(";
                     foreach(child; ch)
                     {
                         auto temp = PEGtoCode(child);
@@ -273,27 +263,21 @@ string PEGtoCode(ParseTree p, string names = "")
                     result = result[0..$-1] ~ ")";
                 }
                 else
-                    result ~= PEGtoCode(ch[0]);
+                    result = PEGtoCode(ch[0]);
             }
-            break;
+            return result;
         case "CharRange":
             if (ch.length == 2)
-            {
-                result ~= "Range!('" ~ ch[0].capture[0] 
-                            ~ "','" 
-                            ~ ch[1].capture[0] ~ "')";
-            }
+                return "Range!('" ~ ch[0].capture[0] ~ "','" ~ ch[1].capture[0] ~ "')";
             else
-                result ~= "Lit!(\"" ~ ch[0].capture[0] ~ "\")"; 
-            break;
+                return "Lit!(\"" ~ ch[0].capture[0] ~ "\")"; 
         case "Char":
-            result ~= ch[0].capture[0];
-            break;
+            return ch[0].capture[0];
         case "LEFTARROW":
             break;
         case "OR":
-            recurse();
-            break;
+            foreach(child; ch) result ~= PEGtoCode(child);
+            return result;
         case "LOOKAHEAD":
             break;
         case "NOT":
@@ -309,14 +293,13 @@ string PEGtoCode(ParseTree p, string names = "")
         case "CLOSE":
             break;
         case "ANY":
-            result ~= "Any";
-            break;
+            return "Any";
         case "S":
             break;
         case "Comment":
             break;
         default:
-            result ~= "ERROR: Unknown name: " ~ p.name;
+            return "ERROR: Unknown name: " ~ p.name;
     }
     return result;
 }
