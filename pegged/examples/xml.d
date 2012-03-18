@@ -3,7 +3,7 @@
  */
 module pegged.examples.xml;
 
-import pegged.gramamr;
+import pegged.grammar;
 
 import std.array;
 string[] nameStack;
