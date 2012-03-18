@@ -119,9 +119,10 @@ struct Output
     {
         return "Parse output: " ~ (parseTree.success ? "success" : "failure") ~ "\n"
              ~ "named captures: " ~ namedCaptures.toString ~ "\n"
-             ~ "parsed : `"~text[0..pos.index]~"`\n"
-             ~ "not parsed: `"~text[pos.index..$]~"`\n"
-             ~ parseTree.toString()
+             ~ "position: " ~ pos.toString() ~ "\n"
+             //~ "parsed : `"~text[0..pos.index]~"`\n"
+             //~ "not parsed: `"~text[pos.index..$]~"`\n"
+             ~ "parse tree:\n" ~ parseTree.toString()
              ~ (parseTree.success ? "" : to!string(parseTree.capture)); // error message, that will change
     }
 }
@@ -232,7 +233,7 @@ class Any : Parser
     static Output parse(Input input)
     {
         mixin(okfailMixin("Any"));  
-        if (input.length > input.pos.index)
+        if (input.length > 0)
             return ok([input[0..1]]);
         else
             return fail();
@@ -302,30 +303,24 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
         mixin(okfailMixin("Seq!"~Exprs.stringof));
         Output result = ok((string[]).init);
         
-        //writeln("Entering Seq" ~ Exprs.stringof ~", namedCapture = ", result.namedCaptures.length);
         foreach(i,expr; Exprs)
         {
-            //writeln("Testing expr #", i, " (", expr.stringof, ")");
-            
             // munch space
             static if (i>0)
                 result.pos = Spaces.parse(result).pos;
             
-            //writeln("Seq: expr #", to!string(i));
             auto p = expr.parse(result);
-            //writeln("Seq"~Exprs.stringof~" test #", i, "(", expr.stringof, ") before if namedCaptures = ", result.namedCaptures.length);
             if (p.success)
             {
-                //writeln("Seq: expr #", to!string(i), " success. namedCaptures: ", input.namedCaptures);
                 if (p.capture.length > 0) 
                 {
                     result.capture ~= p.capture;
                     result.children ~= p;
                 }
+                
                 result.pos = p.pos;
+                result.parseTree.end = p.pos;
                 result.namedCaptures = p.namedCaptures;
-                //writeln("Seq"~Exprs.stringof~" test #", i, "(", expr.stringof, ") after if namedCaptures = ", result.namedCaptures.length);
-                //writeln("Seq, adding namedCapture ", p.namedCaptures);
             }
             else
             {
@@ -360,6 +355,7 @@ class Join(Exprs...) if (Exprs.length > 0) : Parser
                     result.children ~= p;
                 }
                 result.pos = p.pos;
+                result.parseTree.end = p.pos;
                 result.namedCaptures = p.namedCaptures;
             }
             else
@@ -583,7 +579,10 @@ class ZeroOrMore(Expr) : Parser
         //writeln("After while loop: ", p);
         
         //writeln("Ending 0+ with ", input.namedCaptures);
-        return ok(capture, children, p.namedCaptures);
+        return Output(input.text,
+                      start,
+                      p.namedCaptures,
+                      ParseTree("ZeroOrMore("~Expr.stringof~")", true, capture, input.pos, start, children));
     }
 
     mixin(stringToInputMixin());
@@ -614,7 +613,10 @@ class OneOrMore(Expr) : Parser
             p = Expr.parse(p);
         }
                 
-        return ok(capture, children, p.namedCaptures);
+        return Output(input.text,
+                      start,
+                      p.namedCaptures,
+                      ParseTree("OneOrMore("~Expr.stringof~")", true, capture, input.pos, start, children));
     }
     
     mixin(stringToInputMixin());
@@ -651,7 +653,7 @@ class Drop(Expr) : Parser
         mixin(okfailMixin("Drop!(" ~ Expr.stringof ~ ")")); 
         
         auto p = Expr.parse(input);
-        p.pos = addCaptures(p.pos, p.capture); // advancing the index
+        //p.pos = addCaptures(p.pos, p.capture); // advancing the index
         p.capture = null;  // dropping the captures
         p.namedCaptures = input.namedCaptures; // also dropping the named captures
         return p;
