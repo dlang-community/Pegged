@@ -8,11 +8,58 @@ import std.typetuple;
 
 import pegged.utils.associative; // as long as associative arrays do not function correctly at CT.
 
+struct Pos
+{
+    size_t index; // linear index
+    size_t line;  // input line
+    size_t col;   // input column
+    
+    string toString() @property
+    {
+        return "Pos[index: " ~ to!string(index) ~ ", line: " ~ to!string(line) ~ ", col: " ~ to!string(col) ~ "]";
+    }
+}
+
+Pos addCapture(Pos pos, string capture)
+{
+    bool foundCR;
+    foreach(dchar c; capture)
+        if (c =='\r') 
+        { 
+            foundCR = true; 
+            ++pos.index; 
+            ++pos.line; 
+            pos.col = 0; 
+        }
+        else if (c =='\n') 
+        { 
+            if (foundCR) // \r\n -> just one line termination
+            {
+                foundCR = false;
+                ++pos.index; // but still two chars in the input?
+                continue;
+            }
+            else
+            {
+                ++pos.index; 
+                ++pos.line; 
+                pos.col = 0;
+            }
+        }
+        else
+        {
+            ++pos.index;
+            ++pos.col;
+        }
+    return pos;        
+}
+
 struct ParseTree
 {
     string name;
     bool success;
     string[] capture;
+    Pos begin, end;
     ParseTree[] children;
     
     string toString(int level = 0) @property
@@ -23,6 +70,7 @@ struct ParseTree
         foreach(child; children)
             ch ~= tabs ~ child.toString(level+1);
         return tabs ~ name ~ ": " 
+             ~ "[" ~ begin.toString() ~ " - " ~ end.toString() ~ "]"
              ~ (success ? to!string(capture) : "") 
 //                        ~ next[0..to!int(capture[0])] ~ "` / `" ~ next[to!int(capture[0])..$] ~ "`") 
              ~ (children.length > 0 ? "\n" ~ ch : "\n");
