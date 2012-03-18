@@ -6,7 +6,7 @@ Grammar    <- S Definition+ EOI
 Definition <- RuleName Arrow Expression S
 RuleName   <- Identifier>(ParamList?) S
 Expression <- Sequence (OR Sequence)*
-Sequence   <- Element*
+Sequence   <- Element+
 Element    <- Prefix (JOIN Prefix)*
 Prefix     <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
 Suffix     <- Primary 
