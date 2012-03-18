@@ -54,6 +54,12 @@ Pos addCapture(Pos pos, string capture)
     return pos;        
 }
 
+Pos addCaptures(Pos pos, string[] captures)
+{
+    foreach(capt; captures) pos = addCapture(pos, capt);
+    return pos;
+}
+
 struct ParseTree
 {
     string name;
@@ -83,19 +89,27 @@ alias AssociativeList!(string, ParseTree) NamedCaptures;
 struct Input
 {
     string text;
+    Pos pos;
     NamedCaptures namedCaptures;
-    alias text this; // automatic 'conversion' into text, to simplify some expressions
+    
+    string target() @property
+    {
+        return text[pos.index..$];
+    }
+    
+    alias target this;
     
     string toString() @property
     {
-        return "Input: " ~text ~ "\n" 
+        return "Input: " ~ target ~ "\n" 
              ~ "Named captures: " ~ namedCaptures.toString ~ "\n";
     }
 }
 
 struct Output
 {
-    string next;
+    string text;
+    Pos pos;
     NamedCaptures namedCaptures;
     
     ParseTree parseTree;
@@ -104,10 +118,11 @@ struct Output
     string toString() @property
     {
         return "Parse output: " ~ (parseTree.success ? "success" : "failure") ~ "\n"
-             ~ "not parsed: `"~next~"`\n"
              ~ "named captures: " ~ namedCaptures.toString ~ "\n"
+             ~ "parsed : `"~text[0..pos.index]~"`\n"
+             ~ "not parsed: `"~text[pos.index..$]~"`\n"
              ~ parseTree.toString()
-             ~ (parseTree.success ? "" : to!string(parseTree.capture));
+             ~ (parseTree.success ? "" : to!string(parseTree.capture)); // error message, that will change
     }
 }
 
@@ -148,20 +163,26 @@ string wrapMixin(string name, string code)
 string okfailMixin(string name)
 {
     return
-    "Output ok(string[] capture, string next, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
+    "Output ok(string[] capture, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
     {
         if (newCaptures.length > 0)
             input.namedCaptures ~= newCaptures;
-        return Output(next,
+        
+        // Updating the index
+        auto end = addCaptures(input.pos, capture);
+        
+        return Output(input.text,
+                      end,
                       input.namedCaptures,
-                      ParseTree(\""~name~"\", true, capture, children));
+                      ParseTree(\""~name~"\", true, capture, input.pos, end, children));
     }
    
     Output fail(string message = string.init)
     {
         return Output(input.text,
+                      input.pos,
                       input.namedCaptures,
-                      ParseTree(\""~name~"\", false, [message], (ParseTree[]).init));
+                      ParseTree(\""~name~"\", false, [message], input.pos, input.pos, (ParseTree[]).init));
     }
     ";
 }
@@ -171,12 +192,12 @@ string stringToInputMixin() @property
     return 
 "static Output parse(string input)
 {
-    return parse(Input(input, NamedCaptures.init));
+    return parse(Input(input, Pos(0,0,0), NamedCaptures.init));
 }
 
 static Output parse(Output input)
 {
-    return parse(Input(input.next, input.namedCaptures));
+    return parse(Input(input.text, input.pos, input.namedCaptures));
 }";
 }
 
@@ -200,7 +221,7 @@ class Eps : Parser
     static Output parse(Input input)
     {
         mixin(okfailMixin("Eps"));  
-        return ok([""], input); // alias this conversion input -> input.text
+        return ok([""]);
     }
     
     mixin(stringToInputMixin());
@@ -211,8 +232,8 @@ class Any : Parser
     static Output parse(Input input)
     {
         mixin(okfailMixin("Any"));  
-        if (input.length > 0)
-            return ok([input[0..1]], input[1..$]);
+        if (input.length > input.pos.index)
+            return ok([input[0..1]]);
         else
             return fail();
     }
@@ -225,8 +246,8 @@ class End : Parser
     static Output parse(Input input)
     {
         mixin(okfailMixin("EndOfInput"));
-        return (input.length == 0) ? ok(null, input)
-                                   : fail();
+        return (input.pos.index == input.text.length) ? ok(null)
+                                                      : fail();
     }
     
     mixin(stringToInputMixin());
@@ -240,8 +261,8 @@ class Char(char c) : Parser
     static Output parse(Input input) 
     { 
         mixin(okfailMixin("Char"));
-        return (input.length > 0 && input[0] == c) ? ok(["" ~ c], input[1..$])
-                                                   : fail();
+        return (input.length > 0 && input[0] == c) ? ok(["" ~ c])
+                                                                         : fail();
     }
 
     mixin(stringToInputMixin());
@@ -253,7 +274,7 @@ class Lit(string s) : Parser
     {   
         mixin(okfailMixin("Lit"));
         return (input.length >= s.length
-             && input[0..s.length] == s ) ? ok([s], input[s.length..$])
+             && input[0..s.length] == s ) ? ok([s])
                                           : fail();
     }
     
@@ -267,7 +288,7 @@ class Range(char begin, char end) : Parser
         mixin(okfailMixin("Range"));//!("~begin~","~end~")"));
         return (input.length 
              && input[0] >= begin 
-             && input[0] <= end  ) ? ok([input[0..1]], input[1..$])
+             && input[0] <= end  ) ? ok([input[0..1]])
                                    : fail();
     }
     
@@ -279,7 +300,7 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
     static Output parse(Input input)
     {
         mixin(okfailMixin("Seq!"~Exprs.stringof));
-        Output result = ok((string[]).init, input);
+        Output result = ok((string[]).init);
         
         //writeln("Entering Seq" ~ Exprs.stringof ~", namedCapture = ", result.namedCaptures.length);
         foreach(i,expr; Exprs)
@@ -288,7 +309,7 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
             
             // munch space
             static if (i>0)
-                result.next = Spaces.parse(result.next).next;
+                result.pos = Spaces.parse(result).pos;
             
             //writeln("Seq: expr #", to!string(i));
             auto p = expr.parse(result);
@@ -301,16 +322,15 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
                     result.capture ~= p.capture;
                     result.children ~= p;
                 }
-                result.next = p.next;
+                result.pos = p.pos;
                 result.namedCaptures = p.namedCaptures;
                 //writeln("Seq"~Exprs.stringof~" test #", i, "(", expr.stringof, ") after if namedCaptures = ", result.namedCaptures.length);
                 //writeln("Seq, adding namedCapture ", p.namedCaptures);
             }
             else
             {
-                size_t pos = input.length-result.next.length;
-                return fail("Seq fail for expression #"~to!string(i)~" (" ~ expr.stringof ~") at position " 
-                          ~ to!string(pos) ~ " [" ~ input[0..pos] ~ "]/[" ~ input[pos..$] ~ "]");
+                return fail("Seq fail for expression #"~to!string(i)~" (" ~ expr.stringof 
+                           ~") at position " ~ result.pos.toString);
             }
         }
         return result;
@@ -327,7 +347,7 @@ class Join(Exprs...) if (Exprs.length > 0) : Parser
     static Output parse(Input input)
     {
         mixin(okfailMixin("Join!" ~ Exprs.stringof));
-        Output result = ok((string[]).init, input);
+        Output result = ok((string[]).init);
 
         foreach(i,expr; Exprs)
         {
@@ -339,14 +359,13 @@ class Join(Exprs...) if (Exprs.length > 0) : Parser
                     result.capture ~= p.capture;
                     result.children ~= p;
                 }
-                result.next = p.next;
+                result.pos = p.pos;
                 result.namedCaptures = p.namedCaptures;
             }
             else
             {
-                size_t pos = input.length-result.next.length;
-                return fail("Join fail for expression #"~to!string(i)~" (" ~ expr.stringof ~") at position " 
-                          ~ to!string(pos) ~ " [" ~ input[0..pos] ~ "]/[" ~ input[pos..$] ~ "]");
+                return fail("Join fail for expression #"~to!string(i)~" (" ~ expr.stringof 
+                ~ ") at position " ~ to!string(result.pos));
             }
         }
         return result;
@@ -355,9 +374,6 @@ class Join(Exprs...) if (Exprs.length > 0) : Parser
     mixin(stringToInputMixin());
 }
 
-/**
- * Trying to replace the old action system
- */
 class Action(Expr, alias action)
 {
     static Output parse(Input input)
@@ -517,8 +533,7 @@ class Or(Exprs...) if (Exprs.length) : Parser
         foreach(expr; Exprs)
         {
             p = expr.parse(input);
-            if (p.success)
-                return p;
+            if (p.success) return p;
         }
         return p;// fail, return the last one.
     }
@@ -536,7 +551,7 @@ class Option(Expr) : Parser
         if (p.success)
             return p;
         else
-            return ok(null, input);
+            return ok(null);
     }
     
     mixin(stringToInputMixin());
@@ -550,25 +565,25 @@ class ZeroOrMore(Expr) : Parser
         
         string[] capture;
         ParseTree[] children;
-        size_t len = input.length; 
+        
         auto p = Expr.parse(input);
-        if (!p.success)
-            return ok(capture, input.text);
+        Pos start = input.pos; 
+        if (!p.success) return ok(capture);
         //writeln("Before while loop: ", p);
         while (p.success
-            && p.next.length < len) // to avoid an infinite loop if nothing is consumed by p
+            && p.pos.index > start.index) // to avoid an infinite loop if nothing is consumed by p
         {
             //writeln("In while loop: ", p);
             capture ~= p.capture;
             children ~= p;
-            len = p.next.length;
+            start = p.pos;
             p = Expr.parse(p);
             //writeln("End of while loop: ", p);
         }
         //writeln("After while loop: ", p);
         
         //writeln("Ending 0+ with ", input.namedCaptures);
-        return ok(capture, p.next, children, p.namedCaptures);
+        return ok(capture, children, p.namedCaptures);
     }
 
     mixin(stringToInputMixin());
@@ -582,22 +597,24 @@ class OneOrMore(Expr) : Parser
         
         string[] capture;
         ParseTree[] children;
-        size_t len = input.length;
+        
+        Pos start = input.pos; 
         auto p = Expr.parse(input);
+        
         if (!p.success) 
             return fail("OneOrMore!("~Expr.stringof~") failure on first parse.");
         
         
         while (p.success
-            && p.next.length < len)
+            && p.pos.index > start.index)
         {
             capture ~= p.capture;
             children ~= p;
-            len = p.next.length;
+            start = p.pos;
             p = Expr.parse(p);
         }
                 
-        return ok(capture, p.next, children, p.namedCaptures);
+        return ok(capture, children, p.namedCaptures);
     }
     
     mixin(stringToInputMixin());
@@ -608,7 +625,7 @@ class PosLookAhead(Expr) : Parser
     static Output parse(Input input)
     {
         mixin(okfailMixin("PosLookAhead!("~Expr.stringof~")"));   
-        return Expr.parse(input).success ? ok((string[]).init,input) // no name nor capture transmission
+        return Expr.parse(input).success ? ok((string[]).init) // no name nor capture transmission
                                          : fail("PosLookAhead failure on input: " ~ input);
     }
     
@@ -621,7 +638,7 @@ class NegLookAhead(Expr) : Parser
     {
         mixin(okfailMixin("NegLookAhead!("~Expr.stringof~")")); 
         return Expr.parse(input).success ? fail("NegLookAhead failure on input: " ~ input)
-                                         : ok((string[]).init,input); // no name nor capture transmission
+                                         : ok((string[]).init); // no name nor capture transmission
     }
     
     mixin(stringToInputMixin());    
@@ -634,8 +651,9 @@ class Drop(Expr) : Parser
         mixin(okfailMixin("Drop!(" ~ Expr.stringof ~ ")")); 
         
         auto p = Expr.parse(input);
-        p.capture = null; 
-        p.namedCaptures = input.namedCaptures; // Seems logical, but...
+        p.pos = addCaptures(p.pos, p.capture); // advancing the index
+        p.capture = null;  // dropping the captures
+        p.namedCaptures = input.namedCaptures; // also dropping the named captures
         return p;
     }
     
@@ -748,7 +766,7 @@ ParseTree regenerateCaptures(ParseTree p)
         children ~= regenerateCaptures(child);
         capture ~= children[$-1].capture;
     }
-    return ParseTree(p.name, p.success, capture, children);
+    return ParseTree(p.name, p.success, capture, p.begin, p.end, children);
 }
 
 ParseTree fuseCaptures(ParseTree p)
