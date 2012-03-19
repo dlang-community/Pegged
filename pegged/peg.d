@@ -16,7 +16,7 @@ struct Pos
     
     string toString() @property
     {
-        return "Pos[index: " ~ to!string(index) ~ ", line: " ~ to!string(line) ~ ", col: " ~ to!string(col) ~ "]";
+        return "[index: " ~ to!string(index) ~ ", line: " ~ to!string(line) ~ ", col: " ~ to!string(col) ~ "]";
     }
 }
 
@@ -566,8 +566,8 @@ class ZeroOrMore(Expr) : Parser
         Pos start = input.pos; 
         if (!p.success) return ok(capture);
         //writeln("Before while loop: ", p);
-        while (p.success
-            && p.pos.index > start.index) // to avoid an infinite loop if nothing is consumed by p
+        while (p.success)
+            //&& p.pos.index > start.index) // to avoid an infinite loop if nothing is consumed by p
         {
             //writeln("In while loop: ", p);
             capture ~= p.capture;
