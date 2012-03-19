@@ -604,8 +604,8 @@ class OneOrMore(Expr) : Parser
             return fail("OneOrMore!("~Expr.stringof~") failure on first parse.");
         
         
-        while (p.success
-            && p.pos.index > start.index)
+        while (p.success)
+            //&& p.pos.index > start.index)
         {
             capture ~= p.capture;
             children ~= p;
