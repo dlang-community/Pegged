@@ -304,11 +304,7 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
         Output result = ok((string[]).init);
         
         foreach(i,expr; Exprs)
-        {
-            // munch space
-            static if (i>0)
-                result.pos = Spaces.parse(result).pos;
-            
+        {            
             auto p = expr.parse(result);
             if (p.success)
             {
@@ -334,19 +330,17 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
     mixin(stringToInputMixin());
 }
 
-/**
- * Like a Seq, but space-sensitive: it doesn't munch spaces.
- */
-class Join(Exprs...) if (Exprs.length > 0) : Parser
+class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
 {
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Join!" ~ Exprs.stringof));
-        Output result = ok((string[]).init);
+        mixin(okfailMixin("SpaceSeq!" ~ Exprs.stringof));
 
+        Output result = ok((string[]).init);
+        
         foreach(i,expr; Exprs)
-        {
-            auto p = expr.parse(result);
+        {            
+            auto p = Seq!(expr, Spacing).parse(result);
             if (p.success)
             {
                 if (p.capture.length > 0) 
@@ -354,15 +348,17 @@ class Join(Exprs...) if (Exprs.length > 0) : Parser
                     result.capture ~= p.capture;
                     result.children ~= p;
                 }
+                
                 result.pos = p.pos;
                 result.parseTree.end = p.pos;
                 result.namedCaptures = p.namedCaptures;
             }
             else
             {
-                return fail("Join fail for expression #"~to!string(i)~" (" ~ expr.stringof 
-                ~ ") at position " ~ to!string(result.pos));
+                return fail("SpaceSeq fail for expression #"~to!string(i)~" (" ~ expr.stringof 
+                           ~") at position " ~ result.pos.toString);
             }
+            
         }
         return result;
     }
@@ -699,8 +695,8 @@ mixin(wrapMixin("Alpha", `Or!(letter, Letter, Lit!"_")`));
 mixin(wrapMixin("Digit", "Range!('0','9')"));
 mixin(wrapMixin("Alphanum", "Or!(Alpha, Digit)"));
 
-mixin(wrapMixin("Identifier", "Fuse!(Join!(Alpha, ZeroOrMore!(Alphanum)))"));
-mixin(wrapMixin("QualifiedIdentifier", `Fuse!(Join!(Identifier, ZeroOrMore!(Seq!(Lit!".", Identifier))))`));
+mixin(wrapMixin("Identifier", "Fuse!(Seq!(Alpha, ZeroOrMore!(Alphanum)))"));
+mixin(wrapMixin("QualifiedIdentifier", `Fuse!(Seq!(Identifier, ZeroOrMore!(Seq!(Lit!".", Identifier))))`));
 
 mixin(wrapMixin("Space", `Lit!" "`));
 mixin(wrapMixin("Blank", `Or!(Space, Lit!"\t")`));
@@ -717,7 +713,7 @@ alias Lit!"`" BackQuote;
 alias Lit!"/" Slash;
 alias Lit!(`\\`) BackSlash;
 
-alias Fuse!(Join!(ZeroOrMore!(Join!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI))) Line;
+alias Fuse!(Seq!(ZeroOrMore!(Seq!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI))) Line;
 alias OneOrMore!Line Lines;
 
 string[] leaves(ParseTree p)

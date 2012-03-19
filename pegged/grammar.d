@@ -99,6 +99,12 @@ version(none) {
                 case "ACTIONARROW":
                     inheritance = "Action!(" ~ PEGtoCode(ch[2]) ~ ", " ~ ch[1].capture[1] ~ ")";
                     break;
+                case "SPACEARROW":
+                    if (ch[2].children[0].name == "Sequence")
+                        inheritance = "Space" ~ PEGtoCode(ch[2]);
+                    else
+                        inheritance = PEGtoCode(ch[2]);
+                    break;
                 default:
                     inheritance ="ERROR: Bad arrow: " ~ ch[1].name;
                     break;
@@ -138,7 +144,7 @@ version(none) {
             else
                 result = PEGtoCode(ch[0]);
             return result;
-        case "Element":
+version(none) {        case "Element":
             if (ch.length > 1)
             {
                 result = "Join!(";
@@ -156,7 +162,7 @@ version(none) {
             }
             else
                 result = PEGtoCode(ch[0]);
-            return result;
+            return result;}
         case "Prefix":
             if (ch.length > 1)
                 switch (ch[0].name)
@@ -260,36 +266,16 @@ version(none) {
                 return "Lit!(\"" ~ ch[0].capture[0] ~ "\")"; 
         case "Char":
             return ch[0].capture[0];
-        case "LEFTARROW":
-            break;
         case "OR":
             foreach(child; ch) result ~= PEGtoCode(child);
             return result;
-        case "LOOKAHEAD":
-            break;
-        case "NOT":
-            break;
-        case "OPTION":
-            break;
-        case "ZEROORMORE":
-            break;
-        case "ONEORMORE":
-            break;
-        case "OPEN":
-            break;
-        case "CLOSE":
-            break;
         case "ANY":
             return "Any";
-        case "S":
-            break;
-        case "Comment":
-            break;
         default:
-            return "ERROR: Unknown name: " ~ p.name;
+            return "";
     }
-    return result;
 }
+
 /**
 This module was automatically generated from the following grammar:
 
@@ -297,15 +283,13 @@ Grammar    <- S Definition+ EOI
 Definition <- RuleName Arrow Expression S
 RuleName   <- Identifier>(ParamList?) S
 Expression <- Sequence (OR Sequence)*
-Sequence   <- Element+
-Element    <- Prefix (JOIN Prefix)*
+Sequence   <- Prefix+
 Prefix     <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
-Suffix     <- Primary 
-              (OPTION 
-              / ONEORMORE 
-              / ZEROORMORE 
-              / NamedExpr 
-              / WithAction)? S
+Suffix     <- Primary ( OPTION 
+                      / ONEORMORE 
+                      / ZEROORMORE 
+                      / NamedExpr 
+                      / WithAction)? S
 Primary    <- Name !Arrow
             / GroupExpr
             / Literal 
@@ -327,11 +311,12 @@ NamedExpr  <- NAME>Identifier? S
 
 WithAction <~ :ACTIONOPEN Identifier :ACTIONCLOSE S
     
-Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW S
+Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW / SPACEARROW
 LEFTARROW  <- "<-" S
 FUSEARROW  <- "<~" S
 DROPARROW  <- "<:" S
 ACTIONARROW <- "<">WithAction S
+SPACEARROW <- "<" S
   
 OR         <- '/' S
     
@@ -341,7 +326,7 @@ NOT        <- '!' S
 DROP       <- ':' S
 FUSE       <- '~' S
   
-JOIN       <- '>' S
+#SPACEMUNCH <- '>' S
     
 NAME       <- '=' S
 ACTIONOPEN <- '{' S
@@ -360,10 +345,9 @@ S          <: (Blank / EOL / Comment)*
 Comment    <- "#">(!EOL>.)*>(EOL/EOI)
 
 */
-
 class Grammar : Seq!(S,OneOrMore!(Definition),EOI)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -393,7 +377,7 @@ class Grammar : Seq!(S,OneOrMore!(Definition),EOI)
 
 class Definition : Seq!(RuleName,Arrow,Expression,S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -421,9 +405,9 @@ class Definition : Seq!(RuleName,Arrow,Expression,S)
     mixin(stringToInputMixin());
 }
 
-class RuleName : Seq!(Join!(Identifier,Option!(ParamList)),S)
+class RuleName : Seq!(Identifier,Option!(ParamList),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -453,7 +437,7 @@ class RuleName : Seq!(Join!(Identifier,Option!(ParamList)),S)
 
 class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -481,9 +465,9 @@ class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
     mixin(stringToInputMixin());
 }
 
-class Sequence : OneOrMore!(Element)
+class Sequence : OneOrMore!(Prefix)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -511,39 +495,9 @@ class Sequence : OneOrMore!(Element)
     mixin(stringToInputMixin());
 }
 
-class Element : Seq!(Prefix,ZeroOrMore!(Seq!(JOIN,Prefix)))
-{
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
-    static ParseTree[] filterChildren(ParseTree p)
-    {
-        ParseTree[] filteredChildren;
-        foreach(child; p.children)
-        {
-            if (child.name in ruleNames)
-                filteredChildren ~= child;
-            else
-            {
-                if (child.children.length > 0)
-                    filteredChildren ~= filterChildren(child);
-            }
-        }
-        return filteredChildren;
-    }
-
-    static Output parse(Input input)
-    {
-        auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree("Element", p.success, p.capture, input.pos, p.pos, 
-                               (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
-    }
-    
-    mixin(stringToInputMixin());
-}
-
 class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,FUSE)),Suffix)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -573,7 +527,7 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,FUSE)),Suffix)
 
 class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,WithAction)),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -603,7 +557,7 @@ class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,Wi
 
 class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -631,9 +585,9 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
     mixin(stringToInputMixin());
 }
 
-class Name : Seq!(Join!(QualifiedIdentifier,Option!(ArgList)),S)
+class Name : Seq!(QualifiedIdentifier,Option!(ArgList),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -663,7 +617,7 @@ class Name : Seq!(Join!(QualifiedIdentifier,Option!(ArgList)),S)
 
 class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -693,7 +647,7 @@ class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
 
 class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote),Char)),Drop!(Quote),S),Seq!(Drop!(DoubleQuote),ZeroOrMore!(Seq!(NegLookAhead!(DoubleQuote),Char)),Drop!(DoubleQuote),S)))
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -723,7 +677,7 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
 
 class Class : Seq!(Drop!(Lit!("[")),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),CharRange)),Drop!(Lit!("]")),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -753,7 +707,7 @@ class Class : Seq!(Drop!(Lit!("[")),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),Ch
 
 class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -781,9 +735,9 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
     mixin(stringToInputMixin());
 }
 
-class Char : Fuse!(Or!(Seq!(BackSlash,Lit!("n")),Seq!(NegLookAhead!(BackSlash),Any)))
+class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Lit!("n"),Lit!("r"),Lit!("t"))),Seq!(NegLookAhead!(BackSlash),Any)))
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -813,7 +767,7 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Lit!("n")),Seq!(NegLookAhead!(BackSlash),A
 
 class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),Identifier)),CLOSE,S))
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -843,7 +797,7 @@ class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),Identifi
 
 class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),Expression)),Drop!(CLOSE),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -871,9 +825,9 @@ class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),Ex
     mixin(stringToInputMixin());
 }
 
-class NamedExpr : Seq!(Join!(NAME,Option!(Identifier)),S)
+class NamedExpr : Seq!(NAME,Option!(Identifier),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -903,7 +857,7 @@ class NamedExpr : Seq!(Join!(NAME,Option!(Identifier)),S)
 
 class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier,Drop!(ACTIONCLOSE),S))
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -931,9 +885,9 @@ class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier,Drop!(ACTIONCLOSE),S)
     mixin(stringToInputMixin());
 }
 
-class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,Seq!(ACTIONARROW,S))
+class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW,SPACEARROW)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -963,7 +917,7 @@ class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,Seq!(ACTIONARROW,S))
 
 class LEFTARROW : Seq!(Lit!("<-"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -993,7 +947,7 @@ class LEFTARROW : Seq!(Lit!("<-"),S)
 
 class FUSEARROW : Seq!(Lit!("<~"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1023,7 +977,7 @@ class FUSEARROW : Seq!(Lit!("<~"),S)
 
 class DROPARROW : Seq!(Lit!("<:"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1051,9 +1005,9 @@ class DROPARROW : Seq!(Lit!("<:"),S)
     mixin(stringToInputMixin());
 }
 
-class ACTIONARROW : Seq!(Join!(Lit!("<"),WithAction),S)
+class ACTIONARROW : Seq!(Lit!("<"),WithAction,S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1081,9 +1035,39 @@ class ACTIONARROW : Seq!(Join!(Lit!("<"),WithAction),S)
     mixin(stringToInputMixin());
 }
 
+class SPACEARROW : Seq!(Lit!("<"),S)
+{
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    static ParseTree[] filterChildren(ParseTree p)
+    {
+        ParseTree[] filteredChildren;
+        foreach(child; p.children)
+        {
+            if (child.name in ruleNames)
+                filteredChildren ~= child;
+            else
+            {
+                if (child.children.length > 0)
+                    filteredChildren ~= filterChildren(child);
+            }
+        }
+        return filteredChildren;
+    }
+
+    static Output parse(Input input)
+    {
+        auto p = typeof(super).parse(input);
+        return Output(p.text, p.pos, p.namedCaptures,
+                      ParseTree("SPACEARROW", p.success, p.capture, input.pos, p.pos, 
+                               (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+    }
+    
+    mixin(stringToInputMixin());
+}
+
 class OR : Seq!(Lit!("/"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1113,7 +1097,7 @@ class OR : Seq!(Lit!("/"),S)
 
 class LOOKAHEAD : Seq!(Lit!("&"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1143,7 +1127,7 @@ class LOOKAHEAD : Seq!(Lit!("&"),S)
 
 class NOT : Seq!(Lit!("!"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1173,7 +1157,7 @@ class NOT : Seq!(Lit!("!"),S)
 
 class DROP : Seq!(Lit!(":"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1203,7 +1187,7 @@ class DROP : Seq!(Lit!(":"),S)
 
 class FUSE : Seq!(Lit!("~"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1231,39 +1215,9 @@ class FUSE : Seq!(Lit!("~"),S)
     mixin(stringToInputMixin());
 }
 
-class JOIN : Seq!(Lit!(">"),S)
-{
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
-    static ParseTree[] filterChildren(ParseTree p)
-    {
-        ParseTree[] filteredChildren;
-        foreach(child; p.children)
-        {
-            if (child.name in ruleNames)
-                filteredChildren ~= child;
-            else
-            {
-                if (child.children.length > 0)
-                    filteredChildren ~= filterChildren(child);
-            }
-        }
-        return filteredChildren;
-    }
-
-    static Output parse(Input input)
-    {
-        auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree("JOIN", p.success, p.capture, input.pos, p.pos, 
-                               (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
-    }
-    
-    mixin(stringToInputMixin());
-}
-
 class NAME : Seq!(Lit!("="),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1293,7 +1247,7 @@ class NAME : Seq!(Lit!("="),S)
 
 class ACTIONOPEN : Seq!(Lit!("{"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1323,7 +1277,7 @@ class ACTIONOPEN : Seq!(Lit!("{"),S)
 
 class ACTIONCLOSE : Seq!(Lit!("}"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1353,7 +1307,7 @@ class ACTIONCLOSE : Seq!(Lit!("}"),S)
 
 class OPTION : Seq!(Lit!("?"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1383,7 +1337,7 @@ class OPTION : Seq!(Lit!("?"),S)
 
 class ZEROORMORE : Seq!(Lit!("*"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1413,7 +1367,7 @@ class ZEROORMORE : Seq!(Lit!("*"),S)
 
 class ONEORMORE : Seq!(Lit!("+"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1443,7 +1397,7 @@ class ONEORMORE : Seq!(Lit!("+"),S)
 
 class OPEN : Seq!(Lit!("("),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1473,7 +1427,7 @@ class OPEN : Seq!(Lit!("("),S)
 
 class CLOSE : Seq!(Lit!(")"),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1503,7 +1457,7 @@ class CLOSE : Seq!(Lit!(")"),S)
 
 class ANY : Seq!(Lit!("."),S)
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1533,7 +1487,7 @@ class ANY : Seq!(Lit!("."),S)
 
 class S : Drop!(ZeroOrMore!(Or!(Blank,EOL,Comment)))
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1561,9 +1515,9 @@ class S : Drop!(ZeroOrMore!(Or!(Blank,EOL,Comment)))
     mixin(stringToInputMixin());
 }
 
-class Comment : Join!(Lit!("#"),ZeroOrMore!(Join!(NegLookAhead!(EOL),Any)),Or!(EOL,EOI))
+class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL,EOI))
 {
-    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Element":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"JOIN":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
     static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -1590,3 +1544,4 @@ class Comment : Join!(Lit!("#"),ZeroOrMore!(Join!(NegLookAhead!(EOL),Any)),Or!(E
     
     mixin(stringToInputMixin());
 }
+
