@@ -4,23 +4,21 @@ module pegged.utils.PEgrammar;
 enum string PEG =`
 Grammar    <- S Definition+ EOI
 Definition <- RuleName Arrow Expression S
-RuleName   <- Identifier>(ParamList?) S
+RuleName   <- Identifier (ParamList?) S
 Expression <- Sequence (OR Sequence)*
-Sequence   <- Element+
-Element    <- Prefix (JOIN Prefix)*
+Sequence   <- Prefix+
 Prefix     <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
-Suffix     <- Primary 
-              (OPTION 
-              / ONEORMORE 
-              / ZEROORMORE 
-              / NamedExpr 
-              / WithAction)? S
+Suffix     <- Primary ( OPTION 
+                      / ONEORMORE 
+                      / ZEROORMORE 
+                      / NamedExpr 
+                      / WithAction)? S
 Primary    <- Name !Arrow
             / GroupExpr
             / Literal 
             / Class 
             / ANY
-Name       <- QualifiedIdentifier>(ArgList?) S
+Name       <- QualifiedIdentifier (ArgList?) S
 GroupExpr  <- :OPEN Expression :CLOSE S
 
 Literal    <~ :Quote (!Quote Char)* :Quote S
@@ -32,15 +30,16 @@ Char       <~ BackSlash [nrt]
 
 ParamList  <~ OPEN Identifier (',' Identifier)* CLOSE S
 ArgList    <- :OPEN Expression (:',' Expression)* :CLOSE S
-NamedExpr  <- NAME>Identifier? S
+NamedExpr  <- NAME Identifier? S
 
 WithAction <~ :ACTIONOPEN Identifier :ACTIONCLOSE S
     
-Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW S
+Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW / SPACEARROW
 LEFTARROW  <- "<-" S
 FUSEARROW  <- "<~" S
 DROPARROW  <- "<:" S
 ACTIONARROW <- "<">WithAction S
+SPACEARROW <- "<" S
   
 OR         <- '/' S
     
@@ -50,7 +49,7 @@ NOT        <- '!' S
 DROP       <- ':' S
 FUSE       <- '~' S
   
-JOIN       <- '>' S
+#SPACEMUNCH <- '>' S
     
 NAME       <- '=' S
 ACTIONOPEN <- '{' S
@@ -66,6 +65,6 @@ CLOSE      <- ')' S
 ANY        <- '.' S
     
 S          <: (Blank / EOL / Comment)*
-Comment    <- "#">(!EOL>.)*>(EOL/EOI)
+Comment    <- "#" (!EOL>.)* (EOL/EOI)
 `;
 
