@@ -1,13 +1,9 @@
 module pegged.examples.dgrammar;
 
 enum string Dgrammar = `
-# List(E) is predefined in Pegged:
-# List(E) <- E ("," E)*
-# I should add a space-separated list, and maybe a dot-sept one too.
-
 Module    <- Spacing ModuleDeclaration? DeclDefs?
 
-DeclDefs <- DeclDef DeclDefs?
+DeclDefs  <- DeclDef DeclDefs?
 
 DeclDef   <- AttributeSpecifier
            / ImportDeclaration
