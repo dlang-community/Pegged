@@ -127,15 +127,17 @@ struct Output
     }
 }
 
+
 string inheritMixin(string name, string code)
 {
     return
     "class " ~ name ~ " : " ~ code ~ " {\n"
+  ~ "enum name = `" ~ name ~ "`;\n"
   ~ "static Output parse(Input input)
     {
-        mixin(okfailMixin(\""~name~"\"));
+        mixin(okfailMixin());
         auto p = typeof(super).parse(input);
-        p.parseTree.name = \""~name~ "\";
+        p.parseTree.name = `"~name~ "`;
         p.parseTree.children = [p.parseTree];
         return p;                     
     }
@@ -144,27 +146,30 @@ string inheritMixin(string name, string code)
 }\n";
 }
 
+
 string wrapMixin(string name, string code)
 {
     return
-"class " ~ name ~ " : " ~ code 
+"class " ~ name
+~ " : " ~ code 
 ~ "\n{\n"
+~ "enum name = `" ~ name ~ "`;\n"
 ~ "    static Output parse(Input input)
     {
-        //mixin(okfailMixin(\""~name~"\"));
         auto p = typeof(super).parse(input);
-        p.parseTree.name = \""~name~"\";
+        p.parseTree.name = `"~name~"`;
         return p;
     }
     
     mixin(stringToInputMixin());
 }\n";
+
 }
 
-string okfailMixin(string name)
+string okfailMixin() @property
 {
     return
-    "Output ok(string[] capture, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
+    `Output ok(string[] capture, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
     {
         if (newCaptures.length > 0)
             input.namedCaptures ~= newCaptures;
@@ -175,17 +180,17 @@ string okfailMixin(string name)
         return Output(input.text,
                       end,
                       input.namedCaptures,
-                      ParseTree(\""~name~"\", true, capture, input.pos, end, children));
+                      ParseTree(name, true, capture, input.pos, end, children));
     }
    
-    Output fail(string message = string.init)
+    Output fail()
     {
         return Output(input.text,
                       input.pos,
                       input.namedCaptures,
-                      ParseTree(\""~name~"\", false, [message], input.pos, input.pos, (ParseTree[]).init));
+                      ParseTree(name, false, [name ~ " failure at pos " ~ input.pos.toString()], input.pos, input.pos, (ParseTree[]).init));
     }
-    ";
+    `;
 }
 
 string stringToInputMixin() @property
@@ -202,11 +207,24 @@ static Output parse(Output input)
 }";
 }
 
+template getNames(Exprs...)
+{
+    static if (Exprs.length == 1)
+        enum getNames = Exprs[0].name;
+    else
+        enum getNames = Exprs[0].name ~ ", " ~ getNames!(Exprs[1..$]);
+//     string result;
+//     foreach(i,e; Exprs) result ~= e.name ~ ", ";
+//     return result[0..$-1];
+}
+
 class Parser
 {
+    enum name = "Parser";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Parser"));
+        mixin(okfailMixin());
         
         return fail();
     }
@@ -219,20 +237,24 @@ alias Parser Failure;
 /// Eps = epsilon, "", the empty string
 class Eps : Parser
 {
+    enum name = "Eps";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Eps"));  
+        mixin(okfailMixin());  
         return ok([""]);
     }
     
-    mixin(stringToInputMixin());
+    mixin(stringToInputMixin);
 }
 
 class Any : Parser
 {
+    enum name = "Any";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Any"));  
+        mixin(okfailMixin());  
         if (input.length > 0)
             return ok([input[0..1]]);
         else
@@ -242,11 +264,13 @@ class Any : Parser
     mixin(stringToInputMixin());
 }
 
-class End : Parser
+class EOI : Parser
 {
+    enum name = "EOI";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("EndOfInput"));
+        mixin(okfailMixin());
         return (input.pos.index == input.text.length) ? ok(null)
                                                       : fail();
     }
@@ -254,14 +278,13 @@ class End : Parser
     mixin(stringToInputMixin());
 }
 
-alias End EOI;
-
-
 class Char(char c) : Parser
 {
+    enum name = "Char!(" ~ c ~ ")";
+    
     static Output parse(Input input) 
     { 
-        mixin(okfailMixin("Char"));
+        mixin(okfailMixin());
         return (input.length > 0 && input[0] == c) ? ok(["" ~ c])
                                                                          : fail();
     }
@@ -271,9 +294,11 @@ class Char(char c) : Parser
 
 class Lit(string s) : Parser
 {
+    enum name = "Lit!("~s~")";
+    
     static Output parse(Input input)
     {   
-        mixin(okfailMixin("Lit"));
+        mixin(okfailMixin());
         return (input.length >= s.length
              && input[0..s.length] == s ) ? ok([s])
                                           : fail();
@@ -284,9 +309,11 @@ class Lit(string s) : Parser
 
 class Range(char begin, char end) : Parser
 {
+    enum name = "Range!("~begin~","~end~")";
+    
     static Output parse(Input input) 
     { 
-        mixin(okfailMixin("Range"));//!("~begin~","~end~")"));
+        mixin(okfailMixin());
         return (input.length 
              && input[0] >= begin 
              && input[0] <= end  ) ? ok([input[0..1]])
@@ -298,9 +325,11 @@ class Range(char begin, char end) : Parser
 
 class Seq(Exprs...) if (Exprs.length > 0) : Parser
 {
+    enum name = "Seq!(" ~ getNames!(Exprs) ~ ")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Seq!"~Exprs.stringof));
+        mixin(okfailMixin());
         Output result = ok((string[]).init);
         
         foreach(i,expr; Exprs)
@@ -320,8 +349,7 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
             }
             else
             {
-                return fail("Seq fail for expression #"~to!string(i)~" (" ~ expr.stringof 
-                           ~") at position " ~ result.pos.toString);
+                return fail();
             }
         }
         return result;
@@ -332,9 +360,11 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
 
 class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
 {
+    enum name = "SpaceSeq!(" ~ getNames!(Exprs) ~ ")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("SpaceSeq!" ~ Exprs.stringof));
+        mixin(okfailMixin());
 
         Output result = ok((string[]).init);
         
@@ -355,8 +385,7 @@ class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
             }
             else
             {
-                return fail("SpaceSeq fail for expression #"~to!string(i)~" (" ~ expr.stringof 
-                           ~") at position " ~ result.pos.toString);
+                return fail();
             }
             
         }
@@ -368,9 +397,11 @@ class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
 
 class Action(Expr, alias action)
 {
+    enum name = "Action!("~Expr.name~", "~__traits(identifier, action)~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Action!("~Expr.stringof~", "~__traits(identifier, action)~")"));
+        mixin(okfailMixin());
         auto p = Expr.parse(input);
         if (p.success)
             return action(p);
@@ -383,9 +414,11 @@ class Action(Expr, alias action)
 /// stores a named capture (that is, an entire parse tree)
 class Named(Expr, string name) : Parser
 {
+    enum name = "Named!("~Expr.name ~", " ~ name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Named!("~Expr.stringof ~", " ~ name~")"));
+        mixin(okfailMixin());
         auto p = Expr.parse(input);
         if (p.success) 
             p.namedCaptures[name] = p.parseTree;
@@ -399,9 +432,11 @@ class Named(Expr, string name) : Parser
 /// Verifies that a match is equal to a named capture
 class EqualMatch(Expr, string name) : Parser
 {
+    enum name = "EqualMatch!("~Expr.name ~", " ~ name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("EqualMatch!("~Expr.stringof ~", " ~ name~")"));
+        mixin(okfailMixin());
         //writeln("Entering EqualMatch with input ", input);
         auto p = Expr.parse(input);
         //writeln("EqualMatch parse: ", p.success, p);
@@ -426,9 +461,11 @@ class EqualMatch(Expr, string name) : Parser
 /// Verifies that a parse tree is equal to a named capture
 class EqualParseTree(Expr, string name) : Parser
 {
+    enum name = "EqualParseTree!("~Expr.name ~", " ~ name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("EqualParseTree!("~Expr.stringof ~", " ~ name~")"));
+        mixin(okfailMixin());
         //writeln("EqPT: ", name);
         auto p = Expr.parse(input);
         //writeln("Eqpt p: ",p);
@@ -468,6 +505,8 @@ class EqualParseTree(Expr, string name) : Parser
 
 class PushName(Expr) : Parser
 {
+    enum name = "PushName!(" ~ Expr.name ~ ")";
+    
     static Output parse(Input input)
     {
         //writeln("Entering PushName("~Expr.stringof ~")", input.text," ", input.namedCaptures.length);
@@ -494,9 +533,11 @@ class PushName(Expr) : Parser
 /// Compares the match with the named capture and pops the capture
 class FindAndPop(Expr) : Parser
 {
+    enum name = "FindAndPop!("~Expr.name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("FindAndPop!("~Expr.stringof~")"));
+        mixin(okfailMixin());
         auto p = Expr.parse(input);
         if (p.success)
         {
@@ -514,11 +555,13 @@ class FindAndPop(Expr) : Parser
     mixin(stringToInputMixin());
 }
 
-class Or(Exprs...) if (Exprs.length) : Parser
+class Or(Exprs...) : Parser
 {
+    enum name = "Or!("~getNames!(Exprs)~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Or!("~Exprs.stringof~")"));
+        mixin(okfailMixin());
         
         Output p;
         
@@ -535,9 +578,11 @@ class Or(Exprs...) if (Exprs.length) : Parser
 
 class Option(Expr) : Parser 
 {
+    enum name = "Option!("~Expr.name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Option!("~Expr.stringof~")"));
+        mixin(okfailMixin());
         
         auto p = Expr.parse(input);
         if (p.success)
@@ -551,9 +596,11 @@ class Option(Expr) : Parser
 
 class ZeroOrMore(Expr) : Parser
 {
+    enum name = "ZeroOrMore!("~Expr.name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("ZeroOrMore!("~Expr.stringof~")"));
+        mixin(okfailMixin());
         
         string[] capture;
         ParseTree[] children;
@@ -578,7 +625,7 @@ class ZeroOrMore(Expr) : Parser
         return Output(input.text,
                       start,
                       p.namedCaptures,
-                      ParseTree("ZeroOrMore("~Expr.stringof~")", true, capture, input.pos, start, children));
+                      ParseTree(name, true, capture, input.pos, start, children));
     }
 
     mixin(stringToInputMixin());
@@ -586,9 +633,11 @@ class ZeroOrMore(Expr) : Parser
 
 class OneOrMore(Expr) : Parser
 {
+    enum name = "OneOrMore!("~Expr.name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("OneOrMore!("~Expr.stringof~")"));
+        mixin(okfailMixin());
         
         string[] capture;
         ParseTree[] children;
@@ -597,7 +646,7 @@ class OneOrMore(Expr) : Parser
         auto p = Expr.parse(input);
         
         if (!p.success) 
-            return fail("OneOrMore!("~Expr.stringof~") failure on first parse.");
+            return fail();
         
         
         while (p.success)
@@ -612,7 +661,7 @@ class OneOrMore(Expr) : Parser
         return Output(input.text,
                       start,
                       p.namedCaptures,
-                      ParseTree("OneOrMore("~Expr.stringof~")", true, capture, input.pos, start, children));
+                      ParseTree(name, true, capture, input.pos, start, children));
     }
     
     mixin(stringToInputMixin());
@@ -620,11 +669,13 @@ class OneOrMore(Expr) : Parser
 
 class PosLookAhead(Expr) : Parser
 {
+    enum name = "PosLookAhead!("~Expr.name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("PosLookAhead!("~Expr.stringof~")"));   
+        mixin(okfailMixin());   
         return Expr.parse(input).success ? ok((string[]).init) // no name nor capture transmission
-                                         : fail("PosLookAhead failure on input: " ~ input);
+                                         : fail();
     }
     
     mixin(stringToInputMixin());                                                                                
@@ -632,10 +683,12 @@ class PosLookAhead(Expr) : Parser
 
 class NegLookAhead(Expr) : Parser
 {
+    enum name = "NegLookAhead!("~Expr.name~")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("NegLookAhead!("~Expr.stringof~")")); 
-        return Expr.parse(input).success ? fail("NegLookAhead failure on input: " ~ input)
+        mixin(okfailMixin()); 
+        return Expr.parse(input).success ? fail()
                                          : ok((string[]).init); // no name nor capture transmission
     }
     
@@ -644,9 +697,11 @@ class NegLookAhead(Expr) : Parser
 
 class Drop(Expr) : Parser
 {
+    enum name = "Drop!(" ~ Expr.name ~ ")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Drop!(" ~ Expr.stringof ~ ")")); 
+        mixin(okfailMixin()); 
         
         auto p = Expr.parse(input);
         //p.pos = addCaptures(p.pos, p.capture); // advancing the index
@@ -660,9 +715,11 @@ class Drop(Expr) : Parser
 
 class Fuse(Expr) : Parser
 {
+    enum name = "Fuse!(" ~ Expr.name ~ ")";
+    
     static Output parse(Input input)
     {
-        mixin(okfailMixin("Fuse!(" ~ Expr.stringof ~ ")")); 
+        mixin(okfailMixin()); 
         
         auto p = Expr.parse(input);
         
@@ -689,32 +746,32 @@ class List(Expr, Sep = Lit!",") : Parser
 }
 
 
-mixin(wrapMixin("letter", `Range!('a','z')`));
-mixin(wrapMixin("Letter", `Range!('A','Z')`));
-mixin(wrapMixin("Alpha", `Or!(letter, Letter, Lit!"_")`));
-mixin(wrapMixin("Digit", "Range!('0','9')"));
-mixin(wrapMixin("Alphanum", "Or!(Alpha, Digit)"));
+mixin(wrapMixin("letter",   `Range!('a','z')`));
+mixin(wrapMixin("Letter",   `Range!('A','Z')`));
+mixin(wrapMixin("Alpha",    `Or!(letter, Letter, Lit!"_")`));
 
-mixin(wrapMixin("Identifier", "Fuse!(Seq!(Alpha, ZeroOrMore!(Alphanum)))"));
+mixin(wrapMixin("Digit",    `Range!('0','9')`));
+mixin(wrapMixin("Alphanum", `Or!(Alpha, Digit)`));
+
+mixin(wrapMixin("Identifier", `Fuse!(Seq!(Alpha, ZeroOrMore!(Alphanum)))`));
 mixin(wrapMixin("QualifiedIdentifier", `Fuse!(Seq!(Identifier, ZeroOrMore!(Seq!(Lit!".", Identifier))))`));
 
-mixin(wrapMixin("Space", `Lit!" "`));
-mixin(wrapMixin("Blank", `Or!(Space, Lit!"\t")`));
-alias Lit!"\n" LF;
-alias Lit!"\r" CR;
-alias Lit!"\r\n" CRLF;
-mixin(wrapMixin("EOL", `Or!(CRLF, LF, CR)`));
+mixin(wrapMixin("Space",   `Lit!" "`));
+mixin(wrapMixin("Blank",   `Or!(Space, Lit!"\t", Lit!"\b", Lit!"\v", Lit!"\a")`));
+mixin(wrapMixin("LF",      `Lit!"\n"`));
+mixin(wrapMixin("CR",      `Lit!"\r"`));
+mixin(wrapMixin("CRLF",    `Lit!"\r\n"`));
+mixin(wrapMixin("EOL",     `Or!(CRLF, LF, CR)`));
 mixin(wrapMixin("Spacing", `Drop!(ZeroOrMore!(Or!(Blank, EOL)))`));
-mixin(wrapMixin("Spaces", `Fuse!(ZeroOrMore!(Or!(Blank, EOL)))`));
 
-alias Char!'"' DoubleQuote;
-alias Lit!"'"  Quote;
-alias Lit!"`" BackQuote;
-alias Lit!"/" Slash;
-alias Lit!(`\\`) BackSlash;
+mixin(wrapMixin("DoubleQuote",q{Lit!`"`}));
+mixin(wrapMixin("Quote",       `Lit!"'"`));
+mixin(wrapMixin("BackQuote",  q{Lit!"`"}));
+mixin(wrapMixin("Slash",       `Lit!"/"`));
+mixin(wrapMixin("BackSlash",  q{Lit!`\`}));
 
-alias Fuse!(Seq!(ZeroOrMore!(Seq!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI))) Line;
-alias OneOrMore!Line Lines;
+mixin(wrapMixin("Line", `Fuse!(Seq!(ZeroOrMore!(Seq!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI)))`));
+mixin(wrapMixin("Lines", `OneOrMore!Line`));
 
 string[] leaves(ParseTree p)
 {
