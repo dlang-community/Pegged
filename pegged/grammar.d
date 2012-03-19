@@ -46,7 +46,9 @@ string PEGtoCode(ParseTree p, string names = "")
             if (ch.length < 3)
                 return "ERROR, Bad Definition";
             
-            string code = names ~
+            string code = 
+"enum name = `" ~ch[0].capture[0]~ "`;\n"
+~ names ~
 "    static ParseTree[] filterChildren(ParseTree p)
     {
         ParseTree[] filteredChildren;
@@ -67,7 +69,7 @@ string PEGtoCode(ParseTree p, string names = "")
     {
         auto p = typeof(super).parse(input);
         return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(\""~ch[0].capture[0]~"\", p.success, p.capture, input.pos, p.pos, 
+                      ParseTree(`"~ch[0].capture[0]~"`, p.success, p.capture, input.pos, p.pos, 
                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
     }
     
