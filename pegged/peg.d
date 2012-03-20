@@ -325,7 +325,7 @@ class Range(char begin, char end) : Parser
 
 class Seq(Exprs...) if (Exprs.length > 0) : Parser
 {
-    enum name = "Seq!(" ~ getNames!(Exprs) ~ ")";
+    enum name = "Seq!(" ~ Exprs.stringof ~ ")";
     
     static Output parse(Input input)
     {
@@ -360,7 +360,7 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
 
 class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
 {
-    enum name = "SpaceSeq!(" ~ getNames!(Exprs) ~ ")";
+    enum name = "SpaceSeq!(" ~ Exprs.stringof ~ ")";
     
     static Output parse(Input input)
     {
@@ -557,7 +557,7 @@ class FindAndPop(Expr) : Parser
 
 class Or(Exprs...) : Parser
 {
-    enum name = "Or!("~getNames!(Exprs)~")";
+    enum name = "Or!("~Exprs.stringof~")";
     
     static Output parse(Input input)
     {
