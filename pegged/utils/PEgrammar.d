@@ -23,7 +23,7 @@ Literal     <~ :Quote (!Quote Char)* :Quote S
              / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
 Class       <- :'[' (!']' CharRange)* :']' S
 CharRange   <- Char :'-' Char / Char
-Char        <~ BackSlash ('-' / BackSlash / '[' / ']')
+Char        <- BackSlash ('-' / BackSlash / '[' / ']') # Escape sequences
              / !BackSlash .
 ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S
 ArgList     <- :OPEN Expression (:',' Expression)* :CLOSE S
@@ -60,7 +60,7 @@ CLOSE      <- ')' S
     
 ANY        <- '.' S
     
-S          <: (Spacing / Comment)*
+S          <: ~(Blank / EOL / Comment)*
 Comment    <- "#" (!EOL .)* (EOL/EOI)
 `;
 
