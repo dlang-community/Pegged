@@ -6,28 +6,27 @@ Grammar    <- S Definition+ EOI
 Definition <- RuleName Arrow Expression S
 RuleName   <- Identifier>(ParamList?) S
 Expression <- Sequence (OR Sequence)*
-Sequence   <- Element+
-Element    <- Prefix (JOIN Prefix)*
+Sequence   <- Prefix*
 Prefix     <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
 Suffix     <- Primary 
               (OPTION 
               / ONEORMORE 
               / ZEROORMORE 
               / NamedExpr 
-              / WithAction)? S
+              / WithAction)?
 Primary    <- Name !Arrow
             / GroupExpr
             / Literal 
             / Class 
             / ANY
 Name       <- QualifiedIdentifier>(ArgList?) S
-GroupExpr  <- :OPEN Expression :CLOSE S
+GroupExpr  <- :OPEN Expression :CLOSE
 
 Literal    <~ :Quote (!Quote Char)* :Quote S
             / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
 Class      <- :'[' (!']' CharRange)* :']' S
 CharRange  <- Char :'-' Char / Char
-Char       <~ BackSlash [nrt]
+Char       <~ BackSlash ([nrt] / Quote / DoubleQuote / '[' / ']' / '-' / BackSlash)
             / !BackSlash .
 
 ParamList  <~ OPEN Identifier (',' Identifier)* CLOSE S
