@@ -1,58 +1,55 @@
 module pegged.utils.PEgrammar;
 
-
 enum string PEG =`
-Grammar    <- S Definition+ EOI
-Definition <- RuleName Arrow Expression S
-RuleName   <- Identifier>(ParamList?) S
-Expression <- Sequence (OR Sequence)*
-Sequence   <- Prefix*
-Prefix     <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
-Suffix     <- Primary 
-              (OPTION 
-              / ONEORMORE 
-              / ZEROORMORE 
-              / NamedExpr 
-              / WithAction)?
-Primary    <- Name !Arrow
-            / GroupExpr
-            / Literal 
-            / Class 
-            / ANY
-Name       <- QualifiedIdentifier>(ArgList?) S
-GroupExpr  <- :OPEN Expression :CLOSE
+Grammar     <- S Definition+ EOI
+Definition  <- RuleName Arrow Expression S
+RuleName    <- Identifier (ParamList?) S
+Expression  <- Sequence (OR Sequence)*
+Sequence    <- Prefix+
+Prefix      <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
+Suffix      <- Primary ( OPTION 
+                       / ONEORMORE 
+                       / ZEROORMORE 
+                       / NamedExpr 
+                       / WithAction)? S
+Primary     <- Name !Arrow
+             / GroupExpr
+             / Literal 
+             / Class 
+             / ANY
 
-Literal    <~ :Quote (!Quote Char)* :Quote S
-            / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
-Class      <- :'[' (!']' CharRange)* :']' S
-CharRange  <- Char :'-' Char / Char
-Char       <~ BackSlash ([nrt] / Quote / DoubleQuote / '[' / ']' / '-' / BackSlash)
-            / !BackSlash .
+Name        <- QualifiedIdentifier ArgList? S
+GroupExpr   <- :OPEN Expression :CLOSE S
+Literal     <~ :Quote (!Quote Char)* :Quote S
+             / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
+Class       <- :'[' (!']' CharRange)* :']' S
+CharRange   <- Char :'-' Char / Char
+Char        <- BackSlash ('-' / BackSlash / '[' / ']') # Escape sequences
+             / !BackSlash .
+ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S
+ArgList     <- :OPEN Expression (:',' Expression)* :CLOSE S
+NamedExpr   <- NAME Identifier? S
+WithAction  <~ :ACTIONOPEN Identifier :ACTIONCLOSE S
 
-ParamList  <~ OPEN Identifier (',' Identifier)* CLOSE S
-ArgList    <- :OPEN Expression (:',' Expression)* :CLOSE S
-NamedExpr  <- NAME>Identifier? S
-
-WithAction <~ :ACTIONOPEN Identifier :ACTIONCLOSE S
-    
-Arrow      <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW S
-LEFTARROW  <- "<-" S
-FUSEARROW  <- "<~" S
-DROPARROW  <- "<:" S
-ACTIONARROW <- "<">WithAction S
+Arrow       <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW / SPACEARROW
+LEFTARROW   <- "<-" S
+FUSEARROW   <- "<~" S
+DROPARROW   <- "<:" S
+ACTIONARROW <- "<" WithAction S
+SPACEARROW  <- "<" S
   
-OR         <- '/' S
+OR          <- '/' S
     
-LOOKAHEAD  <- '&' S
-NOT        <- '!' S
+LOOKAHEAD   <- '&' S
+NOT         <- '!' S
 
-DROP       <- ':' S
-FUSE       <- '~' S
+DROP        <- ':' S
+FUSE        <- '~' S
   
-JOIN       <- '>' S
+#SPACEMUNCH <- '>' S
     
-NAME       <- '=' S
-ACTIONOPEN <- '{' S
+NAME        <- '=' S
+ACTIONOPEN  <- '{' S
 ACTIONCLOSE <- '}' S
     
 OPTION     <- '?' S
@@ -64,7 +61,7 @@ CLOSE      <- ')' S
     
 ANY        <- '.' S
     
-S          <: (Blank / EOL / Comment)*
-Comment    <- "#">(!EOL>.)*>(EOL/EOI)
+S          <: ~(Blank / EOL / Comment)*
+Comment    <- "#" (!EOL .)* (EOL/EOI)
 `;
 
