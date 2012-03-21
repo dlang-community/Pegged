@@ -1,7 +1,9 @@
 module pegged.utils.PEgrammar;
 
 enum string PEG =`
-Grammar     <- S Definition+ EOI
+Grammar     <- GrammarName? Definition+ EOI
+GrammarName <- Identifier (Encapsulation)? :":" EOL
+Encapsulation <- :OPEN ( "freeform" / "open" / "closed" / "sealed" ) :CLOSE
 Definition  <- RuleName Arrow Expression S
 RuleName    <- Identifier (ParamList?) S
 Expression  <- Sequence (OR Sequence)*
