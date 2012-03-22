@@ -1,7 +1,9 @@
-module pegged.utils.PEgrammar;
+module pegged.utils.PEGGEDgrammar;
 
-enum string PEG =`
-Grammar     <- S Definition+ EOI
+enum string PEGGEDgrammar =`
+PEGGED:
+Grammar     <- S GrammarName? Definition+ EOI
+GrammarName <- Identifier S :":" S
 Definition  <- RuleName Arrow Expression S
 RuleName    <- Identifier (ParamList?) S
 Expression  <- Sequence (OR Sequence)*
