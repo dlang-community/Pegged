@@ -8,8 +8,13 @@ public import pegged.peg;
 
 void asModule(string moduleName, string grammarString)
 {
+    asModule(moduleName, moduleName~".d", grammarString);
+}
+
+void asModule(string moduleName, string fileName, string grammarString)
+{
     import std.stdio;
-    auto f = File(moduleName~".d","w");
+    auto f = File(fileName,"w");
     
     f.write("/**\nThis module was automatically generated from the following grammar:\n");
     f.write(grammarString);
