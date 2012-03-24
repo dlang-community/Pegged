@@ -366,6 +366,9 @@ class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
     {
         mixin(okfailMixin());
 
+        // consuming space before the first expression
+        input.pos = Spacing.parse(input).pos;
+        
         Output result = ok((string[]).init);
         
         foreach(i,expr; Exprs)
