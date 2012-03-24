@@ -776,6 +776,22 @@ mixin(wrapMixin("BackSlash",  q{Lit!`\`}));
 mixin(wrapMixin("Line", `Fuse!(Seq!(ZeroOrMore!(Seq!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI)))`));
 mixin(wrapMixin("Lines", `OneOrMore!Line`));
 
+class List(E) : SpaceSeq!(E,ZeroOrMore!(SpaceSeq!(Lit!(","),E)))
+{
+    enum name = `List`;
+
+    static Output parse(Input input)
+    {
+        auto p = typeof(super).parse(input);
+        return Output(p.text, p.pos, p.namedCaptures,
+                      ParseTree(`List`, p.success, p.capture, input.pos, p.pos, [p.parseTree]));
+    }
+    
+    mixin(stringToInputMixin());
+    
+}
+
+
 string[] leaves(ParseTree p)
 {
     string[] result;
