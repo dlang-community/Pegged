@@ -118,10 +118,13 @@ string grammar(string g)
                         inheritance = "Action!(" ~ PEGtoCode(ch[2]) ~ ", " ~ ch[1].capture[1] ~ ")";
                         break;
                     case "SPACEARROW":
-                        if (ch[2].children[0].name == "Sequence")
-                            inheritance = "Space" ~ PEGtoCode(ch[2]);
-                        else
-                            inheritance = PEGtoCode(ch[2]);
+                        string temp = PEGtoCode(ch[2]);
+                        // changing all Seq in the inheritance list into SpaceSeq. Hacky, but it works.
+                        foreach(i, c; temp)
+                        {
+                            if (i < temp.length -5 && temp[i..i+5] == "Seq!(") inheritance ~= "Space";
+                            inheritance ~= c;
+                        }   
                         break;
                     default:
                         inheritance ="ERROR: Bad arrow: " ~ ch[1].name;
