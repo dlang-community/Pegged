@@ -1,8 +1,8 @@
 module pegged.grammar;
 
 import std.algorithm : startsWith;
-import std.array;
-import std.conv;
+public import std.array;
+public import std.conv;
 
 public import pegged.peg;
 
@@ -57,10 +57,12 @@ string grammar(string g)
                         ~
 "    static Output parse(Input input)
     {
+        mixin(okfailMixin());
         "
 ~ (named ? "auto p = "~names.front~".parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]));"
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]))
+                         : fail(p.parseTree.end, p.capture);"
                    
         : "return "~names.front~".parse(input);")
 ~ "
@@ -93,10 +95,14 @@ string grammar(string g)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`"~ch[0].capture[0]~"`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`"~ch[0].capture[0]~"`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
