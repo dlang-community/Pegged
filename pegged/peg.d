@@ -400,7 +400,7 @@ class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
 
 class Action(Expr, alias action)
 {
-    enum name = "Action!("~Expr.name~", "~__traits(identifier, action)~")";
+    enum name = "Action!("~Expr.stringof~", "~__traits(identifier, action)~")";
     
     static Output parse(Input input)
     {
@@ -417,7 +417,7 @@ class Action(Expr, alias action)
 /// stores a named capture (that is, an entire parse tree)
 class Named(Expr, string name) : Parser
 {
-    enum name = "Named!("~Expr.name ~", " ~ name~")";
+    enum name = "Named!("~Expr.stringof ~", " ~ name~")";
     
     static Output parse(Input input)
     {
@@ -435,7 +435,7 @@ class Named(Expr, string name) : Parser
 /// Verifies that a match is equal to a named capture
 class EqualMatch(Expr, string name) : Parser
 {
-    enum name = "EqualMatch!("~Expr.name ~", " ~ name~")";
+    enum name = "EqualMatch!("~Expr.stringof ~", " ~ name~")";
     
     static Output parse(Input input)
     {
@@ -464,7 +464,7 @@ class EqualMatch(Expr, string name) : Parser
 /// Verifies that a parse tree is equal to a named capture
 class EqualParseTree(Expr, string name) : Parser
 {
-    enum name = "EqualParseTree!("~Expr.name ~", " ~ name~")";
+    enum name = "EqualParseTree!("~Expr.stringof ~", " ~ name~")";
     
     static Output parse(Input input)
     {
@@ -508,7 +508,7 @@ class EqualParseTree(Expr, string name) : Parser
 
 class PushName(Expr) : Parser
 {
-    enum name = "PushName!(" ~ Expr.name ~ ")";
+    enum name = "PushName!(" ~ Expr.stringof ~ ")";
     
     static Output parse(Input input)
     {
@@ -536,7 +536,7 @@ class PushName(Expr) : Parser
 /// Compares the match with the named capture and pops the capture
 class FindAndPop(Expr) : Parser
 {
-    enum name = "FindAndPop!("~Expr.name~")";
+    enum name = "FindAndPop!("~Expr.stringof~")";
     
     static Output parse(Input input)
     {
@@ -581,7 +581,7 @@ class Or(Exprs...) : Parser
 
 class Option(Expr) : Parser 
 {
-    enum name = "Option!("~Expr.name~")";
+    enum name = "Option!("~Expr.stringof~")";
     
     static Output parse(Input input)
     {
@@ -599,7 +599,7 @@ class Option(Expr) : Parser
 
 class ZeroOrMore(Expr) : Parser
 {
-    enum name = "ZeroOrMore!("~Expr.name~")";
+    enum name = "ZeroOrMore!("~Expr.stringof~")";
     
     static Output parse(Input input)
     {
@@ -636,7 +636,7 @@ class ZeroOrMore(Expr) : Parser
 
 class OneOrMore(Expr) : Parser
 {
-    enum name = "OneOrMore!("~Expr.name~")";
+    enum name = "OneOrMore!("~Expr.stringof~")";
     
     static Output parse(Input input)
     {
@@ -672,7 +672,7 @@ class OneOrMore(Expr) : Parser
 
 class PosLookAhead(Expr) : Parser
 {
-    enum name = "PosLookAhead!("~Expr.name~")";
+    enum name = "PosLookAhead!("~Expr.stringof~")";
     
     static Output parse(Input input)
     {
@@ -686,7 +686,7 @@ class PosLookAhead(Expr) : Parser
 
 class NegLookAhead(Expr) : Parser
 {
-    enum name = "NegLookAhead!("~Expr.name~")";
+    enum name = "NegLookAhead!("~Expr.stringof~")";
     
     static Output parse(Input input)
     {
@@ -700,7 +700,7 @@ class NegLookAhead(Expr) : Parser
 
 class Drop(Expr) : Parser
 {
-    enum name = "Drop!(" ~ Expr.name ~ ")";
+    enum name = "Drop!(" ~ Expr.stringof ~ ")";
     
     static Output parse(Input input)
     {
@@ -718,7 +718,7 @@ class Drop(Expr) : Parser
 
 class Fuse(Expr) : Parser
 {
-    enum name = "Fuse!(" ~ Expr.name ~ ")";
+    enum name = "Fuse!(" ~ Expr.stringof ~ ")";
     
     static Output parse(Input input)
     {
