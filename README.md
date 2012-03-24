@@ -14,13 +14,13 @@ To use **Pegged**, just call the `grammar` function with a PEG and mix it in. Fo
 import pegged.grammar;
 
 mixin(grammar(" 
-    Expr     <- Factor AddExpr*
-    AddExpr  <- ('+'/'-') Factor
-    Factor   <- Primary MulExpr*
-    MulExpr  <- ('*'/'/') Primary
-    Primary  <- Parens / Number / Variable / '-' Primary
+    Expr     <  Factor AddExpr*
+    AddExpr  <  ('+'/'-') Factor
+    Factor   <  Primary MulExpr*
+    MulExpr  <  ('*'/'/') Primary
+    Primary  <  Parens / Number / Variable / '-' Primary
 
-    Parens   <- '(' Expr ')'
+    Parens   <  '(' Expr ')'
     Number   <~ [0-9]+
     Variable <- Identifier
 "));
@@ -35,6 +35,7 @@ To use a parser, use the `.parse` method. It will return a parse tree containing
 enum parseTree1 = Expr.parse("1 + 2 - (3*x-5)*6");
 
 pragma(msg, parseTree1.capture);
+assert(parseTree1.capture == ["1", "+", "2", "-", "(", "3", "*", "x", "-", "5", ")", "*", "6"]);
 writeln(parseTree1);
 
 // And at runtime too:
@@ -42,7 +43,7 @@ auto parseTree2 = Expr.parse(" 0 + 123 - 456 ");
 assert(parseTree2.capture == ["0", "+", "123", "-", "456"]);
 ```
 
-By default, the grammars are not space-sensitive, because I found it to be what I want most of the time. There is an opt-out, though. This may change in the future if that proves to be a drag.
+By default, the grammars do not silently consume spaces, as this is the standard behavior for PEGs. There is an opt-out though, with the simple `<` arrow instead of `<-` (you can see it in the previous example).
 
 Here is a little [tutorial](https://github.com/PhilippeSigaud/Pegged/wiki/Pegged-Tutorial).
 
