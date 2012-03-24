@@ -122,7 +122,7 @@ string grammar(string g)
                         // changing all Seq in the inheritance list into SpaceSeq. Hacky, but it works.
                         foreach(i, c; temp)
                         {
-                            if (i < temp.length -5 && temp[i..i+5] == "Seq!(") inheritance ~= "Space";
+                            if (temp[i..$].startsWith("Seq!(")) inheritance ~= "Space";
                             inheritance ~= c;
                         }   
                         break;
