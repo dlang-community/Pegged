@@ -21,7 +21,7 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write("*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
-    f.write("import pegged.peg;\n\n");
+    f.write("import pegged.peg;\nimport std.array;\nimport std.conv;\n\n");
     f.write(grammar(grammarString));
 }
 
