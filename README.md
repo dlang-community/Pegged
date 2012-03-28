@@ -14,13 +14,13 @@ To use **Pegged**, just call the `grammar` function with a PEG and mix it in. Fo
 import pegged.grammar;
 
 mixin(grammar(" 
-    Expr     <-  Factor AddExpr*
-    AddExpr  <-  ('+'/'-') Factor
-    Factor   <-  Primary MulExpr*
-    MulExpr  <-  ('*'/'/') Primary
-    Primary  <-  Parens / Number / Variable / '-' Primary
+    Expr     <   Factor AddExpr*
+    AddExpr  <   ('+'/'-') Factor
+    Factor   <   Primary MulExpr*
+    MulExpr  <   ('*'/'/') Primary
+    Primary  <   Parens / Number / Variable / '-' Primary
 
-    Parens   <-  '(' Expr ')'
+    Parens   <   '(' Expr ')'
     Number   <~ [0-9]+
     Variable <- Identifier
 "));
