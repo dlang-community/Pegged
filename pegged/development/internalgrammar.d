@@ -7,8 +7,7 @@ import std.conv;
 public import pegged.peg;
 import pegged.internalpeg;
 
-version(none)
-{
+
 void asModule(string moduleName, string grammarString)
 {
     import std.stdio;
@@ -19,9 +18,8 @@ void asModule(string moduleName, string grammarString)
     f.write("*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
-    f.write("import pegged.peg;\n\n");
+    f.write("import pegged.peg, pegged.internalpeg;\nimport std.array;\nimport std.conv;\n\n");
     f.write(grammar(grammarString));
-}
 }
 
 string grammar(string g)

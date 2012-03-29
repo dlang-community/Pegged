@@ -365,5 +365,8 @@ mixin template internalPeg()
         }
         
         //mixin(stringToInputMixin());  
-    }  
+    }
+    
+    alias Or!(Lit!"\r\n", Lit!"\n", Lit!"\r") EOL;
+    alias Drop!(ZeroOrMore!(Or!(Lit!" ", Lit!"\t", EOL))) Spacing;
 }
