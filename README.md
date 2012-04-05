@@ -132,6 +132,7 @@ Other languages:
 
 * [pegtl](http://code.google.com/p/pegtl/), the PEG Template Library, in C++.
 * [chilon::parser](http://chilon.net/library.html) in C++ also.
+* [metaparse](http://abel.web.elte.hu/mpllibs/metaparse/index.html), in C++, is able to parse at compile-time.
 * [Parslet](http://kschiess.github.com/parslet/) in Ruby and [Treetop](http://treetop.rubyforge.org/), in Ruby also.
 
 License
