@@ -1,4 +1,4 @@
-module pegged.utils.PEGGEDgrammar;
+module pegged.development.PEGGEDgrammar;
 
 enum string PEGGEDgrammar =`
 PEGGED:
@@ -26,7 +26,16 @@ Literal     <~ :Quote (!Quote Char)* :Quote S
              / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
 Class       <- :'[' (!']' CharRange)* :']' S
 CharRange   <- Char :'-' Char / Char
-Char        <- BackSlash ('-' / BackSlash / '[' / ']') # Escape sequences
+Char        <- BackSlash ( Quote
+                         / DoubleQuote
+                         / BackQuote
+                         / BackSlash 
+                         / '-'
+                         / '[' 
+                         / ']' 
+                         / [nrt]
+                         / [0-2][0-7][0-7]
+                         / [0-7][0-7]?)
              / !BackSlash .
 ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S
 ArgList     <- :OPEN Expression (:',' Expression)* :CLOSE S

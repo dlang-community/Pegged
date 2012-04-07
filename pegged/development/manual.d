@@ -1,4 +1,4 @@
-module pegged.grammar;
+module pegged.develompment.manual;
 
 import std.algorithm;
 import std.conv;

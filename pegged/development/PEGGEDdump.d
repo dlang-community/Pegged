@@ -26,7 +26,16 @@ Literal     <~ :Quote (!Quote Char)* :Quote S
              / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
 Class       <- :'[' (!']' CharRange)* :']' S
 CharRange   <- Char :'-' Char / Char
-Char        <- BackSlash ('-' / BackSlash / '[' / ']') # Escape sequences
+Char        <- BackSlash ( Quote
+                         / DoubleQuote
+                         / BackQuote
+                         / BackSlash 
+                         / '-'
+                         / '[' 
+                         / ']' 
+                         / [nrt]
+                         / [0-2][0-7][0-7]
+                         / [0-7][0-7]?)
              / !BackSlash .
 ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S
 ArgList     <- :OPEN Expression (:',' Expression)* :CLOSE S
@@ -66,9 +75,13 @@ ANY        <- '.' S
 S          <: ~(Blank / EOL / Comment)*
 Comment    <- "#" (!EOL .)* (EOL/EOI)
 */
-module PEGGEDdump;
+module pegged.development.PEGGEDdump;
 
 import pegged.peg;
+import std.array;
+import std.algorithm: startsWith;
+import std.conv;
+
 
 class PEGGED : Parser
 {
@@ -77,9 +90,11 @@ class PEGGED : Parser
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin());
         auto p = Grammar.parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]))
+                         : fail(p.parseTree.end, p.capture);
     }
     
     mixin(stringToInputMixin());
@@ -106,10 +121,14 @@ class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Grammar`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Grammar`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -122,10 +141,14 @@ class GrammarName : Seq!(Identifier,S,Drop!(Lit!(":")),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`GrammarName`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`GrammarName`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -138,10 +161,14 @@ class Definition : Seq!(RuleName,Arrow,Expression,S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Definition`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Definition`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -154,10 +181,14 @@ class RuleName : Seq!(Identifier,Option!(ParamList),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`RuleName`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`RuleName`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -170,10 +201,14 @@ class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Expression`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Expression`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -186,10 +221,14 @@ class Sequence : OneOrMore!(Prefix)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Sequence`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Sequence`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -202,10 +241,14 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,FUSE)),Suffix)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Prefix`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Prefix`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -218,10 +261,14 @@ class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,Wi
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Suffix`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Suffix`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -234,10 +281,14 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Primary`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Primary`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -250,10 +301,14 @@ class Name : Seq!(QualifiedIdentifier,Option!(ArgList),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Name`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Name`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -266,10 +321,14 @@ class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`GroupExpr`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`GroupExpr`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -282,10 +341,14 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Literal`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Literal`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -298,10 +361,14 @@ class Class : Seq!(Drop!(Lit!("[")),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),Ch
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Class`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Class`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -314,26 +381,34 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`CharRange`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`CharRange`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
     
 }
 
-class Char : Or!(Seq!(BackSlash,Or!(Lit!("-"),BackSlash,Lit!("["),Lit!("]"))),Seq!(NegLookAhead!(BackSlash),Any))
+class Char : Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,Lit!("-"),Lit!("["),Lit!("]"),Or!(Lit!("n"),Lit!("r"),Lit!("t")),Seq!(Range!('0','2'),Range!('0','7'),Range!('0','7')),Seq!(Range!('0','7'),Option!(Range!('0','7'))))),Seq!(NegLookAhead!(BackSlash),Any))
 {
     enum name = `Char`;
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Char`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Char`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -346,10 +421,14 @@ class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),Identifi
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`ParamList`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`ParamList`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -362,10 +441,14 @@ class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),Ex
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`ArgList`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`ArgList`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -378,10 +461,14 @@ class NamedExpr : Seq!(NAME,Option!(Identifier),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`NamedExpr`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`NamedExpr`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -394,10 +481,14 @@ class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier,Drop!(ACTIONCLOSE),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`WithAction`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`WithAction`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -410,10 +501,14 @@ class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW,SPACEARROW)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Arrow`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Arrow`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -426,10 +521,14 @@ class LEFTARROW : Seq!(Lit!("<-"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`LEFTARROW`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`LEFTARROW`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -442,10 +541,14 @@ class FUSEARROW : Seq!(Lit!("<~"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`FUSEARROW`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`FUSEARROW`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -458,10 +561,14 @@ class DROPARROW : Seq!(Lit!("<:"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`DROPARROW`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`DROPARROW`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -474,10 +581,14 @@ class ACTIONARROW : Seq!(Lit!("<"),WithAction,S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`ACTIONARROW`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`ACTIONARROW`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -490,10 +601,14 @@ class SPACEARROW : Seq!(Lit!("<"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`SPACEARROW`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`SPACEARROW`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -506,10 +621,14 @@ class OR : Seq!(Lit!("/"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`OR`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`OR`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -522,10 +641,14 @@ class LOOKAHEAD : Seq!(Lit!("&"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`LOOKAHEAD`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`LOOKAHEAD`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -538,10 +661,14 @@ class NOT : Seq!(Lit!("!"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`NOT`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`NOT`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -554,10 +681,14 @@ class DROP : Seq!(Lit!(":"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`DROP`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`DROP`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -570,10 +701,14 @@ class FUSE : Seq!(Lit!("~"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`FUSE`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`FUSE`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -586,10 +721,14 @@ class NAME : Seq!(Lit!("="),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`NAME`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`NAME`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -602,10 +741,14 @@ class ACTIONOPEN : Seq!(Lit!("{"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`ACTIONOPEN`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`ACTIONOPEN`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -618,10 +761,14 @@ class ACTIONCLOSE : Seq!(Lit!("}"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`ACTIONCLOSE`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`ACTIONCLOSE`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -634,10 +781,14 @@ class OPTION : Seq!(Lit!("?"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`OPTION`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`OPTION`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -650,10 +801,14 @@ class ZEROORMORE : Seq!(Lit!("*"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`ZEROORMORE`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`ZEROORMORE`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -666,10 +821,14 @@ class ONEORMORE : Seq!(Lit!("+"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`ONEORMORE`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`ONEORMORE`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -682,10 +841,14 @@ class OPEN : Seq!(Lit!("("),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`OPEN`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`OPEN`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -698,10 +861,14 @@ class CLOSE : Seq!(Lit!(")"),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`CLOSE`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`CLOSE`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -714,10 +881,14 @@ class ANY : Seq!(Lit!("."),S)
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`ANY`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`ANY`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -730,10 +901,14 @@ class S : Drop!(Fuse!(ZeroOrMore!(Or!(Blank,EOL,Comment))))
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`S`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`S`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -746,14 +921,304 @@ class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL
 
     static Output parse(Input input)
     {
+        mixin(okfailMixin);
+        
         auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`Comment`, p.success, p.capture, input.pos, p.pos, 
-                                (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)));
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Comment`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
     
 }
 
+}
+
+
+void asModule(string moduleName, string grammarString)
+{
+    asModule(moduleName, moduleName~".d", grammarString);
+}
+
+void asModule(string moduleName, string fileName, string grammarString)
+{
+    import std.stdio;
+    auto f = File(fileName,"w");
+    
+    f.write("/**\nThis module was automatically generated from the following grammar:\n");
+    f.write(grammarString);
+    f.write("*/\n");
+    
+    f.write("module " ~ moduleName ~ ";\n\n");
+    f.write("import pegged.peg;\nimport std.array;\nimport std.conv;\n\n");
+    f.write(grammar(grammarString));
+}
+
+string grammar(string g)
+{    
+    auto grammarAsOutput = PEGGED.parse(g);
+    if (grammarAsOutput.children.length == 0) return `static assert(false, "Bad grammar: ` ~ to!string(grammarAsOutput.capture) ~ `");`;
+    string[] names;
+    foreach(definition; grammarAsOutput.children[0].children)
+        if (definition.name == "Definition") 
+            names ~= definition.capture[0];
+    string ruleNames = "    enum ruleNames = [";
+    foreach(name; names)
+        ruleNames ~= "\"" ~ name ~ "\":true,";
+    ruleNames = ruleNames[0..$-1] ~ "];\n";
+    
+    string PEGtoCode(ParseTree p)
+    {
+        string result;
+        auto ch = p.children;
+        
+        switch (p.name)
+        {
+            case "PEGGED":
+                return PEGtoCode(ch[0]);
+            case "Grammar":
+                bool named = ch[0].name == "GrammarName";
+                string grammarName = named ? ch[0].capture[0] 
+                                           : names.front;
+                
+                result = "class " ~ grammarName ~ " : Parser\n{\n" 
+                        ~ "    enum name = `"~ grammarName ~ "`;\n"
+                        ~ ruleNames ~ "\n"
+                        ~
+"    static Output parse(Input input)
+    {
+        mixin(okfailMixin());
+        "
+~ (named ? "auto p = "~names.front~".parse(input);
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]))
+                         : fail(p.parseTree.end, p.capture);"
+                   
+        : "return "~names.front~".parse(input);")
+~ "
+    }
+    
+    mixin(stringToInputMixin());
+
+    static ParseTree[] filterChildren(ParseTree p)
+    {
+        ParseTree[] filteredChildren;
+        foreach(child; p.children)
+        {
+            if (child.name in ruleNames)
+                filteredChildren ~= child;
+            else
+            {
+                if (child.children.length > 0)
+                    filteredChildren ~= filterChildren(child);
+            }
+        }
+        return filteredChildren;
+    }
+    
+";
+                foreach(child; named ? ch[1..$] : ch)
+                    result ~= PEGtoCode(child);
+                return result ~ "}\n";
+            case "Definition":
+                string code = "    enum name = `" ~ch[0].capture[0]~ "`;
+
+    static Output parse(Input input)
+    {
+        mixin(okfailMixin);
+        
+        auto p = typeof(super).parse(input);
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`"~ch[0].capture[0]~"`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+    }
+    
+    mixin(stringToInputMixin());
+    ";
+
+                string inheritance;
+                switch(ch[1].children[0].name)
+                {
+                    case "LEFTARROW":
+                        inheritance = PEGtoCode(ch[2]);
+                        break;
+                    case "FUSEARROW":
+                        inheritance = "Fuse!(" ~ PEGtoCode(ch[2]) ~ ")";
+                        break;
+                    case "DROPARROW":
+                        inheritance = "Drop!(" ~ PEGtoCode(ch[2]) ~ ")";
+                        break;
+                    case "ACTIONARROW":
+                        inheritance = "Action!(" ~ PEGtoCode(ch[2]) ~ ", " ~ ch[1].capture[1] ~ ")";
+                        break;
+                    case "SPACEARROW":
+                        string temp = PEGtoCode(ch[2]);
+                        // changing all Seq in the inheritance list into SpaceSeq. Hacky, but it works.
+                        foreach(i, c; temp)
+                        {
+                            if (temp[i..$].startsWith("Seq!(")) inheritance ~= "Space";
+                            inheritance ~= c;
+                        }   
+                        break;
+                    default:
+                        inheritance ="ERROR: Bad arrow: " ~ ch[1].name;
+                        break;
+                }
+
+                return "class " 
+                    ~ ch[0].capture[0] // name 
+                    ~ (ch[0].capture.length == 2 ? ch[0].capture[1] : "") // parameter list
+                    ~ " : " ~ inheritance // inheritance code
+                    ~ "\n{\n" 
+                    ~ code // inner code
+                    ~ "\n}\n\n";
+            case "Expression":
+                if (ch.length > 1) // OR present
+                {
+                    result = "Or!(";
+                    foreach(i,child; ch)
+                        if (i%2 == 0) result ~= PEGtoCode(child) ~ ",";
+                    result = result[0..$-1] ~ ")";
+                }
+                else // one-element Or -> dropping the Or!( )
+                    result = PEGtoCode(ch[0]);
+                return result;
+            case "Sequence":
+                if (ch.length > 1)
+                {
+                    result = "Seq!(";
+                    foreach(child; ch) 
+                    {
+                        auto temp = PEGtoCode(child);
+                        if (temp.startsWith("Seq!("))
+                            temp = temp[5..$-1];
+                        result ~= temp ~ ",";
+                    }
+                    result = result[0..$-1] ~ ")";
+                }
+                else
+                    result = PEGtoCode(ch[0]);
+                return result;
+            case "Prefix":
+                if (ch.length > 1)
+                    switch (ch[0].name)
+                    {
+                        case "NOT":
+                            result = "NegLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            break;
+                        case "LOOKAHEAD":
+                            result = "PosLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            break;
+                        case "DROP":
+                            result = "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            break;
+                        case "FUSE":
+                            result = "Fuse!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            break;
+                        default:
+                            break;
+                    }
+                else
+                    result = PEGtoCode(ch[0]);
+                return result;
+            case "Suffix":
+                if (ch.length > 1)
+                    switch (ch[1].name)
+                    {
+                        case "OPTION":
+                            result = "Option!(" ~ PEGtoCode(ch[0]) ~ ")";
+                            break;
+                        case "ZEROORMORE":
+                            result = "ZeroOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
+                            break;
+                        case "ONEORMORE":
+                            result = "OneOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
+                            break;
+                        case "NamedExpr":
+                            if (ch[1].capture.length == 2)
+                                result = "Named!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[1] ~ "\")";
+                            else
+                                result = "PushName!(" ~ PEGtoCode(ch[0]) ~ ")";
+                            break;
+                        case "WithAction":
+                            result = "Action!(" ~ PEGtoCode(ch[0]) ~ ", " ~ ch[1].capture[0] ~ ")";
+                            break;
+                        default:
+                            break;
+                    }
+                else
+                    result = PEGtoCode(ch[0]);
+                return result;
+            case "Primary":
+                foreach(child; ch) result ~= PEGtoCode(child);
+                return result;
+            case "Name":
+                result = p.capture[0];
+                if (ch.length == 1) result ~= PEGtoCode(ch[0]);
+                return result;
+            case "ArgList":
+                result = "!(";
+                foreach(child; ch)
+                    result ~= PEGtoCode(child) ~ ","; // Wow! Allow  A <- List('A'*,',') 
+                result = result[0..$-1] ~ ")";
+                return result;
+            case "GroupExpr":
+                if (ch.length == 0) return "ERROR: Empty group ()";
+                auto temp = PEGtoCode(ch[0]);
+                if (ch.length == 1 || temp.startsWith("Seq!(")) return temp;
+                result = "Seq!(" ~ temp ~ ")";
+                return result;
+            case "Ident":
+                return p.capture[0];
+            case "Literal":
+                if (p.capture[0].length == 0)
+                    return "ERROR: empty literal";
+                return "Lit!(\"" ~ p.capture[0] ~ "\")";
+            case "Class":
+                if (ch.length == 0)
+                    return "ERROR: Empty Class of chars []";
+                else 
+                {
+                    if (ch.length > 1)
+                    {
+                        result = "Or!(";
+                        foreach(child; ch)
+                        {
+                            auto temp = PEGtoCode(child);
+                            if (temp.startsWith("Or!("))
+                                temp = temp[4..$-1];
+                            result ~= temp ~ ",";
+                        }
+                        result = result[0..$-1] ~ ")";
+                    }
+                    else
+                        result = PEGtoCode(ch[0]);
+                }
+                return result;
+            case "CharRange":
+                if (ch.length == 2)
+                    return "Range!('" ~ PEGtoCode(ch[0]) ~ "','" ~ PEGtoCode(ch[1]) ~ "')";
+                else
+                    return "Lit!(\"" ~ PEGtoCode(ch[0]) ~ "\")"; 
+            case "Char":
+                if (p.capture.length == 2) // escape sequence \-, \[, \] 
+                    return p.capture[1];
+                else
+                    return p.capture[0];
+            case "OR":
+                foreach(child; ch) result ~= PEGtoCode(child);
+                return result;
+            case "ANY":
+                return "Any";
+            default:
+                return "";
+        }
+    }
+
+    return PEGtoCode(grammarAsOutput.parseTree);
 }
