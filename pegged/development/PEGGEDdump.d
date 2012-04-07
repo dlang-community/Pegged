@@ -77,10 +77,10 @@ Comment    <- "#" (!EOL .)* (EOL/EOI)
 */
 module pegged.development.PEGGEDdump;
 
-import pegged.peg;
-import std.array;
-import std.algorithm: startsWith;
-import std.conv;
+public import pegged.peg;
+public import std.array: empty;
+public import std.algorithm: startsWith;
+public import std.conv:to;
 
 
 class PEGGED : Parser
@@ -937,6 +937,7 @@ class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL
 
 }
 
+/+ from here, the code comes from pegged.development.bootstrap +/
 
 void asModule(string moduleName, string grammarString)
 {
@@ -953,7 +954,7 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write("*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
-    f.write("import pegged.peg;\nimport std.array;\nimport std.conv;\n\n");
+    f.write("import pegged.peg;\nimport std.algorithm:startsWith;\nimport std.array:empty;\nimport std.conv:to;\n\n");
     f.write(grammar(grammarString));
 }
 
