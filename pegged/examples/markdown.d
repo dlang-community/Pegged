@@ -1,6 +1,11 @@
 module pegged.examples.markdown;
 
 enum MarkdownGrammar= `
+# Markdown grammar.
+# Taken from the PEG grammar at
+# https://github.com/jgm/peg-markdown
+# And simplified somewhat.
+
 Markdown:
 
 Doc <- BOM?  Block*
