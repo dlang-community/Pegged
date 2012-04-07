@@ -1,6 +1,6 @@
-*test*
+test*
 *~
 *.deps
 *.obj
 *.o
-
+sundown*
