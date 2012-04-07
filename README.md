@@ -43,6 +43,8 @@ auto parseTree2 = Expr.parse(" 0 + 123 - 456 ");
 assert(parseTree2.capture == ["0", "+", "123", "-", "456"]);
 ```
 
+Even for such a simple grammar and such a simple expression, the resulting parse tree is a bit long to be shown here. See [the result here](https://github.com/PhilippeSigaud/Pegged/wiki/Parse-Result)
+
 By default, the grammars do not silently consume spaces, as this is the standard behavior for PEGs. There is an opt-out though, with the simple `<` arrow instead of `<-` (you can see it in the previous example).
 
 Here is a little [tutorial](https://github.com/PhilippeSigaud/Pegged/wiki/Pegged-Tutorial).
