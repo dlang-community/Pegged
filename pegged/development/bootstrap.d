@@ -35,6 +35,8 @@ void asModule(string moduleName, string fileName, string grammarString)
 string grammar(string g)
 {    
     auto grammarAsOutput = PEGGED.parse(g);
+    if (grammarAsOutput.children.length == 0) return `static assert(false, "Bad grammar: ` ~ to!string(grammarAsOutput.capture) ~ `");`;
+    
     string[] names;
     foreach(definition; grammarAsOutput.children[0].children)
         if (definition.name == "Definition") 
