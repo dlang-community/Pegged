@@ -28,7 +28,7 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write("*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
-    f.write("import pegged.peg;\nimport std.array;\nimport std.conv;\n\n");
+    //f.write("import pegged.peg;\nimport std.array;\nimport std.conv;\n\n");
     f.write(grammar(grammarString));
 }
 
@@ -60,10 +60,11 @@ string grammar(string g)
                 string grammarName = named ? ch[0].capture[0] 
                                            : names.front;
                 
-                result = "class " ~ grammarName ~ " : Parser\n{\n" 
-                        ~ "    enum name = `"~ grammarName ~ "`;\n"
-                        ~ ruleNames ~ "\n"
-                        ~
+                result = "import std.algorithm, std.array, std.conv;\n"
+                       ~ "class " ~ grammarName ~ " : Parser\n{\n" 
+                       ~ "    enum name = `"~ grammarName ~ "`;\n"
+                       ~ ruleNames ~ "\n"
+                       ~
 "    static Output parse(Input input)
     {
         mixin(okfailMixin());
