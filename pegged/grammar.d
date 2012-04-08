@@ -1204,14 +1204,14 @@ string grammar(string g)
                 return result;
             case "CharRange":
                 if (ch.length == 2)
-                    return "Range!(" ~ PEGtoCode(ch[0]) ~ "," ~ PEGtoCode(ch[1]) ~ ")";
+                    return "Range!('" ~ PEGtoCode(ch[0]) ~ "','" ~ PEGtoCode(ch[1]) ~ "')";
                 else
                     return "Lit!(\"" ~ PEGtoCode(ch[0]) ~ "\")"; 
             case "Char":
-                if (p.capture.length == 2) // escape sequence \-, \[, \] 
-                    return "'" ~ p.capture[1] ~ "'";
-                else
-                    return "'" ~ p.capture[0] ~ "'";
+                //if (p.capture.length == 2) // escape sequence \-, \[, \] 
+                //    return "'" ~ p.capture[1] ~ "'";
+                //else
+                    return p.capture[0];
             case "OR":
                 foreach(child; ch) result ~= PEGtoCode(child);
                 return result;
