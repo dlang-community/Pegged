@@ -1,6 +1,7 @@
 /**
 This module was automatically generated from the following grammar:
 
+
 PEGGED:
 Grammar     <- S GrammarName? Definition+ EOI
 GrammarName <- Identifier S :":" S
@@ -26,7 +27,7 @@ Literal     <~ :Quote (!Quote Char)* :Quote S
              / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
 Class       <- :'[' (!']' CharRange)* :']' S
 CharRange   <- Char :'-' Char / Char
-Char        <- BackSlash ( Quote
+Char        <~ BackSlash ( Quote
                          / DoubleQuote
                          / BackQuote
                          / BackSlash 
@@ -74,14 +75,13 @@ ANY        <- '.' S
     
 S          <: ~(Blank / EOL / Comment)*
 Comment    <- "#" (!EOL .)* (EOL/EOI)
+
+
 */
 module pegged.grammar;
 
-public import pegged.peg;
-import std.array;
-import std.algorithm: startsWith;
-import std.conv;
-
+import pegged.peg;
+import std.array, std.algorithm, std.conv;
 
 class PEGGED : Parser
 {
@@ -395,7 +395,7 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
     
 }
 
-class Char : Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,Lit!("-"),Lit!("["),Lit!("]"),Or!(Lit!("n"),Lit!("r"),Lit!("t")),Seq!(Range!('0','2'),Range!('0','7'),Range!('0','7')),Seq!(Range!('0','7'),Option!(Range!('0','7'))))),Seq!(NegLookAhead!(BackSlash),Any))
+class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,Lit!("-"),Lit!("["),Lit!("]"),Or!(Lit!("'n'"),Lit!("'r'"),Lit!("'t'")),Seq!(Range!('0','2'),Range!('0','7'),Range!('0','7')),Seq!(Range!('0','7'),Option!(Range!('0','7'))))),Seq!(NegLookAhead!(BackSlash),Any)))
 {
     enum name = `Char`;
 
@@ -954,7 +954,7 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write("\n\n*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
-    //f.write("import pegged.peg;\nimport std.algorithm;\nimport std.array;\nimport std.conv;\n\n");
+    f.write("import pegged.peg;\n");//\nimport std.algorithm;\nimport std.array;\nimport std.conv;\n\n");
     f.write(grammar(grammarString));
 }
 
@@ -1204,14 +1204,14 @@ string grammar(string g)
                 return result;
             case "CharRange":
                 if (ch.length == 2)
-                    return "Range!('" ~ PEGtoCode(ch[0]) ~ "','" ~ PEGtoCode(ch[1]) ~ "')";
+                    return "Range!(" ~ PEGtoCode(ch[0]) ~ "," ~ PEGtoCode(ch[1]) ~ ")";
                 else
                     return "Lit!(\"" ~ PEGtoCode(ch[0]) ~ "\")"; 
             case "Char":
                 if (p.capture.length == 2) // escape sequence \-, \[, \] 
-                    return p.capture[1];
+                    return "'" ~ p.capture[1] ~ "'";
                 else
-                    return p.capture[0];
+                    return "'" ~ p.capture[0] ~ "'";
             case "OR":
                 foreach(child; ch) result ~= PEGtoCode(child);
                 return result;
