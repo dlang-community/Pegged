@@ -22,17 +22,17 @@ Block <-     BlankLine*
             / HtmlBlock
             / StyleBlock
             / Para
-            / Plain )
+            / Inlines )
 
-Para <-      NonindentSpace Inlines BlankLine+
+Para <~      NonindentSpace Inlines BlankLine+
 
-Plain <-     Inlines
+#Plain <~     Inlines
 
 AtxInline <- !Newline !(Sp? '#'* Sp Newline) Inline
 
 AtxStart <-  ( "######" / "#####" / "####" / "###" / "##" / "#" )
 
-AtxHeading <- AtxStart Sp?  AtxInline+ (Sp? '#'* Sp)?  Newline
+AtxHeading <- AtxStart Sp?  ~(AtxInline+) (Sp? '#'* Sp)?  Newline
 
 SetextHeading <- SetextHeading1 / SetextHeading2
 
@@ -40,11 +40,11 @@ SetextBottom1 <- "<-<-<-" '<-'* Newline
 
 SetextBottom2 <- "---" '-'* Newline
 
-SetextHeading1 <-  &(RawLine SetextBottom1)
+SetextHeading1 <-  &(Line SetextBottom1)
                    ( !Endline Inline )+ Sp? Newline
                   SetextBottom1
 
-SetextHeading2 <-  &(RawLine SetextBottom2)
+SetextHeading2 <-  &(Line SetextBottom2)
                    ( !Endline Inline)+ Sp? Newline
                   SetextBottom2
 
@@ -54,7 +54,7 @@ BlockQuote <- BlockQuoteRaw
 
 BlockQuoteRaw <- ( '>' ' '? Line ( !'>' !BlankLine Line )* BlankLine* )+
 
-NonblankIndentedLine <- !BlankLine IndentedLine
+NonblankIndentedLine <~ !BlankLine IndentedLine
 
 VerbatimChunk <-  BlankLine* NonblankIndentedLine+
 
@@ -300,11 +300,11 @@ Inline  <- Str
         / Smart
         / Symbol
 
-Space <- Spacechar+
+Space <~ Spacechar+
 
-Str <-  NormalChar+ StrChunk*
+Str <~  NormalChar+ StrChunk*
 
-StrChunk <- (NormalChar / '_'+ &Alphanumeric)+ / AposChunk
+StrChunk <~ (NormalChar / '_'+ &Alphanumeric)+ / AposChunk
 
 AposChunk <- Quote &Alphanumeric
 
@@ -413,16 +413,16 @@ Ticks3 <- BackQuote BackQuote BackQuote !BackQuote
 Ticks4 <- BackQuote BackQuote BackQuote BackQuote !BackQuote
 Ticks5 <- BackQuote BackQuote BackQuote BackQuote BackQuote !BackQuote
 
-Code <- ( Ticks1 Sp ( ( !BackQuote Nonspacechar )+ / !Ticks1 BackQuote+ / !( Sp Ticks1 ) ( Spacechar / Newline !BlankLine ) )+  Sp Ticks1
-       / Ticks2 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks2 BackQuote+ / !( Sp Ticks2 ) ( Spacechar / Newline !BlankLine ) )+  Sp Ticks2
-       / Ticks3 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks3 BackQuote+ / !( Sp Ticks3 ) ( Spacechar / Newline !BlankLine ) )+  Sp Ticks3
-       / Ticks4 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks4 BackQuote+ / !( Sp Ticks4 ) ( Spacechar / Newline !BlankLine ) )+  Sp Ticks4
-       / Ticks5 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks5 BackQuote+ / !( Sp Ticks5 ) ( Spacechar / Newline !BlankLine ) )+  Sp Ticks5
+Code <~ ( :Ticks1 Sp ( ( !BackQuote Nonspacechar )+ / !Ticks1 BackQuote+ / !( Sp Ticks1 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks1
+       / :Ticks2 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks2 BackQuote+ / !( Sp Ticks2 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks2
+       / :Ticks3 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks3 BackQuote+ / !( Sp Ticks3 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks3
+       / :Ticks4 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks4 BackQuote+ / !( Sp Ticks4 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks4
+       / :Ticks5 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks5 BackQuote+ / !( Sp Ticks5 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks5
        )
 
 RawHtml <- HtmlComment / HtmlBlockScript / HtmlTag
 
-BlankLine <- Sp Newline
+BlankLine <~ Sp Newline
 
 Quoted <-        DoubleQuote (!DoubleQuote .)* DoubleQuote / Quote (!Quote .)* Quote
 HtmlAttribute <- (AlphanumericAscii / '-')+ Spnl ('<-' Spnl (Quoted / (!'>' Nonspacechar)+))? Spnl
@@ -437,7 +437,7 @@ Spnl <-          Sp (Newline Sp)?
 
 SpecialChar <-   '*' / '_' / BackQuote / '&' / '[' / ']' / '(' / ')' / '<' / '!' / '#' / BackSlash / Quote / DoubleQuote / ExtendedSpecialChar
 NormalChar <-    !( SpecialChar / Spacechar / Newline ) .
-NonAlphanumeric <- [\000-\057\072-\100\133-\140\173-\177]
+NonAlphanumeric <- !Alphanumeric . #[\001-\057] / [\072-\100] / [\133-\140] / [\173-\177]
 Alphanumeric <- [0-9A-Za-z] / '\200' / '\201' / '\202' / '\203' / '\204' / '\205' / '\206' / '\207' / '\210' / '\211' / '\212' / '\213' / '\214' / '\215' / '\216' / '\217' / '\220' / '\221' / '\222' / '\223' / '\224' / '\225' / '\226' / '\227' / '\230' / '\231' / '\232' / '\233' / '\234' / '\235' / '\236' / '\237' / '\240' / '\241' / '\242' / '\243' / '\244' / '\245' / '\246' / '\247' / '\250' / '\251' / '\252' / '\253' / '\254' / '\255' / '\256' / '\257' / '\260' / '\261' / '\262' / '\263' / '\264' / '\265' / '\266' / '\267' / '\270' / '\271' / '\272' / '\273' / '\274' / '\275' / '\276' / '\277' / '\300' / '\301' / '\302' / '\303' / '\304' / '\305' / '\306' / '\307' / '\310' / '\311' / '\312' / '\313' / '\314' / '\315' / '\316' / '\317' / '\320' / '\321' / '\322' / '\323' / '\324' / '\325' / '\326' / '\327' / '\330' / '\331' / '\332' / '\333' / '\334' / '\335' / '\336' / '\337' / '\340' / '\341' / '\342' / '\343' / '\344' / '\345' / '\346' / '\347' / '\350' / '\351' / '\352' / '\353' / '\354' / '\355' / '\356' / '\357' / '\360' / '\361' / '\362' / '\363' / '\364' / '\365' / '\366' / '\367' / '\370' / '\371' / '\372' / '\373' / '\374' / '\375' / '\376' / '\377'
 AlphanumericAscii <- [A-Za-z0-9]
 Digit <- [0-9]
@@ -449,17 +449,54 @@ CharEntity <-    '&' [A-Za-z0-9]+
 
 NonindentSpace <-    "   " / "  " / " " / Eps
 Indent <-            "\t" / "    "
-IndentedLine <-      Indent Line
+IndentedLine <-      :Indent Line
 OptionallyIndentedLine <- Indent? Line
 
-
-Line <-  RawLine
-
-RawLine <- (!'\r' !'\n' .)* Newline 
+Line <~  (!'\r' !'\n' .)* Newline 
          / .+ EOI 
 
 SkipBlock <- HtmlBlock
-          / ( !'#' !SetextBottom1 !SetextBottom2 !BlankLine RawLine )+ BlankLine*
+          / ( !'#' !SetextBottom1 !SetextBottom2 !BlankLine Line )+ BlankLine*
           / BlankLine+
-          / RawLine
+          / Line
+          
+ExtendedSpecialChar <- '.' / '-' / Quote / DoubleQuote / '^'
+
+Smart <- Ellipsis / Dash / SingleQuoted / DoubleQuoted / Apostrophe
+
+Apostrophe <- Quote
+
+Ellipsis <- "..." / ". . ."
+
+Dash <- EmDash / EnDash
+
+EnDash <- '-' &Digit
+
+EmDash <- "---" / "--"
+
+SingleQuoteStart <- Quote !(Spacechar / Newline)
+
+SingleQuoteEnd <- Quote !Alphanumeric
+
+SingleQuoted <- SingleQuoteStart ( !SingleQuoteEnd Inline )+  SingleQuoteEnd
+
+DoubleQuoteStart <- DoubleQuote
+
+DoubleQuoteEnd <- DoubleQuote
+
+DoubleQuoted <-  DoubleQuoteStart ( !DoubleQuoteEnd Inline )+ DoubleQuoteEnd
+                
+NoteReference <- RawNoteReference
+
+RawNoteReference <- "[^"  ( !Newline !']' . )+  ']'
+
+Note <- NonindentSpace RawNoteReference ':' Sp
+        RawNoteBlock 
+        ( &Indent RawNoteBlock  )*
+
+InlineNote <-    "^[" ( !']' Inline  )+ ']'
+
+Notes <-  ( Note / SkipBlock )*
+                
+RawNoteBlock <-  ( !BlankLine OptionallyIndentedLine )+ BlankLine*
 `;
