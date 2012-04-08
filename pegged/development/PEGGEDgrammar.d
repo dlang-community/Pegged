@@ -26,7 +26,7 @@ Literal     <~ :Quote (!Quote Char)* :Quote S
              / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
 Class       <- :'[' (!']' CharRange)* :']' S
 CharRange   <- Char :'-' Char / Char
-Char        <- BackSlash ( Quote
+Char        <~ BackSlash ( Quote
                          / DoubleQuote
                          / BackQuote
                          / BackSlash 
