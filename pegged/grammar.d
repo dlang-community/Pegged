@@ -80,7 +80,7 @@ Comment    <- "#" (!EOL .)* (EOL/EOI)
 */
 module pegged.grammar;
 
-import pegged.peg;
+public import pegged.peg;
 import std.array, std.algorithm, std.conv;
 
 class PEGGED : Parser
@@ -954,7 +954,7 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write("\n\n*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
-    f.write("import pegged.peg;\n");//\nimport std.algorithm;\nimport std.array;\nimport std.conv;\n\n");
+    f.write("import pegged.peg;\n");
     f.write(grammar(grammarString));
 }
 
