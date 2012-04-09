@@ -2,11 +2,13 @@
 This module was automatically generated from the following grammar:
 
 
+# This is the PEG extended grammar used by Pegged
 PEGGED:
+
 Grammar     <- S GrammarName? Definition+ EOI
-GrammarName <- Identifier S :":" S
+GrammarName <- Identifier S :":" S       # Ext: named grammars
 Definition  <- RuleName Arrow Expression S
-RuleName    <- Identifier (ParamList?) S
+RuleName    <- Identifier (ParamList?) S # Ext: different arrows
 Expression  <- Sequence (OR Sequence)*
 Sequence    <- Prefix+
 Prefix      <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
@@ -21,7 +23,7 @@ Primary     <- Name !Arrow
              / Class 
              / ANY
 
-Name        <- QualifiedIdentifier ArgList? S
+Name        <- QualifiedIdentifier ArgList? S #Ext: names can be qualified
 GroupExpr   <- :OPEN Expression :CLOSE S
 Literal     <~ :Quote (!Quote Char)* :Quote S
              / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
@@ -31,37 +33,42 @@ Char        <~ BackSlash ( Quote
                          / DoubleQuote
                          / BackQuote
                          / BackSlash 
-                         / '-'
+                         / '-'         # Ext: escaping -,[,] in char ranges
                          / '[' 
                          / ']' 
                          / [nrt]
                          / [0-2][0-7][0-7]
-                         / [0-7][0-7]?)
+                         / [0-7][0-7]?
+                         / 'x' Hex Hex
+                         / 'u' Hex Hex Hex Hex
+                         / 'U' Hex Hex Hex Hex Hex Hex Hex Hex)
              / !BackSlash .
-ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S
+Hex         <- [0-9a-fA-F]
+             
+# Ext: parameterized rules
+ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S 
 ArgList     <- :OPEN Expression (:',' Expression)* :CLOSE S
-NamedExpr   <- NAME Identifier? S
-WithAction  <~ :ACTIONOPEN Identifier :ACTIONCLOSE S
+
+NamedExpr   <- NAME Identifier? S # Ext: named captures
+WithAction  <~ :ACTIONOPEN Identifier :ACTIONCLOSE S # Ext: semantic actions
 
 Arrow       <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW / SPACEARROW
 LEFTARROW   <- "<-" S
-FUSEARROW   <- "<~" S
-DROPARROW   <- "<:" S
-ACTIONARROW <- "<" WithAction S
-SPACEARROW  <- "<" S
+FUSEARROW   <- "<~" S           # Ext: rule-level fuse
+DROPARROW   <- "<:" S           # Ext: rule-level drop
+ACTIONARROW <- "<" WithAction S # Ext: rule-level semantic action
+SPACEARROW  <- "<" S            # Ext: rule-level space-munching
   
 OR          <- '/' S
     
 LOOKAHEAD   <- '&' S
 NOT         <- '!' S
 
-DROP        <- ':' S
-FUSE        <- '~' S
-  
-#SPACEMUNCH <- '>' S
-    
-NAME        <- '=' S
-ACTIONOPEN  <- '{' S
+DROP        <- ':' S # Ext: dropping the current node from the parse tree
+FUSE        <- '~' S # Ext: fusing the captures of the current node
+      
+NAME        <- '=' S 
+ACTIONOPEN  <- '{' S 
 ACTIONCLOSE <- '}' S
     
 OPTION     <- '?' S
@@ -86,7 +93,7 @@ import std.array, std.algorithm, std.conv;
 class PEGGED : Parser
 {
     enum name = `PEGGED`;
-    enum ruleNames = ["Grammar":true,"GrammarName":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"GrammarName":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"Hex":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
 
     static Output parse(Input input)
     {
@@ -395,7 +402,7 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
     
 }
 
-class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,Lit!("-"),Lit!("["),Lit!("]"),Or!(Lit!("'n'"),Lit!("'r'"),Lit!("'t'")),Seq!(Range!('0','2'),Range!('0','7'),Range!('0','7')),Seq!(Range!('0','7'),Option!(Range!('0','7'))))),Seq!(NegLookAhead!(BackSlash),Any)))
+class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,Lit!("-"),Lit!("["),Lit!("]"),Or!(Lit!("n"),Lit!("r"),Lit!("t")),Seq!(Range!('0','2'),Range!('0','7'),Range!('0','7')),Seq!(Range!('0','7'),Option!(Range!('0','7'))),Seq!(Lit!("x"),Hex,Hex),Seq!(Lit!("u"),Hex,Hex,Hex,Hex),Seq!(Lit!("U"),Hex,Hex,Hex,Hex,Hex,Hex,Hex,Hex))),Seq!(NegLookAhead!(BackSlash),Any)))
 {
     enum name = `Char`;
 
@@ -406,6 +413,26 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,
         auto p = typeof(super).parse(input);
         return p.success ? Output(p.text, p.pos, p.namedCaptures,
                                   ParseTree(`Char`, p.success, p.capture, input.pos, p.pos, 
+                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
+                         : fail(p.parseTree.end,
+                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+    }
+    
+    mixin(stringToInputMixin());
+    
+}
+
+class Hex : Or!(Range!('0','9'),Range!('a','f'),Range!('A','F'))
+{
+    enum name = `Hex`;
+
+    static Output parse(Input input)
+    {
+        mixin(okfailMixin);
+        
+        auto p = typeof(super).parse(input);
+        return p.success ? Output(p.text, p.pos, p.namedCaptures,
+                                  ParseTree(`Hex`, p.success, p.capture, input.pos, p.pos, 
                                             (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
                          : fail(p.parseTree.end,
                                 (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
@@ -954,7 +981,7 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write("\n\n*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
-    f.write("import pegged.peg;\n");
+    f.write("public import pegged.peg;\n");
     f.write(grammar(grammarString));
 }
 

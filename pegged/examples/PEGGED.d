@@ -4,6 +4,7 @@ import pegged.grammar;
 
 enum PEGGEDgrammar = `
 # This is the PEG extended grammar used by Pegged
+PEGGED:
 
 Grammar     <- S GrammarName? Definition+ EOI
 GrammarName <- Identifier S :":" S       # Ext: named grammars
