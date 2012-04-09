@@ -38,9 +38,13 @@ Char        <~ BackSlash ( Quote
                          / ']' 
                          / [nrt]
                          / [0-2][0-7][0-7]
-                         / [0-7][0-7]?)
+                         / [0-7][0-7]?
+                         / 'x' Hex Hex
+                         / 'u' Hex Hex Hex Hex
+                         / 'U' Hex Hex Hex Hex Hex Hex Hex Hex)
              / !BackSlash .
-
+Hex         <- [0-9a-fA-F]
+             
 # Ext: parameterized rules
 ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S 
 ArgList     <- :OPEN Expression (:',' Expression)* :CLOSE S
