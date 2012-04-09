@@ -8,7 +8,7 @@ PEGGED:
 Grammar     <- S GrammarName? Definition+ EOI
 GrammarName <- Identifier S :":" S       # Ext: named grammars
 Definition  <- RuleName Arrow Expression S
-RuleName    <- Identifier (ParamList?) S # Ext: different arrows
+RuleName    <- Identifier ParamList? S # Ext: different arrows
 Expression  <- Sequence (OR Sequence)*
 Sequence    <- Prefix+
 Prefix      <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
@@ -46,8 +46,8 @@ Char        <~ BackSlash ( Quote
 Hex         <- [0-9a-fA-F]
              
 # Ext: parameterized rules
-ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S 
-ArgList     <- :OPEN Expression (:',' Expression)* :CLOSE S
+ParamList   <~ OPEN Identifier (',' S Identifier)* CLOSE S 
+ArgList     <- :OPEN Expression (:',' S Expression)* :CLOSE S
 
 NamedExpr   <- NAME Identifier? S # Ext: named captures
 WithAction  <~ :ACTIONOPEN Identifier :ACTIONCLOSE S # Ext: semantic actions
@@ -442,7 +442,7 @@ class Hex : Or!(Range!('0','9'),Range!('a','f'),Range!('A','F'))
     
 }
 
-class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),Identifier)),CLOSE,S))
+class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),S,Identifier)),CLOSE,S))
 {
     enum name = `ParamList`;
 
@@ -462,7 +462,7 @@ class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),Identifi
     
 }
 
-class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),Expression)),Drop!(CLOSE),S)
+class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),S,Expression)),Drop!(CLOSE),S)
 {
     enum name = `ArgList`;
 
@@ -964,7 +964,8 @@ class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL
 
 }
 
-/+ from here, the code comes from pegged.development.bootstrap +/
+
+/+ from here, the code comes from pegged.development.grammarfunctions +/
 
 void asModule(string moduleName, string grammarString)
 {
@@ -1049,8 +1050,20 @@ string grammar(string g)
     }
     
 ";
+                string rulesCode;
                 foreach(child; named ? ch[1..$] : ch)
-                    result ~= PEGtoCode(child);
+                {
+                    // child is a Definition
+                    // Its first child is the rule's name
+                    // If it has 2 captures, it's a parameterized rule, else a normal rule
+                    // Parameterized rules are templates and their code must placed first.
+                    if (child.children[0].capture.length == 1) // normal rule
+                        rulesCode ~= PEGtoCode(child);
+                    else // Parameterized rule: to be put first
+                        rulesCode = PEGtoCode(child) ~ rulesCode;
+                }
+                result ~= rulesCode;
+                
                 return result ~ "}\n";
             case "Definition":
                 string code = "    enum name = `" ~ch[0].capture[0]~ "`;
@@ -1230,9 +1243,9 @@ string grammar(string g)
                 }
                 return result;
             case "CharRange":
-                if (ch.length == 2)
+                if (ch.length == 2) // [a-z...
                     return "Range!('" ~ PEGtoCode(ch[0]) ~ "','" ~ PEGtoCode(ch[1]) ~ "')";
-                else
+                else                // [a...
                     return "Lit!(\"" ~ PEGtoCode(ch[0]) ~ "\")"; 
             case "Char":
                 //if (p.capture.length == 2) // escape sequence \-, \[, \] 

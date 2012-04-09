@@ -9,7 +9,7 @@ PEGGED:
 Grammar     <- S GrammarName? Definition+ EOI
 GrammarName <- Identifier S :":" S       # Ext: named grammars
 Definition  <- RuleName Arrow Expression S
-RuleName    <- Identifier (ParamList?) S # Ext: different arrows
+RuleName    <- Identifier ParamList? S # Ext: different arrows
 Expression  <- Sequence (OR Sequence)*
 Sequence    <- Prefix+
 Prefix      <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
@@ -47,8 +47,8 @@ Char        <~ BackSlash ( Quote
 Hex         <- [0-9a-fA-F]
              
 # Ext: parameterized rules
-ParamList   <~ OPEN Identifier (',' Identifier)* CLOSE S 
-ArgList     <- :OPEN Expression (:',' Expression)* :CLOSE S
+ParamList   <~ OPEN Identifier (',' S Identifier)* CLOSE S 
+ArgList     <- :OPEN Expression (:',' S Expression)* :CLOSE S
 
 NamedExpr   <- NAME Identifier? S # Ext: named captures
 WithAction  <~ :ACTIONOPEN Identifier :ACTIONCLOSE S # Ext: semantic actions
