@@ -1,4 +1,4 @@
-module pegged.examples.parameterized;
+module pegged.examples.parametrized;
 
 import pegged.grammar;
 
