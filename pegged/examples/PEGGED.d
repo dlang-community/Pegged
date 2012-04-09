@@ -43,7 +43,7 @@ Char        <~ BackSlash ( Quote
                          / 'x' Hex Hex
                          / 'u' Hex Hex Hex Hex
                          / 'U' Hex Hex Hex Hex Hex Hex Hex Hex)
-             / !BackSlash .
+             / .
 Hex         <- [0-9a-fA-F]
              
 # Ext: parameterized rules
