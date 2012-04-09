@@ -3,7 +3,7 @@
  * to create an complete pegged.grammar module
  * 
  */
-module pegged.development.bootstrap;
+module pegged.development.grammarfunctions;
 
 import std.array;
 import std.algorithm;
@@ -11,7 +11,6 @@ import std.stdio;
 
 import pegged.peg;
 import pegged.grammar;
-
 
 void asModule(string moduleName, string grammarString)
 {
@@ -23,20 +22,19 @@ void asModule(string moduleName, string fileName, string grammarString)
     import std.stdio;
     auto f = File(fileName,"w");
     
-    f.write("/**\nThis module was automatically generated from the following grammar:\n");
+    f.write("/**\nThis module was automatically generated from the following grammar:\n\n");
     f.write(grammarString);
-    f.write("*/\n");
+    f.write("\n\n*/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
-    //f.write("import pegged.peg;\nimport std.array;\nimport std.conv;\n\n");
+    f.write("public import pegged.peg;\n");
     f.write(grammar(grammarString));
 }
 
 string grammar(string g)
 {    
     auto grammarAsOutput = PEGGED.parse(g);
-    if (grammarAsOutput.children.length == 0) return `static assert(false, "Bad grammar: ` ~ to!string(grammarAsOutput.capture) ~ `");`;
-    
+    if (grammarAsOutput.children.length == 0) return "static assert(false, `Bad grammar: " ~ to!string(grammarAsOutput.capture) ~ "`);";
     string[] names;
     foreach(definition; grammarAsOutput.children[0].children)
         if (definition.name == "Definition") 
@@ -60,11 +58,11 @@ string grammar(string g)
                 string grammarName = named ? ch[0].capture[0] 
                                            : names.front;
                 
-                result = "import std.algorithm, std.array, std.conv;\n"
-                       ~ "class " ~ grammarName ~ " : Parser\n{\n" 
-                       ~ "    enum name = `"~ grammarName ~ "`;\n"
-                       ~ ruleNames ~ "\n"
-                       ~
+                result =  "import std.array, std.algorithm, std.conv;\n\n"
+                        ~ "class " ~ grammarName ~ " : Parser\n{\n" 
+                        ~ "    enum name = `"~ grammarName ~ "`;\n"
+                        ~ ruleNames ~ "\n"
+                        ~
 "    static Output parse(Input input)
     {
         mixin(okfailMixin());
@@ -97,8 +95,20 @@ string grammar(string g)
     }
     
 ";
+                string rulesCode;
                 foreach(child; named ? ch[1..$] : ch)
-                    result ~= PEGtoCode(child);
+                {
+                    // child is a Definition
+                    // Its first child is the rule's name
+                    // If it has 2 captures, it's a parameterized rule, else a normal rule
+                    // Parameterized rules are templates and their code must placed first.
+                    if (child.children[0].capture.length == 1) // normal rule
+                        rulesCode ~= PEGtoCode(child);
+                    else // Parameterized rule: to be put first
+                        rulesCode = PEGtoCode(child) ~ rulesCode;
+                }
+                result ~= rulesCode;
+                
                 return result ~ "}\n";
             case "Definition":
                 string code = "    enum name = `" ~ch[0].capture[0]~ "`;
@@ -278,14 +288,14 @@ string grammar(string g)
                 }
                 return result;
             case "CharRange":
-                if (ch.length == 2)
+                if (ch.length == 2) // [a-z...
                     return "Range!('" ~ PEGtoCode(ch[0]) ~ "','" ~ PEGtoCode(ch[1]) ~ "')";
-                else
+                else                // [a...
                     return "Lit!(\"" ~ PEGtoCode(ch[0]) ~ "\")"; 
             case "Char":
-                if (p.capture.length == 2) // escape sequence \-, \[, \] 
-                    return p.capture[1];
-                else
+                //if (p.capture.length == 2) // escape sequence \-, \[, \] 
+                //    return "'" ~ p.capture[1] ~ "'";
+                //else
                     return p.capture[0];
             case "OR":
                 foreach(child; ch) result ~= PEGtoCode(child);
