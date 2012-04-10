@@ -5,7 +5,7 @@ import pegged.grammar;
 enum Cgrammar = `
 C:
 
-TranslationUnit <- ExternalDeclaration (Spacing ExternalDeclaration)*
+TranslationUnit <- ExternalDeclaration (:Spacing ExternalDeclaration)*
 
 ExternalDeclaration < FunctionDefinition / Declaration
 
@@ -30,11 +30,15 @@ PostfixExpression < PrimaryExpression ( '[' Expression ']'
 ArgumentExpressionList < AssignmentExpression (',' AssignmentExpression)*
  
 UnaryExpression < PostfixExpression
-                / "++" UnaryExpression
-                / "--" UnaryExpression
+                / IncrementExpression
+                / DecrementExpression
                 / UnaryOperator CastExpression
                 / "sizeof" UnaryExpression
                 / "sizeof" '(' TypeName ')'
+
+IncrementExpression < PlusPlus UnaryExpression
+PlusPlus <- "++"
+DecrementExpression < "--" UnaryExpression
 
 UnaryOperator <- [-&*+~!]
  
@@ -102,11 +106,11 @@ TypeSpecifier <- "void"
 StructOrUnionSpecifier < ("struct" / "union") ( Identifier ('{' StructDeclarationList '}')?
                                               / '{' StructDeclarationList '}')
                                               
-StructDeclarationList <- StructDeclaration (Spacing StructDeclaration)*
+StructDeclarationList <- StructDeclaration (:Spacing StructDeclaration)*
 
 StructDeclaration < SpecifierQualifierList StructDeclaratorList ';'
 
-SpecifierQualifierList <- (TypeQualifier / TypeSpecifier) (Spacing (TypeQualifier / TypeSpecifier))*
+SpecifierQualifierList <- (TypeQualifier / TypeSpecifier) (:Spacing (TypeQualifier / TypeSpecifier))*
  
 StructDeclaratorList < StructDeclarator (',' StructDeclarator)*
  
@@ -135,7 +139,7 @@ DirectDeclarator < (Identifier / '(' Declarator ')') ( '[' ']'
  
 Pointer < '*' (Pointer / TypeQualifierList Pointer / TypeQualifierList)
  
-TypeQualifierList <- TypeQualifier (Spacing TypeQualifier)*
+TypeQualifierList <- TypeQualifier (:Spacing TypeQualifier)*
 
 ParameterTypeList < ParameterList (',' "...")?
  
@@ -180,7 +184,10 @@ Statement < LabeledStatement
           / IfStatement
           / SwitchStatement
           / IterationStatement
-          / JumpStatement
+          / GotoStatement
+          / ContinueStatement
+          / BreakStatement
+          / ReturnStatement
  
 LabeledStatement < Identifier ':' Statement
                  / 'case' ConstantExpression ':' Statement
@@ -191,9 +198,9 @@ CompoundStatement < '{' '}'
                   / '{' StatementList '}'
                   / '{' DeclarationList StatementList '}'
  
-DeclarationList <- Declaration (Spacing Declaration)*
+DeclarationList <- Declaration (:Spacing Declaration)*
  
-StatementList <- Statement (Spacing Statement)*
+StatementList <- Statement (:Spacing Statement)*
  
 ExpressionStatement < Expression? ';'
 
@@ -209,12 +216,15 @@ DoStatement < "do" Statement "while" '(' Expression ')' ';'
 
 ForStatement < "for" '(' Expression? ';' Expression? ';' Expression? ')' Statement
  
-JumpStatement < "goto" Identifier ';'
-              / "continue" ';'
-              / "break" ';'
-              / "return" ';'
-              / "return" Expression ';'
- 
+GotoStatement < "goto" Identifier ';'
+
+ContinueStatement < "continue" ';'
+
+BreakStatement < "break" ';'
+
+ReturnStatement < Return Expression? :';' 
+
+Return <- "return"
 
 # The following comes from me, not an official C grammar
 
@@ -252,7 +262,7 @@ Integer <~ Digit+
 IntegerSuffix <- "Lu" / "LU" / "uL" / "UL"
                / "L" / "u" / "U"
 
-FloatLiteral <~ Sign? Integer ("." Integer?)? (("e" / "E") Sign? Integer)?
+FloatLiteral <~ Sign? Integer "." Integer? (("e" / "E") Sign? Integer)?
 
 Sign <- "-" / "+"
 `;
