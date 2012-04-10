@@ -12,7 +12,7 @@ Definition  <- RuleName Arrow Expression S
 RuleName    <- Identifier ParamList? S # Ext: different arrows
 Expression  <- Sequence (OR Sequence)*
 Sequence    <- Prefix+
-Prefix      <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
+Prefix      <- (LOOKAHEAD / NOT / DROP / KEEP / FUSE)? Suffix
 Suffix      <- Primary ( OPTION 
                        / ONEORMORE 
                        / ZEROORMORE 
@@ -66,6 +66,7 @@ LOOKAHEAD   <- '&' S
 NOT         <- '!' S
 
 DROP        <- ':' S # Ext: dropping the current node from the parse tree
+KEEP        <- '^' S # Ext: keeping an expression, even when Pegged would drop it
 FUSE        <- '~' S # Ext: fusing the captures of the current node
       
 NAME        <- '=' S 
