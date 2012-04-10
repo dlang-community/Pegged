@@ -12,6 +12,8 @@ import std.stdio;
 import pegged.peg;
 import pegged.grammar;
 
+/+ from here, the code comes from pegged.development.grammarfunctions +/
+
 void asModule(string moduleName, string grammarString)
 {
     asModule(moduleName, moduleName~".d", grammarString);
@@ -36,7 +38,7 @@ string grammar(string g)
     auto grammarAsOutput = PEGGED.parse(g);
     if (grammarAsOutput.children.length == 0) return "static assert(false, `Bad grammar: " ~ to!string(grammarAsOutput.capture) ~ "`);";
     string[] names;
-    foreach(definition; grammarAsOutput.children[0].children)
+    foreach(definition; grammarAsOutput.children)
         if (definition.name == "Definition") 
             names ~= definition.capture[0];
     string ruleNames = "    enum ruleNames = [";
@@ -67,32 +69,44 @@ string grammar(string g)
     {
         mixin(okfailMixin());
         "
+/*
 ~ (named ? "auto p = "~names.front~".parse(input);
+        
         return p.success ? Output(p.text, p.pos, p.namedCaptures,
                                   ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]))
                          : fail(p.parseTree.end, p.capture);"
                    
-        : "return "~names.front~".parse(input);")
+        : */
+~       "return "~names.front~".parse(input);"
 ~ "
     }
     
     mixin(stringToInputMixin());
 
-    static ParseTree[] filterChildren(ParseTree p)
+    static ParseTree decimateTree(ParseTree p)
     {
+        if(p.children.length == 0) return p;
         ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
+            //auto decimated = decimateTree(child);
             if (child.name in ruleNames)
                 filteredChildren ~= child;
+            else if (child.name.startsWith(`Keep!(`))
+            {
+                child.name = child.name[6..$-1];
+                filteredChildren ~= child;
+            }
             else
             {
-                if (child.children.length > 0)
-                    filteredChildren ~= filterChildren(child);
+                foreach(grandchild; child.children)
+                    filteredChildren ~= decimateTree(grandchild);
             }
         }
-        return filteredChildren;
+        p.children = filteredChildren;
+        return p;
     }
+
     
 ";
                 string rulesCode;
@@ -118,11 +132,24 @@ string grammar(string g)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`"~ch[0].capture[0]~"`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            
+            if (p.name in ruleNames)
+                p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
+    
+            p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -204,6 +231,9 @@ string grammar(string g)
                         case "DROP":
                             result = "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
                             break;
+                        case "KEEP":
+                            result = "Keep!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            break;                       
                         case "FUSE":
                             result = "Fuse!(" ~ PEGtoCode(ch[1]) ~ ")";
                             break;
@@ -288,15 +318,15 @@ string grammar(string g)
                 }
                 return result;
             case "CharRange":
-                if (ch.length == 2) // [a-z...
-                    return "Range!('" ~ PEGtoCode(ch[0]) ~ "','" ~ PEGtoCode(ch[1]) ~ "')";
+                if (p.capture.length == 2) // [a-z...
+                    return "Range!('" ~ p.capture[0] ~ "','" ~ p.capture[1] ~ "')";
                 else                // [a...
-                    return "Lit!(\"" ~ PEGtoCode(ch[0]) ~ "\")"; 
+                    return "Lit!(\"" ~ p.capture[0] ~ "\")"; 
             case "Char":
                 //if (p.capture.length == 2) // escape sequence \-, \[, \] 
                 //    return "'" ~ p.capture[1] ~ "'";
                 //else
-                    return p.capture[0];
+                    return "Lit!(\"" ~ p.capture[0] ~ "\")"; 
             case "OR":
                 foreach(child; ch) result ~= PEGtoCode(child);
                 return result;
