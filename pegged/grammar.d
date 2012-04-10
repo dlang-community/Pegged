@@ -11,7 +11,7 @@ Definition  <- RuleName Arrow Expression S
 RuleName    <- Identifier ParamList? S # Ext: different arrows
 Expression  <- Sequence (OR Sequence)*
 Sequence    <- Prefix+
-Prefix      <- (LOOKAHEAD / NOT / DROP / FUSE)? Suffix
+Prefix      <- (LOOKAHEAD / NOT / DROP / KEEP / FUSE)? Suffix
 Suffix      <- Primary ( OPTION 
                        / ONEORMORE 
                        / ZEROORMORE 
@@ -42,7 +42,7 @@ Char        <~ BackSlash ( Quote
                          / 'x' Hex Hex
                          / 'u' Hex Hex Hex Hex
                          / 'U' Hex Hex Hex Hex Hex Hex Hex Hex)
-             / !BackSlash .
+             / .
 Hex         <- [0-9a-fA-F]
              
 # Ext: parameterized rules
@@ -65,6 +65,7 @@ LOOKAHEAD   <- '&' S
 NOT         <- '!' S
 
 DROP        <- ':' S # Ext: dropping the current node from the parse tree
+KEEP        <- '^' S # Ext: keeping an expression, even when Pegged would drop it
 FUSE        <- '~' S # Ext: fusing the captures of the current node
       
 NAME        <- '=' S 
@@ -93,12 +94,13 @@ import std.array, std.algorithm, std.conv;
 class PEGGED : Parser
 {
     enum name = `PEGGED`;
-    enum ruleNames = ["Grammar":true,"GrammarName":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"Hex":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum ruleNames = ["Grammar":true,"GrammarName":true,"Definition":true,"RuleName":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"Hex":true,"ParamList":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"KEEP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
 
     static Output parse(Input input)
     {
         mixin(okfailMixin());
         auto p = Grammar.parse(input);
+        
         return p.success ? Output(p.text, p.pos, p.namedCaptures,
                                   ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]))
                          : fail(p.parseTree.end, p.capture);
@@ -106,21 +108,48 @@ class PEGGED : Parser
     
     mixin(stringToInputMixin());
 
-    static ParseTree[] filterChildren(ParseTree p)
+    static ParseTree decimateTree(ParseTree p)
     {
-        ParseTree[] filteredChildren;
-        foreach(child; p.children)
+        switch(p.children.length)
         {
-            if (child.name in ruleNames)
-                filteredChildren ~= child;
-            else
-            {
-                if (child.children.length > 0)
-                    filteredChildren ~= filterChildren(child);
-            }
+            case 0: // leaf
+                return p;
+            /*case 1:
+                auto decimated = decimateTree(p.children[0]);
+                if (  decimated.name in ruleNames 
+                   || p.name !in ruleNames && !p.name.startsWith(`Keep!(`))
+                {
+                    decimated.capture = p.capture;
+                    return decimated;
+                }
+                else
+                {
+                    p. children = null;
+                    return p;
+                }*/
+            default:
+                ParseTree[] filteredChildren;
+                foreach(child; p.children)
+                {
+                    auto decimated = decimateTree(child);
+                    if (decimated.name in ruleNames)
+                        filteredChildren ~= decimated;
+                    else if (decimated.name.startsWith(`Keep!(`))
+                    {
+                        decimated.name = decimated.name[6..$-1];
+                        filteredChildren ~= decimated;
+                    }
+                    else
+                    {
+                        foreach(grandchild; child.children)
+                            filteredChildren ~= decimateTree(grandchild);
+                    }
+                }
+                p.children = filteredChildren;
+                return p;
         }
-        return filteredChildren;
     }
+
     
 class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
 {
@@ -131,11 +160,15 @@ class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Grammar`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -151,11 +184,15 @@ class GrammarName : Seq!(Identifier,S,Drop!(Lit!(":")),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`GrammarName`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -171,11 +208,15 @@ class Definition : Seq!(RuleName,Arrow,Expression,S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Definition`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -191,11 +232,15 @@ class RuleName : Seq!(Identifier,Option!(ParamList),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`RuleName`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -211,11 +256,15 @@ class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Expression`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -231,18 +280,22 @@ class Sequence : OneOrMore!(Prefix)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Sequence`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
     
 }
 
-class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,FUSE)),Suffix)
+class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
 {
     enum name = `Prefix`;
 
@@ -251,11 +304,15 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,FUSE)),Suffix)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Prefix`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -271,11 +328,15 @@ class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,Wi
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Suffix`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -291,11 +352,15 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Primary`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -311,11 +376,15 @@ class Name : Seq!(QualifiedIdentifier,Option!(ArgList),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Name`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -331,11 +400,15 @@ class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`GroupExpr`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -351,11 +424,15 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Literal`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -371,11 +448,15 @@ class Class : Seq!(Drop!(Lit!("[")),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),Ch
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Class`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -391,18 +472,22 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`CharRange`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
     
 }
 
-class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,Lit!("-"),Lit!("["),Lit!("]"),Or!(Lit!("n"),Lit!("r"),Lit!("t")),Seq!(Range!('0','2'),Range!('0','7'),Range!('0','7')),Seq!(Range!('0','7'),Option!(Range!('0','7'))),Seq!(Lit!("x"),Hex,Hex),Seq!(Lit!("u"),Hex,Hex,Hex,Hex),Seq!(Lit!("U"),Hex,Hex,Hex,Hex,Hex,Hex,Hex,Hex))),Seq!(NegLookAhead!(BackSlash),Any)))
+class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,Lit!("-"),Lit!("["),Lit!("]"),Seq!(Range!('0','2'),Range!('0','7'),Range!('0','7')),Seq!(Range!('0','7'),Option!(Range!('0','7'))),Seq!(Lit!("x"),Hex,Hex),Seq!(Lit!("u"),Hex,Hex,Hex,Hex),Seq!(Lit!("U"),Hex,Hex,Hex,Hex,Hex,Hex,Hex,Hex))),Any))
 {
     enum name = `Char`;
 
@@ -411,11 +496,15 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Char`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -431,11 +520,15 @@ class Hex : Or!(Range!('0','9'),Range!('a','f'),Range!('A','F'))
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Hex`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -451,11 +544,15 @@ class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),S,Identi
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`ParamList`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -471,11 +568,15 @@ class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),S,
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`ArgList`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -491,11 +592,15 @@ class NamedExpr : Seq!(NAME,Option!(Identifier),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`NamedExpr`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -511,11 +616,15 @@ class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier,Drop!(ACTIONCLOSE),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`WithAction`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -531,11 +640,15 @@ class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW,SPACEARROW)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Arrow`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -551,11 +664,15 @@ class LEFTARROW : Seq!(Lit!("<-"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`LEFTARROW`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -571,11 +688,15 @@ class FUSEARROW : Seq!(Lit!("<~"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`FUSEARROW`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -591,11 +712,15 @@ class DROPARROW : Seq!(Lit!("<:"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`DROPARROW`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -611,11 +736,15 @@ class ACTIONARROW : Seq!(Lit!("<"),WithAction,S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`ACTIONARROW`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -631,11 +760,15 @@ class SPACEARROW : Seq!(Lit!("<"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`SPACEARROW`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -651,11 +784,15 @@ class OR : Seq!(Lit!("/"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`OR`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -671,11 +808,15 @@ class LOOKAHEAD : Seq!(Lit!("&"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`LOOKAHEAD`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -691,11 +832,15 @@ class NOT : Seq!(Lit!("!"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`NOT`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -711,11 +856,39 @@ class DROP : Seq!(Lit!(":"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`DROP`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+    }
+    
+    mixin(stringToInputMixin());
+    
+}
+
+class KEEP : Seq!(Lit!("^"),S)
+{
+    enum name = `KEEP`;
+
+    static Output parse(Input input)
+    {
+        mixin(okfailMixin);
+        
+        auto p = typeof(super).parse(input);
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -731,11 +904,15 @@ class FUSE : Seq!(Lit!("~"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`FUSE`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -751,11 +928,15 @@ class NAME : Seq!(Lit!("="),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`NAME`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -771,11 +952,15 @@ class ACTIONOPEN : Seq!(Lit!("{"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`ACTIONOPEN`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -791,11 +976,15 @@ class ACTIONCLOSE : Seq!(Lit!("}"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`ACTIONCLOSE`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -811,11 +1000,15 @@ class OPTION : Seq!(Lit!("?"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`OPTION`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -831,11 +1024,15 @@ class ZEROORMORE : Seq!(Lit!("*"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`ZEROORMORE`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -851,11 +1048,15 @@ class ONEORMORE : Seq!(Lit!("+"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`ONEORMORE`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -871,11 +1072,15 @@ class OPEN : Seq!(Lit!("("),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`OPEN`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -891,11 +1096,15 @@ class CLOSE : Seq!(Lit!(")"),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`CLOSE`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -911,11 +1120,15 @@ class ANY : Seq!(Lit!("."),S)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`ANY`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -931,11 +1144,15 @@ class S : Drop!(Fuse!(ZeroOrMore!(Or!(Blank,EOL,Comment))))
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`S`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -951,11 +1168,15 @@ class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`Comment`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            if (p.name !in ruleNames) p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1022,32 +1243,44 @@ string grammar(string g)
     {
         mixin(okfailMixin());
         "
+/*
 ~ (named ? "auto p = "~names.front~".parse(input);
+        
         return p.success ? Output(p.text, p.pos, p.namedCaptures,
                                   ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]))
                          : fail(p.parseTree.end, p.capture);"
                    
-        : "return "~names.front~".parse(input);")
+        : */
+~       "return "~names.front~".parse(input);"
 ~ "
     }
     
     mixin(stringToInputMixin());
 
-    static ParseTree[] filterChildren(ParseTree p)
+    static ParseTree decimateTree(ParseTree p)
     {
+        if(p.children.length == 0) return p;
         ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
+            //auto decimated = decimateTree(child);
             if (child.name in ruleNames)
                 filteredChildren ~= child;
-            else
+            else if (child.name.startsWith(`Keep!(`))
             {
-                if (child.children.length > 0)
-                    filteredChildren ~= filterChildren(child);
+                child.name = child.name[6..$-1];
+                filteredChildren ~= child;
             }
+            //else
+            //{
+            //    foreach(grandchild; child.children)
+            //        filteredChildren ~= decimateTree(grandchild);
+            //}
         }
-        return filteredChildren;
+        p.children = filteredChildren;
+        return p;
     }
+
     
 ";
                 string rulesCode;
@@ -1073,18 +1306,26 @@ string grammar(string g)
         mixin(okfailMixin);
         
         auto p = typeof(super).parse(input);
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(`"~ch[0].capture[0]~"`, p.success, p.capture, input.pos, p.pos, 
-                                            (p.name in ruleNames) ? [p.parseTree] : filterChildren(p.parseTree)))
-                         : fail(p.parseTree.end,
-                                (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+        if (p.success)
+        {
+            p.parseTree = decimateTree(p.parseTree);
+            
+            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+                p.children = [p];
+    
+            p.name = name;
+            return p;
+        }
+        else
+            return fail(p.parseTree.end,
+                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
     ";
 
                 string inheritance;
-                switch(ch[1].children[0].name)
+                switch(ch[1].name)
                 {
                     case "LEFTARROW":
                         inheritance = PEGtoCode(ch[2]);
@@ -1159,6 +1400,9 @@ string grammar(string g)
                         case "DROP":
                             result = "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
                             break;
+                        case "KEEP":
+                            result = "Keep!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            break;                       
                         case "FUSE":
                             result = "Fuse!(" ~ PEGtoCode(ch[1]) ~ ")";
                             break;
@@ -1243,15 +1487,15 @@ string grammar(string g)
                 }
                 return result;
             case "CharRange":
-                if (ch.length == 2) // [a-z...
-                    return "Range!('" ~ PEGtoCode(ch[0]) ~ "','" ~ PEGtoCode(ch[1]) ~ "')";
+                if (p.capture.length == 2) // [a-z...
+                    return "Range!('" ~ p.capture[0] ~ "','" ~ p.capture[1] ~ "')";
                 else                // [a...
-                    return "Lit!(\"" ~ PEGtoCode(ch[0]) ~ "\")"; 
+                    return "Lit!(\"" ~ p.capture[0] ~ "\")"; 
             case "Char":
                 //if (p.capture.length == 2) // escape sequence \-, \[, \] 
                 //    return "'" ~ p.capture[1] ~ "'";
                 //else
-                    return p.capture[0];
+                    return "Lit!(\"" ~ p.capture[0] ~ "\")"; 
             case "OR":
                 foreach(child; ch) result ~= PEGtoCode(child);
                 return result;

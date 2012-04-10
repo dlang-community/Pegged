@@ -221,15 +221,18 @@ static Output parse(Output input)
 }";
 }
 
-template getNames(Exprs...)
+string getName(string s, Exprs...)() @property
 {
-    static if (Exprs.length == 1)
-        enum getNames = Exprs[0].name;
-    else
-        enum getNames = Exprs[0].name ~ ", " ~ getNames!(Exprs[1..$]);
-//     string result;
-//     foreach(i,e; Exprs) result ~= e.name ~ ", ";
-//     return result[0..$-1];
+    string result = s ~ "!(";
+    foreach(i,e;Exprs) 
+        //static if (__traits(compiles, e.name))
+        result ~= e.name ~ ", ";
+        //else
+        //    result ~= e.stringof ~ ", ";
+        
+    static if (Exprs.length > 0)
+        result = result[0..$-2];
+    return result ~ ")";
 }
 
 class Parser
@@ -337,9 +340,9 @@ class Range(char begin, char end) : Parser
     mixin(stringToInputMixin());
 }
 
-class Seq(Exprs...) if (Exprs.length > 0) : Parser
+class Seq(Exprs...) : Parser
 {
-    enum name = "Seq!(" ~ Exprs.stringof ~ ")";
+    enum name = "Seq!" ~ Exprs.stringof;// getName!("Seq",Exprs)();  // Segmentation fault???
     
     static Output parse(Input input)
     {
@@ -373,9 +376,9 @@ class Seq(Exprs...) if (Exprs.length > 0) : Parser
     mixin(stringToInputMixin());
 }
 
-class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
+class SpaceSeq(Exprs...) : Parser
 {
-    enum name = "SpaceSeq!(" ~ Exprs.stringof ~ ")";
+    enum name = getName!("SpaceSeq", Exprs)();
     
     static Output parse(Input input)
     {
@@ -394,7 +397,7 @@ class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
                 if (p.capture.length > 0) 
                 {
                     result.capture ~= p.capture;
-                    result.children ~= p;
+                    result.children ~= p.children[0];
                 }
                 
                 result.pos = p.pos;
@@ -416,7 +419,7 @@ class SpaceSeq(Exprs...) if (Exprs.length > 0) : Parser
 
 class Action(Expr, alias action)
 {
-    enum name = "Action!("~Expr.stringof~", "~__traits(identifier, action)~")";
+    enum name = "Action!("~Expr.name~", "~__traits(identifier, action)~")";
     
     static Output parse(Input input)
     {
@@ -433,7 +436,7 @@ class Action(Expr, alias action)
 /// stores a named capture (that is, an entire parse tree)
 class Named(Expr, string name) : Parser
 {
-    enum name = "Named!("~Expr.stringof ~", " ~ name~")";
+    enum name = "Named!("~Expr.name ~", " ~ name~")";
     
     static Output parse(Input input)
     {
@@ -451,7 +454,7 @@ class Named(Expr, string name) : Parser
 /// Verifies that a match is equal to a named capture
 class EqualMatch(Expr, string name) : Parser
 {
-    enum name = "EqualMatch!("~Expr.stringof ~", " ~ name~")";
+    enum name = "EqualMatch!("~Expr.name ~", " ~ name~")";
     
     static Output parse(Input input)
     {
@@ -480,7 +483,7 @@ class EqualMatch(Expr, string name) : Parser
 /// Verifies that a parse tree is equal to a named capture
 class EqualParseTree(Expr, string name) : Parser
 {
-    enum name = "EqualParseTree!("~Expr.stringof ~", " ~ name~")";
+    enum name = "EqualParseTree!("~Expr.name ~", " ~ name~")";
     
     static Output parse(Input input)
     {
@@ -523,11 +526,11 @@ class EqualParseTree(Expr, string name) : Parser
 
 class PushName(Expr) : Parser
 {
-    enum name = "PushName!(" ~ Expr.stringof ~ ")";
+    enum name = "PushName!(" ~ Expr.name ~ ")";
     
     static Output parse(Input input)
     {
-        //writeln("Entering PushName("~Expr.stringof ~")", input.text," ", input.namedCaptures.length);
+        //writeln("Entering PushName("~Expr.name ~")", input.text," ", input.namedCaptures.length);
         auto p = Expr.parse(input);
         //writeln("PushName after Expr.parse calculation");
         //writeln("p = ", p.namedCaptures);
@@ -550,7 +553,7 @@ class PushName(Expr) : Parser
 /// Compares the match with the named capture and pops the capture
 class FindAndPop(Expr) : Parser
 {
-    enum name = "FindAndPop!("~Expr.stringof~")";
+    enum name = "FindAndPop!("~Expr.name~")";
     
     static Output parse(Input input)
     {
@@ -574,7 +577,7 @@ class FindAndPop(Expr) : Parser
 
 class Or(Exprs...) : Parser
 {
-    enum name = "Or!("~Exprs.stringof~")";
+    enum name = getName!("Or", Exprs)();
     
     static Output parse(Input input)
     {
@@ -614,7 +617,7 @@ class Or(Exprs...) : Parser
 
 class Option(Expr) : Parser 
 {
-    enum name = "Option!("~Expr.stringof~")";
+    enum name = "Option!("~Expr.name~")";
     
     static Output parse(Input input)
     {
@@ -632,7 +635,7 @@ class Option(Expr) : Parser
 
 class ZeroOrMore(Expr) : Parser
 {
-    enum name = "ZeroOrMore!("~Expr.stringof~")";
+    enum name = "ZeroOrMore!("~Expr.name~")";
     
     static Output parse(Input input)
     {
@@ -663,7 +666,7 @@ class ZeroOrMore(Expr) : Parser
 
 class OneOrMore(Expr) : Parser
 {
-    enum name = "OneOrMore!("~Expr.stringof~")";
+    enum name = "OneOrMore!("~Expr.name~")";
     
     static Output parse(Input input)
     {
@@ -697,7 +700,7 @@ class OneOrMore(Expr) : Parser
 
 class PosLookAhead(Expr) : Parser
 {
-    enum name = "PosLookAhead!("~Expr.stringof~")";
+    enum name = "PosLookAhead!("~Expr.name~")";
     
     static Output parse(Input input)
     {
@@ -711,7 +714,7 @@ class PosLookAhead(Expr) : Parser
 
 class NegLookAhead(Expr) : Parser
 {
-    enum name = "NegLookAhead!("~Expr.stringof~")";
+    enum name = "NegLookAhead!("~Expr.name~")";
     
     static Output parse(Input input)
     {
@@ -725,7 +728,7 @@ class NegLookAhead(Expr) : Parser
 
 class Drop(Expr) : Parser
 {
-    enum name = "Drop!(" ~ Expr.stringof ~ ")";
+    enum name = "Drop!(" ~ Expr.name ~ ")";
     
     static Output parse(Input input)
     {
@@ -744,9 +747,25 @@ class Drop(Expr) : Parser
     mixin(stringToInputMixin());  
 }
 
+// To keep an expression in the parse tree, even though Pegged would cut it naturally
+class Keep(Expr)
+{
+    enum name = "Keep!(" ~ Expr.name ~ ")";
+    
+    static Output parse(Input input)
+    {
+        auto p = Expr.parse(input);
+        p.name = name;
+        return p;
+    }
+    
+    mixin(stringToInputMixin());  
+}
+
+
 class Fuse(Expr) : Parser
 {
-    enum name = "Fuse!(" ~ Expr.stringof ~ ")";
+    enum name = "Fuse!(" ~ Expr.name ~ ")";
     
     static Output parse(Input input)
     {
