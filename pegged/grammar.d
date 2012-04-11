@@ -98,7 +98,6 @@ class PEGGED : Parser
 
     static Output parse(Input input)
     {
-        mixin(okfailMixin());
         return Grammar.parse(input);
     }
     
@@ -110,7 +109,6 @@ class PEGGED : Parser
         ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
-            //auto decimated = decimateTree(child);
             if (child.name in ruleNames)
                 filteredChildren ~= child;
             else if (child.name.startsWith(`Keep!(`))
@@ -120,8 +118,8 @@ class PEGGED : Parser
             }
             else
             {
-               foreach(grandchild; child.children)
-                   filteredChildren ~= decimateTree(grandchild);
+                child = decimateTree(child);
+                filteredChildren ~= child.children;
             }
         }
         p.children = filteredChildren;
@@ -1390,7 +1388,6 @@ string grammar(string g)
                         ~
 "    static Output parse(Input input)
     {
-        mixin(okfailMixin());
         "
 /*
 ~ (named ? "auto p = "~names.front~".parse(input);
@@ -1412,7 +1409,6 @@ string grammar(string g)
         ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
-            //auto decimated = decimateTree(child);
             if (child.name in ruleNames)
                 filteredChildren ~= child;
             else if (child.name.startsWith(`Keep!(`))
@@ -1422,8 +1418,8 @@ string grammar(string g)
             }
             else
             {
-                foreach(grandchild; child.children)
-                    filteredChildren ~= decimateTree(grandchild);
+                child = decimateTree(child);
+                filteredChildren ~= child.children;
             }
         }
         p.children = filteredChildren;
