@@ -105,8 +105,11 @@ A <- B C
 The same process can be done in your code: define a DSL in **Pegged**, write a parse-tree-to-D-code function and mix it in:
 
 ```d
-mixin(sql("FROM employees SELECT salary, age
-           WHERE age > 40"));
+mixin(sql(`USE mydatabase;
+
+SELECT customer, SUM(quantity) AS "Total Items"
+FROM orders
+GROUP BY customer;`));
 ```
 
 * * * *

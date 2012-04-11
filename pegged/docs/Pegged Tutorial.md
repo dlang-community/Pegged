@@ -22,7 +22,7 @@ The following pages will show you how to use **Pegged** to create grammars and p
 
 9) [[Semantic Actions]]
 
-10) [[Generating Code]] (stub)
+10) [[Generating Code]]
 
 11) [[User-Defined Parsers]]
 

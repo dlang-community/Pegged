@@ -44,7 +44,7 @@ The same process can be applied to logical (boolean) expression using || (or), &
 Boolean <- OrExpr
 OrExpr  <- AndExpr ("||" AndExpr)*
 AndExpr <- NotExpr ("&&" NotExpr)*
-NotExpr <- "!" Primary
+NotExpr <- "!"? Primary
 Primary <- '(' Boolean ')' 
          / Atom
 Atom <- ...

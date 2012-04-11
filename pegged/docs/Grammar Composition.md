@@ -28,28 +28,31 @@ File3: 0.00, 10";
 }
 ```
 
-`Numbers` also define a `Hexa` rule to recognize hexadecimal numbers. It's never invoked directly by `Numbers` itself, but can be called by qualifiying its name: `Numbers.Hexa.parse("A73FEC384CBB")` (see [[Four Levels of Encapsulation]]). If two grammars define each a rule with the same name, you can also use their qualified names to distinguish them. **Pegged** allow rule invokation (the rhs in a rule definition) to contain qualified identifiers:
+`Numbers` also defines a `Hexa` rule to recognize hexadecimal numbers. It's never invoked directly by `Numbers` itself, but can be called by qualifiying its name: `Numbers.Hexa.parse("A73FEC384CBB")` (see [[Four Levels of Encapsulation]]). If two grammars define each a rule with the same name, you can also use their qualified names to distinguish them. **Pegged** allows rule invokation (the rhs in a rule definition) to contain qualified identifiers:
 
 ```d
 module my.grammar;
 
+import std.stdio;
 import pegged.grammar;
 import pegged.examples.strings, pegged.examples.numbers;
 
-mixin(grammar(`
+enum g = grammar(`
 LOG:
     LogFile <- LogLine+ EOI
-    LogLine <  String '(' Numbers.Hexa ')' ':' (',' Numbers)* EOL?
-`));
+    LogLine < String Numbers.Hexa ':' Numbers (',' Numbers)*
+`);
+mixin(g);
+
+enum log = 
+`"File1" 123AC7AF   : 123, 78.265, 0.00
+"File2" 31F039DC9BE : 49.45, 42.220, 0.02, -22.3
+"File3" D0043869930 : 0
+`;
 
 void main()
 {
-	auto log = 
-"File1(000A): 0.00, 0.01, 0.00, 0.00
-File2(31F0): 1.0, 2.0, 3.14
-File3(D004): 0.00, 10";
-
-	LOG.parse(log);
+    writeln(LOG.parse(log));
 }
 ```
 
