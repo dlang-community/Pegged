@@ -1,11 +1,11 @@
 Writing Your Own Grammar
 ========================
 
-**Pegged** allows you to build your grammar easily, using a short notation that alows you to make top-down or bottom-up construction.
+**Pegged** allows you to build your grammar easily, using a short notation that allows you to make a top-down or bottom-up construction.
 
-My first advice would be to structure your grammar in big chunks and see how they play with one another. You can then refine each of these chunks into smaller parts. If a small part seems useful enough, make it its own grammar. That way, it can be used again in other grammars (see [[Grammar Composition]]).
+My first advice would be to structure your grammar in big chunks and see how they play with one another. You can then refine each of these chunks and break it into smaller parts. If a small part seems useful enough, make it its own grammar. That way, it can be used again in other grammars (see [[Grammar Composition]]).
 
-For example, a standard question is 'How is operator precedence defined in grammar like these, there is no operator precedence table anywhere in sight!'. The trick is to begin with the weaker operators and then go down into the stronger binders. For example, with arithmetic expression that would allow +(unary and binary),- (unary and binary),/,*,%, pow (^) and parenthesis. The standard mathematic precedence is (from weaker to stronger): 
+For example, a standard question is 'How is operator precedence defined in grammar like these, there is no operator precedence table anywhere in sight!'. The trick is to begin with the weaker operators and then go down with the stronger binders. For example, let's consider arithmetic expressions that contain +(unary and binary),- (unary and binary),/,*,%, pow (^) and parenthesis. The standard mathematic precedence is (from weaker to stronger): 
 
 * Additive operators: + (binary), - (binary), 
 
@@ -19,32 +19,33 @@ For example, a standard question is 'How is operator precedence defined in gramm
 
 * The number themselves (yes, 12 + 3 is parsed as 12 + 3, not 1 (2+3), + does not 'rip' 12 in two).
 
-That means an arithmetic expression is first a list of additive terms:
+That means an arithmetic expression is first an addition:
 
 ```
-Arithmetic <- Add (("+"/"-") Add)*
+Arithmetic <- Add
+Add        <- Mul (("+"/"-") Mul)*
 ```
 
-Notice how an `Arithmetic` can be a lone `Add`, without any second member. This process will continue farther down:
+This process will continue farther down:
 
 ```
-Add <- Mul (("*"/"/"/"%") Mul)*
-Mul <- Pow ("^" Pow)*
-Pow <- ("+"/"-")? Unary
-Unary <- "(" Arithmetic ")"  # Recursion
-       / Number
+Mul        <- Pow (("*"/"/"/"%") Pow)*
+Pow        <- Unary ("^" Unary)*
+Unary      <- ("+"/"-")? Primary
+Primary    <- "(" Arithmetic ")"  # Recursion
+            / Number              # End case
 ```
 
-Note how the lowest level ties it into a coherent whole: there is either an end case: `Number` or a branch going up to the higher level, namely `Arithmetic`, to allow nesting expression within expressions.
-
+Note how the lowest level ties it into a coherent whole: there is either an end case: `Number` or a branch going up to the higher level, namely `Arithmetic`, to allow nesting expression within expressions. Notice also how `-` can means both a binary minus or an unary one, depending how it's placed in the input. `1-2-3` is parsed as `1 - ( 2 - ( 3 ) )` whereas `1 + - 2` is rightfully recognized as `1 + (-2)`.
 
 The same process can be applied to logical (boolean) expression using || (or), && (and) and ! (not):
 
 ```
-Logical <- OrExpr
-OrExpr <- AndExpr ("||" AndExpr)*
+Boolean <- OrExpr
+OrExpr  <- AndExpr ("||" AndExpr)*
 AndExpr <- NotExpr ("&&" NotExpr)*
-NotExpr <- "!" Logical 
+NotExpr <- "!" Primary
+Primary <- '(' Boolean ')' 
          / Atom
 Atom <- ...
 ```

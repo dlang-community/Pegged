@@ -3,7 +3,7 @@ User-Defined Parsers
 
 To define your own parser, inherit from the `Parser` class and add a static `parse` member. `parse` should accept an `Input` as argument and must return an `Output`.
 
-If you have a look at `pegged.peg`, you'll see parsers in there use two functions, `ok` and `fail`, to indicate success and failure respectively. You can use these also. **Pegged**  defines some mixin in `pegged.peg` to help with the plumbing. Use `mixin(okfailMixin("ParserName"));` to generate the `ok` and `fail` functions automatically in your class. Also, there is the `inputToStringMixin` mixin, which provides the definition for `.parse(string s)` and `.parse(Output o)` methods. Just define `.parse(Input i)`, **Pegged** will help you with the rest.
+If you have a look at `pegged.peg`, you'll see the parsers in there use two functions, `ok` and `fail`, to indicate success and failure respectively. You can use these also. **Pegged**  defines some mixin in `pegged.peg` to help with the plumbing. Use `mixin(okfailMixin());` to generate the `ok` and `fail` functions automatically in your class. Also, there is the `inputToStringMixin` mixin, which provides the definition for `.parse(string s)` and `.parse(Output o)` methods. Just define `.parse(Input i)`, **Pegged** will help you with the rest.
 
 Let's define our own new parser. Since we are big boys and girls, it won't be a terminal, we'll directly create an operator. Let's make `Not(Expr)`, a parser that returns the opposite of `Expr`, but *consumes input*, contrary to the `!e` negative lookahead operator.
 
