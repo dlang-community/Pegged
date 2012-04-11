@@ -5,7 +5,7 @@ import pegged.grammar;
 mixin(grammar(`
 # Example of a rule for double-quoted strings
 
-    String <~ :DoubleQuote (!DoubleQuote Char)* :DoubleQuote
+    String <~ DoubleQuote (!DoubleQuote Char)* DoubleQuote
     
     Char   <~ BackSlash ( DoubleQuote  # '\' Escapes
                         / Quote
