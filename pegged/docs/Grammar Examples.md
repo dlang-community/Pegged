@@ -35,7 +35,9 @@ These are intermediate grammars. They have about 20 - 100 rules.
 
 * [oberon2.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/oberon2.d). The Oberon-2 programming language grammar. This grammar was written by Bjoern Lietz-Spendig. You can find the Oberon-2 description [here](http://www-vs.informatik.uni-ulm.de:81/projekte/Oberon-2.Report/index.html).
 
-* [xml.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/xml.d). OK, I'm cheating, it's a 5-rules long XML grammar,  but it show how to use semantic actions to validate an input. See [[Semantic Actions]]. The entire XML grammar is described [here](http://www.w3.org/TR/xml11/) and it's an 80-rules-long grammar, that's why I placed it in the medium-size category (as a way to motivate me to write it in **Pegged**).
+* [xml.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/xml.d). OK, I'm cheating, it's a 5-rules long XML grammar,  but it show how to use semantic actions to validate an input. See [[Semantic Actions]]. 
+
+* [xml2.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/xml2.d) The entire XML grammar is described [here](http://www.w3.org/TR/xml11/). An 80-rules long grammar. No semantic action to validate nodes yet. I plan to fuse the two ASAP.
 
 * [constraints.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/constraints.d). **Do not use yet!**. This was written with an early version of **Pegged** and the D grammar. That was the first 'real-life' test for **Pegged**. I used it to parse template constraints `if (A && B || isNumeric!T)` and test all the tree branches to see which ones fail and block instantiation. It then printed the different results, as a diagnostic. It may still work, I haven't tested it for a while.
 
@@ -50,11 +52,9 @@ Grammars that have hundreds of rules:
 To Be Added:
 ------------
 
-* A more complete XML grammar (the standard grammar is an 80-rules medium-size grammar)
+* The XML grammar (xml2.d) also contains a DTD grammar. The goal would be to get the following chain : DTD -> XML validator -> Validated XML. I think **Pegged** can be used to create a compile-time static validator: using the type system to accept only documents following the given DTD.
 
-* Also, a DTD grammar. The goal would be to get the following chain : DTD -> XML validator -> Validated XML. I think **Pegged** can be used to create a compile-time static validator: using the type system to accept only documents following the given DTD.
-
-* The Javascript grammar, probably (I'm not so sure about
+* The Javascript grammar, probably (I'm not so sure about this one).
 
 * `printf`/`writef` format grammar: a nice example of a small DSL.
 
