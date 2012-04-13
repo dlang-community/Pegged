@@ -56,7 +56,7 @@ The **Pegged** wiki is [here](https://github.com/PhilippeSigaud/Pegged/wiki/). I
 Features
 --------
 
-* The complete set of operators described [here](en.wikipedia.org/wiki/Parsing_expression_grammar) are implemented, with the 'traditional' PEG syntax. See [Peg Basics](https://github.com/PhilippeSigaud/Pegged/wiki/PEG-Basics).
+* The complete set of operators described [here](http://en.wikipedia.org/wiki/Parsing_expression_grammar) are implemented, with the 'traditional' PEG syntax. See [Peg Basics](https://github.com/PhilippeSigaud/Pegged/wiki/PEG-Basics).
 * **Pegged** can parse its input at compile time and generate a complete parse tree at compile time. In a word: compile-time string (read: D code) transformation and generation. See [Generating Code](https://github.com/PhilippeSigaud/Pegged/wiki/Generating-Code) for example.
 * You can parse at runtime also, you lucky you.
 * Use a standard and readable PEG syntax as a DSL, not a bunch of templates that hide the parser in noise.
@@ -64,8 +64,8 @@ Features
 * Some useful additional operators are there too: a way to discard matches (thus dumping them from the parse tree), to push captures on a stack, to accept matches that are equal to another match: see [PEG Additions](https://github.com/PhilippeSigaud/Pegged/wiki/Extended-PEG-Syntax).
 * Adding new parsers is easy. See [User-Defined Parsers](https://github.com/PhilippeSigaud/Pegged/wiki/User-Defined-Parsers) to see how to do that.
 * Grammars are composable: you can put different `mixin(grammar(rules));` in a module and then grammars and rules can refer to one another. That way, you can have utility grammars providing their functionalities to other grammars. [Grammar Composition](https://github.com/PhilippeSigaud/Pegged/wiki/Grammar-Composition)
-* That's why **Pegged** comes with some pre-defined grammars (JSON, C, XML, CSV, etc). See [Grammar Examples](https://github.com/PhilippeSigaud/Pegged/wiki/Grammar-Examples).
-* Grammars can be dumped in a file to create a module. Use the `asModule(string moduleName, string gram)` function in `pegged.grammar` to do that. See [Grammars as Modules](https://github.com/PhilippeSigaud/Pegged/wiki/Grammar-as-Modules).
+* That's why **Pegged** comes with some pre-defined grammars (JSON, C, XML, CSV, the PEG grammar itself, etc). See [Grammar Examples](https://github.com/PhilippeSigaud/Pegged/wiki/Grammar-Examples).
+* Grammars can be dumped in a file to create a module. Use the `asModule(string moduleName, string gram)` function in `pegged.grammar` to do that. See [Grammars as Modules](https://github.com/PhilippeSigaud/Pegged/wiki/Grammars-as-D-Modules).
 
 More advanced features, outside the standard PEG perimeter are there to bring more power in the mix:
 
@@ -92,7 +92,7 @@ See [todo](https://github.com/PhilippeSigaud/Pegged/wiki/TODO)
 Long-Term Goals (the Right to Dream)
 ------------------------------------
 
-* As a long-term goal, parsing structures, as presented in [OMeta](www.vpri.org/pdf/tr2007003_ometa.pdf). Yeah, I know, but I find that wonderfully interesting. Rules could match not only strings by any D type inner structure (matching a struct if it contains an `int` member named `foo` and a `bar` method, etc).
+* As a long-term goal, parsing structures, as presented in [OMeta](http://www.vpri.org/pdf/tr2007003_ometa.pdf). Yeah, I know, but I find that wonderfully interesting. Rules could match not only strings by any D type inner structure (matching a struct if it contains an `int` member named `foo` and a `bar` method, etc).
 * Hence, a pattern-matcher. if you used Haskell or ML, you know what I'm talking about.
 * As a longer-term goal: implementing the complete D grammar and see if that flies.
 * As an even longer-term goal: macros in D. Think Lisp and [talking to God](http://xkcd.com/224/).
@@ -104,14 +104,14 @@ Articles:
 
 * [The base PEG article from Bryan Ford](http://bford.info/pub/lang/peg).
 * [Packrat parsing](http://pdos.csail.mit.edu/~baford/packrat/icfp02/).
-* [OMeta](www.vpri.org/pdf/tr2007003_ometa.pdf).
+* [OMeta](http://www.vpri.org/pdf/tr2007003_ometa.pdf).
 
 D Code:
 
 * Hisayuki Mima's [CTPG](https://github.com/youkei/ctpg), very similar, also done in D. Have a look!
 * Nick Sabalausky's [Goldie](http://www.dsource.org/projects/goldie).
 * Benjamin Shropshire's [dparser](http://dsource.org/projects/scrapple/browser/trunk/dparser).
-* Martin Nowak put these gists on the D newgroup:
+* Martin Nowak put these gists on the D newsgroup:
     - https://gist.github.com/1255439 - lexer generator
     - https://gist.github.com/1262321 - complete and fast D lexer
 
