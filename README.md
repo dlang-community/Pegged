@@ -58,9 +58,9 @@ Features
 
 * The complete set of operators described [here](http://en.wikipedia.org/wiki/Parsing_expression_grammar) are implemented, with the 'traditional' PEG syntax. See [Peg Basics](https://github.com/PhilippeSigaud/Pegged/wiki/PEG-Basics).
 * **Pegged** can parse its input at compile time and generate a complete parse tree at compile time. In a word: compile-time string (read: D code) transformation and generation. See [Generating Code](https://github.com/PhilippeSigaud/Pegged/wiki/Generating-Code) for example.
-* You can parse at runtime also, you lucky you.
+* You can parse at runtime also, you lucky you. ([Using the Parse Tree](https://github.com/PhilippeSigaud/Pegged/wiki/Using-the-Parse-Tree))
 * Use a standard and readable PEG syntax as a DSL, not a bunch of templates that hide the parser in noise.
-* But you can use expression templates if you want, as parsers are all available as such. **Pegged** is implemented as an expression template, and what's good for the library writer is sure OK for the user too.
+* But you can use expression templates if you want, as parsers are all available as such. **Pegged** is implemented as an expression template, and what's good for the library writer is sure OK for the user too. ([Behind the Curtain: How Pegged Works](https://github.com/PhilippeSigaud/Pegged/wiki/Behind-the-Curtain%3A-How-Pegged-Works)
 * Some useful additional operators are there too: a way to discard matches (thus dumping them from the parse tree), to push captures on a stack, to accept matches that are equal to another match: see [PEG Additions](https://github.com/PhilippeSigaud/Pegged/wiki/Extended-PEG-Syntax).
 * Adding new parsers is easy. See [User-Defined Parsers](https://github.com/PhilippeSigaud/Pegged/wiki/User-Defined-Parsers) to see how to do that.
 * Grammars are composable: you can put different `mixin(grammar(rules));` in a module and then grammars and rules can refer to one another. That way, you can have utility grammars providing their functionalities to other grammars. [Grammar Composition](https://github.com/PhilippeSigaud/Pegged/wiki/Grammar-Composition)
