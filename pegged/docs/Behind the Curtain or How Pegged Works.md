@@ -133,7 +133,7 @@ There are predefined mixins for this kind of thing in `pegged.peg`.
 Bootstrapping
 -------------
 
-The only missing part is how to convert a *grammar-as-a-string* into the previous expression templates. Initially, it was done 'manually', so to speak: a specialized function took the input string and parsed it (with *many* bugs) to produce D code. So, given `"A <- B C / D"`, it recognized the `<-` as a rule definition marker, tokenized `B C / D` into `["B", "C", "OR", "D"] and transformed it into `"Or!(Seq!(B, C), D)"`. The final string, `"class A : Or!(Seq!(B,C),D) { static Output parse(Input) { ... }}"` could be mixed in user code, as is the case right now.
+The only missing part is how to convert a *grammar-as-a-string* into the previous expression templates. Initially, it was done 'manually', so to speak: a specialized function took the input string and parsed it (with *many* bugs) to produce D code. So, given `"A <- B C / D"`, it recognized the `<-` as a rule definition marker, tokenized `B C / D` into `["B", "C", "OR", "D"]` and transformed it into `"Or!(Seq!(B, C), D)"`. The final string, `"class A : Or!(Seq!(B,C),D) { static Output parse(Input) { ... }}"` could be mixed in user code, as is the case right now.
 
 Since PEG come with their own PEG-defined grammar, bootstrapping was easy: I just ate my own dogfood and followed the process described in [[Generating Code]]
 
@@ -147,11 +147,11 @@ Since PEG come with their own PEG-defined grammar, bootstrapping was easy: I jus
 
 The manual parser is still there, for my shame: it's `pegged.utils.manual`. The bootstrapping process was done in two steps: first with the standard PEG grammar and then with the [[Extended PEG Syntax]] **Pegged** uses.
 
-When I add new functionalities in the **Pegged** grammar, I change the grammar in `pegged.utils.bootstrap`, parse it with **Pegged** and dump the resulting *grammar-to-make-grammars* in a new file, that becomes the new `pegged.grammar`.
+When I add new functionalities in the **Pegged** grammar, I change the grammar in `pegged.examples.PEGGED`, parse it with **Pegged** and dump the resulting *grammar-to-make-grammars* in a new file, adding the functions from `pegged.development.grammarfunctions`. That newly-minted module then becomes the new `pegged.grammar`.
 
 Yes, most of `pegged.grammar` was written by the D compiler, not by a human being. That's bootstrapping for you.
 
-That means you can do so also: Say you do not like the PEG way to denote rules: `ruleName <- Expression` and want an EBNF-like syntax: `ruleName := Expression`, just change the corresponding line in `pegged.utils.bootstrap`:
+That means you can do so also: Say you do not like the PEG way to denote rules: `ruleName <- Expression` and want an EBNF-like syntax: `ruleName ::= Expression`, just change the corresponding line in `pegged.examples.PEGGED`:
 
 ```d
 Definition <- RuleName Arrow Expression
@@ -166,7 +166,7 @@ into:
 
 ```d
 Definition <- RuleName DefSymb Expression
-DefSymb <- ":="
+DefSymb <- "::="
 ```
 
 And presto, you have your own *grammar-to-make-grammars* to play with.
