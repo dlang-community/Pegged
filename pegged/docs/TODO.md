@@ -21,11 +21,7 @@ Infrastructure
 
 - aliases for the previous parsing levels. For example: `match` for `TreeLevel.none`, `externalParse`, ...
 
-- Multiple semantic actions `{ foo, bar, baz }`
-
 - Some predefined semantic actions: `cutChildren`, `fuseCaptures`, `dropCaptures`
-
-- Default arguments for parametrized rules `List(Elem, Sep = ',') < Elem (Sep Elem)*`.
 
 - 'if' guards for parametrized rules? `List(Elem, Sep) if (Sep == ',')`. Tricky point: extracting `','` to transform it into `Lit!(',')`. That means parsing the guard as a boolean expression, whose terminals must accept PEG expressions or arithmetic expressions.
 

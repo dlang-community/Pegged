@@ -163,8 +163,6 @@ Possible Extensions
 
 I'm playing with the following ideas concerning actions:
 
-* Permitting different names in a `{ }` block, like this: `{ActionA, ActionB}`. That would mean: call `ActionA` on the parsing expression result, then `ActionB` on `ActionA` return.
-
 * Permitting other arguments, like this: `{dropChild(1)}`, which would call `dropChild(ruleOutput, 1)`. Heck, in DMD 2.059 with UFCS enabled, it's just `ruleOutput.dropChild(1)` which is *quite* easy to code.
 
 * Defining some standard actions. The drop (`:`) and fuse (`~`) operators should be accessible as actions and also other basic tree operations.
