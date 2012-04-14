@@ -13,6 +13,7 @@ import pegged.peg;
 import pegged.grammar;
 
 
+
 /+ from here, the code comes from pegged.development.grammarfunctions +/
 
 void asModule(string moduleName, string grammarString)
@@ -297,7 +298,9 @@ string grammar(string g)
                                 result = "PushName!(" ~ PEGtoCode(ch[0]) ~ ")";
                             break;
                         case "WithAction":
-                            result = "Action!(" ~ PEGtoCode(ch[0]) ~ ", " ~ ch[1].capture[0] ~ ")";
+                            result = PEGtoCode(ch[0]);
+                            foreach(action; ch[1].capture)
+                                result = "Action!(" ~ result ~ ", " ~ action ~ ")";
                             break;
                         default:
                             break;
@@ -324,8 +327,8 @@ string grammar(string g)
                 if (ch.length == 1 || temp.startsWith("Seq!(")) return temp;
                 result = "Seq!(" ~ temp ~ ")";
                 return result;
-            case "Ident":
-                return p.capture[0];
+//            case "Ident":
+//                return p.capture[0];
             case "Literal":
                 if (p.capture[0].length == 0)
                     return "ERROR: empty literal";

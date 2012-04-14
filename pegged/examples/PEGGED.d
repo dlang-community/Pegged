@@ -54,7 +54,7 @@ SingleParam <- Identifier S
 ArgList     <- :OPEN Expression (',' S Expression)* :CLOSE S
 
 NamedExpr   <- NAME Identifier? S                    # Ext: named captures
-WithAction  <~ :ACTIONOPEN Identifier :ACTIONCLOSE S # Ext: semantic actions
+WithAction  <- :ACTIONOPEN Identifier S (:',' S Identifier)* :ACTIONCLOSE S # Ext: semantic actions
 
 # Ext: different kinds of arrows
 Arrow       <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW / SPACEARROW
