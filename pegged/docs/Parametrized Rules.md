@@ -1,7 +1,7 @@
 Parametrized Rules
 ==================
 
-**Pegged** piggybacks on D nice template syntax to get parametrized rules: rules that take other parsing expressions as arguments. The syntax is quite simple:
+**Pegged** piggybacks on D nice template syntax to get parametrized rules: rules that take other parsing expressions as arguments. The syntax is quite simple, just put a comma-separated list right after the rule name (no space):
 
 ```
 List(Elem, Sep) <  Elem (Sep Elem)*
@@ -69,33 +69,123 @@ List(Elem, Sep) <- Elem (Sep Elem)*
 List(Elem)      <- List(Elem, :',') # Comma-sep, drop the commas
 ```
 
-Caveat
-------
+Parametrized Grammars
+---------------------
 
-Parametrized rules are inner class templates in the bigger class (the grammar itself). This means these definitions must be placed first in the class code. **Pegged** does this automatically for you: it scans the grammar definitions and reorders them accordingly. You do not have to worry about it: just define your grammar in the order you wish.
-
-But there is a catch: **Pegged** considers that the root rule of a grammar (the one that's called when you just use the grammar name in the `.parse()` call) is the very first rule. This means **Do not put a parametrized rule as the first rule of a grammar**. Else, the inner code won't know which argument should be passed to the template.
+Entire grammars can be parametrized and can use the passed expressions. The syntax is the same than for rules: put a comma-separated list right after the rule name, before the colon:
 
 ```d
-// This creates the 'List' grammar, with one rule called 'List' also.
 mixin(grammar(`
-List(E, Sep) <- E
+Arithmetic(Atom) :
+    Expr     <  Factor  (('+'/'-') Expr)*
+    Factor   <  Primary (('*'/'/') Factor)*
+    Primary  <  '(' Expr ')' / '-' Primary / Atom
+`));
+```
+
+To use the parametrized grammar directly, call it with parsing expressions as arguments:
+
+```d
+alias Or!(Identifier, Fuse!(OneOrMore!(Digit))) Atom; // more or less equivalent to Atom <- Identifier / ~Digit+
+auto tree = Arithmetic!(Atom).parse("(x-1)*(x+1)");
+```
+
+The previously defined `Atom` matches both identifiers and simple numbers. That way, `Arithmetic` is now a grammar template (well, duh!) that provides a 'skeleton': it recognizes expressions of the form `[] + ([] - [])*[]`, for any expression filling the slots.
+
+This opens a new genericity in grammars: `Arithmetic` can now be used in different contexts and by different grammars. To use it in another grammar, just call it with an argument. Say we have a grammar for relations (`e == f`, `e <= f`, and so on). The compared expression can be arithmetic expressions:
+
+```d
+mixin(grammar(`
+Relation <  ^Arithmetic(Atom) RelOp ^Arithmetic(Atom)
+RelOp    <- "==" / "!=" / "<=" / ">=" / "<" / ">"
+Atom     <- Identifier / ~Digit+
 `));
 
 void main()
 {
-    List.parse("A BC D"); // Uh? In List!(AAA, BBB), what should be AAA and BBB?
+    writeln(Relation.parse("(x-1)*(x+1) == x*x -1"));
 }
 ```
 
-In the previous example, that may seem obvious. But sometimes, while adding rules to an already existing grammar, you may forget it. So, don't write a parametrized rule as
+Note the `^` (promote aka 'keep') operator before the `Arithmetic(Atom)` call, to keep the resulting parse node, external to the grammar.
+
+We can continue this matrioshka construction even further: `Relation` itself can be parametrized and used into a Boolean grammar, recognizing sentences like `(x < 1) || (x+y == 0)`:
+
+```d
+mixin(grammar(`
+Arithmetic(Atom) :
+    Expr     <  Factor  (('+'/'-') Expr)*
+    Factor   <  Primary (('*'/'/') Factor)*
+    Primary  <  '(' Expr ')' / '-' Primary / Atom
+`));
+
+mixin(grammar(`
+Relation(Atom):
+Expr     <  ^Arithmetic(Atom) RelOp ^Arithmetic(Atom)
+RelOp    <- "==" / "!=" / "<=" / ">=" / "<" / ">"
+`));
+
+mixin(grammar(`
+Boolean < AndExpr (^"||" Boolean)*
+AndExpr < NotExpr (^"&&" AndExpr)*
+NotExpr < ^"!"? Primary
+Primary <  '(' Boolean ')' / ^Relation(Atom)
+Atom    <- Identifier / Number
+Number  <~ [0-9]+
+`));
+
+
+void main()
+{
+    auto tree = Boolean.parse("x < 0 || x+y == 1");
+    writeln(tree);
+}
+```
+
+So, `Boolean` calls `Relation`, which in turn call `Arithmetic`. Isn't that cool?
+
+**Bug**: OK, this found a bug: since the tree decimation is done on the node names, homonyms from different grammars are not dropped. I'll have to add the grammar name to the node names, or something.
+
+Parametrized First Rules for Anonymous Grammars
+-----------------------------------------------
+
+Parametrized rules are inner class templates in the bigger class (the grammar itself). This means that, according to the D grammar, these definitions must be placed first in the class code else there is a forward reference error. **Pegged** does this automatically for you: it scans the grammar definitions and reorders them accordingly. You do not have to worry about it: just define your grammar in the order you wish.
+
+But there is a catch: **Pegged** considers that the root rule of a grammar (the one that's called when you just use the grammar name in the `.parse()` call) is the very first rule. In case this first rule is parametrized, **Pegged** cleans it up somewhat: it recognized the rule as parametrized and makes the entire grammar parametrized, with an non-parametrized internal first rule.
+
+```
+A(B) <- B*
+```
+
+Is transformed in the equivalent of:
+
+```
+A(B):
+    A <- B
+```
+
+Which was what I wanted all the time I used anonymous grammars with a parametrized first rule. It can be dangerous, though:
+
+```d
+// This creates the 'List' grammar, with one rule called 'List' also.
+mixin(grammar(`
+List(E, Sep) <- E (Sep E)*
+`));
+
+void main()
+{
+    List.parse("A BC D"); // Uh? What are E and Sep?
+}
+```
+
+In the previous example, that may seem obvious. But sometimes, while adding rules to an already existing grammar, you may forget it. 
 
 Other Examples
 --------------
 
 There is a module presenting different parametrized rules: [here](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/parametrized.d).  
 
-As it contains *only* parametrized rules, do not use it 'raw', see the Caveat section.
+As it contains *only* parametrized rules, do not use it 'raw'.
 
 Future Extensions
 -----------------
