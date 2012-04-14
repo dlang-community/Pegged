@@ -45,7 +45,7 @@ Char        <~ BackSlash ( Quote
              / .
 Hex         <- [0-9a-fA-F]
              
-# Ext: parameterized rules
+# Ext: parametrized rules
 ParamList   <~  OPEN Identifier (',' S Identifier)*  CLOSE S 
 ArgList     <- :OPEN Expression (',' S Expression)* :CLOSE S
 
@@ -1569,14 +1569,24 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write(grammar(grammarString));
 }
 
+
 string grammar(string g)
 {    
     auto grammarAsOutput = PEGGED.parse(g);
     if (grammarAsOutput.children.length == 0) return "static assert(false, `Bad grammar: " ~ to!string(grammarAsOutput.capture) ~ "`);";
     string[] names;
-    foreach(definition; grammarAsOutput.children)
+    bool rootIsParametrized;
+    string rootParameters;
+    foreach(i,definition; grammarAsOutput.children)
         if (definition.name == "Definition") 
+        {
             names ~= definition.capture[0];
+            if (i == 0 && definition.children[0].capture.length == 2) // first rule is a parametrized rule.
+            {   
+                rootIsParametrized = true;
+                rootParameters = definition.children[0].capture[1];
+            }
+        }
     string ruleNames = "    enum ruleNames = [";
     foreach(name; names)
         ruleNames ~= "\"" ~ name ~ "\":true,";
@@ -1594,8 +1604,8 @@ string grammar(string g)
             case "Grammar":
                 bool named = ch[0].name == "GrammarName";
                 bool parametrized = ch[0].children[0].capture.length == 2;
-                string grammarName = named ? ch[0].capture[0] ~ (parametrized? ch[0].capture[1] : "")
-                                           : names.front;
+                string grammarName = named ? (ch[0].capture[0] ~ (parametrized? ch[0].capture[1] : ""))
+                                           : (names.front ~ (rootIsParametrized? rootParameters : ""));
                 
                 result =  "import std.array, std.algorithm, std.conv;\n\n"
                         ~ "class " ~ grammarName ~ " : Parser\n{\n" 
@@ -1647,13 +1657,18 @@ string grammar(string g)
     
 ";
                 string rulesCode;
+                // if the grammar is anonymous and the first rule is parametrized,
+                // we must drop the parameter list for the root.
+                if (!named && rootIsParametrized)
+                    ch[0].children[0].capture.popBack();
+                                                         
                 foreach(child; named ? ch[1..$] : ch)
                 {
                     // child is a Definition
                     // Its first child is the rule's name
                     // If it has 2 captures, it's a parameterized rule, else a normal rule
                     // Parameterized rules are templates and their code must placed first.
-                    if (child.children[0].capture.length == 1) // normal rule
+                    if ( child.children[0].capture.length == 1) // normal rule
                         rulesCode ~= PEGtoCode(child);
                     else // Parameterized rule: to be put first
                         rulesCode = PEGtoCode(child) ~ rulesCode;

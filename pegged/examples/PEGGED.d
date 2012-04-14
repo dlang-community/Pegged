@@ -46,7 +46,7 @@ Char        <~ BackSlash ( Quote
              / .
 Hex         <- [0-9a-fA-F]
              
-# Ext: parameterized rules
+# Ext: parametrized rules
 ParamList   <~  OPEN Identifier (',' S Identifier)*  CLOSE S 
 ArgList     <- :OPEN Expression (',' S Expression)* :CLOSE S
 
