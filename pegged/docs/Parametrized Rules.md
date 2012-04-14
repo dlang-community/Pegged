@@ -69,6 +69,17 @@ List(Elem, Sep) <- Elem (Sep Elem)*
 List(Elem)      <- List(Elem, :',') # Comma-sep, drop the commas
 ```
 
+Default Values
+--------------
+
+Parameters can have default values, standard **Pegged** expressions. Here is for example a `List` rule which default to comma-separated when given only one argument:
+
+```
+List(Elem, Sep = ',') < Elem (:Sep Elem)*
+```
+
+The default value is internally converted into a standard **Pegged** parser, and then the D engine for template default parameters does the rest of the job.
+
 Parametrized Grammars
 ---------------------
 
