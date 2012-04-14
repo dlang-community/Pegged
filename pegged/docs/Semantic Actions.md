@@ -23,6 +23,21 @@ The previous example demonstrates some ways an action can be declared:
 
 * `Rule4` is an example of nested actions: `ActionA` is called after `Expr1`, `ActionB` after `Expr2` and than `ActionC` on the global sequence output.
 
+Multiple Actions, One Rule
+--------------------------
+
+You can put multiple actions on one rule, if you need it:
+
+```
+Rule <- Expr {action1} {action2} {action3}
+```
+
+**Pegged** provides a shortcut notation:
+
+```
+Rule <- Expr {action1, action2, action3}
+```
+
 
 What Can Be Done With Semantic Actions
 --------------------------------------
