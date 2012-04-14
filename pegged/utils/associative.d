@@ -259,12 +259,12 @@ struct AssociativeList(Key, Value, alias pred = lessThan)
     
     void popFront() @property
     {
-        pairs.popFront;
+        pairs.popFront();
     }
     
     KV front() @property
     {
-        return pairs.front;
+        return pairs.front();
     }
     
     size_t length() @property
