@@ -378,7 +378,7 @@ class Seq(Exprs...) : Parser
 
 class SpaceSeq(Exprs...) : Parser
 {
-    enum name = getName!("SpaceSeq", Exprs)();
+    enum name = "SpaceSeq" ~ Exprs.stringof; //getName!("SpaceSeq", Exprs)();
     
     static Output parse(Input input)
     {
@@ -577,7 +577,7 @@ class FindAndPop(Expr) : Parser
 
 class Or(Exprs...) : Parser
 {
-    enum name = getName!("Or", Exprs)();
+    enum name = "Or" ~ Exprs.stringof;//getName!("Or", Exprs)();
     
     static Output parse(Input input)
     {
