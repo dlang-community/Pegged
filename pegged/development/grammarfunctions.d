@@ -100,7 +100,7 @@ string grammar(string g)
         ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
-            //auto decimated = decimateTree(child);
+            child  = decimateTree(child);
             if (child.name in ruleNames)
                 filteredChildren ~= child;
             else if (child.name.startsWith(`Keep!(`))
@@ -110,8 +110,8 @@ string grammar(string g)
             }
             else
             {
-                foreach(grandchild; child.children)
-                    filteredChildren ~= decimateTree(grandchild);
+                if (child.children.length != 0)
+                    filteredChildren ~= child;
             }
         }
         p.children = filteredChildren;

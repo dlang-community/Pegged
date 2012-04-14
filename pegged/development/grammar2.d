@@ -6,9 +6,9 @@ This module was automatically generated from the following grammar:
 PEGGED:
 
 Grammar     <- S GrammarName? Definition+ EOI
-GrammarName <- Identifier S :":" S       # Ext: named grammars
+GrammarName <- RuleName ":" S             # Ext: named grammars
 Definition  <- RuleName Arrow Expression S
-RuleName    <- Identifier ParamList? S # Ext: different arrows
+RuleName    <- Identifier ParamList? S    # Ext: different arrows
 Expression  <- Sequence (OR Sequence)*
 Sequence    <- Prefix+
 Prefix      <- (LOOKAHEAD / NOT / DROP / KEEP / FUSE)? Suffix
@@ -27,7 +27,7 @@ Name        <- QualifiedIdentifier ArgList? S #Ext: names can be qualified
 GroupExpr   <- :OPEN Expression :CLOSE S
 Literal     <~ :Quote (!Quote Char)* :Quote S
              / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
-Class       <- :'[' (!']' CharRange)* :']' S
+Class       <- '[' (!']' CharRange)* ']' S
 CharRange   <- Char :'-' Char / Char
 Char        <~ BackSlash ( Quote
                          / DoubleQuote
@@ -45,9 +45,9 @@ Char        <~ BackSlash ( Quote
              / .
 Hex         <- [0-9a-fA-F]
              
-# Ext: parameterized rules
-ParamList   <~ OPEN Identifier (',' S Identifier)* CLOSE S 
-ArgList     <- :OPEN Expression (:',' S Expression)* :CLOSE S
+# Ext: parametrized rules
+ParamList   <~  OPEN Identifier (',' S Identifier)*  CLOSE S 
+ArgList     <- :OPEN Expression (',' S Expression)* :CLOSE S
 
 NamedExpr   <- NAME Identifier? S # Ext: named captures
 WithAction  <~ :ACTIONOPEN Identifier :ACTIONCLOSE S # Ext: semantic actions
@@ -86,7 +86,7 @@ Comment    <- "#" (!EOL .)* (EOL/EOI)
 
 
 */
-module pegged.grammar;
+module pegged.grammar2;
 
 public import pegged.peg;
 import std.array, std.algorithm, std.conv;
@@ -140,8 +140,13 @@ class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -155,7 +160,7 @@ class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
     
 }
 
-class GrammarName : Seq!(Identifier,S,Drop!(Lit!(":")),S)
+class GrammarName : Seq!(RuleName,Lit!(":"),S)
 {
     enum name = `GrammarName`;
 
@@ -168,8 +173,13 @@ class GrammarName : Seq!(Identifier,S,Drop!(Lit!(":")),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -196,8 +206,13 @@ class Definition : Seq!(RuleName,Arrow,Expression,S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -224,8 +239,13 @@ class RuleName : Seq!(Identifier,Option!(ParamList),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -252,8 +272,13 @@ class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -280,8 +305,13 @@ class Sequence : OneOrMore!(Prefix)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -308,8 +338,13 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -336,8 +371,13 @@ class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,Wi
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -364,8 +404,13 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -392,8 +437,13 @@ class Name : Seq!(QualifiedIdentifier,Option!(ArgList),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -420,8 +470,13 @@ class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -448,8 +503,13 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -463,7 +523,7 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
     
 }
 
-class Class : Seq!(Drop!(Lit!("[")),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),CharRange)),Drop!(Lit!("]")),S)
+class Class : Seq!(Lit!("["),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),CharRange)),Lit!("]"),S)
 {
     enum name = `Class`;
 
@@ -476,8 +536,13 @@ class Class : Seq!(Drop!(Lit!("[")),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),Ch
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -504,8 +569,13 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -532,8 +602,13 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -560,8 +635,13 @@ class Hex : Or!(Range!('0','9'),Range!('a','f'),Range!('A','F'))
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -588,8 +668,13 @@ class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),S,Identi
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -603,7 +688,7 @@ class ParamList : Fuse!(Seq!(OPEN,Identifier,ZeroOrMore!(Seq!(Lit!(","),S,Identi
     
 }
 
-class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),S,Expression)),Drop!(CLOSE),S)
+class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Lit!(","),S,Expression)),Drop!(CLOSE),S)
 {
     enum name = `ArgList`;
 
@@ -616,8 +701,13 @@ class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Drop!(Lit!(",")),S,
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -644,8 +734,13 @@ class NamedExpr : Seq!(NAME,Option!(Identifier),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -672,8 +767,13 @@ class WithAction : Fuse!(Seq!(Drop!(ACTIONOPEN),Identifier,Drop!(ACTIONCLOSE),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -700,8 +800,13 @@ class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW,SPACEARROW)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -728,8 +833,13 @@ class LEFTARROW : Seq!(Lit!("<-"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -756,8 +866,13 @@ class FUSEARROW : Seq!(Lit!("<~"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -784,8 +899,13 @@ class DROPARROW : Seq!(Lit!("<:"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -812,8 +932,13 @@ class ACTIONARROW : Seq!(Lit!("<"),WithAction,S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -840,8 +965,13 @@ class SPACEARROW : Seq!(Lit!("<"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -868,8 +998,13 @@ class OR : Seq!(Lit!("/"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -896,8 +1031,13 @@ class LOOKAHEAD : Seq!(Lit!("&"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -924,8 +1064,13 @@ class NOT : Seq!(Lit!("!"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -952,8 +1097,13 @@ class DROP : Seq!(Lit!(":"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -980,8 +1130,13 @@ class KEEP : Seq!(Lit!("^"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1008,8 +1163,13 @@ class FUSE : Seq!(Lit!("~"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1036,8 +1196,13 @@ class NAME : Seq!(Lit!("="),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1064,8 +1229,13 @@ class ACTIONOPEN : Seq!(Lit!("{"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1092,8 +1262,13 @@ class ACTIONCLOSE : Seq!(Lit!("}"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1120,8 +1295,13 @@ class OPTION : Seq!(Lit!("?"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1148,8 +1328,13 @@ class ZEROORMORE : Seq!(Lit!("*"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1176,8 +1361,13 @@ class ONEORMORE : Seq!(Lit!("+"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1204,8 +1394,13 @@ class OPEN : Seq!(Lit!("("),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1232,8 +1427,13 @@ class CLOSE : Seq!(Lit!(")"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1260,8 +1460,13 @@ class ANY : Seq!(Lit!("."),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1288,8 +1493,13 @@ class S : Drop!(Fuse!(ZeroOrMore!(Or!(Blank,EOL,Comment))))
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1316,8 +1526,13 @@ class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames || p.name.startsWith(`Keep!`)) 
+            if (p.name in ruleNames)
                 p.children = [p];
+            if (p.name.startsWith(`Keep!`))
+            {
+                p.name = p.name[6..$-1];
+                p.children = [p];
+            }
     
             p.name = name;
             return p;
@@ -1354,14 +1569,24 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write(grammar(grammarString));
 }
 
+
 string grammar(string g)
 {    
     auto grammarAsOutput = PEGGED.parse(g);
     if (grammarAsOutput.children.length == 0) return "static assert(false, `Bad grammar: " ~ to!string(grammarAsOutput.capture) ~ "`);";
     string[] names;
-    foreach(definition; grammarAsOutput.children)
+    bool rootIsParametrized;
+    string rootParameters;
+    foreach(i,definition; grammarAsOutput.children)
         if (definition.name == "Definition") 
+        {
             names ~= definition.capture[0];
+            if (i == 0 && definition.children[0].capture.length == 2) // first rule is a parametrized rule.
+            {   
+                rootIsParametrized = true;
+                rootParameters = definition.children[0].capture[1];
+            }
+        }
     string ruleNames = "    enum ruleNames = [";
     foreach(name; names)
         ruleNames ~= "\"" ~ name ~ "\":true,";
@@ -1378,8 +1603,9 @@ string grammar(string g)
                 return PEGtoCode(ch[0]);
             case "Grammar":
                 bool named = ch[0].name == "GrammarName";
-                string grammarName = named ? ch[0].capture[0] 
-                                           : names.front;
+                bool parametrized = ch[0].children[0].capture.length == 2;
+                string grammarName = named ? (ch[0].capture[0] ~ (parametrized? ch[0].capture[1] : ""))
+                                           : (names.front ~ (rootIsParametrized? rootParameters : ""));
                 
                 result =  "import std.array, std.algorithm, std.conv;\n\n"
                         ~ "class " ~ grammarName ~ " : Parser\n{\n" 
@@ -1388,6 +1614,7 @@ string grammar(string g)
                         ~
 "    static Output parse(Input input)
     {
+        mixin(okfailMixin());
         "
 /*
 ~ (named ? "auto p = "~names.front~".parse(input);
@@ -1409,6 +1636,7 @@ string grammar(string g)
         ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
+            child  = decimateTree(child);
             if (child.name in ruleNames)
                 filteredChildren ~= child;
             else if (child.name.startsWith(`Keep!(`))
@@ -1418,8 +1646,8 @@ string grammar(string g)
             }
             else
             {
-                child = decimateTree(child);
-                filteredChildren ~= child.children;
+                if (child.children.length != 0)
+                    filteredChildren ~= child;
             }
         }
         p.children = filteredChildren;
@@ -1429,13 +1657,18 @@ string grammar(string g)
     
 ";
                 string rulesCode;
+                // if the grammar is anonymous and the first rule is parametrized,
+                // we must drop the parameter list for the root.
+                if (!named && rootIsParametrized)
+                    ch[0].children[0].capture.popBack();
+                                                         
                 foreach(child; named ? ch[1..$] : ch)
                 {
                     // child is a Definition
                     // Its first child is the rule's name
                     // If it has 2 captures, it's a parameterized rule, else a normal rule
                     // Parameterized rules are templates and their code must placed first.
-                    if (child.children[0].capture.length == 1) // normal rule
+                    if ( child.children[0].capture.length == 1) // normal rule
                         rulesCode ~= PEGtoCode(child);
                     else // Parameterized rule: to be put first
                         rulesCode = PEGtoCode(child) ~ rulesCode;
@@ -1658,3 +1891,4 @@ string grammar(string g)
 
     return PEGtoCode(grammarAsOutput.parseTree);
 }
+
