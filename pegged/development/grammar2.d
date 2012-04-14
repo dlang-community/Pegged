@@ -86,7 +86,7 @@ Comment    <- "#" (!EOL .)* (EOL/EOI)
 
 
 */
-module pegged.grammar2;
+module pegged.grammar;
 
 public import pegged.peg;
 import std.array, std.algorithm, std.conv;
@@ -109,6 +109,7 @@ class PEGGED : Parser
         ParseTree[] filteredChildren;
         foreach(child; p.children)
         {
+            child = decimateTree(child);
             if (child.name in ruleNames)
                 filteredChildren ~= child;
             else if (child.name.startsWith(`Keep!(`))
@@ -118,8 +119,8 @@ class PEGGED : Parser
             }
             else
             {
-                child = decimateTree(child);
-                filteredChildren ~= child.children;
+                //if (child.children.length != 0)
+                    filteredChildren ~= child.children;
             }
         }
         p.children = filteredChildren;
@@ -1646,8 +1647,7 @@ string grammar(string g)
             }
             else
             {
-                if (child.children.length != 0)
-                    filteredChildren ~= child;
+                filteredChildren ~= child.children;
             }
         }
         p.children = filteredChildren;

@@ -12,6 +12,7 @@ import std.stdio;
 import pegged.peg;
 import pegged.grammar;
 
+
 /+ from here, the code comes from pegged.development.grammarfunctions +/
 
 void asModule(string moduleName, string grammarString)
@@ -40,17 +41,18 @@ string grammar(string g)
     if (grammarAsOutput.children.length == 0) return "static assert(false, `Bad grammar: " ~ to!string(grammarAsOutput.capture) ~ "`);";
     string[] names;
     bool rootIsParametrized;
-    string rootParameters;
+    ParseTree rootParameters;
     foreach(i,definition; grammarAsOutput.children)
         if (definition.name == "Definition") 
         {
             names ~= definition.capture[0];
-            if (i == 0 && definition.children[0].capture.length == 2) // first rule is a parametrized rule.
+            if (i == 0 && definition.children[0].children.length > 0) // first rule is a parametrized rule.
             {   
                 rootIsParametrized = true;
-                rootParameters = definition.children[0].capture[1];
+                rootParameters = definition.children[0].children[0];
             }
         }
+
     string ruleNames = "    enum ruleNames = [";
     foreach(name; names)
         ruleNames ~= "\"" ~ name ~ "\":true,";
@@ -69,7 +71,7 @@ string grammar(string g)
                 bool named = ch[0].name == "GrammarName";
                 bool parametrized = ch[0].children[0].capture.length == 2;
                 string grammarName = named ? (ch[0].capture[0] ~ (parametrized? ch[0].capture[1] : ""))
-                                           : (names.front ~ (rootIsParametrized? rootParameters : ""));
+                                           : (names.front ~ (rootIsParametrized? PEGtoCode(rootParameters) : ""));
                 
                 result =  "import std.array, std.algorithm, std.conv;\n\n"
                         ~ "class " ~ grammarName ~ " : Parser\n{\n" 
@@ -110,8 +112,7 @@ string grammar(string g)
             }
             else
             {
-                if (child.children.length != 0)
-                    filteredChildren ~= child;
+                filteredChildren ~= child.children;
             }
         }
         p.children = filteredChildren;
@@ -124,17 +125,19 @@ string grammar(string g)
                 // if the grammar is anonymous and the first rule is parametrized,
                 // we must drop the parameter list for the root.
                 if (!named && rootIsParametrized)
-                    ch[0].children[0].capture.popBack();
+                {
+                    ch[0].children[0].capture = ch[0].children[0].capture[0..1];
+                    ch[0].children[0].children = null;
+                }
                                                          
                 foreach(child; named ? ch[1..$] : ch)
                 {
                     // child is a Definition
                     // Its first child is the rule's name
-                    // If it has 2 captures, it's a parameterized rule, else a normal rule
-                    // Parameterized rules are templates and their code must placed first.
-                    if ( child.children[0].capture.length == 1) // normal rule
+                    // Parametrized rules are templates and their code must placed first.
+                    if ( child.children[0].children.length == 0) // normal rule
                         rulesCode ~= PEGtoCode(child);
-                    else // Parameterized rule: to be put first
+                    else // Parametrized rule: to be put first
                         rulesCode = PEGtoCode(child) ~ rulesCode;
                 }
                 result ~= rulesCode;
@@ -201,12 +204,27 @@ string grammar(string g)
                 }
 
                 return "class " 
-                    ~ ch[0].capture[0] // name 
-                    ~ (ch[0].capture.length == 2 ? ch[0].capture[1] : "") // parameter list
+                    ~ PEGtoCode(ch[0])
                     ~ " : " ~ inheritance // inheritance code
                     ~ "\n{\n" 
                     ~ code // inner code
                     ~ "\n}\n\n";
+            case "RuleName":
+                if (ch.length > 0)
+                    return p.capture[0] ~ PEGtoCode(ch[0]);
+                else
+                    return p.capture[0];
+            case "ParamList":
+                result = "(";
+                foreach(i,child; ch)
+                    result ~= PEGtoCode(child) ~ (i < ch.length -1 ? ", " : "");
+                return result ~ ")";
+            case "Param":
+                return PEGtoCode(ch[0]);
+            case "SingleParam":
+                return p.capture[0];
+            case "DefaultParam":
+                return p.capture[0] ~ "= " ~ PEGtoCode(ch[0]);
             case "Expression":
                 if (ch.length > 1) // OR present
                 {

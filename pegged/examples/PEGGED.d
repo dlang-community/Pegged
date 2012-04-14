@@ -7,9 +7,7 @@ enum PEGGEDgrammar = `
 PEGGED:
 
 Grammar     <- S GrammarName? Definition+ EOI
-GrammarName <- RuleName ":" S             # Ext: named grammars
 Definition  <- RuleName Arrow Expression S
-RuleName    <- Identifier ParamList? S    # Ext: different arrows
 Expression  <- Sequence (OR Sequence)*
 Sequence    <- Prefix+
 Prefix      <- (LOOKAHEAD / NOT / DROP / KEEP / FUSE)? Suffix
@@ -24,7 +22,9 @@ Primary     <- Name !Arrow
              / Class 
              / ANY
 
-Name        <- QualifiedIdentifier ArgList? S #Ext: names can be qualified
+GrammarName <- RuleName ":" S                 # Ext: named grammars
+RuleName    <- Identifier ParamList? S        # Ext: parametrized rules
+Name        <- QualifiedIdentifier ArgList? S # Ext: names can be qualified
 GroupExpr   <- :OPEN Expression :CLOSE S
 Literal     <~ :Quote (!Quote Char)* :Quote S
              / :DoubleQuote (!DoubleQuote Char)* :DoubleQuote S
@@ -34,7 +34,7 @@ Char        <~ BackSlash ( Quote
                          / DoubleQuote
                          / BackQuote
                          / BackSlash 
-                         / '-'         # Ext: escaping -,[,] in char ranges
+                         / '-'                # Ext: escaping -,[,] in char ranges
                          / '[' 
                          / ']' 
                          / [nrt]
@@ -47,12 +47,16 @@ Char        <~ BackSlash ( Quote
 Hex         <- [0-9a-fA-F]
              
 # Ext: parametrized rules
-ParamList   <~  OPEN Identifier (',' S Identifier)*  CLOSE S 
+ParamList   <- :OPEN Param (',' S Param)*  :CLOSE S
+Param       <- DefaultParam / SingleParam
+DefaultParam <- Identifier S "=" S Expression S
+SingleParam <- Identifier S
 ArgList     <- :OPEN Expression (',' S Expression)* :CLOSE S
 
-NamedExpr   <- NAME Identifier? S # Ext: named captures
+NamedExpr   <- NAME Identifier? S                    # Ext: named captures
 WithAction  <~ :ACTIONOPEN Identifier :ACTIONCLOSE S # Ext: semantic actions
 
+# Ext: different kinds of arrows
 Arrow       <- LEFTARROW / FUSEARROW / DROPARROW / ACTIONARROW / SPACEARROW
 LEFTARROW   <- "<-" S
 FUSEARROW   <- "<~" S           # Ext: rule-level fuse
