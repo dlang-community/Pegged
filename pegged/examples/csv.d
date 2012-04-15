@@ -7,7 +7,7 @@ CSV:
 
 CsvFile         <- Line* LastLine
 Line            <- RawString (:',' RawString)* :EOL
-LastLine        <- RawString (:',' RawString)* EOI
+LastLine        <- RawString (',' RawString)* EOI
 RawString       <- S* ( SimpleField 
                       / QuotedField 
                       / Eps

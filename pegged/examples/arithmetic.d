@@ -28,11 +28,11 @@ unittest
     assert(p1.pos.line == 0);
     assert(p1.pos.col == example1.length);
         
-    assert(p1.parseTree.name == "Expr");
+    assert(p1.parseTree.ruleName == "Expr");
     assert(p1.parseTree.children.length == 3);
-    assert(p1.parseTree.children[0].name == "Factor");
-    assert(p1.parseTree.children[1].name == "AddExpr");
-    assert(p1.parseTree.children[2].name == "AddExpr");
+    assert(p1.parseTree.children[0].ruleName == "Factor");
+    assert(p1.parseTree.children[1].ruleName == "AddExpr");
+    assert(p1.parseTree.children[2].ruleName == "AddExpr");
     
     enum example2 = "0 123";
     auto p2 = Expr.parse(example2);
