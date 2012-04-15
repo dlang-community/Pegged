@@ -15,13 +15,13 @@ struct Pos
     size_t line;  // input line
     size_t col;   // input column
     
-    string toString() @property
+    dstring toString() @property
     {
-        return "[index: " ~ to!string(index) ~ ", line: " ~ to!string(line) ~ ", col: " ~ to!string(col) ~ "]";
+        return "[index: "d ~ to!dstring(index) ~ ", line: "d ~ to!dstring(line) ~ ", col: "d ~ to!dstring(col) ~ "]"d;
     }
 }
 
-Pos addCapture(Pos pos, string capture)
+Pos addCapture(Pos pos, dstring capture)
 {
     bool foundCR;
     foreach(dchar c; capture)
@@ -55,7 +55,7 @@ Pos addCapture(Pos pos, string capture)
     return pos;        
 }
 
-Pos addCaptures(Pos pos, string[] captures)
+Pos addCaptures(Pos pos, dstring[] captures)
 {
     foreach(capt; captures) pos = addCapture(pos, capt);
     return pos;
@@ -63,91 +63,91 @@ Pos addCaptures(Pos pos, string[] captures)
 
 struct ParseTree
 {
-    string grammarName;
-    string ruleName;
+    dstring grammarName;
+    dstring ruleName;
     bool success;
-    string[] capture;
+    dstring[] capture;
     Pos begin, end;
     ParseTree[] children;
     
-    string name() @property { return grammarName ~ "." ~ ruleName;}
+    dstring name() @property { return grammarName ~ "."d ~ ruleName;}
     
-    string toString(int level = 0) @property
+    dstring toString(int level = 0) @property
     {
-        string tabs;        
-        foreach(i; 0..level) tabs ~= "  ";
-        string ch;
+        dstring tabs;        
+        foreach(i; 0..level) tabs ~= "  "d;
+        dstring ch;
         foreach(child; children)
             ch ~= tabs ~ child.toString(level+1);
-        return tabs ~ name ~ ": " 
-             ~ "[" ~ begin.toString() ~ " - " ~ end.toString() ~ "]"
-             ~ to!string(capture)
+        return tabs ~ name ~ ": "d
+             ~ "["d ~ begin.toString() ~ " - "d ~ end.toString() ~ "]"d
+             ~ to!dstring(capture)
 //                        ~ next[0..to!int(capture[0])] ~ "` / `" ~ next[to!int(capture[0])..$] ~ "`") 
-             ~ (children.length > 0 ? "\n" ~ ch : "\n");
+             ~ (children.length > 0 ? "\n"d ~ ch : "\n"d);
     }
 }
 
-alias Tuple!(string, ParseTree) NamedCapture;
-alias AssociativeList!(string, ParseTree) NamedCaptures;
+alias Tuple!(dstring, ParseTree) NamedCapture;
+alias AssociativeList!(dstring, ParseTree) NamedCaptures;
 
 struct Input
 {
-    string text;
+    dstring text;
     Pos pos;
     NamedCaptures namedCaptures;
     
-    string target() @property
+    dstring target() @property
     {
         return text[pos.index..$];
     }
     
     alias target this;
     
-    string toString() @property
+    dstring toString() @property
     {
-        return "Input: " ~ target ~ "\n" 
-             ~ "Named captures: " ~ namedCaptures.toString ~ "\n";
+        return "Input: "d ~ target ~ "\n"d
+             ~ "Named captures: "d ~ to!dstring(namedCaptures.toString) ~ "\n"d;
     }
 }
 
 struct Output
 {
-    string text;
+    dstring text;
     Pos pos;
     NamedCaptures namedCaptures;
     
     ParseTree parseTree;
     alias parseTree this; // automatic 'conversion' into parseTree, to simplify some expressions
 
-    string toString() @property
+    dstring toString() @property
     {
-        string errorStack;
+        dstring errorStack;
         if (!parseTree.success)
         {
-            string tab = "  ";
+            dstring tab = "  "d;
             foreach(errorMsg; parseTree.capture)
             {
-                errorStack ~= errorMsg ~ "\n" ~ tab;
-                tab ~= "  ";
+                errorStack ~= errorMsg ~ "\n"d ~ tab;
+                tab ~= "  "d;
             }
         }
         
-        return "Parse output: " ~ (parseTree.success ? "success" : "failure") ~ "\n"
-             ~ "named captures: " ~ namedCaptures.toString ~ "\n"
-             ~ "position: " ~ pos.toString() ~ "\n"
+        return "Parse output: "d ~ (parseTree.success ? "success"d : "failure"d) ~ "\n"d
+             ~ "named captures: "d ~ to!dstring(namedCaptures.toString) ~ "\n"d
+             ~ "position: "d ~ pos.toString() ~ "\n"d
              //~ "parsed : `"~text[0..pos.index]~"`\n"
              //~ "not parsed: `"~text[pos.index..$]~"`\n"
-             ~ (parseTree.success ? "parse tree:\n" ~ parseTree.toString() : "")
-             ~ (parseTree.success ? "" : errorStack); // error message stored in parseTree.capture
+             ~ (parseTree.success ? "parse tree:\n"d ~ parseTree.toString() : ""d)
+             ~ (parseTree.success ? ""d : errorStack); // error message stored in parseTree.capture
     }
 }
 
 
-string inheritMixin(string name, string code)
+dstring inheritMixin(dstring name, dstring code)
 {
     return
-    "class " ~ name ~ " : " ~ code ~ " {\n"
-  ~ "enum grammarName = ``; enum ruleName = `" ~ name ~ "`;\n"
+    "class "d ~ name ~ " : "d ~ code ~ " {\n"d
+  ~ "enum grammarName = ``; enum dstring ruleName = `"d ~ name ~ "`;\n"d
   ~ "static Output parse(Input input)
     {
         mixin(okfailMixin());
@@ -159,17 +159,17 @@ string inheritMixin(string name, string code)
     }
     
     mixin(stringToInputMixin());
-}\n";
+}\n"d;
 }
 
 
-string wrapMixin(string name, string code)
+dstring wrapMixin(dstring name, dstring code)
 {
     return
-"class " ~ name
-~ " : " ~ code 
-~ "\n{\n"
-~ "enum grammarName = ``; enum ruleName = `" ~ name ~ "`;\n"
+"class "d ~ name
+~ " : "d ~ code 
+~ "\n{\n"d
+~ "enum grammarName = ``; enum dstring ruleName = `"d ~ name ~ "`;\n"d
 ~ "    static Output parse(Input input)
     {
         auto p = typeof(super).parse(input);
@@ -179,14 +179,14 @@ string wrapMixin(string name, string code)
     }
     
     mixin(stringToInputMixin());
-}\n";
+}\n"d;
 
 }
 
-string okfailMixin() @property
+dstring okfailMixin() @property
 {
     return
-    `Output ok(string[] capture, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
+    `Output ok(dstring[] capture, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
     {
         if (newCaptures.length > 0)
             input.namedCaptures ~= newCaptures;
@@ -200,22 +200,32 @@ string okfailMixin() @property
                       ParseTree(grammarName, ruleName, true, capture, input.pos, end, children));
     }
    
-    Output fail(Pos farthest = Pos.init, string[] errors = null)
+    Output fail(Pos farthest = Pos.init, dstring[] errors = null)
     {
         return Output(input.text,
                       input.pos,
                       input.namedCaptures,
-                      ParseTree(grammarName, ruleName, false, (errors.empty ? [grammarName~"."~ruleName ~ " failure at pos " ~ input.pos.toString()] : errors), 
+                      ParseTree(grammarName, ruleName, false, (errors.empty ? [grammarName~"."d~ruleName ~ " failure at pos "d ~ input.pos.toString()] : errors), 
                                 input.pos, (farthest == Pos.init) ? input.pos : farthest,
                                 (ParseTree[]).init));
     }
-    `;
+    `d;
 }
 
-string stringToInputMixin() @property
+dstring stringToInputMixin() @property
 {
     return 
 "static Output parse(string input)
+{
+    return parse(Input(to!dstring(input), Pos(0,0,0), NamedCaptures.init));
+}
+
+static Output parse(wstring input)
+{
+    return parse(Input(to!dstring(input), Pos(0,0,0), NamedCaptures.init));
+}
+
+static Output parse(dstring input)
 {
     return parse(Input(input, Pos(0,0,0), NamedCaptures.init));
 }
@@ -223,7 +233,7 @@ string stringToInputMixin() @property
 static Output parse(Output input)
 {
     return parse(Input(input.text, input.pos, input.namedCaptures));
-}";
+}"d;
 }
 
 /+
@@ -244,7 +254,7 @@ string getName(string s, Exprs...)() @property
 
 class Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Parser";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Parser"d;
     
     static Output parse(Input input)
     {
@@ -261,7 +271,7 @@ alias Parser Failure;
 /// Eps = epsilon, "", the empty string
 class Eps : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Eps";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Eps"d;
     
     static Output parse(Input input)
     {
@@ -274,7 +284,7 @@ class Eps : Parser
 
 class Any : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Any";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Any"d;
     
     static Output parse(Input input)
     {
@@ -290,7 +300,7 @@ class Any : Parser
 
 class EOI : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "EOI";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "EOI"d;
     
     static Output parse(Input input)
     {
@@ -302,23 +312,25 @@ class EOI : Parser
     mixin(stringToInputMixin());
 }
 
-class Char(char c) : Parser
+/+
+class Char(dchar c) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Char!(" ~ c ~ ")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Char!(" ~ c ~ ")";
     
     static Output parse(Input input) 
     { 
         mixin(okfailMixin());
-        return (input.length > 0 && input[0] == c) ? ok(["" ~ c])
+        return (input.length > 0 && input.front == c) ? ok(["" ~ c])
                                                    : fail();
     }
 
     mixin(stringToInputMixin());
 }
++/
 
-class Lit(string s) : Parser
+class Lit(dstring s) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Lit!("~s~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Lit!("d~s~")"d;
     
     static Output parse(Input input)
     {   
@@ -331,9 +343,9 @@ class Lit(string s) : Parser
     mixin(stringToInputMixin());
 }
 
-class Range(char begin, char end) : Parser
+class Range(dchar begin, dchar end) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Range!("~begin~","~end~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Range!("d~begin~","d~end~")"d;
     
     static Output parse(Input input) 
     { 
@@ -349,12 +361,12 @@ class Range(char begin, char end) : Parser
 
 class Seq(Exprs...) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Seq!" ~ Exprs.stringof;// getName!("Seq",Exprs)();  // Segmentation fault???
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Seq!"d ~ to!dstring(Exprs.stringof);// getName!("Seq",Exprs)();  // Segmentation fault???
     
     static Output parse(Input input)
     {
         mixin(okfailMixin());
-        Output result = ok((string[]).init);
+        Output result = ok((dstring[]).init);
         
         foreach(i,expr; Exprs)
         {            
@@ -374,7 +386,7 @@ class Seq(Exprs...) : Parser
             else
             {
                 return fail(p.parseTree.end,
-                            (grammarName~"."~ruleName ~ " failure with sub-expr #" ~ to!string(i) ~ " `" ~ expr.ruleName ~ "` at pos " ~ to!string(result.pos)) ~ p.capture);
+                            (grammarName~"."d~ruleName ~ " failure with sub-expr #"d ~ to!dstring(i) ~ " `"d ~ expr.ruleName ~ "` at pos "d ~ to!dstring(result.pos)) ~ p.capture);
             }
         }
         return result;
@@ -385,7 +397,7 @@ class Seq(Exprs...) : Parser
 
 class SpaceSeq(Exprs...) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "SpaceSeq" ~ Exprs.stringof; //getName!("SpaceSeq", Exprs)();
+    enum grammarName = `Pegged`d; enum dstring ruleName = "SpaceSeq"d ~ to!dstring(Exprs.stringof); //getName!("SpaceSeq", Exprs)();
     
     static Output parse(Input input)
     {
@@ -394,7 +406,7 @@ class SpaceSeq(Exprs...) : Parser
         // consuming space before the first expression
         input.pos = Spacing.parse(input).pos;
         
-        Output result = ok((string[]).init);
+        Output result = ok((dstring[]).init);
         
         foreach(i,expr; Exprs)
         {            
@@ -414,7 +426,7 @@ class SpaceSeq(Exprs...) : Parser
             else
             {
                 return fail(p.parseTree.end,
-                            (grammarName ~ "." ~ ruleName ~ " failure with sub-expr #" ~ to!string(i) ~ " `" ~ expr.ruleName ~ "` at pos " ~ to!string(result.pos)) ~ p.capture);
+                            (grammarName ~ "."d ~ ruleName ~ " failure with sub-expr #"d ~ to!dstring(i) ~ " `"d ~ expr.ruleName ~ "` at pos "d ~ to!dstring(result.pos)) ~ p.capture);
             }
             
         }
@@ -426,7 +438,7 @@ class SpaceSeq(Exprs...) : Parser
 
 class Action(Expr, alias action)
 {
-    enum grammarName = `Pegged`; enum ruleName = "Action!("~Expr.ruleName~", "~__traits(identifier, action)~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Action!("d~Expr.ruleName~", "d~__traits(identifier, action)~")"d;
     
     static Output parse(Input input)
     {
@@ -441,9 +453,9 @@ class Action(Expr, alias action)
 }
 
 /// stores a named capture (that is, an entire parse tree)
-class Named(Expr, string Name) : Parser
+class Named(Expr, dstring Name) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Named!("~Expr.ruleName ~", " ~ Name~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Named!("d~Expr.ruleName ~", "d ~ Name~")"d;
     
     static Output parse(Input input)
     {
@@ -457,10 +469,12 @@ class Named(Expr, string Name) : Parser
     mixin(stringToInputMixin());
 }
 
-/// Verifies that a match is equal to a named capture
-class EqualMatch(Expr, string Name) : Parser
+version(none)
 {
-    enum grammarName = `Pegged`; enum ruleName = "EqualMatch!("~Expr.ruleName ~", " ~ Name~")";
+/// Verifies that a match is equal to a named capture
+class EqualMatch(Expr, dstring Name) : Parser
+{
+    enum grammarName = `Pegged`d; enum dstring ruleName = "EqualMatch!("~Expr.ruleName ~", " ~ Name~")";
     
     static Output parse(Input input)
     {
@@ -487,9 +501,9 @@ class EqualMatch(Expr, string Name) : Parser
 }
 
 /// Verifies that a parse tree is equal to a named capture
-class EqualParseTree(Expr, string Name) : Parser
+class EqualParseTree(Expr, dstring Name) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "EqualParseTree!("~Expr.ruleName ~", " ~ Name~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "EqualParseTree!("~Expr.ruleName ~", " ~ Name~")";
     
     static Output parse(Input input)
     {
@@ -527,14 +541,14 @@ class EqualParseTree(Expr, string Name) : Parser
 
 class PushName(Expr) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "PushName!(" ~ Expr.ruleName ~ ")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "PushName!(" ~ Expr.ruleName ~ ")";
     
     static Output parse(Input input)
     {
         auto p = Expr.parse(input);
         if (p.success)
         {
-            string cap;
+            dstring cap;
             foreach(capt; p.parseTree.capture) cap ~= capt;
             NamedCapture nc = NamedCapture(cap, p.parseTree);
             p.namedCaptures ~= nc;
@@ -549,7 +563,7 @@ class PushName(Expr) : Parser
 /// Compares the match with the named capture and pops the capture
 class FindAndPop(Expr) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "FindAndPop!("~Expr.ruleName~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "FindAndPop!("~Expr.ruleName~")";
     
     static Output parse(Input input)
     {
@@ -557,7 +571,7 @@ class FindAndPop(Expr) : Parser
         auto p = Expr.parse(input);
         if (p.success)
         {
-            string cap;
+            dstring cap;
             foreach(capt; p.capture) cap ~= capt;
             if (cap in p.namedCaptures)
             {
@@ -570,10 +584,11 @@ class FindAndPop(Expr) : Parser
     
     mixin(stringToInputMixin());
 }
+}
 
 class Or(Exprs...) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Or" ~ Exprs.stringof;//getName!("Or", Exprs)();
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Or"d ~ to!dstring(Exprs.stringof);//getName!("Or", Exprs)();
     
     static Output parse(Input input)
     {
@@ -582,9 +597,9 @@ class Or(Exprs...) : Parser
         Output p;
         
         size_t errorIndex;
-        string errorName;
+        dstring errorName;
         Pos errorPos;
-        string[] errorMessages;
+        dstring[] errorMessages;
         
         foreach(i, expr; Exprs)
         {
@@ -605,7 +620,7 @@ class Or(Exprs...) : Parser
             }
         }
         return fail(errorPos,
-                    (grammarName~"."~ruleName ~ " failure for sub-expr # " ~ to!string(errorIndex) ~ " `" ~ errorName ~ "` at pos " ~ to!string(errorPos)) ~ errorMessages);
+                    (grammarName~"."d~ruleName ~ " failure for sub-expr # "d ~ to!dstring(errorIndex) ~ " `"d ~ errorName ~ "` at pos "d ~ to!dstring(errorPos)) ~ errorMessages);
     }
     
     mixin(stringToInputMixin());
@@ -613,7 +628,7 @@ class Or(Exprs...) : Parser
 
 class Option(Expr) : Parser 
 {
-    enum grammarName = `Pegged`; enum ruleName = "Option!("~Expr.ruleName~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Option!("d~Expr.ruleName~")"d;
     
     static Output parse(Input input)
     {
@@ -631,13 +646,13 @@ class Option(Expr) : Parser
 
 class ZeroOrMore(Expr) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "ZeroOrMore!("~Expr.ruleName~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "ZeroOrMore!("d~Expr.ruleName~")"d;
     
     static Output parse(Input input)
     {
         mixin(okfailMixin());
         
-        string[] capture;
+        dstring[] capture;
         ParseTree[] children;
         
         auto p = Expr.parse(input);
@@ -662,13 +677,13 @@ class ZeroOrMore(Expr) : Parser
 
 class OneOrMore(Expr) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "OneOrMore!("~Expr.ruleName~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "OneOrMore!("d~Expr.ruleName~")"d;
     
     static Output parse(Input input)
     {
         mixin(okfailMixin());
         
-        string[] capture;
+        dstring[] capture;
         ParseTree[] children;
         
         Pos start = input.pos; 
@@ -696,12 +711,12 @@ class OneOrMore(Expr) : Parser
 
 class PosLookAhead(Expr) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "PosLookAhead!("~Expr.ruleName~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "PosLookAhead!("d~Expr.ruleName~")"d;
     
     static Output parse(Input input)
     {
         mixin(okfailMixin());   
-        return Expr.parse(input).success ? ok((string[]).init) // no name nor capture transmission
+        return Expr.parse(input).success ? ok((dstring[]).init) // no name nor capture transmission
                                          : fail();
     }
     
@@ -710,13 +725,13 @@ class PosLookAhead(Expr) : Parser
 
 class NegLookAhead(Expr) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "NegLookAhead!("~Expr.ruleName~")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "NegLookAhead!("d~Expr.ruleName~")"d;
     
     static Output parse(Input input)
     {
         mixin(okfailMixin()); 
         return Expr.parse(input).success ? fail()
-                                         : ok((string[]).init); // no name nor capture transmission
+                                         : ok((dstring[]).init); // no name nor capture transmission
     }
     
     mixin(stringToInputMixin());    
@@ -724,7 +739,7 @@ class NegLookAhead(Expr) : Parser
 
 class Drop(Expr) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Drop!(" ~ Expr.ruleName ~ ")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Drop!("d ~ Expr.ruleName ~ ")"d;
     
     static Output parse(Input input)
     {
@@ -744,9 +759,9 @@ class Drop(Expr) : Parser
 }
 
 // To keep an expression in the parse tree, even though Pegged would cut it naturally
-class Keep(Expr, string GrammarName)
+class Keep(Expr, dstring GrammarName)
 {
-    enum grammarName = `Pegged`; enum ruleName = "Keep!(" ~ Expr.ruleName ~ ", " ~ GrammarName ~ ")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Keep!("d ~ Expr.ruleName ~ ", "d ~ GrammarName ~ ")"d;
     
     static Output parse(Input input)
     {
@@ -761,7 +776,7 @@ class Keep(Expr, string GrammarName)
 
 class Fuse(Expr) : Parser
 {
-    enum grammarName = `Pegged`; enum ruleName = "Fuse!(" ~ Expr.ruleName ~ ")";
+    enum grammarName = `Pegged`d; enum dstring ruleName = "Fuse!("d ~ Expr.ruleName ~ ")"d;
     
     static Output parse(Input input)
     {
@@ -771,7 +786,7 @@ class Fuse(Expr) : Parser
         if (!p.success) 
             return p;
         
-        string capture;
+        dstring capture;
         foreach(cap; p.capture) capture ~= cap;
         p.capture = [capture];
         p.children = null;
@@ -782,44 +797,32 @@ class Fuse(Expr) : Parser
 }
 
 
-class List(Expr, Sep = Lit!",") : Parser
-{
-    static Output parse(Input input)
-    {
-        alias Seq!(Expr, Spacing, ZeroOrMore!(Seq!(Sep, Spacing, Expr, Spacing))) L;
-        return L.parse(input);
-    }
-    
-    mixin(stringToInputMixin());
-}
+mixin(wrapMixin("letter"d,   `Range!('a','z')`d));
+mixin(wrapMixin("Letter"d,   `Range!('A','Z')`d));
+mixin(wrapMixin("Alpha"d,    `Or!(letter, Letter, Lit!"_")`d));
 
+mixin(wrapMixin("Digit"d,    `Range!('0','9')`d));
+mixin(wrapMixin("Alphanum"d, `Or!(Alpha, Digit)`d));
 
-mixin(wrapMixin("letter",   `Range!('a','z')`));
-mixin(wrapMixin("Letter",   `Range!('A','Z')`));
-mixin(wrapMixin("Alpha",    `Or!(letter, Letter, Lit!"_")`));
+mixin(wrapMixin("Identifier"d, `Fuse!(Seq!(Alpha, ZeroOrMore!(Alphanum)))`d));
+mixin(wrapMixin("QualifiedIdentifier"d, `Fuse!(Seq!(Identifier, ZeroOrMore!(Seq!(Lit!"."d, Identifier))))`d));
 
-mixin(wrapMixin("Digit",    `Range!('0','9')`));
-mixin(wrapMixin("Alphanum", `Or!(Alpha, Digit)`));
+mixin(wrapMixin("Space"d,   `Lit!" "`d));
+mixin(wrapMixin("Blank"d,   `Or!(Space, Lit!"\t", Lit!"\b", Lit!"\v", Lit!"\a")`d));
+mixin(wrapMixin("LF"d,      `Lit!"\n"`d));
+mixin(wrapMixin("CR"d,      `Lit!"\r"`d));
+mixin(wrapMixin("CRLF"d,    `Lit!"\r\n"`d));
+mixin(wrapMixin("EOL"d,     `Or!(CRLF, LF, CR)`d));
+mixin(wrapMixin("Spacing"d, `Drop!(ZeroOrMore!(Or!(Blank, EOL)))`d));
 
-mixin(wrapMixin("Identifier", `Fuse!(Seq!(Alpha, ZeroOrMore!(Alphanum)))`));
-mixin(wrapMixin("QualifiedIdentifier", `Fuse!(Seq!(Identifier, ZeroOrMore!(Seq!(Lit!".", Identifier))))`));
+mixin(wrapMixin("DoubleQuote"d,q{Lit!`"`}));
+mixin(wrapMixin("Quote"d,       `Lit!"'"`d));
+mixin(wrapMixin("BackQuote"d,  q{Lit!"`"}));
+mixin(wrapMixin("Slash"d,       `Lit!"/"`d));
+mixin(wrapMixin("BackSlash"d,  q{Lit!`\`}));
 
-mixin(wrapMixin("Space",   `Lit!" "`));
-mixin(wrapMixin("Blank",   `Or!(Space, Lit!"\t", Lit!"\b", Lit!"\v", Lit!"\a")`));
-mixin(wrapMixin("LF",      `Lit!"\n"`));
-mixin(wrapMixin("CR",      `Lit!"\r"`));
-mixin(wrapMixin("CRLF",    `Lit!"\r\n"`));
-mixin(wrapMixin("EOL",     `Or!(CRLF, LF, CR)`));
-mixin(wrapMixin("Spacing", `Drop!(ZeroOrMore!(Or!(Blank, EOL)))`));
-
-mixin(wrapMixin("DoubleQuote",q{Lit!`"`}));
-mixin(wrapMixin("Quote",       `Lit!"'"`));
-mixin(wrapMixin("BackQuote",  q{Lit!"`"}));
-mixin(wrapMixin("Slash",       `Lit!"/"`));
-mixin(wrapMixin("BackSlash",  q{Lit!`\`}));
-
-mixin(wrapMixin("Line", `Fuse!(Seq!(ZeroOrMore!(Seq!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI)))`));
-mixin(wrapMixin("Lines", `OneOrMore!Line`));
+mixin(wrapMixin("Line"d, `Fuse!(Seq!(ZeroOrMore!(Seq!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI)))`d));
+mixin(wrapMixin("Lines"d, `OneOrMore!Line`d));
 
 
 ParseTree regenerateCaptures(ParseTree p)
@@ -827,7 +830,7 @@ ParseTree regenerateCaptures(ParseTree p)
     if (p.children.length == 0)
         return p;
     
-    string[] capture = p.capture;
+    dstring[] capture = p.capture;
     ParseTree[] children;
     foreach(child; p.children)
     {

@@ -147,7 +147,7 @@ class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -177,7 +177,7 @@ class Definition : Seq!(RuleName,Arrow,Expression,S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -207,7 +207,7 @@ class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -237,7 +237,7 @@ class Sequence : OneOrMore!(Prefix)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -267,7 +267,7 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -297,7 +297,7 @@ class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,Wi
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -327,7 +327,7 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -357,7 +357,7 @@ class GrammarName : Seq!(RuleName,Lit!(":"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -387,7 +387,7 @@ class RuleName : Seq!(Identifier,Option!(ParamList),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -417,7 +417,7 @@ class Name : Seq!(QualifiedIdentifier,Option!(ArgList),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -447,7 +447,7 @@ class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -477,7 +477,7 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -507,7 +507,7 @@ class Class : Seq!(Lit!("["),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),CharRange
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -537,7 +537,7 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -567,7 +567,7 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -597,7 +597,7 @@ class Hex : Or!(Range!('0','9'),Range!('a','f'),Range!('A','F'))
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -627,7 +627,7 @@ class ParamList : Seq!(Drop!(OPEN),Param,ZeroOrMore!(Seq!(Lit!(","),S,Param)),Dr
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -657,7 +657,7 @@ class Param : Or!(DefaultParam,SingleParam)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -687,7 +687,7 @@ class DefaultParam : Seq!(Identifier,S,Lit!("="),S,Expression,S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -717,7 +717,7 @@ class SingleParam : Seq!(Identifier,S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -747,7 +747,7 @@ class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Lit!(","),S,Express
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -777,7 +777,7 @@ class NamedExpr : Seq!(NAME,Option!(Identifier),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -807,7 +807,7 @@ class WithAction : Seq!(Drop!(ACTIONOPEN),Identifier,S,ZeroOrMore!(Seq!(Drop!(Li
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -837,7 +837,7 @@ class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW,SPACEARROW)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -867,7 +867,7 @@ class LEFTARROW : Seq!(Lit!("<-"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -897,7 +897,7 @@ class FUSEARROW : Seq!(Lit!("<~"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -927,7 +927,7 @@ class DROPARROW : Seq!(Lit!("<:"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -957,7 +957,7 @@ class ACTIONARROW : Seq!(Lit!("<"),WithAction,S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -987,7 +987,7 @@ class SPACEARROW : Seq!(Lit!("<"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1017,7 +1017,7 @@ class OR : Seq!(Lit!("/"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1047,7 +1047,7 @@ class LOOKAHEAD : Seq!(Lit!("&"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1077,7 +1077,7 @@ class NOT : Seq!(Lit!("!"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1107,7 +1107,7 @@ class DROP : Seq!(Lit!(":"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1137,7 +1137,7 @@ class KEEP : Seq!(Lit!("^"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1167,7 +1167,7 @@ class FUSE : Seq!(Lit!("~"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1197,7 +1197,7 @@ class NAME : Seq!(Lit!("="),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1227,7 +1227,7 @@ class ACTIONOPEN : Seq!(Lit!("{"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1257,7 +1257,7 @@ class ACTIONCLOSE : Seq!(Lit!("}"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1287,7 +1287,7 @@ class OPTION : Seq!(Lit!("?"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1317,7 +1317,7 @@ class ZEROORMORE : Seq!(Lit!("*"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1347,7 +1347,7 @@ class ONEORMORE : Seq!(Lit!("+"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1377,7 +1377,7 @@ class OPEN : Seq!(Lit!("("),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1407,14 +1407,14 @@ class CLOSE : Seq!(Lit!(")"),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
     
 }
 
-class ANY : Seq!(Lit!("."),S)
+class ANY : Seq!(Lit!("."d),S)
 {
     enum grammarName = `PEGGED`; enum ruleName =  `ANY`;
 
@@ -1437,7 +1437,7 @@ class ANY : Seq!(Lit!("."),S)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1467,7 +1467,7 @@ class S : Drop!(Fuse!(ZeroOrMore!(Or!(Blank,EOL,Comment))))
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1497,7 +1497,7 @@ class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."d~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
@@ -1509,12 +1509,12 @@ class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL
 
 /+ from here, the code comes from pegged.development.grammarfunctions +/
 
-void asModule(string moduleName, string grammarString)
+void asModule(string moduleName, dstring grammarString)
 {
     asModule(moduleName, moduleName~".d", grammarString);
 }
 
-void asModule(string moduleName, string fileName, string grammarString)
+void asModule(string moduleName, string fileName, dstring grammarString)
 {
     import std.stdio;
     auto f = File(fileName,"w");
@@ -1529,16 +1529,17 @@ void asModule(string moduleName, string fileName, string grammarString)
 }
 
 
-string grammar(string g)
+dstring grammar(dstring g)
 {    
     auto grammarAsOutput = PEGGED.parse(g);
-    if (grammarAsOutput.children.length == 0) return "static assert(false, `Bad grammar: " ~ to!string(grammarAsOutput.capture) ~ "`);";
+    if (grammarAsOutput.children.length == 0) 
+        return "static assert(false, `Bad grammar: "d ~ to!dstring(grammarAsOutput.capture) ~ "`);"d;
     
     bool rootIsParametrized;
     ParseTree rootParameters;
-    bool named = (grammarAsOutput.children[0].ruleName == "GrammarName");
+    bool named = (grammarAsOutput.children[0].ruleName == "GrammarName"d);
     
-    string rootName = named ? grammarAsOutput.children[1].capture[0]
+    dstring rootName = named ? grammarAsOutput.children[1].capture[0]
                             : grammarAsOutput.children[0].capture[0];
 
     if (!named && grammarAsOutput.children[0].children[0].children.length > 0) // first rule is a parametrized rule.
@@ -1547,29 +1548,29 @@ string grammar(string g)
         rootParameters = grammarAsOutput.children[0].children[0].children[0];
     }
     
-    string gn; // future grammar name
+    dstring gn; // future grammar name
     
-    string PEGtoCode(ParseTree p)
+    dstring PEGtoCode(ParseTree p)
     {
-        string result;
+        dstring result;
         auto ch = p.children;
         
         switch (p.ruleName)
         {
-            case "PEGGED":
+            case "PEGGED"d:
                 return PEGtoCode(ch[0]);
-            case "Grammar":    
+            case "Grammar"d:    
                 gn = named ? ch[0].capture[0] // user-defined grammar name
                            : rootName; // first definition's name
                 
-                string externalName; // the grammar name used in D code, different from the (simpler) one used in the parse tree nodes
+                dstring externalName; // the grammar name used in D code, different from the (simpler) one used in the parse tree nodes
                 externalName = named ? PEGtoCode(ch[0])
-                                     : rootName ~ (rootIsParametrized? PEGtoCode(rootParameters) : "");
-                result =  "import std.array, std.algorithm, std.conv;\n\n"
-                        ~ "class " ~ externalName 
-                        ~ " : Parser\n{\n" 
-                        ~ "    enum grammarName = `" ~ gn ~ "`;\n"
-                        ~ "    enum ruleName = `"~ gn ~ "`;\n"
+                                     : rootName ~ (rootIsParametrized? PEGtoCode(rootParameters) : ""d);
+                result =  "import std.array, std.algorithm, std.conv;\n\n"d
+                        ~ "class "d ~ externalName 
+                        ~ " : Parser\n{\n"d 
+                        ~ "    enum grammarName = `"d ~ gn ~ "`;\n"d
+                        ~ "    enum ruleName = `"d~ gn ~ "`;\n"d
                         ~
 "    static Output parse(Input input)
     {
@@ -1594,8 +1595,8 @@ string grammar(string g)
         return p;
     }
     
-";
-                string rulesCode;
+"d;
+                dstring rulesCode;
                 // if the grammar is anonymous and the first rule is parametrized,
                 // we must drop the parameter list for the root.
                 if (!named && rootIsParametrized)
@@ -1616,12 +1617,12 @@ string grammar(string g)
                 }
                 result ~= rulesCode;
                 
-                return result ~ "}\n";
-            case "GrammarName":
+                return result ~ "}\n"d;
+            case "GrammarName"d:
                 return PEGtoCode(ch[0]);
-            case "Definition":
-                string code = "    enum grammarName = `" ~ gn ~ "`;
-    enum ruleName = `" ~ch[0].capture[0]~ "`;
+            case "Definition"d:
+                dstring code = "    enum grammarName = `"d ~ gn ~ "`;
+    enum ruleName = `"d ~ch[0].capture[0]~ "`;
 
     static Output parse(Input input)
     {
@@ -1644,70 +1645,70 @@ string grammar(string g)
         }
         else
             return fail(p.parseTree.end,
-                        (grammarName~`.`~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~`.`~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
     }
     
     mixin(stringToInputMixin());
-    ";
+    "d;
 
-                string inheritance;
+                dstring inheritance;
                 switch(ch[1].ruleName)
                 {
                     case "LEFTARROW":
                         inheritance = PEGtoCode(ch[2]);
                         break;
                     case "FUSEARROW":
-                        inheritance = "Fuse!(" ~ PEGtoCode(ch[2]) ~ ")";
+                        inheritance = "Fuse!("d ~ PEGtoCode(ch[2]) ~ ")"d;
                         break;
                     case "DROPARROW":
-                        inheritance = "Drop!(" ~ PEGtoCode(ch[2]) ~ ")";
+                        inheritance = "Drop!("d ~ PEGtoCode(ch[2]) ~ ")"d;
                         break;
                     case "ACTIONARROW":
-                        inheritance = "Action!(" ~ PEGtoCode(ch[2]) ~ ", " ~ ch[1].capture[1] ~ ")";
+                        inheritance = "Action!("d ~ PEGtoCode(ch[2]) ~ ", "d ~ ch[1].capture[1] ~ ")"d;
                         break;
                     case "SPACEARROW":
-                        string temp = PEGtoCode(ch[2]);
+                        dstring temp = PEGtoCode(ch[2]);
                         // changing all Seq in the inheritance list into SpaceSeq. Hacky, but it works.
                         foreach(i, c; temp)
                         {
-                            if (temp[i..$].startsWith("Seq!(")) inheritance ~= "Space";
+                            if (temp[i..$].startsWith("Seq!("d)) inheritance ~= "Space"d;
                             inheritance ~= c;
                         }   
                         break;
                     default:
-                        inheritance ="ERROR: Bad arrow: " ~ ch[1].name;
+                        inheritance ="ERROR: Bad arrow: "d ~ ch[1].name;
                         break;
                 }
 
-                return "class " 
+                return "class "d
                     ~ PEGtoCode(ch[0])
-                    ~ " : " ~ inheritance // inheritance code
-                    ~ "\n{\n" 
+                    ~ " : "d ~ inheritance // inheritance code
+                    ~ "\n{\n"d 
                     ~ code // inner code
-                    ~ "\n}\n\n";
+                    ~ "\n}\n\n"d;
             case "RuleName":
                 if (ch.length > 0)
                     return p.capture[0] ~ PEGtoCode(ch[0]);
                 else
                     return p.capture[0];
             case "ParamList":
-                result = "(";
+                result = "("d;
                 foreach(i,child; ch)
-                    result ~= PEGtoCode(child) ~ (i < ch.length -1 ? ", " : "");
-                return result ~ ")";
+                    result ~= PEGtoCode(child) ~ (i < ch.length -1 ? ", "d : ""d);
+                return result ~ ")"d;
             case "Param":
                 return PEGtoCode(ch[0]);
             case "SingleParam":
                 return p.capture[0];
             case "DefaultParam":
-                return p.capture[0] ~ "= " ~ PEGtoCode(ch[0]);
+                return p.capture[0] ~ "= "d ~ PEGtoCode(ch[0]);
             case "Expression":
                 if (ch.length > 1) // OR present
                 {
-                    result = "Or!(";
+                    result = "Or!("d;
                     foreach(i,child; ch)
-                        if (i%2 == 0) result ~= PEGtoCode(child) ~ ",";
-                    result = result[0..$-1] ~ ")";
+                        if (i%2 == 0) result ~= PEGtoCode(child) ~ ","d;
+                    result = result[0..$-1] ~ ")"d;
                 }
                 else // one-element Or -> dropping the Or!( )
                     result = PEGtoCode(ch[0]);
@@ -1715,15 +1716,15 @@ string grammar(string g)
             case "Sequence":
                 if (ch.length > 1)
                 {
-                    result = "Seq!(";
+                    result = "Seq!("d;
                     foreach(child; ch) 
                     {
                         auto temp = PEGtoCode(child);
-                        if (temp.startsWith("Seq!("))
+                        if (temp.startsWith("Seq!("d))
                             temp = temp[5..$-1];
-                        result ~= temp ~ ",";
+                        result ~= temp ~ ","d;
                     }
-                    result = result[0..$-1] ~ ")";
+                    result = result[0..$-1] ~ ")"d;
                 }
                 else
                     result = PEGtoCode(ch[0]);
@@ -1733,19 +1734,19 @@ string grammar(string g)
                     switch (ch[0].ruleName)
                     {
                         case "NOT":
-                            result = "NegLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            result = "NegLookAhead!("d ~ PEGtoCode(ch[1]) ~ ")"d;
                             break;
                         case "LOOKAHEAD":
-                            result = "PosLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            result = "PosLookAhead!("d ~ PEGtoCode(ch[1]) ~ ")"d;
                             break;
                         case "DROP":
-                            result = "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            result = "Drop!("d ~ PEGtoCode(ch[1]) ~ ")"d;
                             break;
                         case "KEEP":
-                            result = "Keep!(" ~ PEGtoCode(ch[1]) ~ ", `" ~ gn ~ "`)";
+                            result = "Keep!("d ~ PEGtoCode(ch[1]) ~ ", `"d ~ gn ~ "`)"d;
                             break;                       
                         case "FUSE":
-                            result = "Fuse!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            result = "Fuse!("d ~ PEGtoCode(ch[1]) ~ ")"d;
                             break;
                         default:
                             break;
@@ -1758,24 +1759,24 @@ string grammar(string g)
                     switch (ch[1].ruleName)
                     {
                         case "OPTION":
-                            result = "Option!(" ~ PEGtoCode(ch[0]) ~ ")";
+                            result = "Option!("d ~ PEGtoCode(ch[0]) ~ ")"d;
                             break;
                         case "ZEROORMORE":
-                            result = "ZeroOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
+                            result = "ZeroOrMore!("d ~ PEGtoCode(ch[0]) ~ ")"d;
                             break;
                         case "ONEORMORE":
-                            result = "OneOrMore!(" ~ PEGtoCode(ch[0]) ~ ")";
+                            result = "OneOrMore!("d ~ PEGtoCode(ch[0]) ~ ")"d;
                             break;
                         case "NamedExpr":
                             if (ch[1].capture.length == 2)
-                                result = "Named!(" ~ PEGtoCode(ch[0]) ~ ", \"" ~ ch[1].capture[1] ~ "\")";
+                                result = "Named!("d ~ PEGtoCode(ch[0]) ~ ", \""d ~ ch[1].capture[1] ~ "\")"d;
                             else
-                                result = "PushName!(" ~ PEGtoCode(ch[0]) ~ ")";
+                                result = "PushName!("d ~ PEGtoCode(ch[0]) ~ ")"d;
                             break;
                         case "WithAction":
                             result = PEGtoCode(ch[0]);
                             foreach(action; ch[1].capture)
-                                result = "Action!(" ~ result ~ ", " ~ action ~ ")";
+                                result = "Action!("d ~ result ~ ", "d ~ action ~ ")"d;
                             break;
                         default:
                             break;
@@ -1791,37 +1792,37 @@ string grammar(string g)
                 if (ch.length == 1) result ~= PEGtoCode(ch[0]);
                 return result;
             case "ArgList":
-                result = "!(";
+                result = "!("d;
                 foreach(child; ch)
-                    result ~= PEGtoCode(child) ~ ","; // Allow  A <- List('A'*,',') 
-                result = result[0..$-1] ~ ")";
+                    result ~= PEGtoCode(child) ~ ","d; // Allow  A <- List('A'*,',') 
+                result = result[0..$-1] ~ ")"d;
                 return result;
             case "GroupExpr":
-                if (ch.length == 0) return "ERROR: Empty group ()";
+                if (ch.length == 0) return "ERROR: Empty group ()"d;
                 auto temp = PEGtoCode(ch[0]);
-                if (ch.length == 1 || temp.startsWith("Seq!(")) return temp;
-                result = "Seq!(" ~ temp ~ ")";
+                if (ch.length == 1 || temp.startsWith("Seq!("d)) return temp;
+                result = "Seq!("d ~ temp ~ ")"d;
                 return result;
             case "Literal":
                 if (p.capture[0].length == 0)
-                    return "ERROR: empty literal";
-                return "Lit!(\"" ~ p.capture[0] ~ "\")";
+                    return "ERROR: empty literal"d;
+                return "Lit!(\""d ~ p.capture[0] ~ "\")"d;
             case "Class":
                 if (ch.length == 0)
-                    return "ERROR: Empty Class of chars []";
+                    return "ERROR: Empty Class of chars []"d;
                 else 
                 {
                     if (ch.length > 1)
                     {
-                        result = "Or!(";
+                        result = "Or!("d;
                         foreach(child; ch)
                         {
                             auto temp = PEGtoCode(child);
-                            if (temp.startsWith("Or!("))
+                            if (temp.startsWith("Or!("d))
                                 temp = temp[4..$-1];
-                            result ~= temp ~ ",";
+                            result ~= temp ~ ","d;
                         }
-                        result = result[0..$-1] ~ ")";
+                        result = result[0..$-1] ~ ")"d;
                     }
                     else
                         result = PEGtoCode(ch[0]);
@@ -1829,18 +1830,18 @@ string grammar(string g)
                 return result;
             case "CharRange":
                 if (p.capture.length == 2) // [a-z...
-                    return "Range!('" ~ p.capture[0] ~ "','" ~ p.capture[1] ~ "')";
+                    return "Range!('"d ~ p.capture[0] ~ "','"d ~ p.capture[1] ~ "')"d;
                 else                // [a...
-                    return "Lit!(\"" ~ p.capture[0] ~ "\")"; 
+                    return "Lit!(\""d ~ p.capture[0] ~ "\")"d; 
             case "Char":
-                    return "Lit!(\"" ~ p.capture[0] ~ "\")"; 
+                    return "Lit!(\""d ~ p.capture[0] ~ "\")"d; 
             case "OR":
                 foreach(child; ch) result ~= PEGtoCode(child);
                 return result;
             case "ANY":
-                return "Any";
+                return "Any"d;
             default:
-                return "";
+                return ""d;
         }
     }
 
