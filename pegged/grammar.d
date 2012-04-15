@@ -1632,11 +1632,13 @@ string grammar(string g)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.grammarName != grammarName)
+            if (p.grammarName == grammarName)
             {
-                p.grammarName = grammarName;
-                p.ruleName = ruleName;
+                p.children = [p];
             }
+            
+            p.grammarName = grammarName;
+            p.ruleName = ruleName;
             
             return p;
         }
