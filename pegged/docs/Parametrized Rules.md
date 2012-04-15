@@ -209,9 +209,6 @@ Rule(Exprs...) <- Exprs[0] !(Exprs[1]) Exprs[$-1]
 
 That would also mean giving a user access to D syntax for calling parameters, $ calls or even slices. I'm not up to it right now, because it'll add another level of complexity to the **Pegged** grammar.
 
-Also, there is no default parameter. That, I might code it as it seems easy to do.
-
-
 Another very interesting thing would be to allow numerical arguments (2, as opposed to the literal '2'). For example: `Repeat(e, 2,4)`. But it's a Pandora box: to define `Repeat` I'd need to add `if` expressions. It's doable, but I'm leery of transforming the **Pegged** syntax into a full-fledged programming language syntax. It won't be far from Turing-completeness and that's definitely something I *do not want*. I mean, I already have D for that.
 
 ```
