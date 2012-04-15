@@ -5,10 +5,10 @@ import pegged.grammar;
 // Arithmetic Expressions
 mixin(grammar(
    "Expr     <  Factor AddExpr*
-    AddExpr  <  ('+'/'-') Factor
+    AddExpr  <  ^('+'/'-') Factor
     Factor   <  Primary MulExpr*
-    MulExpr  <  ('*'/'/') Primary
-    Primary  <  Parens / Number / Variable / '-' Primary
+    MulExpr  <  ^('*'/'/') Primary
+    Primary  <  Parens / Number / Variable / ^'-' Primary
 
     Parens   <  '(' Expr ')'
     Number   <~ [0-9]+
