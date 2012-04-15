@@ -3,6 +3,8 @@ The Four Levels of Encapsulation
 
 OK, this is *not* implemented right now, because I played with it in a branch and found it was not such a good idea.
 
+This article will most probably evolve in the near future.
+
 Here is the original idea:
 
 I want to let a grammar define encapsulation (for want of a better word). Let me explain:
@@ -67,6 +69,8 @@ Cutting Nodes
 -------------
 
 Also, as presented in the first section, nodes coming from 'external' rules (the ones not defined in the grammar) are cut from the final parse tree. See [[Extended PEG syntax]] for the `^` operator disabling node's cutting.
+
+See also [[Tree Decimation]].
 
 * * * *
 

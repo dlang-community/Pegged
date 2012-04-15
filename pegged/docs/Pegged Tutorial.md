@@ -14,22 +14,24 @@ The following pages will show you how to use **Pegged** to create grammars and p
 
 5) [[Using the Parse Tree]]
 
-6) [[Extended PEG Syntax]]
+6) [[Tree Decimation]] (stub)
 
-7) [[Parametrized Rules]]
+7) [[Extended PEG Syntax]]
 
-8) [[Named Captures]]
+8) [[Parametrized Rules]]
 
-9) [[Semantic Actions]]
+9) [[Named Captures]]
 
-10) [[Generating Code]]
+10) [[Semantic Actions]]
 
-11) [[User-Defined Parsers]]
+11) [[Generating Code]]
 
-12) [[Writing Your Own Grammar]]
+12) [[User-Defined Parsers]]
 
-13) [[Four Levels of Encapsulation]]
+13) [[Writing Your Own Grammar]]
 
-14) [[Behind the Curtain: How Pegged Works]]
+14) [[Four Levels of Encapsulation]]
 
-15) [[Optimizations]]
+15) [[Behind the Curtain: How Pegged Works]]
+
+16) [[Optimizations]]

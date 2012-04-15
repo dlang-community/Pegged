@@ -88,8 +88,8 @@ Entire grammars can be parametrized and can use the passed expressions. The synt
 ```d
 mixin(grammar(`
 Arithmetic(Atom) :
-    Expr     <  Factor  (('+'/'-') Expr)*
-    Factor   <  Primary (('*'/'/') Factor)*
+    Expr     <  Factor  (('+'/'-') Factor)*
+    Factor   <  Primary (('*'/'/') Primary)*
     Primary  <  '(' Expr ')' / '-' Primary / Atom
 `));
 ```
@@ -125,8 +125,8 @@ We can continue this matrioshka construction even further: `Relation` itself can
 ```d
 mixin(grammar(`
 Arithmetic(Atom) :
-    Expr     <  Factor  (('+'/'-') Expr)*
-    Factor   <  Primary (('*'/'/') Factor)*
+    Expr     <  Factor  (^('+'/'-') Factor)*
+    Factor   <  Primary (^('*'/'/') Primary)*
     Primary  <  '(' Expr ')' / '-' Primary / Atom
 `));
 
@@ -137,10 +137,10 @@ RelOp    <- "==" / "!=" / "<=" / ">=" / "<" / ">"
 `));
 
 mixin(grammar(`
-Boolean < AndExpr (^"||" Boolean)*
-AndExpr < NotExpr (^"&&" AndExpr)*
-NotExpr < ^"!"? Primary
-Primary <  '(' Boolean ')' / ^Relation(Atom)
+Boolean < AndExpr ("||" AndExpr)*
+AndExpr < NotExpr ("&&" NotExpr)*
+NotExpr < "!"? Primary
+Primary <  '(' Boolean ')' / Relation(Atom)
 Atom    <- Identifier / Number
 Number  <~ [0-9]+
 `));
@@ -153,9 +153,8 @@ void main()
 }
 ```
 
-So, `Boolean` calls `Relation`, which in turn call `Arithmetic`. Isn't that cool?
+So, `Boolean` calls `Relation`, which in turn calls `Arithmetic`. Isn't that cool?
 
-**Bug**: OK, this found a bug: since the tree decimation is done on the node names, homonyms from different grammars are not dropped. I'll have to add the grammar name to the node names, or something.
 
 Parametrized First Rules for Anonymous Grammars
 -----------------------------------------------

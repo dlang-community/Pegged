@@ -3,9 +3,7 @@ Using the Parse Tree
 
 **Pegged** parse trees are described here: [[Parse Trees]].
 
-As you could see, there are a deliberately simple structure. There are not multiple types to encode AST nodes and whatnots. Since D has wonderful compile-time evaluation capabilities and code can be mixed-in, **Pegged** has all the power it needs:
-
-Since parse trees are structs, they are easy to use at compile-time (classes are a bit trickier for now, so I chose structs): you can iterate on them, search for specific nodes, delete nodes or simplify them, etc.
+As you could see, there are a deliberately simple structure. There are not multiple types to encode AST nodes and whatnots. Since D has wonderful compile-time evaluation capabilities and code can be mixed-in, **Pegged** has all the power it needs: parse trees are structs, they are easy to use at compile-time (classes are a bit trickier for now, so I chose structs): you can iterate on them, search for specific nodes, delete nodes or simplify them, etc.
 
 See [[Semantic Actions]], [[User-Defined Parsers]] and [[Generating Code]] for more on this.
 
@@ -134,7 +132,7 @@ string toLaTeX(Output o)
 {
     string parseToCode(ParseTree p)
     {
-        switch(p.name)
+        switch(p.ruleName)
         {
             case "Document":
                 string result = "\\documentclass{article}\n\\begin{document}";
@@ -230,7 +228,7 @@ I admit that for the previous example, it's in the vast 'fun-but-not-really-usef
 
 * * * *
 
-Next lesson: [[Extended PEG Syntax]]
+Next lesson: [[Tree Decimation]]
 
 * * * *
 
