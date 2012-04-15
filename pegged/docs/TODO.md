@@ -27,8 +27,6 @@ Infrastructure
 
 - Adding direct (non-PEG) arguments to parametrized expressions: `Repeat(Expr, n) if (n > 1) <- Expr Repeat(Expr, n-1)` and `Repeat(Expr, n) if (n == 1) <- Expr`. The tricky part is in the right-hand side: dealing with arbitrary expressions in the argument list, and not only identifiers representing rules. Which sub-grammar should take precedence? PEG or aritmetic? For example `a* b` can parsed as 'some a, followed by a b' or as 'a*b'. Is 'Expr' a rule or a 1-element arithmetic expression? The last one is not problematic, as long as identifiers are then re-encoded as themselves. In any case, terminals such as "abc" and 'a' *must* be seen as PEG expressions.
 
-- Parametrized grammars? Since grammars are parsers (with one publically accessible rule), they could be parametrized, to be generic. For example, a generic boolean grammar, with a parametrized lowest level.
-
 - Make rule names enumerated results to use `final switch` on them
 
 - Grammar optimization: inlining, for example
@@ -46,8 +44,4 @@ Documentation
 
 - Explain the internal indices (+ line / col).
 
-- Explain grammar composition.
-
-- Explain how to change the **Pegged** grammar.
-
-- Explain the D grammar?
+- Explain the tree decimation rules.
