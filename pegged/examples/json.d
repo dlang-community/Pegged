@@ -42,14 +42,14 @@ unittest
     auto p1 = JSON.parse(example1);
     assert(p1.success);
     
-    assert(p1.capture == ["Hello", "42", "World", "!"]);
+    assert(p1.capture == ["Hello"d, "42"d, "World"d, "!"d]);
     assert(p1.parseTree.name == "JSON.JSONObject");
     
     assert(p1.parseTree.children[0].ruleName == "Pair");
-    assert(p1.parseTree.children[0].capture == ["Hello","42"]);
+    assert(p1.parseTree.children[0].capture == ["Hello"d,"42"d]);
     
     assert(p1.parseTree.children[1].ruleName == "Pair");
-    assert(p1.parseTree.children[1].capture == ["World","!"]);
+    assert(p1.parseTree.children[1].capture == ["World"d,"!"d]);
     
     enum example2 = `
 {
