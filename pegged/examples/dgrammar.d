@@ -562,75 +562,6 @@ TypeSpecialization < Type
                     / "inout"
                     / "shared"
                     / "return"
-                    
-## file lex.html
-
-Comment < BlockComment
-         / LineComment
-         / NestingBlockComment
-
-BlockComment < '/*' (!'*/' .)* '*/'
-
-LineComment < '//' (!EOL .)* EOL
-
-NestingBlockComment < '/+' (NestingBlockComment / Text) '+/'
-
-Text < (!'+/' .)*
-
-StringLiteral < WysiwygString
-               / AlternateWysiwygString
-               / DoubleQuotedString
-               # No HexString
-               # No DelimitedString
-               / TokenString
-
-WysiwygString <- 'r' DoubleQuote (!DoubleQuote .)* DoubleQuote StringPostfix?
-
-AlternateWysiwygString <- BackQuote (!BackQuote .)* BackQuote StringPostfix?
-
-DoubleQuotedString <- DoubleQuote (DQChar)* DoubleQuote StringPostfix?
-
-DQChar <- EscapeSequence 
-        / !DoubleQuote .
-        
-EscapeSequence <- BackSlash ( Quote
-                            / DoubleQuote
-                            / BackSlash
-                            / [abfnrtv]
-                            / 'x' HexDigit HexDigit
-                            / 'u' HexDigit HexDigit HexDigit HexDigit
-                            / 'U' HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit
-                            )
-
-StringPostfix < "c" / "w" / "d"
-
-TokenString <- "q{" (!"}" .)* "}"
-
-CharacterLiteral <- Quote (!Quote (EscapeSequence / .)) Quote
-
-### I'm fed up, I simplify
-
-IntegerLiteral <- DecimalInteger
-                / BinaryInteger
-                / HexadecimalInteger
-                
-DecimalInteger <- Integer IntegerSuffix?
-
-Integer <- Digit (Digit/"_")*
-
-IntegerSuffix <- "Lu" / "LU" / "uL" / "UL"
-               / "L" / "u" / "U"
-               
-BinaryInteger <- ("0b" / "0B") [01] ([01] / "_")*
-
-HexadecimalInteger <- ("0x"/"0X") HexDigit (HexDigit / "_")*
-
-HexDigit < [0-9a-fA-F]
-
-FloatLiteral <- Sign? Integer ("." Integer?)? (("e" / "E") Sign? Integer)?
-
-Sign <- ("-" / "+")?
-
 ### file attribute.html
 
 AttributeSpecifier < Attribute DeclarationBlock
@@ -1010,7 +941,74 @@ Keyword < "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / 
          / "typeof" / "ubyte" / "ucent" / "uint" / "ulong" / "union" / "unittest" / "ushort" / "version" / "void" / "volatile" 
          / "wchar" / "while" / "with" / "__FILE__" / "__LINE__" / "__gshared" / "__thread" / "__traits"
 
-         
-List(E) < E ("," E)*
+                    
+## file lex.html
+
+Comment < BlockComment
+         / LineComment
+         / NestingBlockComment
+
+BlockComment < '/*' (!'*/' .)* '*/'
+
+LineComment < '//' (!EOL .)* EOL
+
+NestingBlockComment < '/+' (NestingBlockComment / Text) '+/'
+
+Text < (!'+/' .)*
+
+StringLiteral < WysiwygString
+               / AlternateWysiwygString
+               / DoubleQuotedString
+               # No HexString
+               # No DelimitedString
+               / TokenString
+
+WysiwygString <- 'r' DoubleQuote (!DoubleQuote .)* DoubleQuote StringPostfix?
+
+AlternateWysiwygString <- BackQuote (!BackQuote .)* BackQuote StringPostfix?
+
+DoubleQuotedString <- DoubleQuote (DQChar)* DoubleQuote StringPostfix?
+
+DQChar <- EscapeSequence 
+        / !DoubleQuote .
+        
+EscapeSequence <- BackSlash ( Quote
+                            / DoubleQuote
+                            / BackSlash
+                            / [abfnrtv]
+                            / 'x' HexDigit HexDigit
+                            / 'u' HexDigit HexDigit HexDigit HexDigit
+                            / 'U' HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit
+                            )
+
+StringPostfix < "c" / "w" / "d"
+
+TokenString <- "q{" (!"}" .)* "}"
+
+CharacterLiteral <- Quote (!Quote (EscapeSequence / .)) Quote
+
+### I'm fed up, I simplify
+
+IntegerLiteral <- DecimalInteger
+                / BinaryInteger
+                / HexadecimalInteger
+                
+DecimalInteger <- Integer IntegerSuffix?
+
+Integer <- Digit (Digit/"_")*
+
+IntegerSuffix <- "Lu" / "LU" / "uL" / "UL"
+               / "L" / "u" / "U"
+               
+BinaryInteger <- ("0b" / "0B") [01] ([01] / "_")*
+
+HexadecimalInteger <- ("0x"/"0X") HexDigit (HexDigit / "_")*
+
+HexDigit < [0-9a-fA-F]
+
+FloatLiteral <- Sign? Integer ("." Integer?)? (("e" / "E") Sign? Integer)?
+
+Sign <- ("-" / "+")?
+
 
 `;
