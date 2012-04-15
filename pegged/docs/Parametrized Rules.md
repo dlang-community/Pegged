@@ -72,7 +72,7 @@ List(Elem)      <- List(Elem, :',') # Comma-sep, drop the commas
 Default Values
 --------------
 
-Parameters can have default values, standard **Pegged** expressions. Here is for example a `List` rule which default to comma-separated when given only one argument:
+Parameters can have default values, standard **Pegged** expressions. Here is for example a `List` rule which defaults to comma-separated when given only one argument:
 
 ```
 List(Elem, Sep = ',') < Elem (:Sep Elem)*
