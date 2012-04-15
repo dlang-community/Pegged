@@ -13,22 +13,22 @@ To use **Pegged**, just call the `grammar` function with a PEG and mix it in. Fo
 ```d
 import pegged.grammar;
 
-mixin(grammar(" 
-    Expr     <   Factor AddExpr*
-    AddExpr  <   ('+'/'-') Factor
-    Factor   <   Primary MulExpr*
-    MulExpr  <   ('*'/'/') Primary
-    Primary  <   Parens / Number / Variable / '-' Primary
+mixin(grammar(`
+Arithmetic:
+    Expr     <  Factor AddExpr*
+    AddExpr  <  ^('+'/'-') Factor
+    Factor   <  Primary MulExpr*
+    MulExpr  <  ^('*'/'/') Primary
+    Primary  <  '(' Expr ')' / Number / Variable / ^'-' Primary
 
-    Parens   <   '(' Expr ')'
     Number   <~ [0-9]+
     Variable <- Identifier
-"));
+`));
 ```
 
-This creates the `Expr`, `AddExpr`, `Factor` (and so on) parsers for basic arithmetic expressions with operator precedence ('*' and '/' bind stronger than '+' or '-'). `Identifier` is a pre-defined parser recognizing your basic C-style identifier (first a letter or underscore, then digits, letters or underscores). In the rest of this document, I'll call 'rule' a `Parser <- Parsing Expression` expression and I'll use 'grammar' to designate the entire group of rules given to `grammar`.
+This creates the `Arithmetic` grammar, with the `Expr`, `AddExpr`, `Factor` (and so on) rules for basic arithmetic expressions with operator precedence ('*' and '/' bind stronger than '+' or '-'). `Identifier` is a pre-defined parser recognizing your basic C-style identifier (first a letter or underscore, then digits, letters or underscores). In the rest of this document, I'll call 'rule' a `Parser <- Parsing Expression` expression and I'll use 'grammar' to designate the entire group of rules given to `grammar`.
 
-To use a parser, use the `.parse` method. It will return a parse tree containing the calls to the different rules:
+To use a grammar, use the `.parse` method. It will return a parse tree containing the calls to the different rules:
 
 ```d
 // Parsing at compile-time:
