@@ -63,11 +63,14 @@ Pos addCaptures(Pos pos, string[] captures)
 
 struct ParseTree
 {
-    string name;
+    string grammarName;
+    string ruleName;
     bool success;
     string[] capture;
     Pos begin, end;
     ParseTree[] children;
+    
+    string name() @property { return grammarName ~ "." ~ ruleName;}
     
     string toString(int level = 0) @property
     {
@@ -144,12 +147,13 @@ string inheritMixin(string name, string code)
 {
     return
     "class " ~ name ~ " : " ~ code ~ " {\n"
-  ~ "enum name = `" ~ name ~ "`;\n"
+  ~ "enum grammarName = ``; enum ruleName = `" ~ name ~ "`;\n"
   ~ "static Output parse(Input input)
     {
         mixin(okfailMixin());
         auto p = typeof(super).parse(input);
-        p.parseTree.name = `"~name~ "`;
+        p.parseTree.grammarName = grammarName;
+        p.parseTree.ruleName = ruleName;
         p.parseTree.children = [p.parseTree];
         return p;                     
     }
@@ -165,11 +169,12 @@ string wrapMixin(string name, string code)
 "class " ~ name
 ~ " : " ~ code 
 ~ "\n{\n"
-~ "enum name = `" ~ name ~ "`;\n"
+~ "enum grammarName = ``; enum ruleName = `" ~ name ~ "`;\n"
 ~ "    static Output parse(Input input)
     {
         auto p = typeof(super).parse(input);
-        p.parseTree.name = `"~name~"`;
+        p.parseTree.grammarName = grammarName;
+        p.parseTree.ruleName = ruleName;
         return p;
     }
     
@@ -192,7 +197,7 @@ string okfailMixin() @property
         return Output(input.text,
                       end,
                       input.namedCaptures,
-                      ParseTree(name, true, capture, input.pos, end, children));
+                      ParseTree(grammarName, ruleName, true, capture, input.pos, end, children));
     }
    
     Output fail(Pos farthest = Pos.init, string[] errors = null)
@@ -200,7 +205,7 @@ string okfailMixin() @property
         return Output(input.text,
                       input.pos,
                       input.namedCaptures,
-                      ParseTree(name, false, (errors.empty ? [name ~ " failure at pos " ~ input.pos.toString()] : errors), 
+                      ParseTree(grammarName, ruleName, false, (errors.empty ? [grammarName~"."~ruleName ~ " failure at pos " ~ input.pos.toString()] : errors), 
                                 input.pos, (farthest == Pos.init) ? input.pos : farthest,
                                 (ParseTree[]).init));
     }
@@ -221,6 +226,7 @@ static Output parse(Output input)
 }";
 }
 
+/+
 string getName(string s, Exprs...)() @property
 {
     string result = s ~ "!(";
@@ -234,10 +240,11 @@ string getName(string s, Exprs...)() @property
         result = result[0..$-2];
     return result ~ ")";
 }
++/
 
 class Parser
 {
-    enum name = "Parser";
+    enum grammarName = `Pegged`; enum ruleName = "Parser";
     
     static Output parse(Input input)
     {
@@ -254,7 +261,7 @@ alias Parser Failure;
 /// Eps = epsilon, "", the empty string
 class Eps : Parser
 {
-    enum name = "Eps";
+    enum grammarName = `Pegged`; enum ruleName = "Eps";
     
     static Output parse(Input input)
     {
@@ -267,7 +274,7 @@ class Eps : Parser
 
 class Any : Parser
 {
-    enum name = "Any";
+    enum grammarName = `Pegged`; enum ruleName = "Any";
     
     static Output parse(Input input)
     {
@@ -283,7 +290,7 @@ class Any : Parser
 
 class EOI : Parser
 {
-    enum name = "EOI";
+    enum grammarName = `Pegged`; enum ruleName = "EOI";
     
     static Output parse(Input input)
     {
@@ -297,7 +304,7 @@ class EOI : Parser
 
 class Char(char c) : Parser
 {
-    enum name = "Char!(" ~ c ~ ")";
+    enum grammarName = `Pegged`; enum ruleName = "Char!(" ~ c ~ ")";
     
     static Output parse(Input input) 
     { 
@@ -311,7 +318,7 @@ class Char(char c) : Parser
 
 class Lit(string s) : Parser
 {
-    enum name = "Lit!("~s~")";
+    enum grammarName = `Pegged`; enum ruleName = "Lit!("~s~")";
     
     static Output parse(Input input)
     {   
@@ -326,7 +333,7 @@ class Lit(string s) : Parser
 
 class Range(char begin, char end) : Parser
 {
-    enum name = "Range!("~begin~","~end~")";
+    enum grammarName = `Pegged`; enum ruleName = "Range!("~begin~","~end~")";
     
     static Output parse(Input input) 
     { 
@@ -342,7 +349,7 @@ class Range(char begin, char end) : Parser
 
 class Seq(Exprs...) : Parser
 {
-    enum name = "Seq!" ~ Exprs.stringof;// getName!("Seq",Exprs)();  // Segmentation fault???
+    enum grammarName = `Pegged`; enum ruleName = "Seq!" ~ Exprs.stringof;// getName!("Seq",Exprs)();  // Segmentation fault???
     
     static Output parse(Input input)
     {
@@ -367,7 +374,7 @@ class Seq(Exprs...) : Parser
             else
             {
                 return fail(p.parseTree.end,
-                            (name ~ " failure with sub-expr #" ~ to!string(i) ~ " `" ~ expr.name ~ "` at pos " ~ to!string(result.pos)) ~ p.capture);
+                            (grammarName~"."~ruleName ~ " failure with sub-expr #" ~ to!string(i) ~ " `" ~ expr.ruleName ~ "` at pos " ~ to!string(result.pos)) ~ p.capture);
             }
         }
         return result;
@@ -378,7 +385,7 @@ class Seq(Exprs...) : Parser
 
 class SpaceSeq(Exprs...) : Parser
 {
-    enum name = "SpaceSeq" ~ Exprs.stringof; //getName!("SpaceSeq", Exprs)();
+    enum grammarName = `Pegged`; enum ruleName = "SpaceSeq" ~ Exprs.stringof; //getName!("SpaceSeq", Exprs)();
     
     static Output parse(Input input)
     {
@@ -407,7 +414,7 @@ class SpaceSeq(Exprs...) : Parser
             else
             {
                 return fail(p.parseTree.end,
-                            (name ~ " failure with sub-expr #" ~ to!string(i) ~ " `" ~ expr.name ~ "` at pos " ~ to!string(result.pos)) ~ p.capture);
+                            (grammarName ~ "." ~ ruleName ~ " failure with sub-expr #" ~ to!string(i) ~ " `" ~ expr.ruleName ~ "` at pos " ~ to!string(result.pos)) ~ p.capture);
             }
             
         }
@@ -419,7 +426,7 @@ class SpaceSeq(Exprs...) : Parser
 
 class Action(Expr, alias action)
 {
-    enum name = "Action!("~Expr.name~", "~__traits(identifier, action)~")";
+    enum grammarName = `Pegged`; enum ruleName = "Action!("~Expr.ruleName~", "~__traits(identifier, action)~")";
     
     static Output parse(Input input)
     {
@@ -434,17 +441,16 @@ class Action(Expr, alias action)
 }
 
 /// stores a named capture (that is, an entire parse tree)
-class Named(Expr, string name) : Parser
+class Named(Expr, string Name) : Parser
 {
-    enum name = "Named!("~Expr.name ~", " ~ name~")";
+    enum grammarName = `Pegged`; enum ruleName = "Named!("~Expr.ruleName ~", " ~ Name~")";
     
     static Output parse(Input input)
     {
         mixin(okfailMixin());
         auto p = Expr.parse(input);
         if (p.success) 
-            p.namedCaptures[name] = p.parseTree;
-        //writeln("Named: adding capture ", name);
+            p.namedCaptures[Name] = p.parseTree;
         return p;
     }
     
@@ -452,9 +458,9 @@ class Named(Expr, string name) : Parser
 }
 
 /// Verifies that a match is equal to a named capture
-class EqualMatch(Expr, string name) : Parser
+class EqualMatch(Expr, string Name) : Parser
 {
-    enum name = "EqualMatch!("~Expr.name ~", " ~ name~")";
+    enum grammarName = `Pegged`; enum ruleName = "EqualMatch!("~Expr.ruleName ~", " ~ Name~")";
     
     static Output parse(Input input)
     {
@@ -466,7 +472,7 @@ class EqualMatch(Expr, string name) : Parser
         {
             foreach(named; input.namedCaptures)
             {
-                if (named[0] == name)
+                if (named[0] == Name)
                 {
                     foreach(i, capt; named[1].capture)
                         if (capt != p.parseTree.capture[i]) return fail();
@@ -481,27 +487,22 @@ class EqualMatch(Expr, string name) : Parser
 }
 
 /// Verifies that a parse tree is equal to a named capture
-class EqualParseTree(Expr, string name) : Parser
+class EqualParseTree(Expr, string Name) : Parser
 {
-    enum name = "EqualParseTree!("~Expr.name ~", " ~ name~")";
+    enum grammarName = `Pegged`; enum ruleName = "EqualParseTree!("~Expr.ruleName ~", " ~ Name~")";
     
     static Output parse(Input input)
     {
         mixin(okfailMixin());
-        //writeln("EqPT: ", name);
         auto p = Expr.parse(input);
-        //writeln("Eqpt p: ",p);
-        //writeln("nameCaptures in Eqpt: ", input.namedCaptures);
         if (p.success) 
         {
             foreach(named; input.namedCaptures)
             {
-                if (named[0] == name)
+                if (named[0] == Name)
                 {
                     auto np = named[1]; // second field: parseTree
                     auto pp = p.parseTree;
-                    //writeln("Found name == ", name);
-                    //writeln(np, pp);
                     if ( np.name == pp.name)
                     {
                         if (np.capture.length != pp.capture.length || np.children.length != pp.children.length)
@@ -526,24 +527,19 @@ class EqualParseTree(Expr, string name) : Parser
 
 class PushName(Expr) : Parser
 {
-    enum name = "PushName!(" ~ Expr.name ~ ")";
+    enum grammarName = `Pegged`; enum ruleName = "PushName!(" ~ Expr.ruleName ~ ")";
     
     static Output parse(Input input)
     {
-        //writeln("Entering PushName("~Expr.name ~")", input.text," ", input.namedCaptures.length);
         auto p = Expr.parse(input);
-        //writeln("PushName after Expr.parse calculation");
-        //writeln("p = ", p.namedCaptures);
         if (p.success)
         {
             string cap;
             foreach(capt; p.parseTree.capture) cap ~= capt;
             NamedCapture nc = NamedCapture(cap, p.parseTree);
-            //writeln("Pushing ", nc.name);
             p.namedCaptures ~= nc;
             
         }
-        //writeln("Ending PushName ", p.namedCaptures.length);
         return p;
     }
     
@@ -553,7 +549,7 @@ class PushName(Expr) : Parser
 /// Compares the match with the named capture and pops the capture
 class FindAndPop(Expr) : Parser
 {
-    enum name = "FindAndPop!("~Expr.name~")";
+    enum grammarName = `Pegged`; enum ruleName = "FindAndPop!("~Expr.ruleName~")";
     
     static Output parse(Input input)
     {
@@ -577,7 +573,7 @@ class FindAndPop(Expr) : Parser
 
 class Or(Exprs...) : Parser
 {
-    enum name = "Or" ~ Exprs.stringof;//getName!("Or", Exprs)();
+    enum grammarName = `Pegged`; enum ruleName = "Or" ~ Exprs.stringof;//getName!("Or", Exprs)();
     
     static Output parse(Input input)
     {
@@ -602,14 +598,14 @@ class Or(Exprs...) : Parser
                 if (i == 0 || p.parseTree.end.index > errorPos.index)
                 {
                     errorIndex = i;
-                    errorName = Exprs[i].name; 
+                    errorName = Exprs[i].ruleName; 
                     errorPos = p.parseTree.end;
                     errorMessages = p.capture;
                 }
             }
         }
         return fail(errorPos,
-                    (name ~ " failure for sub-expr # " ~ to!string(errorIndex) ~ " `" ~ errorName ~ "` at pos " ~ to!string(errorPos)) ~ errorMessages);
+                    (grammarName~"."~ruleName ~ " failure for sub-expr # " ~ to!string(errorIndex) ~ " `" ~ errorName ~ "` at pos " ~ to!string(errorPos)) ~ errorMessages);
     }
     
     mixin(stringToInputMixin());
@@ -617,7 +613,7 @@ class Or(Exprs...) : Parser
 
 class Option(Expr) : Parser 
 {
-    enum name = "Option!("~Expr.name~")";
+    enum grammarName = `Pegged`; enum ruleName = "Option!("~Expr.ruleName~")";
     
     static Output parse(Input input)
     {
@@ -635,7 +631,7 @@ class Option(Expr) : Parser
 
 class ZeroOrMore(Expr) : Parser
 {
-    enum name = "ZeroOrMore!("~Expr.name~")";
+    enum grammarName = `Pegged`; enum ruleName = "ZeroOrMore!("~Expr.ruleName~")";
     
     static Output parse(Input input)
     {
@@ -658,7 +654,7 @@ class ZeroOrMore(Expr) : Parser
         return Output(input.text,
                       end,
                       p.namedCaptures,
-                      ParseTree(name, true, capture, input.pos, end, children));
+                      ParseTree(grammarName, ruleName, true, capture, input.pos, end, children));
     }
 
     mixin(stringToInputMixin());
@@ -666,7 +662,7 @@ class ZeroOrMore(Expr) : Parser
 
 class OneOrMore(Expr) : Parser
 {
-    enum name = "OneOrMore!("~Expr.name~")";
+    enum grammarName = `Pegged`; enum ruleName = "OneOrMore!("~Expr.ruleName~")";
     
     static Output parse(Input input)
     {
@@ -692,7 +688,7 @@ class OneOrMore(Expr) : Parser
         return Output(input.text,
                       start,
                       p.namedCaptures,
-                      ParseTree(name, true, capture, input.pos, start, children));
+                      ParseTree(grammarName, ruleName, true, capture, input.pos, start, children));
     }
     
     mixin(stringToInputMixin());
@@ -700,7 +696,7 @@ class OneOrMore(Expr) : Parser
 
 class PosLookAhead(Expr) : Parser
 {
-    enum name = "PosLookAhead!("~Expr.name~")";
+    enum grammarName = `Pegged`; enum ruleName = "PosLookAhead!("~Expr.ruleName~")";
     
     static Output parse(Input input)
     {
@@ -714,7 +710,7 @@ class PosLookAhead(Expr) : Parser
 
 class NegLookAhead(Expr) : Parser
 {
-    enum name = "NegLookAhead!("~Expr.name~")";
+    enum grammarName = `Pegged`; enum ruleName = "NegLookAhead!("~Expr.ruleName~")";
     
     static Output parse(Input input)
     {
@@ -728,7 +724,7 @@ class NegLookAhead(Expr) : Parser
 
 class Drop(Expr) : Parser
 {
-    enum name = "Drop!(" ~ Expr.name ~ ")";
+    enum grammarName = `Pegged`; enum ruleName = "Drop!(" ~ Expr.ruleName ~ ")";
     
     static Output parse(Input input)
     {
@@ -748,14 +744,14 @@ class Drop(Expr) : Parser
 }
 
 // To keep an expression in the parse tree, even though Pegged would cut it naturally
-class Keep(Expr)
+class Keep(Expr, string GrammarName)
 {
-    enum name = "Keep!(" ~ Expr.name ~ ")";
+    enum grammarName = `Pegged`; enum ruleName = "Keep!(" ~ Expr.ruleName ~ ", " ~ GrammarName ~ ")";
     
     static Output parse(Input input)
     {
         auto p = Expr.parse(input);
-        p.name = name;
+        p.grammarName = GrammarName;
         return p;
     }
     
@@ -765,7 +761,7 @@ class Keep(Expr)
 
 class Fuse(Expr) : Parser
 {
-    enum name = "Fuse!(" ~ Expr.name ~ ")";
+    enum grammarName = `Pegged`; enum ruleName = "Fuse!(" ~ Expr.ruleName ~ ")";
     
     static Output parse(Input input)
     {
@@ -825,57 +821,6 @@ mixin(wrapMixin("BackSlash",  q{Lit!`\`}));
 mixin(wrapMixin("Line", `Fuse!(Seq!(ZeroOrMore!(Seq!(NegLookAhead!(EOL), Any)), Or!(EOL,EOI)))`));
 mixin(wrapMixin("Lines", `OneOrMore!Line`));
 
-class List(E) : SpaceSeq!(E,ZeroOrMore!(SpaceSeq!(Lit!(","),E)))
-{
-    enum name = `List`;
-
-    static Output parse(Input input)
-    {
-        auto p = typeof(super).parse(input);
-        return Output(p.text, p.pos, p.namedCaptures,
-                      ParseTree(`List`, p.success, p.capture, input.pos, p.pos, [p.parseTree]));
-    }
-    
-    mixin(stringToInputMixin());
-    
-}
-
-
-string[] leaves(ParseTree p)
-{
-    string[] result;
-    if (p.children.length == 0)
-        return p.capture[];
-    else
-    {
-        foreach(child; p.children)
-            result ~= leaves(child);
-    }
-    return result;
-}
-
-string[2][] treeUnification(ParseTree p1, ParseTree p2)
-{
-    string[2][] result;
-    
-    if (p1.name != p2.name)
-    {
-        p1 = fuseCaptures(p1);
-        p2 = fuseCaptures(p2);
-        result ~= [p1.capture[0], p2.capture[0]];
-    }
-    else
-    {
-        if (p1.children.length != p2.children.length)
-            throw new Exception("Impossible unification between\n" ~ p1.toString() ~ "and\n"~p2.toString());
-        
-        foreach(i, child; p1.children)
-        {
-            result ~= treeUnification(child, p2.children[i]);
-        }
-    }
-    return result;
-}
 
 ParseTree regenerateCaptures(ParseTree p)
 {
@@ -889,7 +834,7 @@ ParseTree regenerateCaptures(ParseTree p)
         children ~= regenerateCaptures(child);
         capture ~= children[$-1].capture;
     }
-    return ParseTree(p.name, p.success, capture, p.begin, p.end, children);
+    return ParseTree(p.grammarName, p.ruleName, p.success, capture, p.begin, p.end, children);
 }
 
 ParseTree fuseCaptures(ParseTree p)

@@ -97,8 +97,7 @@ import std.array, std.algorithm, std.conv;
 
 class PEGGED : Parser
 {
-    enum name = `PEGGED`;
-    enum ruleNames = ["Grammar":true,"Definition":true,"Expression":true,"Sequence":true,"Prefix":true,"Suffix":true,"Primary":true,"GrammarName":true,"RuleName":true,"Name":true,"GroupExpr":true,"Literal":true,"Class":true,"CharRange":true,"Char":true,"Hex":true,"ParamList":true,"Param":true,"DefaultParam":true,"SingleParam":true,"ArgList":true,"NamedExpr":true,"WithAction":true,"Arrow":true,"LEFTARROW":true,"FUSEARROW":true,"DROPARROW":true,"ACTIONARROW":true,"SPACEARROW":true,"OR":true,"LOOKAHEAD":true,"NOT":true,"DROP":true,"KEEP":true,"FUSE":true,"NAME":true,"ACTIONOPEN":true,"ACTIONCLOSE":true,"OPTION":true,"ZEROORMORE":true,"ONEORMORE":true,"OPEN":true,"CLOSE":true,"ANY":true,"S":true,"Comment":true];
+    enum grammarName = `PEGGED`; enum ruleName =  `PEGGED`;
 
     static Output parse(Input input)
     {
@@ -115,17 +114,10 @@ class PEGGED : Parser
         foreach(child; p.children)
         {
             child  = decimateTree(child);
-            if (child.name in ruleNames)
+            if (child.grammarName == grammarName)
                 filteredChildren ~= child;
-            else if (child.name.startsWith(`Keep!(`))
-            {
-                child.name = child.name[6..$-1];
-                filteredChildren ~= child;
-            }
             else
-            {
                 filteredChildren ~= child.children;
-            }
         }
         p.children = filteredChildren;
         return p;
@@ -134,7 +126,7 @@ class PEGGED : Parser
     
 class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
 {
-    enum name = `Grammar`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Grammar`;
 
     static Output parse(Input input)
     {
@@ -145,20 +137,17 @@ class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -167,7 +156,7 @@ class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
 
 class Definition : Seq!(RuleName,Arrow,Expression,S)
 {
-    enum name = `Definition`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Definition`;
 
     static Output parse(Input input)
     {
@@ -178,20 +167,17 @@ class Definition : Seq!(RuleName,Arrow,Expression,S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -200,7 +186,7 @@ class Definition : Seq!(RuleName,Arrow,Expression,S)
 
 class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
 {
-    enum name = `Expression`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Expression`;
 
     static Output parse(Input input)
     {
@@ -211,20 +197,17 @@ class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -233,7 +216,7 @@ class Expression : Seq!(Sequence,ZeroOrMore!(Seq!(OR,Sequence)))
 
 class Sequence : OneOrMore!(Prefix)
 {
-    enum name = `Sequence`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Sequence`;
 
     static Output parse(Input input)
     {
@@ -244,20 +227,17 @@ class Sequence : OneOrMore!(Prefix)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -266,7 +246,7 @@ class Sequence : OneOrMore!(Prefix)
 
 class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
 {
-    enum name = `Prefix`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Prefix`;
 
     static Output parse(Input input)
     {
@@ -277,20 +257,17 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -299,7 +276,7 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
 
 class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,WithAction)),S)
 {
-    enum name = `Suffix`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Suffix`;
 
     static Output parse(Input input)
     {
@@ -310,20 +287,17 @@ class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,Wi
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -332,7 +306,7 @@ class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,Wi
 
 class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
 {
-    enum name = `Primary`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Primary`;
 
     static Output parse(Input input)
     {
@@ -343,20 +317,17 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -365,7 +336,7 @@ class Primary : Or!(Seq!(Name,NegLookAhead!(Arrow)),GroupExpr,Literal,Class,ANY)
 
 class GrammarName : Seq!(RuleName,Lit!(":"),S)
 {
-    enum name = `GrammarName`;
+    enum grammarName = `PEGGED`; enum ruleName =  `GrammarName`;
 
     static Output parse(Input input)
     {
@@ -376,20 +347,17 @@ class GrammarName : Seq!(RuleName,Lit!(":"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -398,7 +366,7 @@ class GrammarName : Seq!(RuleName,Lit!(":"),S)
 
 class RuleName : Seq!(Identifier,Option!(ParamList),S)
 {
-    enum name = `RuleName`;
+    enum grammarName = `PEGGED`; enum ruleName =  `RuleName`;
 
     static Output parse(Input input)
     {
@@ -409,20 +377,17 @@ class RuleName : Seq!(Identifier,Option!(ParamList),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -431,7 +396,7 @@ class RuleName : Seq!(Identifier,Option!(ParamList),S)
 
 class Name : Seq!(QualifiedIdentifier,Option!(ArgList),S)
 {
-    enum name = `Name`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Name`;
 
     static Output parse(Input input)
     {
@@ -442,20 +407,17 @@ class Name : Seq!(QualifiedIdentifier,Option!(ArgList),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -464,7 +426,7 @@ class Name : Seq!(QualifiedIdentifier,Option!(ArgList),S)
 
 class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
 {
-    enum name = `GroupExpr`;
+    enum grammarName = `PEGGED`; enum ruleName =  `GroupExpr`;
 
     static Output parse(Input input)
     {
@@ -475,20 +437,17 @@ class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -497,7 +456,7 @@ class GroupExpr : Seq!(Drop!(OPEN),Expression,Drop!(CLOSE),S)
 
 class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote),Char)),Drop!(Quote),S),Seq!(Drop!(DoubleQuote),ZeroOrMore!(Seq!(NegLookAhead!(DoubleQuote),Char)),Drop!(DoubleQuote),S)))
 {
-    enum name = `Literal`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Literal`;
 
     static Output parse(Input input)
     {
@@ -508,20 +467,17 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -530,7 +486,7 @@ class Literal : Fuse!(Or!(Seq!(Drop!(Quote),ZeroOrMore!(Seq!(NegLookAhead!(Quote
 
 class Class : Seq!(Lit!("["),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),CharRange)),Lit!("]"),S)
 {
-    enum name = `Class`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Class`;
 
     static Output parse(Input input)
     {
@@ -541,20 +497,17 @@ class Class : Seq!(Lit!("["),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),CharRange
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -563,7 +516,7 @@ class Class : Seq!(Lit!("["),ZeroOrMore!(Seq!(NegLookAhead!(Lit!("]")),CharRange
 
 class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
 {
-    enum name = `CharRange`;
+    enum grammarName = `PEGGED`; enum ruleName =  `CharRange`;
 
     static Output parse(Input input)
     {
@@ -574,20 +527,17 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -596,7 +546,7 @@ class CharRange : Or!(Seq!(Char,Drop!(Lit!("-")),Char),Char)
 
 class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,Lit!("-"),Lit!("["),Lit!("]"),Or!(Lit!("n"),Lit!("r"),Lit!("t")),Seq!(Range!('0','2'),Range!('0','7'),Range!('0','7')),Seq!(Range!('0','7'),Option!(Range!('0','7'))),Seq!(Lit!("x"),Hex,Hex),Seq!(Lit!("u"),Hex,Hex,Hex,Hex),Seq!(Lit!("U"),Hex,Hex,Hex,Hex,Hex,Hex,Hex,Hex))),Any))
 {
-    enum name = `Char`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Char`;
 
     static Output parse(Input input)
     {
@@ -607,20 +557,17 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -629,7 +576,7 @@ class Char : Fuse!(Or!(Seq!(BackSlash,Or!(Quote,DoubleQuote,BackQuote,BackSlash,
 
 class Hex : Or!(Range!('0','9'),Range!('a','f'),Range!('A','F'))
 {
-    enum name = `Hex`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Hex`;
 
     static Output parse(Input input)
     {
@@ -640,20 +587,17 @@ class Hex : Or!(Range!('0','9'),Range!('a','f'),Range!('A','F'))
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -662,7 +606,7 @@ class Hex : Or!(Range!('0','9'),Range!('a','f'),Range!('A','F'))
 
 class ParamList : Seq!(Drop!(OPEN),Param,ZeroOrMore!(Seq!(Lit!(","),S,Param)),Drop!(CLOSE),S)
 {
-    enum name = `ParamList`;
+    enum grammarName = `PEGGED`; enum ruleName =  `ParamList`;
 
     static Output parse(Input input)
     {
@@ -673,20 +617,17 @@ class ParamList : Seq!(Drop!(OPEN),Param,ZeroOrMore!(Seq!(Lit!(","),S,Param)),Dr
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -695,7 +636,7 @@ class ParamList : Seq!(Drop!(OPEN),Param,ZeroOrMore!(Seq!(Lit!(","),S,Param)),Dr
 
 class Param : Or!(DefaultParam,SingleParam)
 {
-    enum name = `Param`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Param`;
 
     static Output parse(Input input)
     {
@@ -706,20 +647,17 @@ class Param : Or!(DefaultParam,SingleParam)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -728,7 +666,7 @@ class Param : Or!(DefaultParam,SingleParam)
 
 class DefaultParam : Seq!(Identifier,S,Lit!("="),S,Expression,S)
 {
-    enum name = `DefaultParam`;
+    enum grammarName = `PEGGED`; enum ruleName =  `DefaultParam`;
 
     static Output parse(Input input)
     {
@@ -739,20 +677,17 @@ class DefaultParam : Seq!(Identifier,S,Lit!("="),S,Expression,S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -761,7 +696,7 @@ class DefaultParam : Seq!(Identifier,S,Lit!("="),S,Expression,S)
 
 class SingleParam : Seq!(Identifier,S)
 {
-    enum name = `SingleParam`;
+    enum grammarName = `PEGGED`; enum ruleName =  `SingleParam`;
 
     static Output parse(Input input)
     {
@@ -772,20 +707,17 @@ class SingleParam : Seq!(Identifier,S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -794,7 +726,7 @@ class SingleParam : Seq!(Identifier,S)
 
 class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Lit!(","),S,Expression)),Drop!(CLOSE),S)
 {
-    enum name = `ArgList`;
+    enum grammarName = `PEGGED`; enum ruleName =  `ArgList`;
 
     static Output parse(Input input)
     {
@@ -805,20 +737,17 @@ class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Lit!(","),S,Express
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -827,7 +756,7 @@ class ArgList : Seq!(Drop!(OPEN),Expression,ZeroOrMore!(Seq!(Lit!(","),S,Express
 
 class NamedExpr : Seq!(NAME,Option!(Identifier),S)
 {
-    enum name = `NamedExpr`;
+    enum grammarName = `PEGGED`; enum ruleName =  `NamedExpr`;
 
     static Output parse(Input input)
     {
@@ -838,20 +767,17 @@ class NamedExpr : Seq!(NAME,Option!(Identifier),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -860,7 +786,7 @@ class NamedExpr : Seq!(NAME,Option!(Identifier),S)
 
 class WithAction : Seq!(Drop!(ACTIONOPEN),Identifier,S,ZeroOrMore!(Seq!(Drop!(Lit!(",")),S,Identifier)),Drop!(ACTIONCLOSE),S)
 {
-    enum name = `WithAction`;
+    enum grammarName = `PEGGED`; enum ruleName =  `WithAction`;
 
     static Output parse(Input input)
     {
@@ -871,20 +797,17 @@ class WithAction : Seq!(Drop!(ACTIONOPEN),Identifier,S,ZeroOrMore!(Seq!(Drop!(Li
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -893,7 +816,7 @@ class WithAction : Seq!(Drop!(ACTIONOPEN),Identifier,S,ZeroOrMore!(Seq!(Drop!(Li
 
 class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW,SPACEARROW)
 {
-    enum name = `Arrow`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Arrow`;
 
     static Output parse(Input input)
     {
@@ -904,20 +827,17 @@ class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW,SPACEARROW)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -926,7 +846,7 @@ class Arrow : Or!(LEFTARROW,FUSEARROW,DROPARROW,ACTIONARROW,SPACEARROW)
 
 class LEFTARROW : Seq!(Lit!("<-"),S)
 {
-    enum name = `LEFTARROW`;
+    enum grammarName = `PEGGED`; enum ruleName =  `LEFTARROW`;
 
     static Output parse(Input input)
     {
@@ -937,20 +857,17 @@ class LEFTARROW : Seq!(Lit!("<-"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -959,7 +876,7 @@ class LEFTARROW : Seq!(Lit!("<-"),S)
 
 class FUSEARROW : Seq!(Lit!("<~"),S)
 {
-    enum name = `FUSEARROW`;
+    enum grammarName = `PEGGED`; enum ruleName =  `FUSEARROW`;
 
     static Output parse(Input input)
     {
@@ -970,20 +887,17 @@ class FUSEARROW : Seq!(Lit!("<~"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -992,7 +906,7 @@ class FUSEARROW : Seq!(Lit!("<~"),S)
 
 class DROPARROW : Seq!(Lit!("<:"),S)
 {
-    enum name = `DROPARROW`;
+    enum grammarName = `PEGGED`; enum ruleName =  `DROPARROW`;
 
     static Output parse(Input input)
     {
@@ -1003,20 +917,17 @@ class DROPARROW : Seq!(Lit!("<:"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1025,7 +936,7 @@ class DROPARROW : Seq!(Lit!("<:"),S)
 
 class ACTIONARROW : Seq!(Lit!("<"),WithAction,S)
 {
-    enum name = `ACTIONARROW`;
+    enum grammarName = `PEGGED`; enum ruleName =  `ACTIONARROW`;
 
     static Output parse(Input input)
     {
@@ -1036,20 +947,17 @@ class ACTIONARROW : Seq!(Lit!("<"),WithAction,S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1058,7 +966,7 @@ class ACTIONARROW : Seq!(Lit!("<"),WithAction,S)
 
 class SPACEARROW : Seq!(Lit!("<"),S)
 {
-    enum name = `SPACEARROW`;
+    enum grammarName = `PEGGED`; enum ruleName =  `SPACEARROW`;
 
     static Output parse(Input input)
     {
@@ -1069,20 +977,17 @@ class SPACEARROW : Seq!(Lit!("<"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1091,7 +996,7 @@ class SPACEARROW : Seq!(Lit!("<"),S)
 
 class OR : Seq!(Lit!("/"),S)
 {
-    enum name = `OR`;
+    enum grammarName = `PEGGED`; enum ruleName =  `OR`;
 
     static Output parse(Input input)
     {
@@ -1102,20 +1007,17 @@ class OR : Seq!(Lit!("/"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1124,7 +1026,7 @@ class OR : Seq!(Lit!("/"),S)
 
 class LOOKAHEAD : Seq!(Lit!("&"),S)
 {
-    enum name = `LOOKAHEAD`;
+    enum grammarName = `PEGGED`; enum ruleName =  `LOOKAHEAD`;
 
     static Output parse(Input input)
     {
@@ -1135,20 +1037,17 @@ class LOOKAHEAD : Seq!(Lit!("&"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1157,7 +1056,7 @@ class LOOKAHEAD : Seq!(Lit!("&"),S)
 
 class NOT : Seq!(Lit!("!"),S)
 {
-    enum name = `NOT`;
+    enum grammarName = `PEGGED`; enum ruleName =  `NOT`;
 
     static Output parse(Input input)
     {
@@ -1168,20 +1067,17 @@ class NOT : Seq!(Lit!("!"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1190,7 +1086,7 @@ class NOT : Seq!(Lit!("!"),S)
 
 class DROP : Seq!(Lit!(":"),S)
 {
-    enum name = `DROP`;
+    enum grammarName = `PEGGED`; enum ruleName =  `DROP`;
 
     static Output parse(Input input)
     {
@@ -1201,20 +1097,17 @@ class DROP : Seq!(Lit!(":"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1223,7 +1116,7 @@ class DROP : Seq!(Lit!(":"),S)
 
 class KEEP : Seq!(Lit!("^"),S)
 {
-    enum name = `KEEP`;
+    enum grammarName = `PEGGED`; enum ruleName =  `KEEP`;
 
     static Output parse(Input input)
     {
@@ -1234,20 +1127,17 @@ class KEEP : Seq!(Lit!("^"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1256,7 +1146,7 @@ class KEEP : Seq!(Lit!("^"),S)
 
 class FUSE : Seq!(Lit!("~"),S)
 {
-    enum name = `FUSE`;
+    enum grammarName = `PEGGED`; enum ruleName =  `FUSE`;
 
     static Output parse(Input input)
     {
@@ -1267,20 +1157,17 @@ class FUSE : Seq!(Lit!("~"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1289,7 +1176,7 @@ class FUSE : Seq!(Lit!("~"),S)
 
 class NAME : Seq!(Lit!("="),S)
 {
-    enum name = `NAME`;
+    enum grammarName = `PEGGED`; enum ruleName =  `NAME`;
 
     static Output parse(Input input)
     {
@@ -1300,20 +1187,17 @@ class NAME : Seq!(Lit!("="),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1322,7 +1206,7 @@ class NAME : Seq!(Lit!("="),S)
 
 class ACTIONOPEN : Seq!(Lit!("{"),S)
 {
-    enum name = `ACTIONOPEN`;
+    enum grammarName = `PEGGED`; enum ruleName =  `ACTIONOPEN`;
 
     static Output parse(Input input)
     {
@@ -1333,20 +1217,17 @@ class ACTIONOPEN : Seq!(Lit!("{"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1355,7 +1236,7 @@ class ACTIONOPEN : Seq!(Lit!("{"),S)
 
 class ACTIONCLOSE : Seq!(Lit!("}"),S)
 {
-    enum name = `ACTIONCLOSE`;
+    enum grammarName = `PEGGED`; enum ruleName =  `ACTIONCLOSE`;
 
     static Output parse(Input input)
     {
@@ -1366,20 +1247,17 @@ class ACTIONCLOSE : Seq!(Lit!("}"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1388,7 +1266,7 @@ class ACTIONCLOSE : Seq!(Lit!("}"),S)
 
 class OPTION : Seq!(Lit!("?"),S)
 {
-    enum name = `OPTION`;
+    enum grammarName = `PEGGED`; enum ruleName =  `OPTION`;
 
     static Output parse(Input input)
     {
@@ -1399,20 +1277,17 @@ class OPTION : Seq!(Lit!("?"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1421,7 +1296,7 @@ class OPTION : Seq!(Lit!("?"),S)
 
 class ZEROORMORE : Seq!(Lit!("*"),S)
 {
-    enum name = `ZEROORMORE`;
+    enum grammarName = `PEGGED`; enum ruleName =  `ZEROORMORE`;
 
     static Output parse(Input input)
     {
@@ -1432,20 +1307,17 @@ class ZEROORMORE : Seq!(Lit!("*"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1454,7 +1326,7 @@ class ZEROORMORE : Seq!(Lit!("*"),S)
 
 class ONEORMORE : Seq!(Lit!("+"),S)
 {
-    enum name = `ONEORMORE`;
+    enum grammarName = `PEGGED`; enum ruleName =  `ONEORMORE`;
 
     static Output parse(Input input)
     {
@@ -1465,20 +1337,17 @@ class ONEORMORE : Seq!(Lit!("+"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1487,7 +1356,7 @@ class ONEORMORE : Seq!(Lit!("+"),S)
 
 class OPEN : Seq!(Lit!("("),S)
 {
-    enum name = `OPEN`;
+    enum grammarName = `PEGGED`; enum ruleName =  `OPEN`;
 
     static Output parse(Input input)
     {
@@ -1498,20 +1367,17 @@ class OPEN : Seq!(Lit!("("),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1520,7 +1386,7 @@ class OPEN : Seq!(Lit!("("),S)
 
 class CLOSE : Seq!(Lit!(")"),S)
 {
-    enum name = `CLOSE`;
+    enum grammarName = `PEGGED`; enum ruleName =  `CLOSE`;
 
     static Output parse(Input input)
     {
@@ -1531,20 +1397,17 @@ class CLOSE : Seq!(Lit!(")"),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1553,7 +1416,7 @@ class CLOSE : Seq!(Lit!(")"),S)
 
 class ANY : Seq!(Lit!("."),S)
 {
-    enum name = `ANY`;
+    enum grammarName = `PEGGED`; enum ruleName =  `ANY`;
 
     static Output parse(Input input)
     {
@@ -1564,20 +1427,17 @@ class ANY : Seq!(Lit!("."),S)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1586,7 +1446,7 @@ class ANY : Seq!(Lit!("."),S)
 
 class S : Drop!(Fuse!(ZeroOrMore!(Or!(Blank,EOL,Comment))))
 {
-    enum name = `S`;
+    enum grammarName = `PEGGED`; enum ruleName =  `S`;
 
     static Output parse(Input input)
     {
@@ -1597,20 +1457,17 @@ class S : Drop!(Fuse!(ZeroOrMore!(Or!(Blank,EOL,Comment))))
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1619,7 +1476,7 @@ class S : Drop!(Fuse!(ZeroOrMore!(Or!(Blank,EOL,Comment))))
 
 class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL,EOI))
 {
-    enum name = `Comment`;
+    enum grammarName = `PEGGED`; enum ruleName =  `Comment`;
 
     static Output parse(Input input)
     {
@@ -1630,20 +1487,17 @@ class Comment : Seq!(Lit!("#"),ZeroOrMore!(Seq!(NegLookAhead!(EOL),Any)),Or!(EOL
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~"."~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
@@ -1679,59 +1533,47 @@ string grammar(string g)
 {    
     auto grammarAsOutput = PEGGED.parse(g);
     if (grammarAsOutput.children.length == 0) return "static assert(false, `Bad grammar: " ~ to!string(grammarAsOutput.capture) ~ "`);";
-    string[] names;
+    
     bool rootIsParametrized;
     ParseTree rootParameters;
-    foreach(i,definition; grammarAsOutput.children)
-        if (definition.name == "Definition") 
-        {
-            names ~= definition.capture[0];
-            if (i == 0 && definition.children[0].children.length > 0) // first rule is a parametrized rule.
-            {   
-                rootIsParametrized = true;
-                rootParameters = definition.children[0].children[0];
-            }
-        }
+    bool named = (grammarAsOutput.children[0].ruleName == "GrammarName");
+    
+    string rootName = named ? grammarAsOutput.children[1].capture[0]
+                            : grammarAsOutput.children[0].capture[0];
 
-    string ruleNames = "    enum ruleNames = [";
-    foreach(name; names)
-        ruleNames ~= "\"" ~ name ~ "\":true,";
-    ruleNames = ruleNames[0..$-1] ~ "];\n";
+    if (!named && grammarAsOutput.children[0].children[0].children.length > 0) // first rule is a parametrized rule.
+    {
+        rootIsParametrized = true;
+        rootParameters = grammarAsOutput.children[0].children[0].children[0];
+    }
+    
+    string gn; // future grammar name
     
     string PEGtoCode(ParseTree p)
     {
         string result;
         auto ch = p.children;
         
-        switch (p.name)
+        switch (p.ruleName)
         {
             case "PEGGED":
                 return PEGtoCode(ch[0]);
-            case "Grammar":
-                bool named = ch[0].name == "GrammarName";
-                bool parametrized = ch[0].children[0].capture.length == 2;
-                string grammarName = named ? (ch[0].capture[0] ~ (parametrized? ch[0].capture[1] : ""))
-                                           : (names.front ~ (rootIsParametrized? PEGtoCode(rootParameters) : ""));
+            case "Grammar":    
+                gn = named ? ch[0].capture[0] // user-defined grammar name
+                           : rootName; // first definition's name
                 
+                string externalName; // the grammar name used in D code, different from the (simpler) one used in the parse tree nodes
+                externalName = named ? PEGtoCode(ch[0])
+                                     : rootName ~ (rootIsParametrized? PEGtoCode(rootParameters) : "");
                 result =  "import std.array, std.algorithm, std.conv;\n\n"
-                        ~ "class " ~ grammarName ~ " : Parser\n{\n" 
-                        ~ "    enum name = `"~ grammarName ~ "`;\n"
-                        ~ ruleNames ~ "\n"
+                        ~ "class " ~ externalName 
+                        ~ " : Parser\n{\n" 
+                        ~ "    enum grammarName = `" ~ gn ~ "`;\n"
+                        ~ "    enum ruleName = `"~ gn ~ "`;\n"
                         ~
 "    static Output parse(Input input)
     {
-        mixin(okfailMixin());
-        "
-/*
-~ (named ? "auto p = "~names.front~".parse(input);
-        
-        return p.success ? Output(p.text, p.pos, p.namedCaptures,
-                                  ParseTree(name, p.success, p.capture, input.pos, p.pos, [p.parseTree]))
-                         : fail(p.parseTree.end, p.capture);"
-                   
-        : */
-~       "return "~names.front~".parse(input);"
-~ "
+        return "~rootName~".parse(input);
     }
     
     mixin(stringToInputMixin());
@@ -1743,22 +1585,14 @@ string grammar(string g)
         foreach(child; p.children)
         {
             child  = decimateTree(child);
-            if (child.name in ruleNames)
+            if (child.grammarName == grammarName)
                 filteredChildren ~= child;
-            else if (child.name.startsWith(`Keep!(`))
-            {
-                child.name = child.name[6..$-1];
-                filteredChildren ~= child;
-            }
             else
-            {
                 filteredChildren ~= child.children;
-            }
         }
         p.children = filteredChildren;
         return p;
     }
-
     
 ";
                 string rulesCode;
@@ -1783,8 +1617,11 @@ string grammar(string g)
                 result ~= rulesCode;
                 
                 return result ~ "}\n";
+            case "GrammarName":
+                return PEGtoCode(ch[0]);
             case "Definition":
-                string code = "    enum name = `" ~ch[0].capture[0]~ "`;
+                string code = "    enum grammarName = `" ~ gn ~ "`;
+    enum ruleName = `" ~ch[0].capture[0]~ "`;
 
     static Output parse(Input input)
     {
@@ -1795,27 +1632,24 @@ string grammar(string g)
         {
             p.parseTree = decimateTree(p.parseTree);
             
-            if (p.name in ruleNames)
-                p.children = [p];
-            if (p.name.startsWith(`Keep!`))
+            if (p.grammarName != grammarName)
             {
-                p.name = p.name[6..$-1];
-                p.children = [p];
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-    
-            p.name = name;
+            
             return p;
         }
         else
             return fail(p.parseTree.end,
-                        (name ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
+                        (grammarName~`.`~ruleName ~ ` failure at pos ` ~ to!string(p.parseTree.end)) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture));
     }
     
     mixin(stringToInputMixin());
     ";
 
                 string inheritance;
-                switch(ch[1].children[0].name)
+                switch(ch[1].ruleName)
                 {
                     case "LEFTARROW":
                         inheritance = PEGtoCode(ch[2]);
@@ -1894,7 +1728,7 @@ string grammar(string g)
                 return result;
             case "Prefix":
                 if (ch.length > 1)
-                    switch (ch[0].name)
+                    switch (ch[0].ruleName)
                     {
                         case "NOT":
                             result = "NegLookAhead!(" ~ PEGtoCode(ch[1]) ~ ")";
@@ -1906,7 +1740,7 @@ string grammar(string g)
                             result = "Drop!(" ~ PEGtoCode(ch[1]) ~ ")";
                             break;
                         case "KEEP":
-                            result = "Keep!(" ~ PEGtoCode(ch[1]) ~ ")";
+                            result = "Keep!(" ~ PEGtoCode(ch[1]) ~ ", `" ~ gn ~ "`)";
                             break;                       
                         case "FUSE":
                             result = "Fuse!(" ~ PEGtoCode(ch[1]) ~ ")";
@@ -1919,7 +1753,7 @@ string grammar(string g)
                 return result;
             case "Suffix":
                 if (ch.length > 1)
-                    switch (ch[1].name)
+                    switch (ch[1].ruleName)
                     {
                         case "OPTION":
                             result = "Option!(" ~ PEGtoCode(ch[0]) ~ ")";
@@ -1957,7 +1791,7 @@ string grammar(string g)
             case "ArgList":
                 result = "!(";
                 foreach(child; ch)
-                    result ~= PEGtoCode(child) ~ ","; // Wow! Allow  A <- List('A'*,',') 
+                    result ~= PEGtoCode(child) ~ ","; // Allow  A <- List('A'*,',') 
                 result = result[0..$-1] ~ ")";
                 return result;
             case "GroupExpr":
@@ -1966,8 +1800,6 @@ string grammar(string g)
                 if (ch.length == 1 || temp.startsWith("Seq!(")) return temp;
                 result = "Seq!(" ~ temp ~ ")";
                 return result;
-//            case "Ident":
-//                return p.capture[0];
             case "Literal":
                 if (p.capture[0].length == 0)
                     return "ERROR: empty literal";
@@ -1999,9 +1831,6 @@ string grammar(string g)
                 else                // [a...
                     return "Lit!(\"" ~ p.capture[0] ~ "\")"; 
             case "Char":
-                //if (p.capture.length == 2) // escape sequence \-, \[, \] 
-                //    return "'" ~ p.capture[1] ~ "'";
-                //else
                     return "Lit!(\"" ~ p.capture[0] ~ "\")"; 
             case "OR":
                 foreach(child; ch) result ~= PEGtoCode(child);
