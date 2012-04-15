@@ -68,6 +68,7 @@ Features
 * The complete set of operators described [here](en.wikipedia.org/wiki/Parsing_expression_grammar) are implemented, with the 'traditional' PEG syntax. See [[PEG Basics]].
 * **Pegged** can parse its input at compile time and generate a complete parse tree at compile time. See [[Generating Code]] for the power that gives you. In a word: compile-time string (read: D code) transformation and generation.
 * You can parse at runtime also, you lucky you ([[Using the Parse Tree]])
+* **Pegged** accepts strings, wstrings and dstrings as inputs. Grammar can also be written as strings, wstrings or dstrings, allowing accented characters or Unicode characters to be used.
 * Use a standard and readable PEG syntax as a DSL ([[PEG Basics]]), not a bunch of templates that hide the parser in noise.
 * But you can use expression templates if you want, as parsers are all available as such. **Pegged** is implemented as an expression template, and what's good for the library writer is sure OK for the user too ([[Behind the Curtain: How Pegged Works]]).
 * Some useful additional operators are there too: a way to discard matches (thus dumping them from the parse tree), to push captures on a stack, to accept matches that are equal to another match: see [[Extended PEG Syntax]].
@@ -87,7 +88,6 @@ Limitations
 
 * No effort was done to accelerate the parsing or reduce the memory consumption. The main goal was to 1) use the PEG syntax 2) parse at compile-time. Packrat parsing could be done, maybe. **Pegged** does some basic optimization, though: one-element sequences and choices are replaced by their only element and sequences of sequences are flattened (the same is done for ordered choices).
 * No left-factorization because this doesn't work well with PEGs. But you can do recursive grammars, of course.
-* Only works on strings (no wstrings, dstrings or ranges). That's also on my todo list. I'm not sure ranges will work OK at compile-time and I think I'll need forward ranges at a minimum (or else store the produced elements anyway).
 * Error reporting is the same as for any in-my-own-free-time / just-one-guy parsing project (read: awful). You'll know when it crashes. I ave plans to put an error stack in the mix, to unwind when a grammar cannot parse the provided input.
 * I couldn't find a way to use anonymous function templates as actions (`o => o`). Too bad.
 * The entire grammar is defined at compile-time: no user input for actions and such. That was a design decision from the very beginning.

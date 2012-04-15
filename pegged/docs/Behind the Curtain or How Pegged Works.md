@@ -91,7 +91,7 @@ An `Input` brings everything a parser could need: an input string, and already n
 ```d
 struct Input
 {
-    string text;
+    dstring text;
     NamedCaptures namedCaptures;
     alias text this; // automatic 'conversion' into text, to simplify some expressions
     // + toString()
@@ -105,7 +105,7 @@ The `NamedCaptures` type is just an alias for an associative list of names (stri
 ```d
 struct Output
 {
-    string next;
+    dstring next;
     NamedCaptures namedCaptures;
     
     ParseResult parseTree;

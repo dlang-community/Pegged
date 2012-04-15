@@ -4,8 +4,6 @@ TODO
 Parsers
 -------
 
-- Change the grammar examples, dropping the now-uneceessary ':'.
-
 - Add a boolean grammar (&&, ||, !) and an comparison grammar( ==, !=, <, >, <=, >=), calling arithmeric expressions. I might need it if I add guards on parametrized rules anyway.
 
 Infrastructure
@@ -31,8 +29,6 @@ Infrastructure
 
 - Grammar optimization: inlining, for example
 
-- parse `wstring`s and `dstring`s
-
 - parse ranges.
 
 - (PARTIALLY DONE) Add unit-tests. I tend to write docs and unittests as I go, D making that so easy. **Pegged** is an exception, which I'll kill with extreme prejudice.
@@ -41,7 +37,5 @@ Infrastructure
 
 Documentation
 -------------
-
-- Explain the internal indices (+ line / col).
 
 - Explain the tree decimation rules.

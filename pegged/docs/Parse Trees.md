@@ -6,10 +6,10 @@ In **Pegged**, a parse tree is a very simple recursive struct:
 ```d
 struct ParseTree
 {
-    string grammarName;
-    string ruleName;
+    dstring grammarName;
+    dstring ruleName;
     bool success;
-    string[] capture;
+    dstring[] capture;
     Pos begin, end;
     ParseTree[] children;
 // toString()
