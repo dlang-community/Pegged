@@ -99,9 +99,9 @@ class PEGGED : Parser
 {
     enum grammarName = `PEGGED`;
     enum ruleName = `PEGGED`;
-    static Output parse(Input input)
+    static auto parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
-        return Grammar.parse(input);
+        return Grammar.parse!(pl)(input);
     }
     
     mixin(stringToInputMixin());
@@ -127,28 +127,36 @@ class Grammar : Seq!(S,Option!(GrammarName),OneOrMore!(Definition),EOI)
     enum grammarName = `PEGGED`;
     enum ruleName = `Grammar`;
 
-    static Output parse(Input input)
+    static auto parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
-        mixin(okfailMixin);
+        mixin(okfailMixin());
         
-        auto p = typeof(super).parse(input);
-        if (p.success)
+        auto p = typeof(super).parse!(pl)(input);
+        static if (pl == ParseLevel.validating)
+            p.capture = null;
+        static if (pl <= ParseLevel.matching)
+            p.children = null;
+        static if (pl >= ParseLevel.parsing)
         {
-            p.parseTree = decimateTree(p.parseTree);
-            
-            if (p.grammarName == grammarName)
-            {
-                p.children = [p];
+            if (p.success)
+            {                                
+                static if (pl == ParseLevel.parsing)
+                    p.parseTree = decimateTree(p.parseTree);
+                
+                if (p.grammarName == grammarName)
+                {
+                    p.children = [p];
+                }
+                
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
             }
-            
-            p.grammarName = grammarName;
-            p.ruleName = ruleName;
-            
-            return p;
+            else
+                return fail(p.parseTree.end,
+                            (grammarName~`.`~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
         }
-        else
-            return fail(p.parseTree.end,
-                        (grammarName~`.`~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
+                
+        return p;
     }
     
     mixin(stringToInputMixin());
@@ -167,7 +175,7 @@ class Definition : Seq!(RuleName,Arrow,Expression,S)
         auto p = typeof(super).parse(input);
         if (p.success)
         {
-            p.parseTree = decimateTree(p.parseTree);
+            
             
             if (p.grammarName == grammarName)
             {
