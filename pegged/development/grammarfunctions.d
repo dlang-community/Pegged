@@ -13,7 +13,6 @@ import pegged.peg;
 import pegged.grammar;
 
 
-
 /+ from here, the code comes from pegged.development.grammarfunctions +/
 
 void asModule(string moduleName, dstring grammarString)
@@ -35,6 +34,61 @@ void asModule(string moduleName, string fileName, dstring grammarString)
     f.write(grammar(grammarString));
 }
 
+string decimateTree()
+{
+    return
+"    static ParseTree decimateTree(ParseTree p)
+    {
+        if(p.children.length == 0) return p;
+        ParseTree[] filteredChildren;
+        foreach(child; p.children)
+        {
+            child  = decimateTree(child);
+            if (child.grammarName == grammarName)
+                filteredChildren ~= child;
+            else
+                filteredChildren ~= child.children;
+        }
+        p.children = filteredChildren;
+        return p;
+    }"d;
+}
+
+string innerParseCode()
+{
+    return
+"    static auto parse(ParseLevel pl = ParseLevel.parsing)(Input input)
+    {
+        mixin(okfailMixin());
+        
+        auto p = typeof(super).parse!(pl)(input);
+        static if (pl == ParseLevel.validating)
+            p.capture = null;
+        static if (pl <= ParseLevel.matching)
+            p.children = null;
+        static if (pl >= ParseLevel.parsing)
+        {
+            if (p.success)
+            {                                
+                static if (pl == ParseLevel.parsing)
+                    p.parseTree = decimateTree(p.parseTree);
+                
+                if (p.grammarName == grammarName || pl >= ParseLevel.noDecimation)
+                {
+                    p.children = [p];
+                }
+                
+                p.grammarName = grammarName;
+                p.ruleName = ruleName;
+            }
+            else
+                return fail(p.parseTree.end,
+                            (grammarName~`.`~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
+        }
+                
+        return p;
+    }"d;
+}
 
 dstring grammar(dstring g)
 {    
@@ -74,35 +128,17 @@ dstring grammar(dstring g)
                 externalName = named ? PEGtoCode(ch[0])
                                      : rootName ~ (rootIsParametrized? PEGtoCode(rootParameters) : ""d);
                 result =  "import std.array, std.algorithm, std.conv;\n\n"d
-                        ~ "class "d ~ externalName 
-                        ~ " : Parser\n{\n"d 
-                        ~ "    enum grammarName = `"d ~ gn ~ "`;\n"d
-                        ~ "    enum ruleName = `"d~ gn ~ "`;\n"d
-                        ~
-"    static Output parse(Input input)
+~ "class "d ~ externalName ~ " : Parser\n{\n"d 
+~ "    enum grammarName = `"d ~ gn ~ "`;\n"d
+~ "    enum ruleName = `"d~ gn ~ "`;\n"d
+~ "    static Output parse(Input input)
     {
         return "~rootName~".parse(input);
     }
     
     mixin(stringToInputMixin());
+" ~ decimateTree() ~ "\n"d;
 
-    static ParseTree decimateTree(ParseTree p)
-    {
-        if(p.children.length == 0) return p;
-        ParseTree[] filteredChildren;
-        foreach(child; p.children)
-        {
-            child  = decimateTree(child);
-            if (child.grammarName == grammarName)
-                filteredChildren ~= child;
-            else
-                filteredChildren ~= child.children;
-        }
-        p.children = filteredChildren;
-        return p;
-    }
-    
-"d;
                 dstring rulesCode;
                 // if the grammar is anonymous and the first rule is parametrized,
                 // we must drop the parameter list for the root.
@@ -128,33 +164,12 @@ dstring grammar(dstring g)
             case "GrammarName"d:
                 return PEGtoCode(ch[0]);
             case "Definition"d:
-                dstring code = "    enum grammarName = `"d ~ gn ~ "`;
+                dstring code = 
+"    enum grammarName = `"d ~ gn ~ "`;
     enum ruleName = `"d ~ch[0].capture[0]~ "`;
 
-    static Output parse(Input input)
-    {
-        mixin(okfailMixin);
-        
-        auto p = typeof(super).parse(input);
-        if (p.success)
-        {
-            p.parseTree = decimateTree(p.parseTree);
-            
-            if (p.grammarName == grammarName)
-            {
-                p.children = [p];
-            }
-            
-            p.grammarName = grammarName;
-            p.ruleName = ruleName;
-            
-            return p;
-        }
-        else
-            return fail(p.parseTree.end,
-                        (grammarName~`.`~ruleName ~ ` failure at pos `d ~ to!dstring(p.parseTree.end) ~ (p.capture.length > 0 ? p.capture[1..$] : p.capture)));
-    }
-    
+" ~ innerParseCode()
+~ "    
     mixin(stringToInputMixin());
     "d;
 
@@ -354,4 +369,3 @@ dstring grammar(dstring g)
 
     return PEGtoCode(grammarAsOutput.parseTree);
 }
-
