@@ -13,6 +13,7 @@ import pegged.peg;
 import pegged.grammar;
 
 
+
 /+ from here, the code comes from pegged.development.grammarfunctions +/
 
 void asModule(string moduleName, dstring grammarString)
@@ -31,10 +32,11 @@ void asModule(string moduleName, string fileName, dstring grammarString)
     
     f.write("module " ~ moduleName ~ ";\n\n");
     f.write("public import pegged.peg;\n");
+    f.write("public import std.traits:isSomeString;\n");
     f.write(grammar(grammarString));
 }
 
-string decimateTree()
+dstring decimateTree()
 {
     return
 "    static ParseTree decimateTree(ParseTree p)
@@ -54,10 +56,10 @@ string decimateTree()
     }"d;
 }
 
-string innerParseCode()
+dstring innerParseCode()
 {
     return
-"    static auto parse(ParseLevel pl = ParseLevel.parsing)(Input input)
+"    static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
         mixin(okfailMixin());
         
@@ -131,12 +133,31 @@ dstring grammar(dstring g)
 ~ "class "d ~ externalName ~ " : Parser\n{\n"d 
 ~ "    enum grammarName = `"d ~ gn ~ "`;\n"d
 ~ "    enum ruleName = `"d~ gn ~ "`;\n"d
-~ "    static Output parse(Input input)
+~ "    static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
-        return "~rootName~".parse(input);
+        return "~rootName~".parse!(pl)(input);
     }
     
     mixin(stringToInputMixin());
+    static Output validate(T)(T input) if (is(T == Input) || isSomeString!(T) || is(T == Output))
+    {
+        return "~rootName~".parse!(ParseLevel.validating)(input);
+    }
+    
+    static Output match(T)(T input) if (is(T == Input) || isSomeString!(T) || is(T == Output))
+    {
+        return "~rootName~".parse!(ParseLevel.matching)(input);
+    }
+    
+    static Output fullParse(T)(T input) if (is(T == Input) || isSomeString!(T) || is(T == Output))
+    {
+        return "~rootName~".parse!(ParseLevel.noDecimation)(input);
+    }
+    
+    static Output fullestParse(T)(T input) if (is(T == Input) || isSomeString!(T) || is(T == Output))
+    {
+        return "~rootName~".parse!(ParseLevel.fullest)(input);
+    }
 " ~ decimateTree() ~ "\n"d;
 
                 dstring rulesCode;

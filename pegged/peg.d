@@ -234,7 +234,7 @@ dstring wrapMixin(dstring name, dstring code)
 dstring okfailMixin() @property
 {
     return
-    `Output ok(ParseLevel pl = ParseLevel.parsing)(dstring[] capture, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
+    `Output ok(dstring[] capture, ParseTree[] children = (ParseTree[]).init, NamedCaptures newCaptures = NamedCaptures.init)
     {
         if (newCaptures.length > 0)
             input.namedCaptures ~= newCaptures;
@@ -267,19 +267,19 @@ dstring okfailMixin() @property
 dstring stringToInputMixin() @property
 {
     return 
-"static Output parse(ParseLevel pl = ParseLevel.parsing)(string input)
+"static Output parse(ParseLevel pl = ParseLevel.parsing)(string s)
 {
-    return parse!(pl)(Input(to!dstring(input), Pos(0,0,0), NamedCaptures.init));
+    return parse!(pl)(Input(to!dstring(s), Pos(0,0,0), NamedCaptures.init));
 }
 
-static Output parse(ParseLevel pl = ParseLevel.parsing)(wstring input)
+static Output parse(ParseLevel pl = ParseLevel.parsing)(wstring w)
 {
-    return parse!(pl)(Input(to!dstring(input), Pos(0,0,0), NamedCaptures.init));
+    return parse!(pl)(Input(to!dstring(w), Pos(0,0,0), NamedCaptures.init));
 }
 
-static Output parse(ParseLevel pl = ParseLevel.parsing)(dstring input)
+static Output parse(ParseLevel pl = ParseLevel.parsing)(dstring d)
 {
-    return parse!(pl)(Input(input, Pos(0,0,0), NamedCaptures.init));
+    return parse!(pl)(Input(d, Pos(0,0,0), NamedCaptures.init));
 }
 
 static Output parse(ParseLevel pl = ParseLevel.parsing)(Output input)
@@ -288,21 +288,19 @@ static Output parse(ParseLevel pl = ParseLevel.parsing)(Output input)
 }"d;
 }
 
-/+
-string getName(string s, Exprs...)() @property
+dstring getName(string s, Exprs...)() @property
 {
-    string result = s ~ "!(";
+    dstring result = s ~ "!("d;
     foreach(i,e;Exprs) 
         //static if (__traits(compiles, e.name))
-        result ~= e.name ~ ", ";
+        result ~= e.ruleName ~ ", "d;
         //else
         //    result ~= e.stringof ~ ", ";
         
     static if (Exprs.length > 0)
         result = result[0..$-2];
-    return result ~ ")";
+    return result ~ ")"d;
 }
-+/
 
 class Parser
 {
@@ -327,8 +325,8 @@ class Eps : Parser
     
     static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
-        mixin(okfailMixin());  
-        return ok!(pl)([""]);
+        mixin(okfailMixin());
+        return ok([""d]);
     }
     
     mixin(stringToInputMixin);
@@ -340,9 +338,9 @@ class Any : Parser
     
     static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
-        mixin(okfailMixin());  
+        mixin(okfailMixin());
         if (input.length > 0)
-            return ok!(pl)([input[0..1]]);
+            return ok([input[0..1]]);
         else
             return fail();
     }
@@ -357,7 +355,7 @@ class EOI : Parser
     static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
         mixin(okfailMixin());
-        return (input.pos.index == input.text.length) ? ok!(pl)(null)
+        return (input.pos.index == input.text.length) ? ok(null)
                                                       : fail();
     }
     
@@ -388,7 +386,7 @@ class Lit(dstring s) : Parser
     {   
         mixin(okfailMixin());
         return (input.length >= s.length
-             && input[0..s.length] == s ) ? ok!(pl)([s])
+             && input[0..s.length] == s ) ? ok([s])
                                           : fail();
     }
     
@@ -404,7 +402,7 @@ class Range(dchar begin, dchar end) : Parser
         mixin(okfailMixin());
         return (input.length 
              && input[0] >= begin 
-             && input[0] <= end  ) ? ok!(pl)([input[0..1]])
+             && input[0] <= end  ) ? ok([input[0..1]])
                                    : fail();
     }
     
@@ -413,12 +411,18 @@ class Range(dchar begin, dchar end) : Parser
 
 class Seq(Exprs...) : Parser
 {
-    enum grammarName = `Pegged`d; enum dstring ruleName = "Seq!"d ~ to!dstring(Exprs.stringof);// getName!("Seq",Exprs)();  // Segmentation fault???
+    enum grammarName = `Pegged`d; 
+    enum dstring ruleName = "Seq!"d ~ to!dstring(Exprs.stringof); // ~ getName!("Seq",Exprs)();  // Segmentation fault???
     
     static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
         mixin(okfailMixin());
-        Output result = ok!(pl)((dstring[]).init);
+        dstring[] capture;
+        Output result = Output(input.text,
+                      input.pos,
+                      input.namedCaptures,
+                      ParseTree(grammarName, ruleName, true, capture, input.pos, input.pos, (ParseTree[]).init));
+        //ok((dstring[]).init);
         
         foreach(i,expr; Exprs)
         {            
@@ -459,8 +463,12 @@ class SpaceSeq(Exprs...) : Parser
 
         // consuming space before the first expression
         input.pos = Spacing.parse!(pl)(input).pos;
-        
-        Output result = ok!(pl)((dstring[]).init);
+        dstring[] capture;
+        Output result = Output(input.text,
+                      input.pos,
+                      input.namedCaptures,
+                      ParseTree(grammarName, ruleName, true, capture, input.pos, input.pos, (ParseTree[]).init));
+        //ok((dstring[]).init);
         
         foreach(i,expr; Exprs)
         {            
@@ -577,7 +585,7 @@ class Option(Expr) : Parser
         if (p.success)
             return p;
         else
-            return ok!(pl)(null);
+            return ok(null);
     }
     
     mixin(stringToInputMixin());
@@ -596,7 +604,7 @@ class ZeroOrMore(Expr) : Parser
         
         Output p = Expr.parse!(pl)(input);
         Pos end = input.pos; 
-        if (!p.success) return ok!(pl)(capture);
+        if (!p.success) return ok(capture);
         while (p.success)
         {
             capture ~= p.capture;
@@ -665,7 +673,7 @@ class PosLookAhead(Expr) : Parser
     static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
         mixin(okfailMixin());   
-        return Expr.parse!(pl)(input).success ? ok!(pl)((dstring[]).init) // no name nor capture transmission
+        return Expr.parse!(pl)(input).success ? ok((dstring[]).init) // no name nor capture transmission
                                               : fail();
     }
     
@@ -680,7 +688,7 @@ class NegLookAhead(Expr) : Parser
     {
         mixin(okfailMixin()); 
         return Expr.parse!(pl)(input).success ? fail()
-                                              : ok!(pl)((dstring[]).init); // no name nor capture transmission
+                                              : ok((dstring[]).init); // no name nor capture transmission
     }
     
     mixin(stringToInputMixin());    
