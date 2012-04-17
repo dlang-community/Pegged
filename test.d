@@ -4,14 +4,26 @@ import std.algorithm;
 import std.array;
 import std.conv;
 import std.stdio;
+//import pegged.peg;
 import pegged.grammar;
+//import pegged.examples.PEGGED;
 
-mixin(grammar("Test: A <- 'a' 'é' '\u237A' '\U0000237A'"));
+enum G = `
+Test:
+    A <- :DoubleQuote ~Text :DoubleQuote
+    Text <- (!DoubleQuote .)*
+`;
+
+
+mixin(grammar(G));
 
 void main()
 {
-    writeln(Test.parse(`aé⍺⍺ù`));
-    
+    writeln(Test.validate(`"Hello, World!"`));
+    writeln(Test.match(`"Hello, World!"`));
+    writeln(Test.parse(`"Hello, World!"`));
+    writeln(Test.fullParse(`"Hello, World!"`));
+    writeln(Test.fullestParse(`"Hello, World!"`));
 }
 
 
