@@ -1,7 +1,7 @@
 Parsing Levels
 ==============
 
-The **Pegged** docs mainly refer to the `.parse` static method, implemented in all rules and grammars. This method accepts an `Input` or any kind of string and returns an `Output`. But, sometimes, an full `Output` is a bit too much for what you need. If what you want is just the matches or validating the input (that is, seeing whether it's structured as the grammar defines it), why generate a parse tree?
+The **Pegged** docs mainly refer to the `.parse` static method, implemented in all rules and grammars. This method accepts an `Input` or any kind of string and returns an `Output`. But, sometimes, a full `Output` is a bit too much for what you need. If what you want is just the matches or validating the input (that is, seeing whether it's structured as the grammar defines it), why generate a parse tree?
 
 For this need **Pegged** defines five different levels of parsing, members of the `ParseLevel` enum. This enum is silently passed as a template parameter for `parse` and any rule or combinator transmits the parse level to its child rules.
 
@@ -163,4 +163,3 @@ Test.A: [[index: 0, line: 0, col: 0] - [index: 15, line: 0, col: 15]]["\"", "Hel
 ```
 
 I mean, 34 nodes for such a simple input and such a simple grammar...
-

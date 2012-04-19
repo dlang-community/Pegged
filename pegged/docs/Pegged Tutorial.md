@@ -14,7 +14,7 @@ The following pages will show you how to use **Pegged** to create grammars and p
 
 5) [[Using the Parse Tree]]
 
-6) [[Tree Decimation]] (stub)
+6) [[Tree Decimation]]
 
 7) [[Extended PEG Syntax]]
 
