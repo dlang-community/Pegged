@@ -2,9 +2,11 @@ module pegged.utils.treefunctions;
 
 import pegged.peg;
 
-string[] leaves(ParseTree p)
+import std.conv;
+
+dstring[] leaves(ParseTree p)
 {
-    string[] result;
+    dstring[] result;
     if (p.children.length == 0)
         return p.capture[];
     else
@@ -15,9 +17,9 @@ string[] leaves(ParseTree p)
     return result;
 }
 
-string[2][] treeUnification(ParseTree p1, ParseTree p2)
+dstring[2][] treeUnification(ParseTree p1, ParseTree p2)
 {
-    string[2][] result;
+    dstring[2][] result;
     
     if (p1.name != p2.name)
     {
@@ -28,7 +30,7 @@ string[2][] treeUnification(ParseTree p1, ParseTree p2)
     else
     {
         if (p1.children.length != p2.children.length)
-            throw new Exception("Impossible unification between\n" ~ p1.toString() ~ "and\n"~p2.toString());
+            throw new Exception(to!string("Impossible unification between\n" ~ p1.toString() ~ "and\n"~p2.toString()));
         
         foreach(i, child; p1.children)
         {

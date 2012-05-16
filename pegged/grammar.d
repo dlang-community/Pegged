@@ -2061,6 +2061,14 @@ dstring innerParseCode()
     }"d;
 }
 
+// Use this version if the generated parser is causing DMD to segfault or ICE
+//   in various ways.  It will help isolate the problematic grammar rules.
+//version = ICE_TRACE;
+version ( ICE_TRACE )
+	const pragmaStr = "pragma(msg, \"dparser: \"~to!string(__LINE__));\n"d;
+else
+	const pragmaStr = ""d;
+
 dstring grammar(dstring g)
 {    
     auto grammarAsOutput = PEGGED.parse(g);
@@ -2192,7 +2200,8 @@ dstring grammar(dstring g)
                         break;
                 }
 
-                return "class "d
+                return pragmaStr
+					~ "class "d
                     ~ PEGtoCode(ch[0])
                     ~ " : "d ~ inheritance // inheritance code
                     ~ "\n{\n"d 

@@ -5,7 +5,7 @@ D:
 
 Module < Spacing ModuleDeclaration? DeclDefs?
 
-DeclDefs < DeclDef DeclDefs?
+DeclDefs < DeclDef+
 
 DeclDef < AttributeSpecifier
         / ImportDeclaration
@@ -41,8 +41,9 @@ ImportList < Import ("," ImportList)?
 Import < Identifier "=" QualifiedIdentifier
         / QualifiedIdentifier
 
+List(Elem) < Elem (',' Elem)*
+
 ImportBindings < Import ":" List(ImportBind) 
-###### Define List(E) as a comma-sep list ##
 ###### Also a space-sep list is needed ##
 
 ImportBind < Identifier ("=" Identifier)?
@@ -98,7 +99,7 @@ BasicType2 < "*"
 Declarator < BasicType2? "(" Declarator ")" DeclaratorSuffixes?
             / BasicType2?     Identifier     DeclaratorSuffixes?
 
-DeclaratorSuffixes < DeclaratorSuffix DeclaratorSuffixes
+DeclaratorSuffixes < DeclaratorSuffix+
             
 DeclaratorSuffix < "[" "]"
                   / "[" AssignExpression "]"
@@ -109,7 +110,7 @@ DeclaratorSuffix < "[" "]"
 IdentifierList < Identifier ("." IdentifierList)?
                 / TemplateInstance ("." IdentifierList)?
                
-StorageClasses < StorageClass StorageClasses?
+StorageClasses < StorageClass+
 
 StorageClass < "abstract"
               / "auto"
@@ -143,7 +144,7 @@ Declarator2 < BasicType2? ("(" Declarator2 ")")? DeclaratorSuffixes?
 Parameters < "(" ParameterList? ")"
 
 ParameterList < "..."
-               / Parameter ParameterList?
+               / Parameter+
 
 Parameter < InOut? BasicType Declarator ("..." / "=" DefaultInitializerExpression)?
            / InOut? Type "..."?
@@ -162,13 +163,13 @@ InOutX < "auto"
         / "scope"
         / "shared"
 
-FunctionAttributes < FunctionAttribute FunctionAttributes?
+FunctionAttributes < FunctionAttribute+
 
 FunctionAttribute < "nothrow"
                    / "pure"
                    / Property
                    
-MemberFunctionAttributes < MemberFunctionAttribute MemberFunctionAttributes?
+MemberFunctionAttributes < MemberFunctionAttribute+
 
 MemberFunctionAttribute < "const"
                          / "immutable"
@@ -190,7 +191,7 @@ ArrayInitializer < "[" "]"
                   / "[" ArrayMemberInitializations "]"
 
 ## Crap
-ArrayMemberInitializations < ArrayMemberInitialization ("," ArrayMemberInitializations?)?
+ArrayMemberInitializations < ArrayMemberInitialization ("," ArrayMemberInitialization?)*
 
 ## Verify the order, with PEG
 ArrayMemberInitialization < NonVoidInitializer
@@ -199,7 +200,7 @@ ArrayMemberInitialization < NonVoidInitializer
 StructInitializer < "{" "}"
                    / "{" StructMemberInitializers "}"
 
-StructMemberInitializers < StructMemberInitializer ("," StructMemberInitializers?)?
+StructMemberInitializers < StructMemberInitializer ("," StructMemberInitializer?)*
 
 StructMemberInitializer < NonVoidInitializer
                          / Identifier : NonVoidInitializer
@@ -271,7 +272,7 @@ LabeledStatement < Identifier ":" NoScopeStatement
 
 BlockStatement < "{" StatementList? "}"
                           
-StatementList < Statement StatementList?
+StatementList < Statement+
 
 ExpressionStatement < Expression ";"
 
@@ -323,8 +324,7 @@ DefaultStatement < "default" ":" ScopeStatementList
 
 ScopeStatementList < StatementListNoCaseNoDefault
 
-StatementListNoCaseNoDefault < StatementNoCaseNoDefault
-                                StatementListNoCaseNoDefault?
+StatementListNoCaseNoDefault < StatementNoCaseNoDefault+
 
 StatementNoCaseNoDefault < ";" 
                           / NonEmptyStatementNoCaseNoDefault
@@ -515,7 +515,7 @@ PrimaryExpression < "this"
                    / "(" Expression ")"
                    / TraitsExpression
 
-StringLiterals < StringLiteral StringLiterals?
+StringLiterals < StringLiteral+
 
 ArrayLiteral < "[" ArgumentList "]"
 
@@ -904,7 +904,7 @@ ConditionalDeclaration < Condition ":" Declarations
 CCDeclarationBlock < Declaration
                     / "{" Declaration? "}"
                     
-Declarations < Declaration Declarations?
+Declarations < Declaration+
 
 ConditionalStatement < Condition NoScopeNonEmptyStatement ("else" NoScopeNonEmptyStatement)?
 
@@ -1009,6 +1009,5 @@ HexDigit < [0-9a-fA-F]
 FloatLiteral <- Sign? Integer ("." Integer?)? (("e" / "E") Sign? Integer)?
 
 Sign <- ("-" / "+")?
-
 
 `;
