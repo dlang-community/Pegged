@@ -340,7 +340,7 @@ class Any : Parser
     {
         mixin(okfailMixin());
         if (input.length > 0)
-            return ok([input[0..1]]);
+            return ok([to!dstring(input.front)]);
         else
             return fail();
     }
@@ -401,9 +401,9 @@ class Range(dchar begin, dchar end) : Parser
     { 
         mixin(okfailMixin());
         return (input.length 
-             && input[0] >= begin 
-             && input[0] <= end  ) ? ok([input[0..1]])
-                                   : fail();
+             && input.front >= begin 
+             && input.front <= end  ) ? ok([to!dstring(input.front)])
+                                      : fail();
     }
     
     mixin(stringToInputMixin());
