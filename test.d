@@ -8,15 +8,25 @@ import std.stdio;
 import std.typecons;
 
 import pegged.grammar;
+import pegged.examples.dgrammar;
 
-mixin(grammar(`Number < [0-9]*`));
-enum result1 = Number.parse("123");
+enum input = //JSONGrammar;
+`
+TEST:
+A <- 'a'
+B <- A?
+C <- [0-9]+
+D <- C B*
+
+`;
 
 
 void main()
 {
-    writeln("CT: ", result1);
-    writeln("RT: ", Number.parse("123"));
+    auto c = checkGrammar(input, ReduceFurther.Yes);
+    writeln(c);
+    foreach(k,v;c)
+        if (v != Diagnostic.NoRisk) writeln(k,":",v);
 }
 
 

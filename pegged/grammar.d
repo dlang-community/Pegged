@@ -2368,3 +2368,161 @@ dstring grammar(dstring g)
 
     return PEGtoCode(grammarAsOutput.parseTree);
 }
+
+
+enum Diagnostic { NoRisk, MightConsumeNothing, PossibleInfiniteLoop, Undecided }
+enum ReduceFurther { No, Yes }
+
+Diagnostic[dstring] checkGrammar(dstring g, ReduceFurther reduceFurther = ReduceFurther.Yes)
+{
+    import std.stdio;
+    auto grammarAsInput = PEGGED.parse(g);
+    Diagnostic[dstring] diag;
+    ParseTree[dstring] rules;
+    //bool[dstring] stillUndecided;
+    
+    Diagnostic check(ParseTree p)
+    {
+        //writeln(p.name);        
+        switch(p.name)
+        {
+            case "PEGGED.Definition":
+                return check(p.children[2]);
+            case "PEGGED.Expression":
+                Diagnostic result;
+                foreach(i, child; p.children)
+                {
+                    if (i % 2 == 1) 
+                        continue; // skipping 'PEGGED.OR'
+                    auto c = check(child);
+                    if (c > result)
+                        result = c;
+                }
+                return result;
+            case "PEGGED.Sequence":
+                Diagnostic result = check(p.children[0]);
+                foreach(i, child; p.children[1..$])
+                {
+                    auto c = check(child);
+                    switch (c)
+                    {
+                        case Diagnostic.NoRisk:
+                            if (result < Diagnostic.PossibleInfiniteLoop)
+                                result = c;
+                            break;
+                        case Diagnostic.MightConsumeNothing:
+                            break; // Never change the sequence diagnostic
+                        case Diagnostic.PossibleInfiniteLoop:
+                            return c;
+                        case Diagnostic.Undecided:
+                            return c;
+                        default:
+                            break;
+                    }
+                }
+                return result;
+            case "PEGGED.Prefix":
+                return check(p.children[$-1]);
+            case "PEGGED.Suffix":
+                if (p.children.length > 1) // Suffix present
+                {
+                    if (p.children[1].name == "PEGGED.ONEORMORE" || p.children[1].name == "PEGGED.ZEROORMORE")
+                    {
+                        auto c = check(p.children[0]);
+                        if (c == Diagnostic.MightConsumeNothing)
+                            return Diagnostic.PossibleInfiniteLoop;
+                        //else if (c == Diagp.children[1].name == "PEGGED.ZEROORMORE")
+                        //    return Diagnostic.MightConsumeNothing;
+                    }
+                    if (p.children[1].name == "PEGGED.OPTION")
+                        return Diagnostic.MightConsumeNothing;
+                }
+                return check(p.children[0]);
+            case "PEGGED.Primary":
+                return check(p.children[0]);
+            case "PEGGED.Name":
+                if (auto res = p.capture[0] in diag)
+                    return *res;
+                else
+                    return Diagnostic.NoRisk; // unknown name -> External grammar name
+            case "PEGGED.Eps":
+                return Diagnostic.MightConsumeNothing;
+            default:
+                return Diagnostic.NoRisk;
+        }
+    }
+    
+    foreach(index, definition; grammarAsInput.children)
+        if (definition.name == "PEGGED.Definition")
+        {
+            diag[definition.capture[0]]= Diagnostic.Undecided; // entering the rule's name in canLoop
+            rules[definition.capture[0]] = definition;
+            //writeln("Finding rule `"~definition.capture[0]~"`");
+        }
+    
+    writeln("Found ", diag.length, " rules.");
+    
+    int stillUndecidedRules = diag.length;
+    int before = stillUndecidedRules+1;   
+
+    int reduceUndecided()
+    {
+        int howManyReduced;
+        while(before > stillUndecidedRules)
+        {
+            before = stillUndecidedRules;
+            foreach(name, diagnostic; diag)
+            {
+                if (diagnostic == Diagnostic.Undecided)
+                {
+                    diag[name] = check(rules[name]);
+                    if (diag[name] != Diagnostic.Undecided)
+                    {
+                        --stillUndecidedRules;
+                        ++howManyReduced;
+                    }
+                }
+            }
+        }
+        dstring s;
+        foreach(name, diagnostic; diag)
+            if (diagnostic == Diagnostic.Undecided) s ~= (" " ~ name);
+        if (stillUndecidedRules > 0)
+            writeln("still ", stillUndecidedRules, " undecided rules: ", s);
+        writeln(howManyReduced, " rules were deduced at this step.");
+        return howManyReduced;
+    }
+    reduceUndecided();
+
+    if (reduceFurther == ReduceFurther.Yes)
+    {
+        int breaker = 0;
+        int wrapAround = 0;
+        // standard reduction didn't work: mutually recursive loops block the algorithm
+        // We will try to cut the Gordian node by forcefully changing a rule to NoRisk and see if that helps
+        while (stillUndecidedRules > 0 && wrapAround < stillUndecidedRules)
+        {
+            writeln("Trying to reduce further...");
+            while(diag[diag.keys[breaker]] != Diagnostic.Undecided)
+            {
+                breaker = (breaker + 1) % diag.length;
+            }
+            writeln("Changing ", diag.keys[breaker]);
+            diag[diag.keys[breaker]] = Diagnostic.MightConsumeNothing;
+            --stillUndecidedRules;
+            before = stillUndecidedRules+1; // used in reduceUndecided()
+            auto howManyReduced = reduceUndecided();
+            if (howManyReduced == 0)
+                ++wrapAround;
+            else
+                wrapAround = 0;
+            auto c = check(rules[diag.keys[breaker]]);
+            if (c == Diagnostic.Undecided)
+                ++stillUndecidedRules;
+            diag[diag.keys[breaker]] = c;
+            breaker = (breaker + 1) % diag.length;
+        }
+    }
+    
+    return diag;
+}
