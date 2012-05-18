@@ -2370,51 +2370,56 @@ dstring grammar(dstring g)
 }
 
 
-enum Diagnostic { NoRisk, MightConsumeNothing, PossibleInfiniteLoop, Undecided }
+enum InfiniteLoop  { NoLoop, MightConsumeNothing, PossibleInfiniteLoop, Undecided }
+enum LeftRecursion { NoLeftRecursion, DirectLeftRecursion, IndirectLeftRecursion, HiddenLeftRecursion, Undecided }
 enum ReduceFurther { No, Yes }
 
-Diagnostic[dstring] checkGrammar(dstring g, ReduceFurther reduceFurther = ReduceFurther.Yes)
+struct Diagnostic
+{
+    InfiniteLoop[dstring]  infiniteLoops;
+    LeftRecursion[dstring] leftRecursions;
+}
+
+Diagnostic checkGrammar(dstring g, ReduceFurther reduceFurther = ReduceFurther.Yes)
 {
     import std.stdio;
     auto grammarAsInput = PEGGED.parse(g);
-    Diagnostic[dstring] diag;
+    Diagnostic diag;
     ParseTree[dstring] rules;
-    //bool[dstring] stillUndecided;
     
-    Diagnostic check(ParseTree p)
+    InfiniteLoop checkLoops(ParseTree p)
     {
-        //writeln(p.name);        
         switch(p.name)
         {
             case "PEGGED.Definition":
-                return check(p.children[2]);
+                return checkLoops(p.children[2]);
             case "PEGGED.Expression":
-                Diagnostic result;
+                InfiniteLoop result;
                 foreach(i, child; p.children)
                 {
                     if (i % 2 == 1) 
                         continue; // skipping 'PEGGED.OR'
-                    auto c = check(child);
+                    auto c = checkLoops(child);
                     if (c > result)
                         result = c;
                 }
                 return result;
             case "PEGGED.Sequence":
-                Diagnostic result = check(p.children[0]);
+                InfiniteLoop result = checkLoops(p.children[0]);
                 foreach(i, child; p.children[1..$])
                 {
-                    auto c = check(child);
+                    auto c = checkLoops(child);
                     switch (c)
                     {
-                        case Diagnostic.NoRisk:
-                            if (result < Diagnostic.PossibleInfiniteLoop)
+                        case InfiniteLoop.NoLoop:
+                            if (result < InfiniteLoop.PossibleInfiniteLoop)
                                 result = c;
                             break;
-                        case Diagnostic.MightConsumeNothing:
+                        case InfiniteLoop.MightConsumeNothing:
                             break; // Never change the sequence diagnostic
-                        case Diagnostic.PossibleInfiniteLoop:
+                        case InfiniteLoop.PossibleInfiniteLoop:
                             return c;
-                        case Diagnostic.Undecided:
+                        case InfiniteLoop.Undecided:
                             return c;
                         default:
                             break;
@@ -2422,47 +2427,127 @@ Diagnostic[dstring] checkGrammar(dstring g, ReduceFurther reduceFurther = Reduce
                 }
                 return result;
             case "PEGGED.Prefix":
-                return check(p.children[$-1]);
+                return checkLoops(p.children[$-1]);
             case "PEGGED.Suffix":
                 if (p.children.length > 1) // Suffix present
                 {
                     if (p.children[1].name == "PEGGED.ONEORMORE" || p.children[1].name == "PEGGED.ZEROORMORE")
                     {
-                        auto c = check(p.children[0]);
-                        if (c == Diagnostic.MightConsumeNothing)
-                            return Diagnostic.PossibleInfiniteLoop;
-                        //else if (c == Diagp.children[1].name == "PEGGED.ZEROORMORE")
-                        //    return Diagnostic.MightConsumeNothing;
+                        auto c = checkLoops(p.children[0]);
+                        if (c == InfiniteLoop.MightConsumeNothing)
+                            return InfiniteLoop.PossibleInfiniteLoop;
                     }
                     if (p.children[1].name == "PEGGED.OPTION")
-                        return Diagnostic.MightConsumeNothing;
+                        return InfiniteLoop.MightConsumeNothing;
                 }
-                return check(p.children[0]);
+                return checkLoops(p.children[0]);
             case "PEGGED.Primary":
-                return check(p.children[0]);
+                return checkLoops(p.children[0]);
             case "PEGGED.Name":
-                if (auto res = p.capture[0] in diag)
+                if (auto res = p.capture[0] in diag.infiniteLoops)
                     return *res;
                 else
-                    return Diagnostic.NoRisk; // unknown name -> External grammar name
+                    return InfiniteLoop.NoLoop; // unknown name -> External grammar name
             case "PEGGED.Eps":
-                return Diagnostic.MightConsumeNothing;
+                return InfiniteLoop.MightConsumeNothing;
             default:
-                return Diagnostic.NoRisk;
+                return InfiniteLoop.NoLoop;
+        }
+    }
+    
+    /// Search for toFind as the first child in an expression
+    bool findName(ParseTree p, dstring toFind)
+    {
+        if (p.name == "PEGGED.Name" && p.capture[0] == toFind)
+            return true;
+        else
+        {
+            if (p.children.length == 0)
+                return false;
+            return findName(p.children[0], toFind);
+        }
+    }
+    
+    LeftRecursion checkLeftRecursion(ParseTree p)
+    {
+        switch(p.name)
+        {
+            case "PEGGED.Definition":
+                return checkLeftRecursion(p.children[2]);
+            case "PEGGED.Expression":
+                LeftRecursion result;
+                foreach(i, child; p.children)
+                {
+                    if (i % 2 == 1) 
+                    continue; // skipping 'PEGGED.OR'
+                    auto c = checkLeftRecursion(child);
+                    if (c > result)
+                        result = c;
+                }
+                return result;
+            case "PEGGED.Sequence":
+                LeftRecursion result = checkLeftRecursion(p.children[0]);
+                foreach(i, child; p.children[1..$])
+                {
+                    
+                    LeftRecursion c = checkLeftRecursion(child);
+                    switch (c)
+                    {
+//                         case InfiniteLoop.NoLoop:
+//                             if (result < InfiniteLoop.PossibleInfiniteLoop)
+//                                 result = c;
+//                             break;
+//                         case InfiniteLoop.MightConsumeNothing:
+//                             break; // Never change the sequence diagnostic
+//                         case InfiniteLoop.PossibleInfiniteLoop:
+//                             return c;
+//                         case InfiniteLoop.Undecided:
+//                             return c;
+                        default:
+                            break;
+                    }
+                }
+                return result;
+            case "PEGGED.Prefix":
+                return checkLeftRecursion(p.children[$-1]);
+            case "PEGGED.Suffix":
+                if (p.children.length > 1) // Suffix present
+                {
+                    if (p.children[1].name == "PEGGED.ONEORMORE" || p.children[1].name == "PEGGED.ZEROORMORE")
+                    {
+                        LeftRecursion c = checkLeftRecursion(p.children[0]);
+//                         if (c == InfiniteLoop.MightConsumeNothing)
+//                             return InfiniteLoop.PossibleInfiniteLoop;
+                    }
+                    if (p.children[1].name == "PEGGED.OPTION")
+                        return LeftRecursion.DirectLeftRecursion;
+                }
+                return checkLeftRecursion(p.children[0]);
+            case "PEGGED.Primary":
+                return checkLeftRecursion(p.children[0]);
+            case "PEGGED.Name":
+                if (auto res = p.capture[0] in diag.leftRecursions)
+                    return *res;
+                else
+                    return LeftRecursion.NoLeftRecursion;
+            case "PEGGED.Eps":
+                return LeftRecursion.NoLeftRecursion;
+            default:
+                return LeftRecursion.NoLeftRecursion;
         }
     }
     
     foreach(index, definition; grammarAsInput.children)
         if (definition.name == "PEGGED.Definition")
         {
-            diag[definition.capture[0]]= Diagnostic.Undecided; // entering the rule's name in canLoop
+            diag.infiniteLoops[definition.capture[0]]= InfiniteLoop.Undecided; // entering the rule's name in canLoop
             rules[definition.capture[0]] = definition;
             //writeln("Finding rule `"~definition.capture[0]~"`");
         }
     
-    writeln("Found ", diag.length, " rules.");
+    writeln("Found ", diag.infiniteLoops.length, " rules.");
     
-    int stillUndecidedRules = diag.length;
+    int stillUndecidedRules = diag.infiniteLoops.length;
     int before = stillUndecidedRules+1;   
 
     int reduceUndecided()
@@ -2471,12 +2556,12 @@ Diagnostic[dstring] checkGrammar(dstring g, ReduceFurther reduceFurther = Reduce
         while(before > stillUndecidedRules)
         {
             before = stillUndecidedRules;
-            foreach(name, diagnostic; diag)
+            foreach(name, diagnostic; diag.infiniteLoops)
             {
-                if (diagnostic == Diagnostic.Undecided)
+                if (diagnostic == InfiniteLoop.Undecided)
                 {
-                    diag[name] = check(rules[name]);
-                    if (diag[name] != Diagnostic.Undecided)
+                    diag.infiniteLoops[name] = checkLoops(rules[name]);
+                    if (diag.infiniteLoops[name] != InfiniteLoop.Undecided)
                     {
                         --stillUndecidedRules;
                         ++howManyReduced;
@@ -2485,8 +2570,8 @@ Diagnostic[dstring] checkGrammar(dstring g, ReduceFurther reduceFurther = Reduce
             }
         }
         dstring s;
-        foreach(name, diagnostic; diag)
-            if (diagnostic == Diagnostic.Undecided) s ~= (" " ~ name);
+        foreach(name, diagnostic; diag.infiniteLoops)
+            if (diagnostic == InfiniteLoop.Undecided) s ~= (" " ~ name);
         if (stillUndecidedRules > 0)
             writeln("still ", stillUndecidedRules, " undecided rules: ", s);
         writeln(howManyReduced, " rules were deduced at this step.");
@@ -2498,17 +2583,17 @@ Diagnostic[dstring] checkGrammar(dstring g, ReduceFurther reduceFurther = Reduce
     {
         int breaker = 0;
         int wrapAround = 0;
-        // standard reduction didn't work: mutually recursive loops block the algorithm
-        // We will try to cut the Gordian node by forcefully changing a rule to NoRisk and see if that helps
+        // standard reduction didn't work: mutually recursive rules block the algorithm
+        // We will try to cut the Gordian node by forcefully changing a rule to NoLoop and see if that helps
         while (stillUndecidedRules > 0 && wrapAround < stillUndecidedRules)
         {
             writeln("Trying to reduce further...");
-            while(diag[diag.keys[breaker]] != Diagnostic.Undecided)
+            while(diag.infiniteLoops[diag.infiniteLoops.keys[breaker]] != InfiniteLoop.Undecided)
             {
-                breaker = (breaker + 1) % diag.length;
+                breaker = (breaker + 1) % diag.infiniteLoops.length;
             }
-            writeln("Changing ", diag.keys[breaker]);
-            diag[diag.keys[breaker]] = Diagnostic.MightConsumeNothing;
+            writeln("Changing ", diag.infiniteLoops.keys[breaker]);
+            diag.infiniteLoops[diag.infiniteLoops.keys[breaker]] = InfiniteLoop.NoLoop;
             --stillUndecidedRules;
             before = stillUndecidedRules+1; // used in reduceUndecided()
             auto howManyReduced = reduceUndecided();
@@ -2516,11 +2601,11 @@ Diagnostic[dstring] checkGrammar(dstring g, ReduceFurther reduceFurther = Reduce
                 ++wrapAround;
             else
                 wrapAround = 0;
-            auto c = check(rules[diag.keys[breaker]]);
-            if (c == Diagnostic.Undecided)
+            auto c = checkLoops(rules[diag.infiniteLoops.keys[breaker]]);
+            if (c == InfiniteLoop.Undecided)
                 ++stillUndecidedRules;
-            diag[diag.keys[breaker]] = c;
-            breaker = (breaker + 1) % diag.length;
+            diag.infiniteLoops[diag.infiniteLoops.keys[breaker]] = c;
+            breaker = (breaker + 1) % diag.infiniteLoops.length;
         }
     }
     
