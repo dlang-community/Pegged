@@ -67,8 +67,8 @@ LogicalORExpression         < LogicalANDExpression ("||" LogicalORExpression)*
 
 ConditionalExpression       < LogicalORExpression ('?' Expression ':' ConditionalExpression)?
  
-AssignmentExpression < ConditionalExpression
-                     / UnaryExpression AssignmentOperator AssignmentExpression
+AssignmentExpression < UnaryExpression AssignmentOperator AssignmentExpression
+                     / ConditionalExpression
  
 AssignmentOperator <- "=" / "*=" / "/=" / "%=" / "+=" / "-=" / "<<=" / ">>=" / "&=" / "^=" / "|="
  
@@ -137,7 +137,7 @@ DirectDeclarator < (Identifier / '(' Declarator ')') ( '[' ']'
                                                      / '(' IdentifierList ')'
                                                      )*
  
-Pointer < '*' (Pointer / TypeQualifierList Pointer / TypeQualifierList)
+Pointer < ('*' TypeQualifier*)*
  
 TypeQualifierList <- TypeQualifier (:Spacing TypeQualifier)*
 
