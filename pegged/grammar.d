@@ -2547,12 +2547,12 @@ Diagnostic checkGrammar(dstring g, ReduceFurther reduceFurther = ReduceFurther.Y
     
     writeln("Found ", diag.infiniteLoops.length, " rules.");
     
-    int stillUndecidedRules = diag.infiniteLoops.length;
-    int before = stillUndecidedRules+1;   
+    size_t stillUndecidedRules = diag.infiniteLoops.length;
+    size_t before = stillUndecidedRules+1;   
 
-    int reduceUndecided()
+    size_t reduceUndecided()
     {
-        int howManyReduced;
+        size_t howManyReduced;
         while(before > stillUndecidedRules)
         {
             before = stillUndecidedRules;
@@ -2581,8 +2581,8 @@ Diagnostic checkGrammar(dstring g, ReduceFurther reduceFurther = ReduceFurther.Y
 
     if (reduceFurther == ReduceFurther.Yes)
     {
-        int breaker = 0;
-        int wrapAround = 0;
+        size_t breaker = 0;
+        size_t wrapAround = 0;
         // standard reduction didn't work: mutually recursive rules block the algorithm
         // We will try to cut the Gordian node by forcefully changing a rule to NoLoop and see if that helps
         while (stillUndecidedRules > 0 && wrapAround < stillUndecidedRules)
