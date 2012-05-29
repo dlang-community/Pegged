@@ -10,7 +10,7 @@ int main (string[] args)
 		return 1;
 	}
 
-	dstring header = "import pegged.peg;\n";
+	dstring header = "import pegged.peg; public import pegged.peg : ParseTree;";
 
 	if (args.length == 3) {
 		write(args[2], cast (void[]) (header ~ grammar(readText(args[1]).to!dstring)));
