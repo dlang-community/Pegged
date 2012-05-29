@@ -13,10 +13,10 @@ int main (string[] args)
 	dstring header = "import pegged.peg; public import pegged.peg : ParseTree;";
 
 	if (args.length == 3) {
-		write(args[2], cast (void[]) (header ~ grammar(readText(args[1]).to!dstring)));
+		write(args[2], cast (void[]) (header ~ grammar(readText(args[1]).to!dstring)).to!string);
 	}
 	else {
-		writeln(header ~ grammar(readText(args[1]).to!dstring));
+		writeln((header ~ grammar(readText(args[1]).to!dstring)).to!string);
 	}
 
 	return 0;
