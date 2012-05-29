@@ -10,11 +10,13 @@ int main (string[] args)
 		return 1;
 	}
 
+	dstring header = "import pegged.peg;\n";
+
 	if (args.length == 3) {
-		write(args[2], cast (void[]) grammar(readText(args[1]).to!dstring));
+		write(args[2], cast (void[]) (header ~ grammar(readText(args[1]).to!dstring)));
 	}
 	else {
-		writeln(grammar(readText(args[1]).to!dstring));
+		writeln(header ~ grammar(readText(args[1]).to!dstring));
 	}
 
 	return 0;
