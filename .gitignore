@@ -4,3 +4,5 @@ test*
 *.obj
 *.o
 sundown*
+peggeden
+libpegged.a
