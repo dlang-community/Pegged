@@ -1,9 +1,9 @@
 Here is the parse tree resulting from the main page grammar:
 
-The grammar is the same than the one in `pegged.examples.arithmetic`.
+The grammar is the same as `pegged.examples.arithmetic`.
 
 ```
-// Expr.parse("1 + 2 - (3*x-5)*6");
+// Arithmetic.parse("1 + 2 - (3*x-5)*6");
 Parse output: success
 named captures: []
 position: [index: 17, line: 0, col: 17]

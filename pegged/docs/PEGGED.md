@@ -32,13 +32,13 @@ To use a grammar, use the `.parse` method. It will return a parse tree containin
 
 ```d
 // Parsing at compile-time:
-enum parseTree1 = Expr.parse("1 + 2 - (3*x-5)*6");
+enum parseTree1 = Arithmetic.parse("1 + 2 - (3*x-5)*6");
 
 pragma(msg, parseTree1.capture);
 writeln(parseTree1);
 
 // And at runtime too:
-auto parseTree2 = Expr.parse(" 0 + 123 - 456 ");
+auto parseTree2 = Arithmetic.parse(" 0 + 123 - 456 ");
 assert(parseTree2.capture == ["0", "+", "123", "-", "456"]);
 ```
 
