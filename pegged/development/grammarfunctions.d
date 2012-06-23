@@ -13,8 +13,7 @@ import pegged.peg;
 import pegged.grammar;
 
 
-
-/+ from here, the code comes from pegged.development.grammarfunctions +/
+// -- snip -- // Code above this line will be removed when copying to pegged/grammar.d
 
 void asModule(string moduleName, dstring grammarString)
 {
