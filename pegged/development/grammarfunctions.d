@@ -8,6 +8,7 @@ module pegged.development.grammarfunctions;
 import std.array;
 import std.algorithm;
 import std.stdio;
+import std.conv;
 
 import pegged.peg;
 import pegged.grammar;
@@ -38,10 +39,10 @@ void asModule(string moduleName, string fileName, dstring grammarString)
 dstring decimateTree()
 {
     return
-"    static ParseTree decimateTree(ParseTree p)
+"    static TParseTree decimateTree(TParseTree p)
     {
         if(p.children.length == 0) return p;
-        ParseTree[] filteredChildren;
+        TParseTree[] filteredChildren;
         foreach(child; p.children)
         {
             child  = decimateTree(child);
@@ -91,14 +92,14 @@ dstring innerParseCode()
     }"d;
 }
 
-dstring grammar(dstring g)
+dstring grammar(TParseTree = ParseTree)(dstring g) if ( isParseTree!TParseTree )
 {    
-    auto grammarAsOutput = PEGGED.parse(g);
+    auto grammarAsOutput = PEGGED!(TParseTree).parse(g);
     if (grammarAsOutput.children.length == 0) 
         return "static assert(false, `Bad grammar: "d ~ to!dstring(grammarAsOutput.capture) ~ "`);"d;
     
     bool rootIsParametrized;
-    ParseTree rootParameters;
+    TParseTree rootParameters;
     bool named = (grammarAsOutput.children[0].ruleName == "GrammarName"d);
     
     dstring rootName = named ? grammarAsOutput.children[1].capture[0]
@@ -112,7 +113,7 @@ dstring grammar(dstring g)
     
     dstring gn; // future grammar name
     
-    dstring PEGtoCode(ParseTree p)
+    dstring PEGtoCode(TParseTree p)
     {
         dstring result;
         auto ch = p.children;
@@ -128,11 +129,18 @@ dstring grammar(dstring g)
                 dstring externalName; // the grammar name used in D code, different from the (simpler) one used in the parse tree nodes
                 externalName = named ? PEGtoCode(ch[0])
                                      : rootName ~ (rootIsParametrized? PEGtoCode(rootParameters) : ""d);
-                result =  "import std.array, std.algorithm, std.conv;\n\n"d
-~ "class "d ~ externalName ~ " : Parser\n{\n"d 
-~ "    enum grammarName = `"d ~ gn ~ "`;\n"d
-~ "    enum ruleName = `"d~ gn ~ "`;\n"d
-~ "    static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
+                result =
+"import std.array, std.algorithm, std.conv, std.typecons;\n"d ~
+"import pegged.utils.associative;\n\n"d ~
+"class "d ~ externalName ~ "(TParseTree = ParseTree) if ( isParseTree!TParseTree ) :
+    BuiltinRules!(TParseTree).Parser
+{
+    mixin BuiltinRules!TParseTree;
+    mixin Input!TParseTree;
+    mixin Output!TParseTree;\n"d ~
+"    enum grammarName = `"d ~ gn ~ "`;\n"d ~
+"    enum ruleName = `"d~ gn ~ "`;\n"d ~
+"    static Output parse(ParseLevel pl = ParseLevel.parsing)(Input input)
     {
         return "~rootName~".parse!(pl)(input);
     }
@@ -403,7 +411,7 @@ struct Diagnostic
 Diagnostic checkGrammar(dstring g, ReduceFurther reduceFurther = ReduceFurther.Yes)
 {
     import std.stdio;
-    auto grammarAsInput = PEGGED.parse(g);
+    auto grammarAsInput = PEGGED!(ParseTree).parse(g);
     Diagnostic diag;
     ParseTree[dstring] rules;
     
