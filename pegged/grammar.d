@@ -2106,7 +2106,7 @@ dstring grammar(TParseTree = ParseTree)(dstring g) if ( isParseTree!TParseTree )
                 result =
 "import std.array, std.algorithm, std.conv, std.typecons;\n"d ~
 "import pegged.utils.associative;\n\n"d ~
-"class "d ~ externalName ~ "(TParseTree = ParseTree) if ( isParseTree!TParseTree ) :
+"class "d ~ "Generic"d ~ externalName ~ "(TParseTree = ParseTree) if ( isParseTree!TParseTree ) :
     BuiltinRules!(TParseTree).Parser
 {
     mixin BuiltinRules!TParseTree;
@@ -2162,7 +2162,7 @@ dstring grammar(TParseTree = ParseTree)(dstring g) if ( isParseTree!TParseTree )
                 }
                 result ~= rulesCode;
                 
-                return result ~ "}\n"d;
+                return result ~ "}\n\n"d ~ "alias Generic"d~externalName~"!(ParseTree) "d~externalName~";"d;
             case "GrammarName"d:
                 return PEGtoCode(ch[0]);
             case "Definition"d:
