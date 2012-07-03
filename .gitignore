@@ -6,3 +6,4 @@ test*
 sundown*
 peggeden
 libpegged.a
+gen_grammar
