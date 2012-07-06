@@ -13,9 +13,9 @@ void asModule(string moduleName, string grammarString)
     import std.stdio;
     auto f = File(moduleName~".d","w");
     
-    f.write("/**\nThis module was automatically generated from the following grammar:\n");
+    f.write("/++\nThis module was automatically generated from the following grammar:\n");
     f.write(grammarString);
-    f.write("*/\n");
+    f.write("+/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
     f.write("import pegged.peg, pegged.internalpeg;\nimport std.array;\nimport std.conv;\n\n");
@@ -292,7 +292,7 @@ string grammar(string g)
     return PEGtoCode(grammarAsOutput.parseTree);
 }
 
-/**
+/+
 This module was automatically generated from the following grammar:
 
 PEGGED:
@@ -359,7 +359,7 @@ ANY        <- '.' S
     
 S          <: ~(Blank / EOL / Comment)*
 Comment    <- "#" (!EOL .)* (EOL/EOI)
-*/
++/
 class PEGGED : Parser
 {
     enum name = `PEGGED`;
