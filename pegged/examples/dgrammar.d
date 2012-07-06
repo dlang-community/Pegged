@@ -953,7 +953,7 @@ BlockComment < '/*' (!'*/' .)* '*/'
 LineComment < '//' (!EOL .)* EOL
 
 NestingBlockComment < '/+' (NestingBlockComment / Text) '+/'
-
+# /+ (please, don't delete this line, it opens a nested block comment in generated module which is closed on the next line
 Text < (!'+/' .)*
 
 StringLiteral < WysiwygString

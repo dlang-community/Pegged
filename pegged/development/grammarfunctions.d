@@ -26,9 +26,9 @@ void asModule(string moduleName, string fileName, dstring grammarString)
     import std.stdio;
     auto f = File(fileName,"w");
     
-    f.write("/**\nThis module was automatically generated from the following grammar:\n\n");
+    f.write("/++\nThis module was automatically generated from the following grammar:\n\n");
     f.write(grammarString);
-    f.write("\n\n*/\n");
+    f.write("\n\n+/\n");
     
     f.write("module " ~ moduleName ~ ";\n\n");
     f.write("public import pegged.peg;\n");
