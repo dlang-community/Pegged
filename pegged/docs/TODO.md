@@ -13,11 +13,11 @@ Infrastructure
 
 - Better error report still: explaining what was expected "rule Digit failed at XXX, expected '0'-'9'"
 
--  Check for grammar well-formedness. For example: repeated subrules that consume no character (`(a?)*`) and indirect left recursion: `A -> "a" / "b"? A`. If there is no 'a', the second branch is tried and if there is no 'b', `A` calls itself again, creating an infinite loop. All in all, that means determining if a rule can succeed while consuming no input (rules Eps, EOI, e?, e*, !e and &e are concerned and also an 'or' branch containing such a construct or a sequence containing *only* such rules). Then emit a warning (how?). Maybe a `testGrammar()` free function?
+- (PARTIALLY DONE) Check for grammar well-formedness. For example: repeated subrules that consume no character (`(a?)*`) and indirect left recursion: `A -> "a" / "b"? A`. If there is no 'a', the second branch is tried and if there is no 'b', `A` calls itself again, creating an infinite loop. All in all, that means determining if a rule can succeed while consuming no input (rules Eps, EOI, e?, e*, !e and &e are concerned and also an 'or' branch containing such a construct or a sequence containing *only* such rules). Then emit a warning (how?). Maybe a `testGrammar()` free function?
 
-- Different levels of parsing and parse-tree generation : `enum TreeLevel { none, standard, full, fullest }`. 'none' means no parse tree generation, only the matches (captures) are recorded. 'standard' is what **Pegged** does right now (with tree decimation, see [[Extended PEG Syntax]] and [[Four Levels of Encapsulation]]), 'full' means keeping external rules nodes and 'fullest' would disable all the cutting actions, like `:e` or `~e`. The parsing levels will be a template parameter in the `parse` call (`parse!(TreeLevel.fullest)(input)`).
+- (PARTIALLY DONE) Different levels of parsing and parse-tree generation : `enum TreeLevel { none, standard, full, fullest }`. 'none' means no parse tree generation, only the matches (captures) are recorded. 'standard' is what **Pegged** does right now (with tree decimation, see [[Extended PEG Syntax]] and [[Four Levels of Encapsulation]]), 'full' means keeping external rules nodes and 'fullest' would disable all the cutting actions, like `:e` or `~e`. The parsing levels will be a template parameter in the `parse` call (`parse!(TreeLevel.fullest)(input)`).
 
-- aliases for the previous parsing levels. For example: `match` for `TreeLevel.none`, `externalParse`, ...
+- (PARTIALLY DONE) aliases for the previous parsing levels. For example: `match` for `TreeLevel.none`, `externalParse`, ...
 
 - Some predefined semantic actions: `cutChildren`, `fuseCaptures`, `dropCaptures`
 
@@ -34,6 +34,8 @@ Infrastructure
 - (PARTIALLY DONE) Add unit-tests. I tend to write docs and unittests as I go, D making that so easy. **Pegged** is an exception, which I'll kill with extreme prejudice.
 
 - (PARTIALLY DONE) Explore the possibility to create D code with inner functions instead of inner classes.
+
+- Add a debug mode that logs everything a parser does: which rule was tested by sequences and choices, which was unsuccessful, and so on.
 
 Documentation
 -------------
