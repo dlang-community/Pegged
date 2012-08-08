@@ -21,7 +21,7 @@ int main (string[] args)
 		"header|h", &header);
 
 	if (check) {
-		auto d   = checkGrammar(readText(args[1]).to!dstring);
+		auto d   = checkGrammar(readText(args[1]).to!dstring());
 		bool any = false;
 
 		writeln("");
@@ -87,10 +87,10 @@ int main (string[] args)
 	}
 
 	if (args.length == 3) {
-		write(args[2], cast (void[]) (header ~ grammar(readText(args[1]).to!dstring)).to!string);
+		write(args[2], cast (void[]) (header ~ grammar(readText(args[1]).to!dstring())).to!string());
 	}
 	else {
-		writeln((header ~ grammar(readText(args[1]).to!dstring)).to!string);
+		writeln((header ~ grammar(readText(args[1]).to!dstring())).to!string());
 	}
 
 	return 0;
