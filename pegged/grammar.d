@@ -2104,7 +2104,7 @@ dstring grammar(TParseTree = ParseTree)(dstring g) if ( isParseTree!TParseTree )
                 externalName = named ? PEGtoCode(ch[0])
                                      : rootName ~ (rootIsParametrized? PEGtoCode(rootParameters) : ""d);
                 result =
-"import std.array, std.algorithm, std.conv, std.typecons;\n"d ~
+"import std.array, std.algorithm, std.conv, std.typecons, std.traits;\n"d ~
 "import pegged.utils.associative;\n\n"d ~
 "class "d ~ "Generic"d ~ externalName ~ "(TParseTree = ParseTree) if ( isParseTree!TParseTree ) :
     BuiltinRules!(TParseTree).Parser
