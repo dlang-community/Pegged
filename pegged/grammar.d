@@ -348,7 +348,7 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
     
 }
 
-class Suffix : Seq!(Primary,Option!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,WithAction)),S)
+class Suffix : Seq!(Primary,OneOrMore!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,WithAction)),S)
 {
     enum grammarName = `PEGGED`;
     enum ruleName = `Suffix`;
@@ -2279,34 +2279,34 @@ dstring grammar(TParseTree = ParseTree)(dstring g) if ( isParseTree!TParseTree )
                     result = PEGtoCode(ch[0]);
                 return result;
             case "Suffix":
-                if (ch.length > 1)
-                    switch (ch[1].ruleName)
+                result = PEGtoCode(ch[0]);
+                foreach(child; ch)
+                {
+                    switch (child.ruleName)
                     {
                         case "OPTION":
-                            result = "Option!("d ~ PEGtoCode(ch[0]) ~ ")"d;
+                            result = "Option!("d ~ result ~ ")"d;
                             break;
                         case "ZEROORMORE":
-                            result = "ZeroOrMore!("d ~ PEGtoCode(ch[0]) ~ ")"d;
+                            result = "ZeroOrMore!("d ~ result ~ ")"d;
                             break;
                         case "ONEORMORE":
-                            result = "OneOrMore!("d ~ PEGtoCode(ch[0]) ~ ")"d;
+                            result = "OneOrMore!("d ~ result ~ ")"d;
                             break;
                         case "NamedExpr":
-                            if (ch[1].capture.length == 2)
-                                result = "Named!("d ~ PEGtoCode(ch[0]) ~ ", \""d ~ ch[1].capture[1] ~ "\")"d;
+                            if (child.capture.length == 2)
+                                result = "Named!("d ~ result ~ ", \""d ~ child.capture[1] ~ "\")"d;
                             else
-                                result = "PushName!("d ~ PEGtoCode(ch[0]) ~ ")"d;
+                                result = "PushName!("d ~ result ~ ")"d;
                             break;
                         case "WithAction":
-                            result = PEGtoCode(ch[0]);
-                            foreach(action; ch[1].capture)
+                            foreach(action; child.capture)
                                 result = "Action!("d ~ result ~ ", "d ~ action ~ ")"d;
                             break;
                         default:
                             break;
                     }
-                else
-                    result = PEGtoCode(ch[0]);
+                }                    
                 return result;
             case "Primary":
                 foreach(child; ch) result ~= PEGtoCode(child);
