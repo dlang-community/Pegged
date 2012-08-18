@@ -2280,7 +2280,7 @@ dstring grammar(TParseTree = ParseTree)(dstring g) if ( isParseTree!TParseTree )
                 return result;
             case "Suffix":
                 result = PEGtoCode(ch[0]);
-                foreach(child; ch)
+                foreach(child; ch[1..$])
                 {
                     switch (child.ruleName)
                     {
