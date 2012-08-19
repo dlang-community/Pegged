@@ -308,7 +308,7 @@ class Sequence : OneOrMore!(Prefix)
     
 }
 
-class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
+class Prefix : Seq!(ZeroOrMore!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
 {
     enum grammarName = `PEGGED`;
     enum ruleName = `Prefix`;
@@ -348,7 +348,7 @@ class Prefix : Seq!(Option!(Or!(LOOKAHEAD,NOT,DROP,KEEP,FUSE)),Suffix)
     
 }
 
-class Suffix : Seq!(Primary,OneOrMore!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,WithAction)),S)
+class Suffix : Seq!(Primary,ZeroOrMore!(Or!(OPTION,ONEORMORE,ZEROORMORE,NamedExpr,WithAction)),S)
 {
     enum grammarName = `PEGGED`;
     enum ruleName = `Suffix`;
@@ -2254,29 +2254,28 @@ dstring grammar(TParseTree = ParseTree)(dstring g) if ( isParseTree!TParseTree )
                     result = PEGtoCode(ch[0]);
                 return result;
             case "Prefix":
-                if (ch.length > 1)
-                    switch (ch[0].ruleName)
+                result = PEGtoCode(ch[$-1]);
+                foreach(child; ch[0..$-1])
+                    switch (child.ruleName)
                     {
                         case "NOT":
-                            result = "NegLookAhead!("d ~ PEGtoCode(ch[1]) ~ ")"d;
+                            result = "NegLookAhead!("d ~ result ~ ")"d;
                             break;
                         case "LOOKAHEAD":
-                            result = "PosLookAhead!("d ~ PEGtoCode(ch[1]) ~ ")"d;
+                            result = "PosLookAhead!("d ~ result ~ ")"d;
                             break;
                         case "DROP":
-                            result = "Drop!("d ~ PEGtoCode(ch[1]) ~ ")"d;
+                            result = "Drop!("d ~ result ~ ")"d;
                             break;
                         case "KEEP":
-                            result = "Keep!("d ~ PEGtoCode(ch[1]) ~ ", `"d ~ gn ~ "`)"d;
+                            result = "Keep!("d ~ result ~ ", `"d ~ gn ~ "`)"d;
                             break;                       
                         case "FUSE":
-                            result = "Fuse!("d ~ PEGtoCode(ch[1]) ~ ")"d;
+                            result = "Fuse!("d ~ result ~ ")"d;
                             break;
                         default:
                             break;
                     }
-                else
-                    result = PEGtoCode(ch[0]);
                 return result;
             case "Suffix":
                 result = PEGtoCode(ch[0]);
