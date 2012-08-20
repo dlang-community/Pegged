@@ -23,41 +23,29 @@ The previous example demonstrates some ways an action can be declared:
 
 * `Rule4` is an example of nested actions: `ActionA` is called after `Expr1`, `ActionB` after `Expr2` and than `ActionC` on the global sequence output.
 
-Multiple Actions, One Rule
---------------------------
-
-You can put multiple actions on one rule, if you need it:
-
-```
-Rule <- Expr {action1} {action2} {action3}
-```
-
-**Pegged** provides a shortcut notation:
-
-```
-Rule <- Expr {action1, action2, action3}
-```
-
 
 What Can Be Done With Semantic Actions
 --------------------------------------
 
-What are actions good for? They offer the user a window during the parsing process. Since they are passed the complete output of an expression, they can modify the output, or construct some value based on the passed argument. Let's demonstrate the two uses:
+What are actions good for? They offer the user an opportunity to act on the parse tree during the parsing process. Since they are passed the complete output of an expression, they can modify the output, or construct some value based on the passed argument. Let's demonstrate the two uses:
 
 ```d
-Output cutChildren(Output o)
+Out cutChildren(Out)(Out o)
 {
     o.children == null;
     return o;
-}
+} 
 ```
 
-`cutChildren` is an parse-tree-pruning action: it just nullifies the `children` array in the output's parse tree. Put it after expressions where you don't care for children expressions and just want to keep the captures.
+`cutChildren` is a parse-tree-pruning action: it just nullifies the `children` array in the output's parse tree. Put it after expressions where you don't care for children expressions and just want to keep the captures.
 
-This one keeps only the first capture in a rule:
+Note that `cutChildren` is a function template. It's because it must be able to accept any kind of output, and thse can be templated on the parse tree. (**TODO**: more explanations. For now, just make your semantic actions templates and everything will be alright).
+
+
+Now, this action keeps only the first capture in a rule:
 
 ```d
-Output first(Output o)
+Out first(Out)(Out o)
 {
     if (o.capture.length > 1)
         o.capture.length = 1;
@@ -83,13 +71,13 @@ Suppose we want to validate the tags: any opening tag *must* be closed by an equ
 import std.array;
 string[] nameStack;
 
-Output opening(Output o)
+Out opening(Out)(Out o)
 {
     nameStack ~= o.capture[0];
     return o;
 }
 
-Output closing(Output o)
+Out closing(Out)(Out o)
 {
     if (nameStack.back != o.capture[0])
         o.success = false;
@@ -118,7 +106,7 @@ assert(!Node.parse("<a> Hello <b> World </c> ! </a>").success); // <b> closed by
 assert(!Node.parse("<a> Hello <b> World </a> ! </b>").success); // <a> and <b> incorrectly nested
 ```
 
-As you can see, correctly nested nodes get parsed, but not incorrectly closed and nested nodes. This means actions do validation while parsing and, if the parsing is successful, you can be sure the input is a correctly nested collection of nodes and that the parse tree is also correct for any following function to act upon.
+As you can see, correctly nested nodes get parsed, but not incorrectly closed and nested nodes. This means actions do validation *while parsing* and, if the parsing is successful, you can be sure the input is a correctly nested collection of nodes and that the parse tree is also correct for any following function to act upon.
 
 
 Expression-Level or Rule-Level Actions?
@@ -167,7 +155,7 @@ I'm playing with the following ideas concerning actions:
 
 * Defining some standard actions. The drop (`:`) and fuse (`~`) operators should be accessible as actions and also other basic tree operations.
 
-* For now, actions are what I'd call *internal* actions: they act on the parse tree and any external action is a side-effect (assigning to external variables, for example). I could introduce 'external actions', for example with `<ActionName>` . These would return any D type and plug into one another during parsing.  This would allow **Pegged** to have the same run-of-the-mill example of calculus on arithmetic expressions. We'll se...
+* For now, actions are what I'd call *internal* actions: they act on the parse tree and any external action is a side-effect (assigning to external variables, for example). I could introduce 'external actions', for example with `<ActionName>` . These would return any D type and plug into one another during parsing.  This would allow **Pegged** to have the same run-of-the-mill example of calculus on arithmetic expressions as other parser generators. We'll se...
 
 * * * *
 
