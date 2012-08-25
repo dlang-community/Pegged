@@ -1,24 +1,17 @@
+/// Testing Pegged modifications.
 module test;
 
 import std.algorithm;
 import std.array;
 import std.conv;
+import std.datetime;
 import std.range;
 import std.stdio;
 import std.typecons;
 
-import pegged.grammar;
-
-enum code = (grammar(`
-TEST:
-A <- 'a'*
-`));
-
-mixin(code);
+import pegged.examples.arithmetic;
 
 void main()
 {
-    writeln(TEST.parse("aaa bbb"));
+
 }
-
-
