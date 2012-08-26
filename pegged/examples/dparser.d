@@ -2473,12 +2473,12 @@ FILE__")), spaceAnd!(Spacing, literal!("__LINE__")), spaceAnd!(Spacing, literal!
 
     static ParseTree BlockComment(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, literal!("/*"), zeroOrMore!(spaceAnd!(Spacing, negLookahead!(literal!("*/")), fparse.any)), literal!("*/")), "BlockComment")(p);
+        return named!(spaceAnd!(Spacing, literal!("/*"), zeroOrMore!(spaceAnd!(Spacing, negLookahead!(literal!("*/")), pegged.peg.any)), literal!("*/")), "BlockComment")(p);
     }
 
     static ParseTree LineComment(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, literal!("//"), zeroOrMore!(spaceAnd!(Spacing, negLookahead!(endOfLine), fparse.any)), endOfLine), "LineComment")(p);
+        return named!(spaceAnd!(Spacing, literal!("//"), zeroOrMore!(spaceAnd!(Spacing, negLookahead!(endOfLine), pegged.peg.any)), endOfLine), "LineComment")(p);
     }
 
     static ParseTree NestingBlockComment(ParseTree p)
@@ -2488,7 +2488,7 @@ FILE__")), spaceAnd!(Spacing, literal!("__LINE__")), spaceAnd!(Spacing, literal!
 
     static ParseTree Text(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, zeroOrMore!(spaceAnd!(Spacing, negLookahead!(literal!("+/")), fparse.any))), "Text")(p);
+        return named!(spaceAnd!(Spacing, zeroOrMore!(spaceAnd!(Spacing, negLookahead!(literal!("+/")), pegged.peg.any))), "Text")(p);
     }
 
     static ParseTree StringLiteral(ParseTree p)
@@ -2498,12 +2498,12 @@ FILE__")), spaceAnd!(Spacing, literal!("__LINE__")), spaceAnd!(Spacing, literal!
 
     static ParseTree WysiwygString(ParseTree p)
     {
-        return named!(and!(literal!("r"), doublequote, zeroOrMore!(and!(negLookahead!(doublequote), fparse.any)), doublequote, option!(StringPostfix)), "WysiwygString")(p);
+        return named!(and!(literal!("r"), doublequote, zeroOrMore!(and!(negLookahead!(doublequote), pegged.peg.any)), doublequote, option!(StringPostfix)), "WysiwygString")(p);
     }
 
     static ParseTree AlternateWysiwygString(ParseTree p)
     {
-        return named!(and!(backquote, zeroOrMore!(and!(negLookahead!(backquote), fparse.any)), backquote, option!(StringPostfix)), "AlternateWysiwygString")(p);
+        return named!(and!(backquote, zeroOrMore!(and!(negLookahead!(backquote), pegged.peg.any)), backquote, option!(StringPostfix)), "AlternateWysiwygString")(p);
     }
 
     static ParseTree doublequotedString(ParseTree p)
@@ -2513,7 +2513,7 @@ FILE__")), spaceAnd!(Spacing, literal!("__LINE__")), spaceAnd!(Spacing, literal!
 
     static ParseTree DQChar(ParseTree p)
     {
-        return named!(or!(and!(EscapeSequence), and!(negLookahead!(doublequote), fparse.any)), "DQChar")(p);
+        return named!(or!(and!(EscapeSequence), and!(negLookahead!(doublequote), pegged.peg.any)), "DQChar")(p);
     }
 
     static ParseTree EscapeSequence(ParseTree p)
@@ -2528,12 +2528,12 @@ FILE__")), spaceAnd!(Spacing, literal!("__LINE__")), spaceAnd!(Spacing, literal!
 
     static ParseTree TokenString(ParseTree p)
     {
-        return named!(and!(literal!("q{"), zeroOrMore!(and!(negLookahead!(literal!("}")), fparse.any)), literal!("}")), "TokenString")(p);
+        return named!(and!(literal!("q{"), zeroOrMore!(and!(negLookahead!(literal!("}")), pegged.peg.any)), literal!("}")), "TokenString")(p);
     }
 
     static ParseTree CharacterLiteral(ParseTree p)
     {
-        return named!(and!(quote, and!(negLookahead!(quote), or!(and!(EscapeSequence), and!(fparse.any))), quote), "CharacterLiteral")(p);
+        return named!(and!(quote, and!(negLookahead!(quote), or!(and!(EscapeSequence), and!(pegged.peg.any))), quote), "CharacterLiteral")(p);
     }
 
     static ParseTree IntegerLiteral(ParseTree p)
