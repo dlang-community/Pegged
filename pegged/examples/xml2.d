@@ -10,7 +10,7 @@ Char <- .
 # RestrictedChar <- [\u0001-\uD7FF\uE000-\uFFFD] 
 #\U00010000-\U0010FFFF]
 
-S <- ('\x20' / '\x09' / '\x0D' / '\x0A')+
+S <~ ('\x20' / '\x09' / '\x0D' / '\x0A')+
 
 NameStartChar <- ":" / [A-Z] / "_" / [a-z] / [\xC0-\xD6\xD8-\xF6]
 
@@ -28,17 +28,17 @@ Nmtoken <~ (NameChar)+
 
 nmtokens <- Nmtoken (' ' Nmtoken)*
 
-EntityValue <- DoubleQuote (!('%' / '&' / DoubleQuote) Char / PEReference / Reference)* DoubleQuote
-             / Quote  (!('%' / '&' / Quote) Char / PEReference / Reference)* Quote
+EntityValue <- doublequote (!('%' / '&' / doublequote) Char / PEReference / Reference)* doublequote
+             / quote  (!('%' / '&' / quote) Char / PEReference / Reference)* quote
 
-AttValue <- DoubleQuote (!('%' / '&' / DoubleQuote) Char / Reference)* DoubleQuote
-             / Quote  (!('%' / '&' / Quote) Char / Reference)* Quote
+AttValue <- doublequote (!('%' / '&' / doublequote) Char / Reference)* doublequote
+             / quote  (!('%' / '&' / quote) Char / Reference)* quote
 
-SystemLiteral <~ DoubleQuote (!DoubleQuote Char)* DoubleQuote 
-               / Quote (!Quote Char)* Quote
+SystemLiteral <~ doublequote (!doublequote Char)* doublequote 
+               / quote (!quote Char)* quote
                
-PubidLiteral <~ DoubleQuote PubidChar* DoubleQuote
-              / Quote (!Quote PubidChar)* Quote
+PubidLiteral <~ doublequote PubidChar* doublequote
+              / quote (!quote PubidChar)* quote
               
 PubidChar <- [\x20\x0D\x0A] / [a-zA-Z0-9] / [-'()+,./:=?;!*#@$_%]
 
@@ -62,7 +62,7 @@ prolog <- XMLDecl Misc* (doctypedecl Misc*)?
 
 XMLDecl <- "<?xml" VersionInfo EncodingDecl? SDDecl? S? "?>"
 
-VersionInfo <- S "version" Eq (Quote VersionNum Quote / DoubleQuote VersionNum DoubleQuote)
+VersionInfo <- S "version" Eq (quote VersionNum quote / doublequote VersionNum doublequote)
 
 Eq <- S? '=' S?
 
@@ -82,8 +82,8 @@ extSubset <- TextDecl? extSubsetDecl
 extSubsetDecl <- (markupdecl / conditionalSect / DeclSep)*
 
 
-SDDecl <- S 'standalone' Eq ( DoubleQuote ("yes"/"no") DoubleQuote
-                            / Quote       ("yes"/"no") Quote)
+SDDecl <- S 'standalone' Eq ( doublequote ("yes"/"no") doublequote
+                            / quote       ("yes"/"no") quote)
                             
 element <- EmptyElemTag / STag content ETag
 
@@ -161,8 +161,8 @@ TextDecl <- "<?xml" VersionInfo? EncodingDecl S? "?>"
 
 extParsedEnt <- (TextDecl? content)
 
-EncodingDecl <- S "encoding" Eq ( DoubleQuote EncName DoubleQuote
-                                / Quote EncName Quote)
+EncodingDecl <- S "encoding" Eq ( doublequote EncName doublequote
+                                / quote EncName quote)
 EncName <~ [A-Za-z] ([A-Za-z0-9._] / '-')*
                                 
 NotationDecl <- "<!NOTATION" S Name S (ExternalID / PublicID) S? ">"
