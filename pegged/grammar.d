@@ -372,6 +372,26 @@ struct Peg
     }
 }
 
+
+void asModule(string moduleName, string grammarString)
+{
+    asModule(moduleName, moduleName~".d", grammarString);
+}
+
+void asModule(string moduleName, string fileName, string grammarString)
+{
+    import std.stdio;
+    auto f = File(fileName,"w");
+    
+    f.write("/**\nThis module was automatically generated from the following grammar:\n\n");
+    f.write(grammarString);
+    f.write("\n\n*/\n");
+    
+    f.write("module " ~ moduleName ~ ";\n\n");
+    f.write("import pegged.peg;\n");
+    f.write(grammar(grammarString));
+}
+
 string grammar(string definition)
 {
     ParseTree defAsParseTree = Peg(definition);
