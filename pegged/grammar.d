@@ -13,7 +13,7 @@ Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
 Primary      <- RhsName !Arrow 
-              / OPEN Expression CLOSE 
+              / :OPEN Expression :CLOSE 
               / Literal 
               / CharClass 
               / ANY
@@ -102,7 +102,7 @@ struct Pegged
 
     static ParseTree Expression(ParseTree p)
     {
-        return named!(and!(Sequence, zeroOrMore!(and!(OR, Sequence))), "Expression")(p);
+        return named!(and!(Sequence, zeroOrMore!(and!(discard!OR, Sequence))), "Expression")(p);
     }
 
     static ParseTree Sequence(ParseTree p)
@@ -122,7 +122,7 @@ struct Pegged
 
     static ParseTree Primary(ParseTree p)
     {
-        return named!(or!(and!(RhsName, negLookahead!(Arrow)), and!(OPEN, Expression, CLOSE), and!(Literal), and!(CharClass), and!(ANY)), "Primary")(p);
+        return named!(or!(and!(RhsName, negLookahead!(Arrow)), and!(discard!OPEN, Expression, discard!CLOSE), and!(Literal), and!(CharClass), and!(ANY)), "Primary")(p);
     }
 
     static ParseTree Identifier(ParseTree p)
@@ -157,7 +157,7 @@ struct Pegged
 
     static ParseTree DefaultParam(ParseTree p)
     {
-        return named!(and!(Identifier, Spacing, ASSIGN, Expression), "DefaultParam")(p);
+        return named!(and!(Identifier, Spacing, discard!ASSIGN, Expression), "DefaultParam")(p);
     }
 
     static ParseTree SingleParam(ParseTree p)

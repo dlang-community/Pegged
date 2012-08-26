@@ -9,12 +9,12 @@ Pegged:
 # Syntactic rules:
 Grammar      <- Spacing GrammarName Definition+ :eoi
 Definition   <- LhsName Arrow Expression
-Expression   <- Sequence (OR Sequence)*
+Expression   <- Sequence (:OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
 Primary      <- RhsName !Arrow 
-              / OPEN Expression CLOSE 
+              / :OPEN Expression :CLOSE 
               / Literal 
               / CharClass 
               / ANY
@@ -25,7 +25,7 @@ LhsName      <- Identifier ParamList? Spacing
 RhsName      <- Identifier ArgList? (NAMESEP Identifier ArgList?)* Spacing         # NAMESEP is *not* discarded
 ParamList    <- :OPEN Param (:SEPARATOR Param)*  :CLOSE
 Param        <- DefaultParam / SingleParam
-DefaultParam <- Identifier Spacing ASSIGN Expression
+DefaultParam <- Identifier Spacing :ASSIGN Expression
 SingleParam  <- Identifier Spacing
 ArgList      <- :OPEN Expression (:SEPARATOR Expression)* :CLOSE
 Action       <- ACTIONOPEN qualifiedIdentifier (SEPARATOR qualifiedIdentifier)* ACTIONCLOSE
