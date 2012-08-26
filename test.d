@@ -9,16 +9,27 @@ import std.range;
 import std.stdio;
 import std.typecons;
 
+//import pegged.examples.xml2;
 import pegged.grammar;
-import GramTest;
+import dparser;
 
 void main()
 {
-/+    
-    asModule("GramTest", 
-"Gram:
-    A <- B C
-    B <- 'b'
-    C <- 'c'");+/
-    writeln(Gram("bc"));
+    writeln(D("
+module test.foo;
+
+int i,j;
+
+class C { this() {} }
+
+struct S(T) 
+{
+    T t;
+}
+
+void main()
+{
+    double[] array;
+}
+    "));
 }
