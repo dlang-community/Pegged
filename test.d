@@ -9,9 +9,13 @@ import std.range;
 import std.stdio;
 import std.typecons;
 
-import pegged.examples.arithmetic;
+import pegged.examples.json;
+
+import std.json;
 
 void main()
 {
-
+    int N = 100;
+    auto b = benchmark!(() => parseJSON(example4), () => pegged.examples.json.JSON(example4))(N);
+    writeln(b[0].to!("msecs", float)/N, " msecs/call <-> ", b[1].to!("msecs", float)/N, " msecs.call");
 }
