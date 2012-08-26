@@ -70,8 +70,7 @@ ParseTree and(rules...)(ParseTree p)
 {
     bool isNullNode(ParseTree node)
     {
-        return (  node.name == "discard" 
-        //|| node.matches is null 
+        return (  node.name == "discard" || node.matches is null 
         //|| node.begin == node.end
         ) && node.name != "keep";
     }
@@ -265,6 +264,8 @@ template filterRule(alias r, string target)
 ParseTree discard(alias r)(ParseTree p)
 {
     ParseTree result = r(p);
+    result.matches = null;
+    result.begin = result.end;
     result.name = "discard";
     return result;
 }
