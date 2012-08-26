@@ -70,7 +70,10 @@ ParseTree and(rules...)(ParseTree p)
 {
     bool isNullNode(ParseTree node)
     {
-        return (node.name == "discard" || node.matches is null || node.begin == node.end);
+        return (  node.name == "discard" 
+        //|| node.matches is null 
+        //|| node.begin == node.end
+        ) && node.name != "keep";
     }
     
     ParseTree result = ParseTree("and", false, [], p.input, p.end, p.end, []);
@@ -90,8 +93,8 @@ ParseTree and(rules...)(ParseTree p)
         }
         else
         {
-            result.children ~= temp;// adding the failed node
-            return result;
+            result.children ~= temp;// add the failed node, to indicate which failed
+            return result; // and end the parsing attempt right there
         }
     }        
     result.successful = true;
