@@ -23,10 +23,10 @@ struct Peg
     
     //# Hierarchical syntax
 
-    // Grammar <- Spacing GrammarName Definition+ EndOfInput
+    // Grammar <- Spacing GrammarName Definition+ :EndOfInput
     static ParseTree Grammar(ParseTree p)
     {
-        return named!(and!(discard!Spacing, GrammarName, oneOrMore!Definition, EndOfInput), "Grammar")(p);
+        return named!(and!(discard!Spacing, GrammarName, oneOrMore!Definition, discard!EndOfInput), "Grammar")(p);
     }
     
     // Definition <- LhsName Arrow Expression
