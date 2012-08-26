@@ -1,8 +1,7 @@
-module pegged.examples.dparser;
+/**
+This module was automatically generated from the following grammar:
 
-public import pegged.peg;
 
-enum string Dgrammar = `
 D:
 
 Module < Spacing ModuleDeclaration? DeclDefs?
@@ -953,13 +952,13 @@ Comment < BlockComment
          / LineComment
          / NestingBlockComment
 
-BlockComment < '/*' (!'*/' .)* '*/'
+BlockComment < '/ *' (!'* /' .)* '* /'
 
 LineComment < '//' (!endOfLine .)* endOfLine
 
-NestingBlockComment < '/+' (NestingBlockComment / Text) '+/'
-# /+ (please, don't delete this line, it opens a nested block comment in generated module which is closed on the next line
-Text < (!'+/' .)*
+NestingBlockComment < '/ +' (NestingBlockComment / Text) '+ /'
+# / + (please, don't delete this line, it opens a nested block comment in generated module which is closed on the next line
+Text < (!'+ /' .)*
 
 StringLiteral < WysiwygString
                / AlternateWysiwygString
@@ -1015,44 +1014,47 @@ FloatLiteral <- Sign? Integer "." Integer? (("e" / "E") Sign? Integer)?
 
 Sign <- ("-" / "+")?
 
-`;
+*/
+module pegged.examples.dparser;
+
+import pegged.peg;
 struct D
 {
-    enum names = [`Module`:true, `DeclDefs`:true, `DeclDef`:true, `ModuleDeclaration`:true, `ImportDeclaration`:true, `ImportList`:true, 
-    `Import`:true, `List`:true, `ImportBindings`:true, `ImportBind`:true, `MixinDeclaration`:true, `Declaration`:true, `AliasDeclaration`:true,
-    `AliasThisDeclaration`:true, `Decl`:true, `Declarators`:true, `DeclaratorInitializer`:true, `DeclaratorIdentifier`:true, `BasicType`:true, `BasicTypeX`:true,
-    `BasicType2`:true, `Declarator`:true, `DeclaratorSuffixes`:true, `DeclaratorSuffix`:true, `IdentifierList`:true, `StorageClasses`:true, `StorageClass`:true,
-    `Property`:true, `Type`:true, `Declarator2`:true, `Parameters`:true, `ParameterList`:true, `Parameter`:true, `InOut`:true, `InOutX`:true,
-    `FunctionAttributes`:true, `FunctionAttribute`:true, `MemberFunctionAttributes`:true, `MemberFunctionAttribute`:true, `DefaultInitializerExpression`:true,
-    `Initializer`:true, `NonVoidInitializer`:true, `ArrayInitializer`:true, `ArrayMemberInitializations`:true, 
-    `ArrayMemberInitialization`: true, `StructInitializer`:true, `StructMemberInitializers`:true, `StructMemberInitializer`:true, `AutoDeclaration`:true,
-    `AutoDeclarationX`:true, `Typeof`:true, `VoidInitializer`:true, `Statement`:true, `NoScopeNonEmptyStatement`:true, `NoScopeStatement`:true,
-    `NonEmptyOrScopeBlockStatement`:true, `NonEmptyStatement`:true, `NonEmptyStatementNoCaseNoDefault`:true, `ScopeStatement`:true, `ScopeBlockStatement`:true,
-    `LabeledStatement`:true, `BlockStatement`:true, `StatementList`:true, `ExpressionStatement`:true, `DeclarationStatement`:true, `IfStatement`:true,
-    `IfCondition`:true, `ThenStatement`:true, `ElseStatement`:true, `WhileStatement`:true, `DoStatement`:true, `ForStatement`:true, `Initialize`:true,
-    `Test`:true, `Increment`:true, `ForeachStatement`:true, `ForeachType`:true, `Aggregate`:true, `ForeachRangeStatement`:true, `SwitchStatement`:true,
-    `CaseStatement`:true, `CaseRangeStatement`:true, `DefaultStatement`:true, `ScopeStatementList`:true, `StatementListNoCaseNoDefault`:true,
-    `StatementNoCaseNoDefault`:true, `FinalSwitchStatement`:true, `ContinueStatement`:true, `BreakStatement`:true, `ReturnStatement`:true, `GotoStatement`:true,
-    `WithStatement`:true, `SynchronizedStatement`:true, `TryStatement`:true, `Catches`:true, `LastCatch`:true, `Catch`:true, `CatchParameter`:true,
-    `FinallyStatement`:true, `ThrowStatement`:true, `ScopeGuardStatement`:true, `AsmStatement`:true, `AsmInstructionList`:true, `PragmaStatement`:true,
-    `MixinStatement`:true, `Expression`:true, `AssignExpression`:true, `Op`:true, `ConditionalExpression`:true, `OrOrExpression`:true, `AndAndExpression`:true,
-    `OrExpression`:true, `XorExpression`:true, `AndExpression`:true, `CmpExpression`:true, `EqualExpression`:true, `IdentityExpression`:true,
-    `RelExpression`:true, `RelOp`:true, `InExpression`:true, `ShiftExpression`:true, `AddExpression`:true, `CatExpression`:true, `MulExpression`:true,
-    `UnaryExpression`:true, `UnaryOp`:true, `ComplementExpression`:true, `NewExpression`:true, `AllocatorArguments`:true, `ArgumentList`:true, 
-    `DeleteExpression`:true, `CastExpression`:true, `CastEqual`:true, `PowExpression`:true, `PostfixExpression`:true, `IndexExpression`:true,
-    `SliceExpression`:true, `PrimaryExpression`:true, `StringLiterals`:true, `ArrayLiteral`:true, `AssocArrayLiteral`:true, `KeyValuePair`:true, `Lambda`:true,
-    `FunctionLiteral`:true, `ParameterAttributes`:true, `AssertExpression`:true, `MixinExpression`:true, `ImportExpression`:true, `TypeidExpression`:true,
-    `IsExpression`:true, `TypeSpecialization`:true, `AttributeSpecifier`:true, `Attribute`:true, `DeclarationBlock`:true, `LinkageAttribute`:true,
-    `LinkageType`:true, `AlignAttribute`:true, `ProtectionAttribute`:true, `ClassDeclaration`:true, `BaseClassList`:true, `ClassBody`:true,
-    `ClassBodyDeclarations`:true, `ClassBodyDeclaration`:true, `Constructor`:true, `Destructor`:true, `StaticConstructor`:true, `StaticDestructor`:true,
-    `SharedStaticConstructor`:true, `SharedStaticDestructor`:true, `Invariant`:true, `ClassAllocator`:true, `ClassDeallocator`:true, `AliasThis`:true, 
-    `NewAnonClassExpression`:true, `ClassArguments`:true, `EnumDeclaration`:true, `EnumTag`:true, `EnumBaseType`:true, `EnumBody`:true, `EnumMember`:true,
-    `FunctionBody`:true, `InStatement`:true, `OutStatement`:true, `BodyStatement`:true, `AsmInstruction`:true, `IntegerExpression`:true, `Operand`:true,
-    `AsmExp`:true, `AsmLogOrExp`:true, `AsmLogAndExp`:true, `AsmOrExp`:true, `AsmXorExp`:true, `AsmAndExp`:true, `AsmEqualExp`:true, `AsmRelExp`:true,
-    `AsmShiftExp`:true, `AsmAddExp`:true, `AsmMulExp`:true, `AsmBrExp`:true, `AsmUnaExp`:true, `AsmPrimaryExp`:true, `DotIdentifier`:true, 
-    `AsmTypePrefix`:true, `Register`:true, `OpCode`:true, `InterfaceDeclaration`:true, `BaseInterfaceList`:true, `InterfaceBody`:true, `Pragma`:true,
-    `AggregateDeclaration`:true, `StructBody`:true, `StructBodyDeclarations`:true, `StructBodyDeclaration`:true, `StructAllocator`:true, 
-    `StructDeallocator`:true, `StructPostblit`:true, `TemplateDeclaration`:true, `TemplateIdentifier`:true, `TemplateParameterList`:true,
+    enum names = [`Module`:true, `DeclDefs`:true, `DeclDef`:true, `ModuleDeclaration`:true, `ImportDeclaration`:true, `ImportList`:true, `Import`:true,
+    `List`:true, `ImportBindings`:true, `ImportBind`:true, `MixinDeclaration`:true, `Declaration`:true, `AliasDeclaration`:true, `AliasThisDeclaration`:true,
+    `Decl`:true, `Declarators`:true, `DeclaratorInitializer`:true, `DeclaratorIdentifier`:true, `BasicType`:true, `BasicTypeX`:true, `BasicType2`:true,
+    `Declarator`:true, `DeclaratorSuffixes`:true, `DeclaratorSuffix`:true, `IdentifierList`:true, `StorageClasses`:true, `StorageClass`:true, `Property`:true,
+    `Type`:true, `Declarator2`:true, `Parameters`:true, `ParameterList`:true, `Parameter`:true, `InOut`:true, `InOutX`:true, `FunctionAttributes`:true,
+    `FunctionAttribute`:true, `MemberFunctionAttributes`:true, `MemberFunctionAttribute`:true, `DefaultInitializerExpression`:true, `Initializer`:true,
+    `NonVoidInitializer`:true, `ArrayInitializer`:true, `ArrayMemberInitializations`:true, `ArrayMemberInitialization`:true, `StructInitializer`:true,
+    `StructMemberInitializers`:true, `StructMemberInitializer`:true, `AutoDeclaration`:true, `AutoDeclarationX`:true, `Typeof`:true, `VoidInitializer`:true,
+    `Statement`:true, `NoScopeNonEmptyStatement`:true, `NoScopeStatement`:true, `NonEmptyOrScopeBlockStatement`:true, `NonEmptyStatement`:true,
+    `NonEmptyStatementNoCaseNoDefault`:true, `ScopeStatement`:true, `ScopeBlockStatement`:true, `LabeledStatement`:true, `BlockStatement`:true,
+    `StatementList`:true, `ExpressionStatement`:true, `DeclarationStatement`:true, `IfStatement`:true, `IfCondition`:true, `ThenStatement`:true,
+    `ElseStatement`:true, `WhileStatement`:true, `DoStatement`:true, `ForStatement`:true, `Initialize`:true, `Test`:true, `Increment`:true,
+    `ForeachStatement`:true, `ForeachType`:true, `Aggregate`:true, `ForeachRangeStatement`:true, `SwitchStatement`:true, `CaseStatement`:true,
+    `CaseRangeStatement`:true, `DefaultStatement`:true, `ScopeStatementList`:true, `StatementListNoCaseNoDefault`:true, 
+    `StatementNoCaseNoDefault`:true, `FinalSwitchStatement`:true, `ContinueStatement`:true, `BreakStatement`:true, `ReturnStatement`:true, 
+    `GotoStatement`:true, `WithStatement`:true, `SynchronizedStatement`:true, `TryStatement`:true, `Catches`:true, `LastCatch`:true, `Catch`:true,
+    `CatchParameter`:true, `FinallyStatement`:true, `ThrowStatement`:true, `ScopeGuardStatement`:true, `AsmStatement`:true, `AsmInstructionList`:true,
+    `PragmaStatement`:true, `MixinStatement`:true, `Expression`:true, `AssignExpression`:true, `Op`:true, `ConditionalExpression`:true, `OrOrExpression`:true,
+    `AndAndExpression`:true, `OrExpression`:true, `XorExpression`:true, `AndExpression`:true, `CmpExpression`:true, `EqualExpression`:true,
+    `IdentityExpression`:true, `RelExpression`:true, `RelOp`:true, `InExpression`:true, `ShiftExpression`:true, `AddExpression`:true, `CatExpression`:true,
+    `MulExpression`:true, `UnaryExpression`:true, `UnaryOp`:true, `ComplementExpression`:true, `NewExpression`:true, `AllocatorArguments`:true,
+    `ArgumentList`:true, `DeleteExpression`:true, `CastExpression`:true, `CastEqual`:true, `PowExpression`:true, `PostfixExpression`:true, 
+    `IndexExpression`:true, `SliceExpression`:true, `PrimaryExpression`:true, `StringLiterals`:true, `ArrayLiteral`:true, `AssocArrayLiteral`:true,
+    `KeyValuePair`:true, `Lambda`:true, `FunctionLiteral`:true, `ParameterAttributes`:true, `AssertExpression`:true, `MixinExpression`:true,
+    `ImportExpression`:true, `TypeidExpression`:true, `IsExpression`:true, `TypeSpecialization`:true, `AttributeSpecifier`:true, `Attribute`:true,
+    `DeclarationBlock`:true, `LinkageAttribute`:true, `LinkageType`:true, `AlignAttribute`:true, `ProtectionAttribute`:true, `ClassDeclaration`:true,
+    `BaseClassList`:true, `ClassBody`:true, `ClassBodyDeclarations`:true, `ClassBodyDeclaration`:true, `Constructor`:true, `Destructor`:true,
+    `StaticConstructor`:true, `StaticDestructor`:true, `SharedStaticConstructor`:true, `SharedStaticDestructor`:true, `Invariant`:true, `ClassAllocator`:true,
+    `ClassDeallocator`:true, `AliasThis`:true, `NewAnonClassExpression`:true, `ClassArguments`:true, `EnumDeclaration`:true, `EnumTag`:true, 
+    `EnumBaseType`:true, `EnumBody`:true, `EnumMember`:true, `FunctionBody`:true, `InStatement`:true, `OutStatement`:true, `BodyStatement`:true,
+    `AsmInstruction`:true, `IntegerExpression`:true, `Operand`:true, `AsmExp`:true, `AsmLogOrExp`:true, `AsmLogAndExp`:true, `AsmOrExp`:true, `AsmXorExp`:true,
+    `AsmAndExp`:true, `AsmEqualExp`:true, `AsmRelExp`:true, `AsmShiftExp`:true, `AsmAddExp`:true, `AsmMulExp`:true, `AsmBrExp`:true, `AsmUnaExp`:true,
+    `AsmPrimaryExp`:true, `DotIdentifier`:true, `AsmTypePrefix`:true, `Register`:true, `OpCode`:true, `InterfaceDeclaration`:true, `BaseInterfaceList`:true,
+    `InterfaceBody`:true, `Pragma`:true, `AggregateDeclaration`:true, `StructBody`:true, `StructBodyDeclarations`:true, `StructBodyDeclaration`:true,
+    `StructAllocator`:true, `StructDeallocator`:true, `StructPostblit`:true, `TemplateDeclaration`:true, `TemplateIdentifier`:true, `TemplateParameterList`:true,
     `TemplateParameter`:true, `TemplateInstance`:true, `TemplateArgument`:true, `Symbol`:true, `SymbolTail`:true, `TemplateSingleArgument`:true,
     `TemplateTypeParameter`:true, `TTPSpecialization`:true, `TTPDefault`:true, `TemplateThisParameter`:true, `TemplateValueParameter`:true,
     `TVPSpecialization`:true, `TVPDefault`:true, `TemplateAliasParameter`:true, `TAPSpecialization`:true, `TAPDefault`:true, `TemplateTupleParameter`:true,
@@ -1097,10 +1099,7 @@ struct D
 
     static ParseTree ImportList(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, ImportBindings), 
-                          spaceAnd!(Spacing, Import, option!(spaceAnd!(Spacing, literal!(","), ImportList)))
-                          )
-                    , "ImportList")(p);
+        return named!(or!(spaceAnd!(Spacing, ImportBindings), spaceAnd!(Spacing, Import, option!(spaceAnd!(Spacing, literal!(","), ImportList)))), "ImportList")(p);
     }
 
     static ParseTree Import(ParseTree p)
@@ -1165,15 +1164,7 @@ struct D
 
     static ParseTree BasicType(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, BasicTypeX), 
-                          spaceAnd!(Spacing, literal!("."), IdentifierList), 
-                          spaceAnd!(Spacing, IdentifierList), 
-                          spaceAnd!(Spacing, Typeof, literal!("."), IdentifierList), 
-                          spaceAnd!(Spacing, literal!("const("), Type, literal!(")")), 
-                          spaceAnd!(Spacing, literal!("immutable("), Type, literal!(")")), 
-                          spaceAnd!(Spacing, literal!("shared("), Type, literal!(")")), 
-                          spaceAnd!(Spacing, literal!("inout("), Type, literal!(")"))
-                         ), "BasicType")(p);
+        return named!(or!(spaceAnd!(Spacing, BasicTypeX), spaceAnd!(Spacing, literal!("."), IdentifierList), spaceAnd!(Spacing, IdentifierList), spaceAnd!(Spacing, Typeof, literal!("."), IdentifierList), spaceAnd!(Spacing, literal!("const("), Type, literal!(")")), spaceAnd!(Spacing, literal!("immutable("), Type, literal!(")")), spaceAnd!(Spacing, literal!("shared("), Type, literal!(")")), spaceAnd!(Spacing, literal!("inout("), Type, literal!(")"))), "BasicType")(p);
     }
 
     static ParseTree BasicTypeX(ParseTree p)
@@ -1183,14 +1174,7 @@ struct D
 
     static ParseTree BasicType2(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, literal!("*")), 
-                          spaceAnd!(Spacing, literal!("["), literal!("]")), 
-                          spaceAnd!(Spacing, literal!("["), AssignExpression, literal!("]")),
-                          spaceAnd!(Spacing, literal!("["), AssignExpression, literal!(".."), AssignExpression, literal!("]")), 
-                          spaceAnd!(Spacing, literal!("["), Type, literal!("]")), 
-                          spaceAnd!(Spacing, literal!("delegate"), Parameters, option!(FunctionAttributes)), 
-                          spaceAnd!(Spacing, literal!("function"), Parameters, option!(FunctionAttributes))
-                         ), "BasicType2")(p);
+        return named!(or!(spaceAnd!(Spacing, literal!("*")), spaceAnd!(Spacing, literal!("["), literal!("]")), spaceAnd!(Spacing, literal!("["), AssignExpression, literal!("]")), spaceAnd!(Spacing, literal!("["), AssignExpression, literal!(".."), AssignExpression, literal!("]")), spaceAnd!(Spacing, literal!("["), Type, literal!("]")), spaceAnd!(Spacing, literal!("delegate"), Parameters, option!(FunctionAttributes)), spaceAnd!(Spacing, literal!("function"), Parameters, option!(FunctionAttributes))), "BasicType2")(p);
     }
 
     static ParseTree Declarator(ParseTree p)
@@ -1205,18 +1189,12 @@ struct D
 
     static ParseTree DeclaratorSuffix(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, literal!("["), literal!("]")), 
-                          spaceAnd!(Spacing, literal!("["), AssignExpression, literal!("]")), 
-                          spaceAnd!(Spacing, literal!("["), Type, literal!("]")), 
-                          spaceAnd!(Spacing, option!(TemplateParameterList), Parameters, option!(MemberFunctionAttributes), option!(Constraint))
-                         ), "DeclaratorSuffix")(p);
+        return named!(or!(spaceAnd!(Spacing, literal!("["), literal!("]")), spaceAnd!(Spacing, literal!("["), AssignExpression, literal!("]")), spaceAnd!(Spacing, literal!("["), Type, literal!("]")), spaceAnd!(Spacing, option!(TemplateParameterList), Parameters, option!(MemberFunctionAttributes), option!(Constraint))), "DeclaratorSuffix")(p);
     }
 
     static ParseTree IdentifierList(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, TemplateInstance, option!(spaceAnd!(Spacing, literal!("."), IdentifierList))), 
-                          spaceAnd!(Spacing, Identifier, option!(spaceAnd!(Spacing, literal!("."), IdentifierList)))
-                         ), "IdentifierList")(p);
+        return named!(or!(spaceAnd!(Spacing, TemplateInstance, option!(spaceAnd!(Spacing, literal!("."), IdentifierList))), spaceAnd!(Spacing, Identifier, option!(spaceAnd!(Spacing, literal!("."), IdentifierList)))), "IdentifierList")(p);
     }
 
     static ParseTree StorageClasses(ParseTree p)
@@ -1251,13 +1229,12 @@ struct D
 
     static ParseTree ParameterList(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, keep!(literal!("..."))), spaceAnd!(Spacing, Parameter, option!(spaceAnd!(Spacing, discard!(literal!","), ParameterList)))), "ParameterList")(p);
+        return named!(or!(spaceAnd!(Spacing, literal!("...")), spaceAnd!(Spacing, Parameter, zeroOrMore!(spaceAnd!(Spacing, discard!(literal!(",")), Parameter)))), "ParameterList")(p);
     }
 
     static ParseTree Parameter(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, option!(and!(InOut, oneOrMore!space)), BasicType, Declarator, option!(or!(spaceAnd!(Spacing, literal!("...")), spaceAnd!(Spacing, literal!("="), DefaultInitializerExpression)))), 
-                          spaceAnd!(Spacing, option!(and!(InOut, oneOrMore!space)), Type, option!(literal!("...")))), "Parameter")(p);
+        return named!(or!(and!(option!(InOut), oneOrMore!(space), BasicType, Declarator, option!(or!(and!(literal!("...")), and!(literal!("="), DefaultInitializerExpression)))), and!(option!(InOut), Type, option!(literal!("...")))), "Parameter")(p);
     }
 
     static ParseTree InOut(ParseTree p)
@@ -1623,7 +1600,7 @@ ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
 
     static ParseTree Expression(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, AssignExpression, zeroOrMore!(spaceAnd!(Spacing, literal!",", AssignExpression))), "Expression")(p);
+        return named!(spaceAnd!(Spacing, AssignExpression), "Expression")(p);
     }
 
     static ParseTree AssignExpression(ParseTree p)
@@ -1648,11 +1625,7 @@ ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
 
     static ParseTree AndAndExpression(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, or!(spaceAnd!(Spacing, CmpExpression), 
-                                             spaceAnd!(Spacing, OrExpression)
-                                            ), 
-                                option!(spaceAnd!(Spacing, literal!("&&"), AndAndExpression))
-                               ), "AndAndExpression")(p);
+        return named!(spaceAnd!(Spacing, or!(spaceAnd!(Spacing, CmpExpression), spaceAnd!(Spacing, OrExpression)), option!(spaceAnd!(Spacing, literal!("&&"), AndAndExpression))), "AndAndExpression")(p);
     }
 
     static ParseTree OrExpression(ParseTree p)
@@ -1672,12 +1645,7 @@ ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
 
     static ParseTree CmpExpression(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, EqualExpression), 
-                          spaceAnd!(Spacing, IdentityExpression), 
-                          spaceAnd!(Spacing, RelExpression), 
-                          spaceAnd!(Spacing, InExpression),
-                          spaceAnd!(Spacing, ShiftExpression)
-                         ), "CmpExpression")(p);
+        return named!(or!(spaceAnd!(Spacing, EqualExpression), spaceAnd!(Spacing, IdentityExpression), spaceAnd!(Spacing, RelExpression), spaceAnd!(Spacing, InExpression), spaceAnd!(Spacing, ShiftExpression)), "CmpExpression")(p);
     }
 
     static ParseTree EqualExpression(ParseTree p)
@@ -1752,7 +1720,7 @@ ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
 
     static ParseTree ArgumentList(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, AssignExpression, zeroOrMore!(spaceAnd!(Spacing, literal!",", AssignExpression))), "ArgumentList")(p);
+        return named!(spaceAnd!(Spacing, AssignExpression, zeroOrMore!(spaceAnd!(Spacing, literal!(","), AssignExpression))), "ArgumentList")(p);
     }
 
     static ParseTree DeleteExpression(ParseTree p)
@@ -1777,21 +1745,7 @@ ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
 
     static ParseTree PostfixExpression(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, 
-                                PrimaryExpression,
-                                zeroOrMore!(or!(spaceAnd!(Spacing, IndexExpression), 
-                                                spaceAnd!(Spacing, SliceExpression)
-                                               )
-                                           ),
-                                option!(or!(spaceAnd!(Spacing, literal!("."), NewExpression), 
-                                            spaceAnd!(Spacing, literal!("."), TemplateIdentifier), 
-                                            spaceAnd!(Spacing, literal!("."), Identifier), 
-                                            spaceAnd!(Spacing, literal!("++")), 
-                                            spaceAnd!(Spacing, literal!("--")), 
-                                            spaceAnd!(Spacing, literal!("("), option!(ArgumentList), literal!(")"))
-                                           )
-                                       )
-                               ), "PostfixExpression")(p);
+        return named!(spaceAnd!(Spacing, PrimaryExpression, zeroOrMore!(or!(spaceAnd!(Spacing, IndexExpression), spaceAnd!(Spacing, SliceExpression))), option!(or!(spaceAnd!(Spacing, literal!("."), NewExpression), spaceAnd!(Spacing, literal!("."), TemplateIdentifier), spaceAnd!(Spacing, literal!("."), Identifier), spaceAnd!(Spacing, literal!("++")), spaceAnd!(Spacing, literal!("--")), spaceAnd!(Spacing, literal!("("), option!(ArgumentList), literal!(")"))))), "PostfixExpression")(p);
     }
 
     static ParseTree IndexExpression(ParseTree p)
@@ -1801,44 +1755,13 @@ ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
 
     static ParseTree SliceExpression(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, or!(spaceAnd!(Spacing, literal!("["), literal!("]")), 
-                                             spaceAnd!(Spacing, literal!("["), AssignExpression, literal!(".."), AssignExpression, literal!("]"))
-                                            )
-                               ), "SliceExpression")(p);
+        return named!(spaceAnd!(Spacing, literal!("["), literal!("]"), literal!("["), AssignExpression, literal!(".."), AssignExpression, literal!("]")), "SliceExpression")(p);
     }
 
     static ParseTree PrimaryExpression(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, literal!("this")), 
-                          spaceAnd!(Spacing, literal!("super")), 
-                          spaceAnd!(Spacing, literal!("null")), 
-                          spaceAnd!(Spacing, literal!("true")), 
-                          spaceAnd!(Spacing, literal!("false")), 
-                          spaceAnd!(Spacing, literal!("$")), 
-                          spaceAnd!(Spacing, literal!("__FILE__")), 
-                          spaceAnd!(Spacing, literal!("__LINE__")), 
-                          spaceAnd!(Spacing, TemplateInstance), 
-                          spaceAnd!(Spacing, literal!("."), TemplateInstance), 
-                          spaceAnd!(Spacing, Identifier), 
-                          spaceAnd!(Spacing, literal!("."), Identifier), 
-                          spaceAnd!(Spacing, FloatLiteral), 
-                          spaceAnd!(Spacing, IntegerLiteral), 
-                          spaceAnd!(Spacing, CharacterLiteral), 
-                          spaceAnd!(Spacing, StringLiterals), 
-                          spaceAnd!(Spacing, ArrayLiteral), 
-                          spaceAnd!(Spacing, AssocArrayLiteral), 
-                          spaceAnd!(Spacing, Lambda), 
-                          spaceAnd!(Spacing, FunctionLiteral), 
-                          spaceAnd!(Spacing, AssertExpression), 
-                          spaceAnd!(Spacing, MixinExpression), 
-                          spaceAnd!(Spacing, ImportExpression), 
-                          spaceAnd!(Spacing, BasicType, literal!("."), Identifier), 
-                          spaceAnd!(Spacing, Typeof), 
-                          spaceAnd!(Spacing, TypeidExpression), 
-                          spaceAnd!(Spacing, IsExpression), 
-                          spaceAnd!(Spacing, literal!("("), Expression, literal!(")")), 
-                          spaceAnd!(Spacing, TraitsExpression)
-                         ), "PrimaryExpression")(p);
+        return named!(or!(spaceAnd!(Spacing, literal!("this")), spaceAnd!(Spacing, literal!("super")), spaceAnd!(Spacing, literal!("null")), spaceAnd!(Spacing, literal!("true")), spaceAnd!(Spacing, literal!("false")), spaceAnd!(Spacing, literal!("$")), spaceAnd!(Spacing, literal!("__FILE__")), spaceAnd!(Spacing, literal!("__LINE__")), spaceAnd!(Spacing, TemplateInstance), spaceAnd!(Spacing, literal!("."), TemplateInstance), spaceAnd!(Spacing, Identifier), spaceAnd!(Spacing, literal!("."), Identifier), spaceAnd!(Spacing, FloatLiteral), spaceAnd!(Spacing, IntegerLiteral), spaceAnd!(Spacing, CharacterLiteral), spaceAnd!(Spacing, StringLiterals), spaceAnd!(Spacing, ArrayLiteral), spaceAnd!(Spacing, AssocArrayLiteral), spaceAnd!(Spacing, Lambda), spaceAnd!(Spacing, FunctionLiteral), spaceAnd!(Spacing, AssertExpression), spaceAnd!(Spacing, MixinExpression), spaceAnd!(Spacing, ImportExpression), spaceAnd!(Spacing, BasicType, literal!("."), Identifier), spaceAnd!(Spacing, Typeof), spaceAnd!(Spacing, TypeidExpression)
+, spaceAnd!(Spacing, IsExpression), spaceAnd!(Spacing, literal!("("), Expression, literal!(")")), spaceAnd!(Spacing, TraitsExpression)), "PrimaryExpression")(p);
     }
 
     static ParseTree StringLiterals(ParseTree p)
@@ -1848,7 +1771,7 @@ ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
 
     static ParseTree ArrayLiteral(ParseTree p)
     {
-        return named!(spaceAnd!(Spacing, literal!("["), option!ArgumentList, literal!("]")), "ArrayLiteral")(p);
+        return named!(spaceAnd!(Spacing, literal!("["), option!(ArgumentList), literal!("]")), "ArrayLiteral")(p);
     }
 
     static ParseTree AssocArrayLiteral(ParseTree p)
@@ -1943,7 +1866,7 @@ ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
 
     static ParseTree ClassDeclaration(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, literal!("class"), Identifier, option!(BaseClassList), ClassBody), ClassTemplateDeclaration), "ClassDeclaration")(p);
+        return named!(or!(spaceAnd!(Spacing, literal!("class"), Identifier, option!(BaseClassList), ClassBody), spaceAnd!(Spacing, ClassTemplateDeclaration)), "ClassDeclaration")(p);
     }
 
     static ParseTree BaseClassList(ParseTree p)
