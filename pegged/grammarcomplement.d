@@ -110,7 +110,7 @@ string grammar(string definition)
                         break;
                     case "SPACEARROW":
                         string temp = generateCode(p.children[2]);
-                        int i = 0;
+                        size_t i = 0;
                         while(i < temp.length-4) // a while loop to make it work at compile-time.
                         {
                             if (temp[i..i+5] == "and!(")

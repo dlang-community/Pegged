@@ -10,7 +10,7 @@ struct ParseTree
     string[] matches;
     
     string input;
-    uint begin, end;
+    size_t begin, end;
     
     ParseTree[] children;
     
