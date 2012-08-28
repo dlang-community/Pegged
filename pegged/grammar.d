@@ -392,6 +392,7 @@ string grammar(string definition)
                 string firstRuleName = generateCode(p.children[1].children[0]);
                 
                 result =  "struct " ~ grammarName ~ "\n{\n";
+                result ~= "    import std.typecons:Tuple, tuple;\n";
                 result ~= "    enum names = [";
                 
                 ParseTree[] definitions = p.children[1 .. $];
@@ -402,9 +403,11 @@ string grammar(string definition)
                     if (def.matches[0] == "Spacing") // user-defined spacing
                         userDefinedSpacing = true;
                 }
-                result = result[0..$-2] ~ "];\n\n";
+                result = result[0..$-2] ~ "];\n";
                 
-                result ~= "    mixin decimateTree;\n\n";
+                result ~= "    mixin decimateTree;\n";
+                
+                result ~= "    static ParseTree[Tuple!(string, uint)] memo;\n";
                 
                 // If the grammar provides a Spacing rule, then this will be used.
                 // else, the predefined 'spacing' rule is used.
@@ -420,17 +423,18 @@ string grammar(string definition)
                 if (p.children[1].children[0].children.length == 1) 
                 {
                     // General calling interface
-                    result ~= "    static ParseTree opCall(ParseTree p)\n";
-                    result ~= "    {\n";
-                    result ~= "        ParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n";
-                    result ~= "        result.children = [result];\n";
-                    result ~= "        result.name = \"" ~ shortGrammarName ~ "\";\n";
-                    result ~= "        return result;\n";
-                    result ~= "    }\n\n";
-                    result ~= "    static ParseTree opCall(string input)\n";
-                    result ~= "    {\n";
-                    result ~= "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n";
-                    result ~= "    }\n";
+                    result ~= "    static ParseTree opCall(ParseTree p)\n"
+                           ~  "    {\n"
+                           ~  "        ParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
+                           ~  "        result.children = [result];\n"
+                           ~  "        result.name = \"" ~ shortGrammarName ~ "\";\n"
+                           ~  "        return result;\n"
+                           ~  "    }\n\n"
+                           ~  "    static ParseTree opCall(string input)\n"
+                           ~  "    {\n"
+                           ~  "        memo = null;\n"
+                           ~  "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
+                           ~  "    }\n";
                 
                     //result ~= "    ParseTree opDispatch(string rule)(string input)\n{\n";
                     //result ~= "        mixin(\"return \" ~ rule ~ \"(ParseTree(``, false, [], input, 0, 0))\");\n}\n";
@@ -441,8 +445,12 @@ string grammar(string definition)
                 // children[0]: name
                 // children[1]: arrow (arrow type as first child)
                 // children[2]: description
-                result = "    static ParseTree " ~ generateCode(p.children[0]) ~ "(ParseTree p)\n    {\n";
-                result ~="        return named!(";
+                result =  "    static ParseTree " ~ generateCode(p.children[0]) ~ "(ParseTree p)\n    {\n"
+                        ~ "        if(auto m = tuple(\""~p.matches[0]~"\",p.end) in memo)\n"
+                        ~ "            return *m;\n"
+                        ~ "        else\n"
+                        ~ "        {\n"
+                        ~ "            ParseTree result = named!(";
                 switch(p.children[1].children[0].name)
                 {
                     case "LEFTARROW":
@@ -476,8 +484,11 @@ string grammar(string definition)
                         break;
                 }
                 
-                result ~= ", \"" ~ p.matches[0] ~ "\")(p);\n";
-                result ~= "    }\n\n";
+                result ~= ", \"" ~ p.matches[0] ~ "\")(p);\n"
+                       ~  "            memo[tuple(\"" ~ p.matches[0] ~ "\",p.end)] = result;\n"
+                       ~  "            return result;\n"
+                       ~  "        }\n"
+                       ~  "    }\n\n";
                 break;
             case "GrammarName":
                 result = generateCode(p.children[0]);
