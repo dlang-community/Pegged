@@ -352,7 +352,7 @@ struct Pegged
 
 void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString)
 {
-    asModule(moduleName, moduleName~".d", grammarString);
+    asModule!(withMemo)(moduleName, moduleName~".d", grammarString);
 }
 
 void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString)
@@ -366,7 +366,7 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
     
     f.write("module " ~ moduleName ~ ";\n\n");
     f.write("public import pegged.peg;\n");
-    f.write(grammar(grammarString));
+    f.write(grammar!(withMemo)(grammarString));
 }
 
 enum Memoization { no, yes }
