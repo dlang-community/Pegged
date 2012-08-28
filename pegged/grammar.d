@@ -350,12 +350,12 @@ struct Pegged
 }
 
 
-void asModule(string moduleName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString)
 {
     asModule(moduleName, moduleName~".d", grammarString);
 }
 
-void asModule(string moduleName, string fileName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString)
 {
     import std.stdio;
     auto f = File(fileName,"w");
@@ -369,7 +369,9 @@ void asModule(string moduleName, string fileName, string grammarString)
     f.write(grammar(grammarString));
 }
 
-string grammar(string definition)
+enum Memoization { no, yes }
+
+string grammar(Memoization withMemo = Memoization.yes)(string definition)
 {
     ParseTree defAsParseTree = Pegged(definition);
     
@@ -392,7 +394,12 @@ string grammar(string definition)
                 string firstRuleName = generateCode(p.children[1].children[0]);
                 
                 result =  "struct " ~ grammarName ~ "\n{\n";
-                result ~= "    import std.typecons:Tuple, tuple;\n";
+                static if (withMemo == Memoization.yes)
+                {
+                    result ~= "    import std.typecons:Tuple, tuple;\n";
+                    result ~= "    static ParseTree[Tuple!(string, uint)] memo;\n";
+                }
+                
                 result ~= "    enum names = [";
                 
                 ParseTree[] definitions = p.children[1 .. $];
@@ -407,7 +414,6 @@ string grammar(string definition)
                 
                 result ~= "    mixin decimateTree;\n";
                 
-                result ~= "    static ParseTree[Tuple!(string, uint)] memo;\n";
                 
                 // If the grammar provides a Spacing rule, then this will be used.
                 // else, the predefined 'spacing' rule is used.
@@ -431,9 +437,11 @@ string grammar(string definition)
                            ~  "        return result;\n"
                            ~  "    }\n\n"
                            ~  "    static ParseTree opCall(string input)\n"
-                           ~  "    {\n"
-                           ~  "        memo = null;\n"
-                           ~  "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
+                           ~  "    {\n";
+                    static if (withMemo == Memoization.yes)
+                        result ~= "        memo = null;\n";
+                        
+                    result ~= "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
                            ~  "    }\n";
                 
                     //result ~= "    ParseTree opDispatch(string rule)(string input)\n{\n";
@@ -445,12 +453,16 @@ string grammar(string definition)
                 // children[0]: name
                 // children[1]: arrow (arrow type as first child)
                 // children[2]: description
-                result =  "    static ParseTree " ~ generateCode(p.children[0]) ~ "(ParseTree p)\n    {\n"
-                        ~ "        if(auto m = tuple(\""~p.matches[0]~"\",p.end) in memo)\n"
-                        ~ "            return *m;\n"
-                        ~ "        else\n"
-                        ~ "        {\n"
-                        ~ "            ParseTree result = named!(";
+                result =  "    static ParseTree " ~ generateCode(p.children[0]) ~ "(ParseTree p)\n    {\n";
+                static if (withMemo == Memoization.yes)
+                    result ~= "        if(auto m = tuple(\""~p.matches[0]~"\",p.end) in memo)\n"
+                            ~ "            return *m;\n"
+                            ~ "        else\n"
+                            ~ "        {\n"
+                            ~ "            ParseTree result = named!(";
+                else
+                    result ~= "        return named!(";
+                    
                 switch(p.children[1].children[0].name)
                 {
                     case "LEFTARROW":
@@ -484,11 +496,13 @@ string grammar(string definition)
                         break;
                 }
                 
-                result ~= ", \"" ~ p.matches[0] ~ "\")(p);\n"
-                       ~  "            memo[tuple(\"" ~ p.matches[0] ~ "\",p.end)] = result;\n"
-                       ~  "            return result;\n"
-                       ~  "        }\n"
-                       ~  "    }\n\n";
+                result ~= ", \"" ~ p.matches[0] ~ "\")(p);\n";
+                static if (withMemo == Memoization.yes)
+                    result ~= "            memo[tuple(\"" ~ p.matches[0] ~ "\",p.end)] = result;\n"
+                           ~  "            return result;\n"
+                           ~  "        }\n";
+                
+                result ~= "    }\n\n";
                 break;
             case "GrammarName":
                 result = generateCode(p.children[0]);
