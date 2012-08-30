@@ -37,4 +37,6 @@ void main()
         writeln(input.length, ", ", b[0].to!("msecs",float),", ", b[1].to!("msecs",float));
         input ~= "-"~input;
     }
+    
+    writeln(Test2.num("123"));
 }

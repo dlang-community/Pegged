@@ -502,7 +502,13 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "            return result;\n"
                            ~  "        }\n";
                 
-                result ~= "    }\n\n";
+                result ~= "    }\n\n"
+                       ~  "    static ParseTree " ~ generateCode(p.children[0]) ~ "(string s)\n    {\n";
+                static if (withMemo == Memoization.yes)
+                    result ~=  "        memo = null;";
+                    
+                result ~= "        return " ~ generateCode(p.children[0]) ~ "(ParseTree(\"\", false,[], s));\n    }\n\n";
+
                 break;
             case "GrammarName":
                 result = generateCode(p.children[0]);
