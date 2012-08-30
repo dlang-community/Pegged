@@ -12,11 +12,11 @@ Expression   <- Sequence (OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
-Primary      <- RhsName !Arrow 
-              / :OPEN Expression :CLOSE 
-              / Literal 
-              / CharClass 
-              / ANY
+Primary      <- !Expression ( RhsName 
+                            / :OPEN Expression :CLOSE 
+                            / Literal 
+                            / CharClass 
+                            / ANY )
 # Lexical syntax
 Identifier   <- identifier
 GrammarName  <- Identifier ParamList? Spacing :':' Spacing
@@ -122,7 +122,14 @@ struct Pegged
 
     static ParseTree Primary(ParseTree p)
     {
-        return named!(or!(and!(RhsName, negLookahead!(Arrow)), and!(discard!OPEN, Expression, discard!CLOSE), and!(Literal), and!(CharClass), and!(ANY)), "Primary")(p);
+        return named!(and!(negLookahead!(and!(LhsName, Arrow)), 
+                           or!(RhsName, 
+                               and!(discard!OPEN, Expression, discard!CLOSE), 
+                               and!(Literal), 
+                               and!(CharClass), 
+                               and!(ANY)
+                           )
+                      ), "Primary")(p);
     }
 
     static ParseTree Identifier(ParseTree p)
@@ -443,9 +450,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         
                     result ~= "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
                            ~  "    }\n";
-                
-                    //result ~= "    ParseTree opDispatch(string rule)(string input)\n{\n";
-                    //result ~= "        mixin(\"return \" ~ rule ~ \"(ParseTree(``, false, [], input, 0, 0))\");\n}\n";
                 }
                 result ~= "}\n\n"; // end of grammar struct definition
                 break;
@@ -505,8 +509,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result ~= "    }\n\n"
                        ~  "    static ParseTree " ~ generateCode(p.children[0]) ~ "(string s)\n    {\n";
                 static if (withMemo == Memoization.yes)
-                    result ~=  "        memo = null;";
-                    
+                    result ~=  "        memo = null;\n";
+                
                 result ~= "        return " ~ generateCode(p.children[0]) ~ "(ParseTree(\"\", false,[], s));\n    }\n\n";
 
                 break;

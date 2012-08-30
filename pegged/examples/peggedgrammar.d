@@ -13,11 +13,12 @@ Expression   <- Sequence (:OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
-Primary      <- RhsName !Arrow 
-              / :OPEN Expression :CLOSE 
-              / Literal 
-              / CharClass 
-              / ANY
+Primary      <- !(LhsName Arrow) 
+                ( RhsName 
+                / :OPEN Expression :CLOSE 
+                / Literal 
+                / CharClass 
+                / ANY)
 # Lexical syntax
 Identifier   <- identifier
 GrammarName  <- Identifier ParamList? Spacing :':' Spacing
