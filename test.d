@@ -122,42 +122,242 @@ struct Gram(alias a)
     TODO: fuse with the master branch
     TODO: grammar introspection: grammar name, rule names, call graph, 
 **/
-import pegged.introspection;
 
+struct Arithmetic
+{
+    import std.typecons:Tuple, tuple;
+    static ParseTree[Tuple!(string, uint)] memo;
+    static bool[string] names;
+    static this()
+    {
+        names = [`Term`:true, `Add`:true, `Sub`:true, `Factor`:true, `Mul`:true, `Div`:true, `Primary`:true, `Parens`:true, `Neg`:true, `Number`:true];
+    }
+    mixin decimateTree;
+    alias spacing Spacing;
+
+    static ParseTree Term(ParseTree p)
+    {
+        if(auto m = tuple("Term",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, Factor, zeroOrMore!(or!(spaceAnd!(Spacing, Add), spaceAnd!(Spacing, Sub)))), "Term")(p);
+            memo[tuple("Term",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Term(string s)
+    {
+        memo = null;
+        return Term(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Add(ParseTree p)
+    {
+        if(auto m = tuple("Add",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, literal!("+"), Factor), "Add")(p);
+            memo[tuple("Add",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Add(string s)
+    {
+        memo = null;
+        return Add(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Sub(ParseTree p)
+    {
+        if(auto m = tuple("Sub",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, literal!("-"), Factor), "Sub")(p);
+            memo[tuple("Sub",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Sub(string s)
+    {
+        memo = null;
+        return Sub(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Factor(ParseTree p)
+    {
+        if(auto m = tuple("Factor",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, Primary, zeroOrMore!(or!(spaceAnd!(Spacing, Mul), spaceAnd!(Spacing, Div)))), "Factor")(p);
+            memo[tuple("Factor",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Factor(string s)
+    {
+        memo = null;
+        return Factor(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Mul(ParseTree p)
+    {
+        if(auto m = tuple("Mul",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, literal!("*"), Primary), "Mul")(p);
+            memo[tuple("Mul",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Mul(string s)
+    {
+        memo = null;
+        return Mul(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Div(ParseTree p)
+    {
+        if(auto m = tuple("Div",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, literal!("/"), Primary), "Div")(p);
+            memo[tuple("Div",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Div(string s)
+    {
+        memo = null;
+        return Div(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Primary(ParseTree p)
+    {
+        if(auto m = tuple("Primary",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(or!(spaceAnd!(Spacing, Parens), spaceAnd!(Spacing, Neg), spaceAnd!(Spacing, Number)), "Primary")(p);
+            memo[tuple("Primary",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Primary(string s)
+    {
+        memo = null;
+        return Primary(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Parens(ParseTree p)
+    {
+        if(auto m = tuple("Parens",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, discard!(literal!("(")), Term, discard!(literal!(")"))), "Parens")(p);
+            memo[tuple("Parens",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Parens(string s)
+    {
+        memo = null;
+        return Parens(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Neg(ParseTree p)
+    {
+        if(auto m = tuple("Neg",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, literal!("-"), Primary), "Neg")(p);
+            memo[tuple("Neg",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Neg(string s)
+    {
+        memo = null;
+        return Neg(ParseTree("", false,[], s));
+    }
+
+    static ParseTree Number(ParseTree p)
+    {
+        if(auto m = tuple("Number",p.end) in memo)
+            return *m;
+        else
+        {
+            ParseTree result = named!(spaceAnd!(Spacing, fuse!(spaceAnd!(Spacing, oneOrMore!(charRange!('0', '9'))))), "Number")(p);
+            memo[tuple("Number",p.end)] = result;
+            return result;
+        }
+    }
+
+    static ParseTree Number(string s)
+    {
+        memo = null;
+        return Number(ParseTree("", false,[], s));
+    }
+
+    static ParseTree opCall(ParseTree p)
+    {
+        ParseTree result = decimateTree(Term(p));
+        result.children = [result];
+        result.name = "Arithmetic";
+        return result;
+    }
+
+    static ParseTree opCall(string input)
+    {
+        memo = null;
+        return Arithmetic(ParseTree(``, false, [], input, 0, 0));
+    }
+}
+
+    mixin(grammar(`
+    Arithmetic2:
+    Term    < Factor (Add / Sub)*
+    Add     < "+" Factor
+    Sub     < "-" Factor
+    Factor  < Primary (Mul / Div)*
+    Mul     < "*" Primary
+    Div     < "/" Primary
+    Primary < Parens / Neg / Number
+    Parens  < :"(" Term :")"
+    Neg     < "-" Primary
+    Number  < ~([0-9]+)
+`));
+
+    
 void main()
 {
-    auto g = callGraph(`
-Rec1:
-    A <- 'a' B
-    B <- 'b' A C
-    C <- 'c'
-`);
+    auto input = "1+1";
     
-    auto g2 = callGraph(`
-Rec2:
-    A <- 'a' B
-    B <- 'b' A 'c'
-    C <- 'c'
-`);
+    int N = 256;
+    foreach(i; 0..5)
+    {
+        auto b = benchmark!(()=> Arithmetic2(input), ()=> Arithmetic(input))(N);
+        auto first = b[0].to!("msecs",float)/N;
+        auto second = b[1].to!("msecs",float)/N;
+        writeln(first, " ms/call  ", second, " ms/call, ", (first/second-1)*100, "% speedup");
+        input = input ~ "+" ~ input ~ "-" ~ input;
+    }
 
-    auto g3 = callGraph(`
-Rec3:
-    A <- 'a' B
-    B <- 'b' 'a' B 'c'
-    C <- 'c'
-`);
-
-    auto g4 = callGraph(`
-Rec4:
-    A <- 'a' 'b' 'a' B 'c'
-    B <- 'b' 'a' B 'c'
-    C <- 'c'
-`);
-    writeln(g);
-    writeln(closure(g));
-    writeln(g);
-    writeln(recursions(g));
-    writeln(recursions(g2));
-    writeln(recursions(g3));
-    writeln(recursions(g4));
+    
 }
