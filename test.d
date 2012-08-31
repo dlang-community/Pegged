@@ -116,20 +116,48 @@ struct Gram(alias a)
     TODO: add an enum inside ParseTree's, containing the rules's name, to enable final switch selection
     TODO: qualified names for rules (grammarName.ruleName)
     TODO: parameterize the grammars on a ParseTree type
+    TODO: inlining
     TODO: modify the gen_grammar to regenerate correctly the new engine
     TODO: modify the makefile
     TODO: fuse with the master branch
     TODO: grammar introspection: grammar name, rule names, call graph, 
 **/
+import pegged.introspection;
 
 void main()
 {
-    writeln(grammar(`
-    Gram(a,b):
-        A <- 'a'
-        B(b = 'b', c) <- b
-        
-        `));
+    auto g = callGraph(`
+Rec1:
+    A <- 'a' B
+    B <- 'b' A C
+    C <- 'c'
+`);
     
-    //writeln(Gram!eps("a"));
+    auto g2 = callGraph(`
+Rec2:
+    A <- 'a' B
+    B <- 'b' A 'c'
+    C <- 'c'
+`);
+
+    auto g3 = callGraph(`
+Rec3:
+    A <- 'a' B
+    B <- 'b' 'a' B 'c'
+    C <- 'c'
+`);
+
+    auto g4 = callGraph(`
+Rec4:
+    A <- 'a' 'b' 'a' B 'c'
+    B <- 'b' 'a' B 'c'
+    C <- 'c'
+`);
+    writeln(g);
+    writeln(closure(g));
+    writeln(g);
+    writeln(recursions(g));
+    writeln(recursions(g2));
+    writeln(recursions(g3));
+    writeln(recursions(g4));
 }
