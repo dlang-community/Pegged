@@ -2,9 +2,8 @@ module pegged.examples.json;
 
 import pegged.grammar;
 
-/// JSON
-enum JSONGrammar =
-   `JSON:
+mixin(grammar(`
+JSON:
     JSONObject <  :'{' (Pair (:',' Pair)*)? :'}'
     Pair       <  String :':' Value
     Array      <  :'[' (Value (:',' Value)* )? :']'
@@ -20,54 +19,35 @@ enum JSONGrammar =
     False  <- "false"
     Null   <- "null"
     
-    String <~ :DoubleQuote Char* :DoubleQuote
-    Char   <~ BackSlash DoubleQuote 
-            / BackSlash BackSlash 
-            / BackSlash [bfnrt] 
-            / BackSlash 'u' Hex Hex Hex Hex
-            / (!DoubleQuote .)
+    String <~ :doublequote Char* :doublequote
+    Char   <~ backslash doublequote 
+            / backslash backslash 
+            / backslash [bfnrt] 
+            / backslash 'u' Hex Hex Hex Hex
+            / (!doublequote .)
     
     Number <~ '0'
             / [1-9] Digit* ('.' Digit*)?
     Digit  <- [0-9]
-    Hex    <- [0-9A-Fa-f]`
-;
-
-mixin(grammar(JSONGrammar));
-
-unittest
-{
-    enum example1 = `{"Hello":42, "World":"!"}`;
-    
-    auto p1 = JSON.parse(example1);
-    assert(p1.success);
-    
-    assert(p1.capture == ["Hello"d, "42"d, "World"d, "!"d]);
-    assert(p1.parseTree.name == "JSON.JSONObject");
-    
-    assert(p1.parseTree.children[0].ruleName == "Pair");
-    assert(p1.parseTree.children[0].capture == ["Hello"d,"42"d]);
-    
-    assert(p1.parseTree.children[1].ruleName == "Pair");
-    assert(p1.parseTree.children[1].capture == ["World"d,"!"d]);
-    
-    enum example2 = `
+    Hex    <- [0-9A-Fa-f]
+`));
+enum example2 = `
 {
     "Number": 42, 
     "Decimal": 123.456,
     "String": "abc",
+    "NullString": "",
     "Escape": "\uAAAA\n\\Hello",
-    "Empty" : {},
     "Array" : [0,1,2],
     "Array2": [0, [0,1,2], "abc"],
     "Obj"   : { "Member":0, "Member":[0,1,2] },
     "True"  : true,
     "False" : false,
-    "Null"  : null
+    "Null"  : null,
+    "Empty" : {}
 }`;
-    assert(JSON.parse(example2).success);
 
-    enum example3 =
+enum example3 =
     `{
         "glossary": {
             "title": "example glossary",
@@ -91,9 +71,7 @@ unittest
         }
     }`;
     
-    assert(JSON.parse(example3).success);
-
-    enum example4 =
+enum example4 =
     `{"web-app": {
     "servlet": [   
         {
@@ -184,6 +162,9 @@ unittest
         "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
     `;
 
-    assert(JSON.parse(example4).success);
+unittest
+{
+    assert(JSON(example2).successful);
+    assert(JSON(example3).successful);
+    assert(JSON(example4).successful);
 }
-

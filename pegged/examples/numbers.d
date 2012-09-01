@@ -15,20 +15,20 @@ Numbers:
 
 unittest
 {
-    assert(Numbers.parse("123").success);
-    assert(Numbers.parse("123.0").success);
-    assert(Numbers.parse("123.01").success);
-    assert(Numbers.parse("123.").success);
-    assert(Numbers.parse("-123").success);
-    assert(Numbers.parse("-123.0").success);
-    assert(Numbers.parse("+123").success);
-    assert(Numbers.parse("-123e+12").success);
-    assert(Numbers.parse("+123E-12").success);
-    assert(Numbers.parse("123.456e+00").success);
-    assert(Numbers.Hexa.parse("DEADBEEF").success);
-    assert(Numbers.Hexa.parse("0123BEEF").success);
-    assert(Numbers.Hexa.parse("DEAD0123").success);
+    assert(Numbers("123").successful);
+    assert(Numbers("123.0").successful);
+    assert(Numbers("123.01").successful);
+    assert(Numbers("123.").successful);
+    assert(Numbers("-123").successful);
+    assert(Numbers("-123.0").successful);
+    assert(Numbers("+123").successful);
+    assert(Numbers("-123e+12").successful);
+    assert(Numbers("+123E-12").successful);
+    assert(Numbers("123.456e+00").successful);
+    assert(Numbers.Hexa(ParseTree("",false,null,"DEADBEEF")).successful);
+    assert(Numbers.Hexa(ParseTree("",false,null,"0123BEEF")).successful);
+    assert(Numbers.Hexa(ParseTree("",false,null,"DEAD0123")).successful);
     
-    assert(!Numbers.parse("").success);
-    assert(!Numbers.parse("abc").success);
+    assert(!Numbers("").successful);
+    assert(!Numbers("abc").successful);
 }

@@ -2,43 +2,96 @@ module pegged.examples.arithmetic;
 
 import pegged.grammar;
 
-// Arithmetic Expressions
-mixin(grammar(
-   "Expr     <  Factor AddExpr*
-    AddExpr  <  ^('+'/'-') Factor
-    Factor   <  Primary MulExpr*
-    MulExpr  <  ^('*'/'/') Primary
-    Primary  <  Parens / Number / Variable / ^'-' Primary
+mixin(grammar(`
+Arithmetic:
+    Term    < Factor (Add / Sub)*
+    Add     < "+" Factor
+    Sub     < "-" Factor
+    Factor  < Primary (Mul / Div)*
+    Mul     < "*" Primary
+    Div     < "/" Primary
+    Primary < Parens / Neg / Number
+    Parens  < :"(" Term :")"
+    Neg     < "-" Primary
+    Number  < ~([0-9]+)
+`));
 
-    Parens   <  '(' Expr ')'
-    Number   <~ [0-9]+
-    Variable <- Identifier"
-));
-
-
-unittest 
+float interpreter(string expr)
 {
-    import std.stdio;
-    enum example1 = "1 + 2 - (3 * 4 - 5)*6";
-    auto p1 = Expr.parse(example1);
+    auto p = Arithmetic(expr);
     
-    assert(p1.success);
-    assert(p1.capture == ["1"d, "+"d, "2"d, "-"d, "("d, "3"d, "*"d, "4"d, "-"d, "5"d, ")"d, "*"d, "6"d]);
-    assert(p1.pos.index == example1.length); // consumed the entire input
-    assert(p1.pos.line == 0);
-    assert(p1.pos.col == example1.length);
-        
-    assert(p1.parseTree.ruleName == "Expr");
-    assert(p1.parseTree.children.length == 3);
-    assert(p1.parseTree.children[0].ruleName == "Factor");
-    assert(p1.parseTree.children[1].ruleName == "AddExpr");
-    assert(p1.parseTree.children[2].ruleName == "AddExpr");
+    //writeln(p);
     
-    enum example2 = "0 123";
-    auto p2 = Expr.parse(example2);
+    float value(ParseTree p)
+    {
+        switch (p.name) 
+        {
+            case "Arithmetic":
+                return value(p.children[0]);
+            case "Term":
+                float v = 0.0;
+                foreach(child; p.children) v += value(child);
+                return v;
+            case "Add":
+                return value(p.children[0]);
+            case "Sub":
+                return -value(p.children[0]);
+            case "Factor":
+                float v = 1.0;
+                foreach(child; p.children) v *= value(child);
+                return v;
+            case "Mul":
+                return value(p.children[0]);
+            case "Div":
+                return 1.0/value(p.children[0]);
+            case "Primary":
+                return value(p.children[0]);
+            case "Parens":
+                return value(p.children[0]);
+            case "Neg":
+                return -value(p.children[0]);
+            case "Number":
+                return to!float(p.matches[0]);
+            default:
+                return float.nan;
+        }
+    }
     
-    assert(p2.success); // succeeds, but
-    assert(p2.capture == ["0"d]);
-    assert(p2.pos.index == 2); // consumed only 2 chars ('0' and ' ')
+    return value(p);
 }
+
+unittest
+{
+    assert(interpreter("1") == 1.0);
+    assert(interpreter("-1") == -1.0);
+    assert(interpreter("1+1") == 2.0);
+    assert(interpreter("1-1") == 0.0);
     
+    assert(interpreter("1+1+1") == 3.0);
+    assert(interpreter("1-1-1") == -1.0);
+    assert(interpreter("1+1-1") == 1.0);
+    assert(interpreter("1-1+1") == 1.0);
+    assert(interpreter("-1+1+1") == 1.0);
+    
+    assert(interpreter("(-1+1)+1") == 1.0);
+    assert(interpreter("-1+(1+1)") == 1.0);
+    assert(interpreter("(-1+1+1)") == 1.0);
+    assert(interpreter("1-(1-1)") == 1.0);
+    
+    assert(interpreter("1*1") == 1.0);
+    assert(interpreter("1/1") == 1.0);
+    assert(interpreter("-1*1") == -1.0);
+    assert(interpreter("-1/1") == -1.0);
+    
+    assert(interpreter("1+2*3") == 7.0);
+    assert(interpreter("1-2*3") == -5.0);
+    assert(interpreter("-1-2*-3") == 5.0);
+    assert(interpreter("-1+2*-3") == -7.0);
+
+    assert(interpreter("1/2/(1/2)") == 1.0);
+    assert(interpreter("1/2/1/2") == .25);
+    assert(interpreter("1-2*3-2*3") == -11.0);
+
+    assert(interpreter("2*3*3-3*3+3*4") == 21.0);
+    assert(interpreter("2*3*3-3*(3+3*4)") == -27.0);
+}

@@ -3,127 +3,62 @@ PEGGED
 
 **Pegged** is a parsing expression grammar (PEG) generator implemented in the D programming language. 
 
-The idea is to give the generator a [PEG](en.wikipedia.org/wiki/Parsing_expression_grammar), with the syntax presented in [the reference article ](http://bford.info/pub/lang/peg). From this grammar definition a set of related parsers will be created, to be used at runtime or compile time.
+**This is the README file for the 'speedup1' branch**. I'll highlight here the differences with the 'master' branch.
 
-Usage
------
+Speedup1 Branch
+---------------
 
-To use **Pegged**, just call the `grammar` function with a PEG and mix it in. For example:
+The main difference for the end-user is that the global parsing (and hence, grammar generation) speed is one-to-two orders of magnitude faster. I regularly obtain speed-ups of x30 to x50, while comparing the master branch and this one. This is true for runtime parsing and also for compile-time parsing. All in all, it makes for a much-improved user experience.
 
-```d
-import pegged.grammar;
+Most of **Pegged** features exist in this branch:
 
-mixin(grammar(`
-Arithmetic:
-    Expr     <  Factor AddExpr*
-    AddExpr  <  ^('+'/'-') Factor
-    Factor   <  Primary MulExpr*
-    MulExpr  <  ^('*'/'/') Primary
-    Primary  <  '(' Expr ')' / Number / Variable / ^'-' Primary
+- Just use `mixin(grammar(" you grammar here "));` to create the parser in your code.
+- The standard PEG syntax is used.
+- Most usual **Pegged** syntax extensions are there: fusing matches (`~`), discarding nodes (`:`), keeping them (`^`), and so on.
+- Semantic actions are there. They are just functions from `ParseTree` to `ParseTree`, like rules and grammars. There is a certain elegance in that.
+- Parametrized rules and parametrized grammars are there also. With default arguments, too.
+- Grammar composition is done as before: just call the grammar by its name from another grammar. Or call a specific rule with the `grammarName.ruleName` syntax.
 
-    Number   <~ [0-9]+
-    Variable <- Identifier
-`));
-```
+- A very nice side effect is that the generated C parser and D parser now work: they compile and parse alright, for the (admittedly limited) tests I've done. The D grammar is still as gigantic as ever, to be prepared for some truly big parse trees. 
 
-This creates the `Arithmetic` grammar, with the `Expr`, `AddExpr`, `Factor` (and so on) rules for basic arithmetic expressions with operator precedence ('*' and '/' bind stronger than '+' or '-'). `Identifier` is a pre-defined parser recognizing your basic C-style identifier (first a letter or underscore, then digits, letters or underscores). In the rest of this document, I'll call 'rule' a `Parser <- Parsing Expression` expression and I'll use 'grammar' to designate the entire group of rules given to `grammar`.
+Some parts have been simplified: 
 
-To use a grammar, use the `.parse` method. It will return a parse tree containing the calls to the different rules:
+- to parse with a grammar, just call it like a function. In fact, most predefined rules and a grammar inner rules are just functions now.
+- rules take a `ParseTree` or a `string` and return a `ParseTree`.
 
-```d
-// Parsing at compile-time:
-enum parseTree1 = Arithmetic.parse("1 + 2 - (3*x-5)*6");
+Some slight changes:
 
-pragma(msg, parseTree1.capture);
-assert(parseTree1.capture == ["1"d, "+"d, "2"d, "-"d, "("d, "3"d, "*"d, "x"d, "-"d, "5"d, ")"d, "*"d, "6"d]);
-writeln(parseTree1);
+- The `capture` field is now called `matches`, since it corresponds much better to what it is.
+- Grammar *must* be named. That alone allowed for a nice simplication in the generating code.
+- A new operator, `;` is used to drop a node from the parse tree, but keep its matches. To be compared to the `:` operator that completly erases the node (no matche is kept).
+- behind the scene, the code is vastly simplified and the generated parsers are far smaller. It's still just a top-down recursive-descent parser, no GLR or LALR(1).
+- As rules are functions, I renamed the predefined rules to be in lower caps (`identifier`, `doublequote`, `backslash`, etc). I'll have to make a pass on this again to polish this a bit more.
 
-// And at runtime too:
-auto parseTree2 = Arithmetic.parse(" 0 + 123 - 456 ");
-assert(parseTree2.capture == ["0"d, "+"d, "123"d, "-"d, "456"d]);
-```
+Some missing features:
 
-Even for such a simple grammar and such a simple expression, the resulting parse tree is a bit long to be shown here. See [the result here](https://github.com/PhilippeSigaud/Pegged/wiki/Parse-Result)
+- No `wstring` or `dstring` parsing for now. Everything is down-to-earth `string`.
+- Positions of matches are just two indices (begin-end): no line/column counting for now. That might very well partially explain the speed-up...
+- Since this branch was entirely rewritten from scratch, I didn't add (for now) the parametrization on the parse tree's type that was added by *chadjoan*.
+- No named captures (operators `=` and `@` in master branch). I do not use them much, so they are not high priority for me. Also, dropping them drastically simplified the code. Use semantic actions.
+- No level of parsing (from simple recognizing to full non-decimated parse tree). Only a standard parse tree is created.
+- No level of encapsulation. All grammars are called by their names and their inner rules are called by `grammarName.ruleName`, if needed.
+- Rules nodes are named by their rule name (`"Expr"`), not their full, qualified, grammar.rule name (`"Arithmetic.Expr"`). That will probably change, though.
 
-By default, the grammars do not silently consume spaces, as this is the standard behaviour for PEGs. There is an opt-out though, with the simple `<` arrow instead of `<-` (you can see it in the previous example).
+- Not all examples were recompiled with the new engine. I'll convert them as time permits. For now, on this branch, there is `Arithmetic`, `JSON`, `XML`, `XML2.d`, `C`, `D`, `Numbers`, `Strings`, `CSV` and `Parameterized`. Checking the rest is on my todo list (`Markdown`, `Oberon2` and `Constraints`). Most of the time, it's just changing predefined rule names and some testing code.
 
-Tutorial and docs
------------------
+All in all, the vastly improved parsing speed re-ignited my interest in **Pegged**, so stay tuned!
 
-The **Pegged** wiki is [here](https://github.com/PhilippeSigaud/Pegged/wiki/). It contains a growing [tutorial](https://github.com/PhilippeSigaud/Pegged/wiki/Pegged-Tutorial). All the wiki pages are also present (as Markdown files) in the `docs` directory.
+Future features:
+----------------
 
-
-Features
---------
-
-* The complete set of operators described [here](http://en.wikipedia.org/wiki/Parsing_expression_grammar) are implemented, with the 'traditional' PEG syntax. See [Peg Basics](https://github.com/PhilippeSigaud/Pegged/wiki/PEG-Basics).
-* **Pegged** can parse its input at compile time and generate a complete parse tree at compile time. In a word: compile-time string (read: D code) transformation and generation. See [Generating Code](https://github.com/PhilippeSigaud/Pegged/wiki/Generating-Code) for example.
-* You can parse at runtime also, you lucky you. ([Using the Parse Tree](https://github.com/PhilippeSigaud/Pegged/wiki/Using-the-Parse-Tree))
-* **Pegged** accepts strings, wstrings ro dstrings as input. Also, grammars can be written as strings, wstrings or dstrings. Accented characters or Unicode characters can be used.
-* Use a standard and readable PEG syntax as a DSL, not a bunch of templates that hide the parser in noise.
-* But you can use expression templates if you want, as parsers are all available as such. **Pegged** is implemented as an expression template, and what's good for the library writer is sure OK for the user too. ([Behind the Curtain: How Pegged Works](https://github.com/PhilippeSigaud/Pegged/wiki/Behind-the-Curtain%3A-How-Pegged-Works)
-* Some useful additional operators are there too: a way to discard matches (thus dumping them from the parse tree), to push captures on a stack, to accept matches that are equal to another match: see [PEG Additions](https://github.com/PhilippeSigaud/Pegged/wiki/Extended-PEG-Syntax).
-* Adding new parsers is easy. See [User-Defined Parsers](https://github.com/PhilippeSigaud/Pegged/wiki/User-Defined-Parsers) to see how to do that.
-* Grammars are composable: you can put different `mixin(grammar(rules));` in a module and then grammars and rules can refer to one another. That way, you can have utility grammars providing their functionalities to other grammars. [Grammar Composition](https://github.com/PhilippeSigaud/Pegged/wiki/Grammar-Composition)
-* That's why **Pegged** comes with some pre-defined grammars (JSON, C, XML, CSV, the PEG grammar itself, etc). See [Grammar Examples](https://github.com/PhilippeSigaud/Pegged/wiki/Grammar-Examples).
-* Grammars can be dumped in a file to create a module. Use the `asModule(string moduleName, string gram)` function in `pegged.grammar` to do that. See [Grammars as Modules](https://github.com/PhilippeSigaud/Pegged/wiki/Grammars-as-D-Modules).
-
-More advanced features, outside the standard PEG perimeter are there to bring more power in the mix:
-
-* **Parametrized rules**: `"List(E, Sep) <- E (Sep E)*"` is possible. The previous rule defines a parametrized parser taking two other parsers (namely, `E` and `Sep`) to match a `Sep`-separated list of `E`'s.  Entire grammars can be parametrized, too. See [Parametrized Rules](https://github.com/PhilippeSigaud/Pegged/wiki/Parametrized-Rules) to see what's possible.
-* **Named captures**: any parser can be named with the `=` operator. The parse tree generated by the parser (so, also its matches) is delivered to the user in the output. Other parsers in the grammar see the named captures too. See [Named Captures](https://github.com/PhilippeSigaud/Pegged/wiki/Named-Captures) for more explanations on this.
-* **Semantic actions** can be added to any rule in a grammar. Once a rule has matched, its associated action is called on the rule output and passed as final result to other parsers further up the grammar. Do what you want to the parse tree. If the passed actions are delegates, they can access external variables. See [Semantic Actions](https://github.com/PhilippeSigaud/Pegged/wiki/Semantic-Actions).
-
-
-Limitations
------------
-
-* No effort was done to accelerate the parsing or reduce the memory consumption. The main goal was to 1) use the PEG syntax 2) parse at compile-time. Packrat parsing could be done, maybe. **Pegged** does some basic optimization, though: one-element sequences and choices are replaced by their only element and sequences of sequences are flattened (the same is done for ordered choices).
-* No left-factorization for now. But you can do recursive grammars, of course.
-* Error reporting is the same as for any in-my-own-free-time / just-one-guy parsing project (read: perfectible).
-
-Future features (aka, my todo list) 
------------------------------------
-
-See [todo](https://github.com/PhilippeSigaud/Pegged/wiki/TODO)
-
-Long-Term Goals (the Right to Dream)
-------------------------------------
-
-* As a long-term goal, parsing structures, as presented in [OMeta](http://www.vpri.org/pdf/tr2007003_ometa.pdf). Yeah, I know, but I find that wonderfully interesting. Rules could match not only strings by any D type inner structure (matching a struct if it contains an `int` member named `foo` and a `bar` method, etc).
-* Hence, a pattern-matcher. if you used Haskell or ML, you know what I'm talking about.
-* As a longer-term goal: implementing the complete D grammar and see if that flies.
-* As an even longer-term goal: macros in D. Think Lisp and [talking to God](http://xkcd.com/224/).
-
-References
-----------
-
-Articles:
-
-* [The base PEG article from Bryan Ford](http://bford.info/pub/lang/peg).
-* [Packrat parsing](http://pdos.csail.mit.edu/~baford/packrat/icfp02/).
-* [OMeta](http://www.vpri.org/pdf/tr2007003_ometa.pdf).
-
-D Code:
-
-* Hisayuki Mima's [CTPG](https://github.com/youkei/ctpg), very similar, also done in D. Have a look!
-* Nick Sabalausky's [Goldie](http://www.dsource.org/projects/goldie).
-* Benjamin Shropshire's [dparser](http://dsource.org/projects/scrapple/browser/trunk/dparser).
-* Martin Nowak put these gists on the D newsgroup:
-    - https://gist.github.com/1255439 - lexer generator
-    - https://gist.github.com/1262321 - complete and fast D lexer
-
-Other languages:
-
-* [pegtl](http://code.google.com/p/pegtl/), the PEG Template Library, in C++.
-* [chilon::parser](http://chilon.net/library.html) in C++ also.
-* [metaparse](http://abel.web.elte.hu/mpllibs/metaparse/index.html), in C++, is able to parse at compile-time.
-* [Parslet](http://kschiess.github.com/parslet/) in Ruby and [Treetop](http://treetop.rubyforge.org/), in Ruby also.
+- 'hooked' rules: rules that can be extended at runtime, or modified. I want to have a D parser that accepts syntactic extensions. I have these hooked rules, they work, but the end-user code is not as polished as I'd like.
+- parsing a range.
+- converting/checking all examples.
+- a function that reconstitutes D code from a parse tree.
+- tree functions (at least filtering, reducing and matching on trees).
+- D code lowerings.
 
 License
 -------
 
 **Pegged** is released with the Boost license (like most D projects). See [here](http://www.boost.org/LICENSE_1_0.txt) for more details.
-
-
-Author: Philippe Sigaud.
