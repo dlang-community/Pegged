@@ -9,13 +9,13 @@ import pegged.parser;
 
 void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString)
 {
-    asModule!(withMemo)(moduleName, moduleName~".d", grammarString);
+    asModule!(withMemo)(moduleName, moduleName, grammarString);
 }
 
 void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString)
 {
     import std.stdio;
-    auto f = File(fileName,"w");
+    auto f = File(fileName ~ ".d","w");
     
     f.write("/**\nThis module was automatically generated from the following grammar:\n\n");
     f.write(grammarString);
