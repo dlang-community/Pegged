@@ -50,27 +50,31 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 //string invokedGrammarName = generateCode(transformName(p.children[0]));
                 string firstRuleName = generateCode(p.children[1].children[0]);
                 
-                result =  "struct " ~ grammarName ~ "\n{\n";
+                result =  "struct Generic" ~ shortGrammarName ~ "(TParseTree)\n"
+                        ~ "{\n"
+                        ~ "    struct " ~ grammarName ~ "\n{\n";
                 static if (withMemo == Memoization.yes)
                 {
                     result ~= "    import std.typecons:Tuple, tuple;\n";
-                    result ~= "    static ParseTree[Tuple!(string, uint)] memo;\n";
+                    result ~= "    static TParseTree[Tuple!(string, uint)] memo;\n";
                 }
                 
-                result ~= "    static bool[string] names;\n"
-                        ~ "    static this()\n    {\n"
-                        ~ "        names = [";
+                result ~= "    static bool isRule(string s)\n"
+                        ~ "    {\n"
+                        ~ "        switch(s)\n"
+                        ~ "        {\n";
                 
                 ParseTree[] definitions = p.children[1 .. $];
                 bool userDefinedSpacing = false;
                 foreach(i,def; definitions)
                 {
-                    result ~= "`" ~ def.matches[0] ~ "`:true, ";
-                    if (i%4 == 3) result ~= "\n                 ";
+                    result ~= "            case \"" ~ def.matches[0] ~ "\":\n";
                     if (def.matches[0] == "Spacing") // user-defined spacing
                         userDefinedSpacing = true;
                 }
-                result = result[0..$-2] ~ "];\n    }\n";
+                result ~= "                return true;\n"
+                        ~ "            default:\n"
+                        ~ "                return false;\n        }\n    }\n";
                 
                 result ~= "    mixin decimateTree;\n";
                 
@@ -89,34 +93,36 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 if (p.children[1].children[0].children.length == 1) 
                 {
                     // General calling interface
-                    result ~= "    static ParseTree opCall(ParseTree p)\n"
+                    result ~= "    static TParseTree opCall(TParseTree p)\n"
                            ~  "    {\n"
-                           ~  "        ParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
+                           ~  "        TParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
                            ~  "        result.children = [result];\n"
                            ~  "        result.name = \"" ~ shortGrammarName ~ "\";\n"
                            ~  "        return result;\n"
                            ~  "    }\n\n"
-                           ~  "    static ParseTree opCall(string input)\n"
+                           ~  "    static TParseTree opCall(string input)\n"
                            ~  "    {\n";
                     static if (withMemo == Memoization.yes)
                         result ~= "        memo = null;\n";
                         
-                    result ~= "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
+                    result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
                            ~  "    }\n";
                 }
-                result ~= "}\n\n"; // end of grammar struct definition
+                result ~= "    }\n" // end of grammar struct definition
+                        ~ "}\n\n" // end of template definition
+                        ~ "alias Generic" ~ shortGrammarName ~ "!(ParseTree)." ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
                 break;
             case "Definition":
                 // children[0]: name
                 // children[1]: arrow (arrow type as first child)
                 // children[2]: description
-                result =  "    static ParseTree " ~ generateCode(p.children[0]) ~ "(ParseTree p)\n    {\n";
+                result =  "    static TParseTree " ~ generateCode(p.children[0]) ~ "(TParseTree p)\n    {\n";
                 static if (withMemo == Memoization.yes)
                     result ~= "        if(auto m = tuple(\""~p.matches[0]~"\",p.end) in memo)\n"
                             ~ "            return *m;\n"
                             ~ "        else\n"
                             ~ "        {\n"
-                            ~ "            ParseTree result = named!(";
+                            ~ "            TParseTree result = named!(";
                 else
                     result ~= "        return named!(";
                     
@@ -160,11 +166,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        }\n";
                 
                 result ~= "    }\n\n"
-                       ~  "    static ParseTree " ~ generateCode(p.children[0]) ~ "(string s)\n    {\n";
+                       ~  "    static TParseTree " ~ generateCode(p.children[0]) ~ "(string s)\n    {\n";
                 static if (withMemo == Memoization.yes)
                     result ~=  "        memo = null;\n";
                 
-                result ~= "        return " ~ generateCode(p.children[0]) ~ "(ParseTree(\"\", false,[], s));\n    }\n\n";
+                result ~= "        return " ~ generateCode(p.children[0]) ~ "(TParseTree(\"\", false,[], s));\n    }\n\n";
 
                 break;
             case "GrammarName":
