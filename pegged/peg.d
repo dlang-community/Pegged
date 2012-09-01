@@ -322,6 +322,7 @@ alias and!(oneOrMore!(or!(alpha, Alpha, literal!("_"))), zeroOrMore!(or!(digit, 
 alias named!(fuse!(discardChildren!ident), "identifier")  identifier;
 alias named!(fuse!(discardChildren!(and!(identifier, zeroOrMore!(and!(literal!".", identifier))))), "qualifiedIdentifier") qualifiedIdentifier;
 
+alias named!(literal!"/", "slash") slash;
 alias named!(literal!"\\", "backslash") backslash;
 alias named!(literal!"'", "quote") quote;
 alias named!(literal!"\"", "doublequote") doublequote;
