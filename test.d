@@ -13,13 +13,9 @@ import pegged.grammar;
 import pegged.examples.peggedgrammar;
 
 
-mixin(grammar(`
-Gram(a):
-    A <- a
-`));
 
-    
 void main()
 {
-    
+
+
 }
