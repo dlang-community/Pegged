@@ -1,9 +1,4 @@
-test*
 *~
 *.deps
 *.obj
 *.o
-sundown*
-peggeden
-libpegged.a
-gen_grammar
