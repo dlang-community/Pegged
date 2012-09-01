@@ -44,7 +44,7 @@ Some missing features:
 - No level of encapsulation. All grammars are called by their names and their inner rules are called by `grammarName.ruleName`, if needed.
 - Rules nodes are named by their rule name (`"Expr"`), not their full, qualified, grammar.rule name (`"Arithmetic.Expr"`). That will probably change, though.
 
-- Not all examples were recompiled with the new engine. I'll convert them as time permits. For now, on this branch, there is `Arithmetic`, `JSON`, `XML`, `XML2.d`, `C`and `D`. Checking the rest is on my todo list. Most of the time, it's just changing predefined rule names and some testing code.
+- Not all examples were recompiled with the new engine. I'll convert them as time permits. For now, on this branch, there is `Arithmetic`, `JSON`, `XML`, `XML2.d`, `C`, `D`, `Numbers`, `Strings`, `CSV` and `Parameterized`. Checking the rest is on my todo list (`Markdown`, `Oberon2` and `Constraints`). Most of the time, it's just changing predefined rule names and some testing code.
 
 All in all, the vastly improved parsing speed re-ignited my interest in **Pegged**, so stay tuned!
 
