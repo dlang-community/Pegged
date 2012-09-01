@@ -167,8 +167,8 @@ HtmlBlockCloseNoscript <- '<' Spnl '/' ("noscript" / "NOSCRIPT") Spnl '>'
 HtmlBlockNoscript <- HtmlBlockOpenNoscript (HtmlBlockNoscript / !HtmlBlockCloseNoscript .)* HtmlBlockCloseNoscript
 
 HtmlBlockOpenOl <- '<' Spnl ("ol" / "OL") Spnl HtmlAttribute* '>'
-HtmlBlockCloseOl <- '<' Spnl '/' ("ol" / "OL") Spnl '>'
-HtmlBlockOl <- HtmlBlockOpenOl (HtmlBlockOl / !HtmlBlockCloseOl .)* HtmlBlockCloseOl
+HtmlBlockClosendOfLine <- '<' Spnl '/' ("ol" / "OL") Spnl '>'
+HtmlBlockOl <- HtmlBlockOpenOl (HtmlBlockOl / !HtmlBlockClosendOfLine .)* HtmlBlockClosendOfLine
 
 HtmlBlockOpenP <- '<' Spnl ("p" / "P") Spnl HtmlAttribute* '>'
 HtmlBlockCloseP <- '<' Spnl '/' ("p" / "P") Spnl '>'
@@ -306,9 +306,9 @@ Str <~  NormalChar+ StrChunk*
 
 StrChunk <~ (NormalChar / '_'+ &Alphanumeric)+ / AposChunk
 
-AposChunk <- Quote &Alphanumeric
+AposChunk <- quote &Alphanumeric
 
-EscapedChar <-   BackSlash (BackQuote / BackSlash / [-/_*{}[\]()#+.!><])
+EscapedChar <-   backslash (backquote / backslash / [-/_*{}[\]()#+.!><])
 
 Entity <- HexEntity / DecEntity / CharEntity
 
@@ -317,7 +317,7 @@ Endline <-   LineBreak / TerminalEndline / NormalEndline
 NormalEndline <-   Sp Newline !BlankLine !'>' !AtxStart
                   !(Line ("<-<-<-" '<-'* / "---" '-'*) Newline)
 
-TerminalEndline <- Sp Newline EOI
+TerminalEndline <- Sp Newline eoi
 
 LineBreak <- "  " NormalEndline
 
@@ -375,13 +375,12 @@ Source  <- '<' SourceContents '>'
          / SourceContents
 
 SourceContents <- ( ( !'(' !')' !'>' Nonspacechar )+ / '(' SourceContents ')')*
-                / Eps
 
-Title <- TitleSingle / TitleDouble / Eps
+Title <- (TitleSingle / TitleDouble)
 
-TitleSingle <- Quote ( !( Quote Sp ( ')' / Newline ) ) . )*  Quote
+TitleSingle <- quote ( !( quote Sp ( ')' / Newline ) ) . )*  quote
 
-TitleDouble <- DoubleQuote ( !( DoubleQuote Sp ( ')' / Newline ) ) . )* DoubleQuote
+TitleDouble <- doublequote ( !( doublequote Sp ( ')' / Newline ) ) . )* doublequote
 
 AutoLink <- AutoLinkUrl / AutoLinkEmail
 
@@ -397,34 +396,34 @@ RefSrc <- Nonspacechar+
 
 RefTitle <- RefTitleSingle / RefTitleDouble / RefTitleParens / EmptyTitle
 
-EmptyTitle <- Eps
+EmptyTitle <- eps
 
-RefTitleSingle <- Spnl Quote ( !( Quote Sp Newline / Newline ) . )* Quote
+RefTitleSingle <- Spnl quote ( !( quote Sp Newline / Newline ) . )* quote
 
-RefTitleDouble <- Spnl DoubleQuote ( !(DoubleQuote Sp Newline / Newline) . )* DoubleQuote
+RefTitleDouble <- Spnl doublequote ( !(doublequote Sp Newline / Newline) . )* doublequote
 
 RefTitleParens <- Spnl '(' ( !(')' Sp Newline / Newline) . )*  ')'
 
 References <- ( Reference / SkipBlock )*
 
-Ticks1 <- BackQuote !BackQuote
-Ticks2 <- BackQuote BackQuote !BackQuote
-Ticks3 <- BackQuote BackQuote BackQuote !BackQuote
-Ticks4 <- BackQuote BackQuote BackQuote BackQuote !BackQuote
-Ticks5 <- BackQuote BackQuote BackQuote BackQuote BackQuote !BackQuote
+Ticks1 <- backquote !backquote
+Ticks2 <- backquote backquote !backquote
+Ticks3 <- backquote backquote backquote !backquote
+Ticks4 <- backquote backquote backquote backquote !backquote
+Ticks5 <- backquote backquote backquote backquote backquote !backquote
 
-Code <~ ( :Ticks1 Sp ( ( !BackQuote Nonspacechar )+ / !Ticks1 BackQuote+ / !( Sp Ticks1 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks1
-       / :Ticks2 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks2 BackQuote+ / !( Sp Ticks2 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks2
-       / :Ticks3 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks3 BackQuote+ / !( Sp Ticks3 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks3
-       / :Ticks4 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks4 BackQuote+ / !( Sp Ticks4 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks4
-       / :Ticks5 Sp  ( ( !BackQuote Nonspacechar )+ / !Ticks5 BackQuote+ / !( Sp Ticks5 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks5
+Code <~ ( :Ticks1 Sp ( ( !backquote Nonspacechar )+ / !Ticks1 backquote+ / !( Sp Ticks1 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks1
+       / :Ticks2 Sp  ( ( !backquote Nonspacechar )+ / !Ticks2 backquote+ / !( Sp Ticks2 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks2
+       / :Ticks3 Sp  ( ( !backquote Nonspacechar )+ / !Ticks3 backquote+ / !( Sp Ticks3 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks3
+       / :Ticks4 Sp  ( ( !backquote Nonspacechar )+ / !Ticks4 backquote+ / !( Sp Ticks4 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks4
+       / :Ticks5 Sp  ( ( !backquote Nonspacechar )+ / !Ticks5 backquote+ / !( Sp Ticks5 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks5
        )
 
 RawHtml <- HtmlComment / HtmlBlockScript / HtmlTag
 
 BlankLine <~ Sp Newline
 
-Quoted <-        DoubleQuote (!DoubleQuote .)* DoubleQuote / Quote (!Quote .)* Quote
+Quoted <-        doublequote (!doublequote .)* doublequote / quote (!quote .)* quote
 HtmlAttribute <- (AlphanumericAscii / '-')+ Spnl ('<-' Spnl (Quoted / (!'>' Nonspacechar)+))? Spnl
 HtmlComment <-   "<!--" (!"-->" .)* "-->"
 HtmlTag <-       '<' Spnl '/'? AlphanumericAscii+ Spnl HtmlAttribute* '/'? Spnl '>'
@@ -435,10 +434,32 @@ Newline <-       '\n' / '\r' '\n'?
 Sp <-            Spacechar*
 Spnl <-          Sp (Newline Sp)?
 
-SpecialChar <-   '*' / '_' / BackQuote / '&' / '[' / ']' / '(' / ')' / '<' / '!' / '#' / BackSlash / Quote / DoubleQuote / ExtendedSpecialChar
+SpecialChar <-   '*' / '_' / backquote / '&' / '[' / ']' / '(' / ')' / '<' / '!' / '#' / backslash / quote / doublequote / ExtendedSpecialChar
 NormalChar <-    !( SpecialChar / Spacechar / Newline ) .
 NonAlphanumeric <- !Alphanumeric . #[\001-\057] / [\072-\100] / [\133-\140] / [\173-\177]
-Alphanumeric <- [0-9A-Za-z] / '\200' / '\201' / '\202' / '\203' / '\204' / '\205' / '\206' / '\207' / '\210' / '\211' / '\212' / '\213' / '\214' / '\215' / '\216' / '\217' / '\220' / '\221' / '\222' / '\223' / '\224' / '\225' / '\226' / '\227' / '\230' / '\231' / '\232' / '\233' / '\234' / '\235' / '\236' / '\237' / '\240' / '\241' / '\242' / '\243' / '\244' / '\245' / '\246' / '\247' / '\250' / '\251' / '\252' / '\253' / '\254' / '\255' / '\256' / '\257' / '\260' / '\261' / '\262' / '\263' / '\264' / '\265' / '\266' / '\267' / '\270' / '\271' / '\272' / '\273' / '\274' / '\275' / '\276' / '\277' / '\300' / '\301' / '\302' / '\303' / '\304' / '\305' / '\306' / '\307' / '\310' / '\311' / '\312' / '\313' / '\314' / '\315' / '\316' / '\317' / '\320' / '\321' / '\322' / '\323' / '\324' / '\325' / '\326' / '\327' / '\330' / '\331' / '\332' / '\333' / '\334' / '\335' / '\336' / '\337' / '\340' / '\341' / '\342' / '\343' / '\344' / '\345' / '\346' / '\347' / '\350' / '\351' / '\352' / '\353' / '\354' / '\355' / '\356' / '\357' / '\360' / '\361' / '\362' / '\363' / '\364' / '\365' / '\366' / '\367' / '\370' / '\371' / '\372' / '\373' / '\374' / '\375' / '\376' / '\377'
+Alphanumeric <- [0-9A-Za-z] / '\200' / '\201' / '\202' / '\203' / '\204' 
+               / '\205' / '\206' / '\207' / '\210' / '\211' / '\212' 
+               / '\213' / '\214' / '\215' / '\216' / '\217' / '\220' 
+               / '\221' / '\222' / '\223' / '\224' / '\225' / '\226' 
+               / '\227' / '\230' / '\231' / '\232' / '\233' / '\234' 
+               / '\235' / '\236' / '\237' / '\240' / '\241' / '\242' 
+               / '\243' / '\244' / '\245' / '\246' / '\247' / '\250' 
+               / '\251' / '\252' / '\253' / '\254' / '\255' / '\256' 
+               / '\257' / '\260' / '\261' / '\262' / '\263' / '\264' 
+               / '\265' / '\266' / '\267' / '\270' / '\271' / '\272' 
+               / '\273' / '\274' / '\275' / '\276' / '\277' / '\300' 
+               / '\301' / '\302' / '\303' / '\304' / '\305' / '\306' 
+               / '\307' / '\310' / '\311' / '\312' / '\313' / '\314' 
+               / '\315' / '\316' / '\317' / '\320' / '\321' / '\322' 
+               / '\323' / '\324' / '\325' / '\326' / '\327' / '\330' 
+               / '\331' / '\332' / '\333' / '\334' / '\335' / '\336' 
+               / '\337' / '\340' / '\341' / '\342' / '\343' / '\344' 
+               / '\345' / '\346' / '\347' / '\350' / '\351' / '\352' 
+               / '\353' / '\354' / '\355' / '\356' / '\357' / '\360' 
+               / '\361' / '\362' / '\363' / '\364' / '\365' / '\366' 
+               / '\367' / '\370' / '\371' / '\372' / '\373' / '\374' 
+               / '\375' / '\376' / '\377'
+               
 AlphanumericAscii <- [A-Za-z0-9]
 Digit <- [0-9]
 BOM <- "\357\273\277"
@@ -447,24 +468,24 @@ HexEntity <-     '&' '#' [Xx] [0-9a-fA-F]+
 DecEntity <-     '&' '#' [0-9]+
 CharEntity <-    '&' [A-Za-z0-9]+
 
-NonindentSpace <-    "   " / "  " / " " / Eps
+NonindentSpace <-    "   " / "  " / " " / eps
 Indent <-            "\t" / "    "
 IndentedLine <-      :Indent Line
 OptionallyIndentedLine <- Indent? Line
 
 Line <~  (!'\r' !'\n' .)* Newline 
-         / .+ EOI 
+         / .+ eoi 
 
 SkipBlock <- HtmlBlock
           / ( !'#' !SetextBottom1 !SetextBottom2 !BlankLine Line )+ BlankLine*
           / BlankLine+
           / Line
           
-ExtendedSpecialChar <- '.' / '-' / Quote / DoubleQuote / '^'
+ExtendedSpecialChar <- '.' / '-' / quote / doublequote / '^'
 
 Smart <- Ellipsis / Dash / SingleQuoted / DoubleQuoted / Apostrophe
 
-Apostrophe <- Quote
+Apostrophe <- quote
 
 Ellipsis <- "..." / ". . ."
 
@@ -474,15 +495,15 @@ EnDash <- '-' &Digit
 
 EmDash <- "---" / "--"
 
-SingleQuoteStart <- Quote !(Spacechar / Newline)
+SingleQuoteStart <- quote !(Spacechar / Newline)
 
-SingleQuoteEnd <- Quote !Alphanumeric
+SingleQuoteEnd <- quote !Alphanumeric
 
 SingleQuoted <- SingleQuoteStart ( !SingleQuoteEnd Inline )+  SingleQuoteEnd
 
-DoubleQuoteStart <- DoubleQuote
+DoubleQuoteStart <- doublequote
 
-DoubleQuoteEnd <- DoubleQuote
+DoubleQuoteEnd <- doublequote
 
 DoubleQuoted <-  DoubleQuoteStart ( !DoubleQuoteEnd Inline )+ DoubleQuoteEnd
                 

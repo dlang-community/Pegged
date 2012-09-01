@@ -88,6 +88,8 @@ A <- List(B, ',')   A = B {"," B}.
 
 /// The Oberon-2 PEG grammar (Finally!)
 enum string Oberon2Grammar =  `
+Oberon2:
+
 Module 			<- "MODULE" Identifier ";" ImportList? DeclSeq ("BEGIN" StatementSeq)? "END" Identifier "."
 	
 ImportList 		<- "IMPORT" (Identifier ":=")? Identifier ("," (Identifier ":=")? Identifier)* ";"
@@ -102,8 +104,8 @@ VarDecl  		<-  IdentList ":" Type
 ProcDecl   		<-  "PROCEDURE" Receiver? IdentDef FormalPars? ";" DeclSeq ("BEGIN" StatementSeq)? "END" Identifier
 ForwardDecl  	<-  "PROCEDURE" "^" Receiver? IdentDef FormalPars?
 FormalPars   	<-  "(" (FPSection (";" FPSection)*)? ")" (":" Qualident)?
-FPSection   	<-   VAR? Identifier ("," Identifier)? ":" Type
-Receiver  		<-   "(" VAR? Identifier ":" Identifier ")"
+FPSection   	<-   "VAR"? Identifier ("," Identifier)? ":" Type
+Receiver  		<-   "(" "VAR"? Identifier ":" Identifier ")"
 
 Type   			<-  Qualident
                  / "ARRAY" (ConstExpr ("," ConstExpr)*)? "OF" Type
@@ -135,7 +137,7 @@ WhileStatement 	<-	"WHILE" Expr "DO" StatementSeq "END"
 RepeatStatement	<-	"REPEAT" StatementSeq "UNTIL" Expr
 ForStatement	<-	"FOR" Identifier ":=" Expr "TO" Expr ("BY" ConstExpr)? "DO" StatementSeq "END"
 LoopStatement	<-	"LOOP" StatementSeq "END"
-WithStatement	<-  "WITH" Guard "DO" StatementSeq ("|" Guard "DO" StatementSeq)* (ELSE StatementSeq)? "END"
+WithStatement	<-  "WITH" Guard "DO" StatementSeq ("|" Guard "DO" StatementSeq)* ("ELSE" StatementSeq)? "END"
 ExitStatement	<- 	"EXIT"
 ReturnStatement <-  "RETURN" Expr?
 			
@@ -184,25 +186,25 @@ Digit			<- [0-9]
 # 0.57712566D-6	LONGREAL	0.00000057712566 
 
 String              <- DoubleQuotedString / SingleQuotedString
-DoubleQuotedString  <- DoubleQuote DQChar* DoubleQuote
-SingleQuotedString  <- Quote SQChar* Quote
+DoubleQuotedString  <- doublequote DQChar* doublequote
+SingleQuotedString  <- quote SQChar* quote
 
 DQChar          <- EscapeSequence 
-                / !DoubleQuote .
+                / !doublequote .
 
 SQChar          <- EscapeSequence 
-                / !Quote .
+                / !quote .
         
-EscapeSequence  <- BackSlash ( Quote
-                            / DoubleQuote
-                            / BackSlash
+EscapeSequence  <- backslash ( quote
+                            / doublequote
+                            / backslash
                             / [abfnrtv]
                             / 'x' HexDigit HexDigit
                             / 'u' HexDigit HexDigit HexDigit HexDigit
                             / 'U' HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit HexDigit
                             )
 
-Character       <- Quote (!Quote (EscapeSequence / .)) Quote
+Character       <- quote (!quote (EscapeSequence / .)) quote
 
 #Oberon-2 comments look like (* Some Text *)	
 Comment <- '(*' (!'*)' .)* '*)'		

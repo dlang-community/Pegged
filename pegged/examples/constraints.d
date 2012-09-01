@@ -1,3 +1,10 @@
+/**
+ * This module was used to parse template constraints
+ * and instantiate the various constituent,
+ * to find which one is blocking a template to be instantiated.
+ * 
+ * I have to code this again, using the D parser.
+ */
 module pegged.examples.constraints;
 
 import std.conv;
@@ -5,38 +12,8 @@ import std.stdio;
 import std.traits;
 
 import pegged.grammar;
-import pegged.examples.dgrammar;
 
-mixin(grammar(
-   `ExtractConstraint <~ :(!") if (" _)* :") if (" ConstraintCode :")" EOI
-    ConstraintCode    <~ (!(")" EOI) _)*`
-));
 
-string getConstraint(alias templateName)() @property
-{
-    enum string fullName = templateName.stringof;
-    return ExtractConstraint.parse(fullName).capture[0];
-}
-
-mixin(grammar( 
-   `ExtractTemplateArgumentList <- :(!Name _)* :Name ArgList :BeginConstraint
-    Name                        <- QualifiedIdentifier "("
-    ArgList                     <~ (!BeginConstraint _)*
-    BeginConstraint             <- ") if ("`
-));
-
-mixin(grammar(
-   `ConstraintExp <- Spacing AndExp (Spacing "||" Spacing AndExp)* Spacing
-    AndExp  <- Primary (Spacing "&&" Spacing Primary)* Spacing
-    Primary <- NotExp 
-             / Parens 
-             / Ident
-    NotExp  <- :'!' Primary
-    Parens  <- '(' ConstraintExp ')'
-    Ident   <~ IsExpr
-              / Type
-    IsExpr  <- "is(" Spacing Type Spaces QualifiedIdentifier? Spacing ((":" / "==") Spacing Type)? ")"`
-));
 
 string constraintToCode(ParseResult p)
 {
@@ -56,13 +33,13 @@ string constraintToCode(ParseResult p)
         case "Primary":
             return constraintToCode(p.children[0]);
         case "NotExp":
-            return "!" ~ p.capture[0];
+            return "!" ~ p.matches[0];
         case "Parens":
             return "("~constraintToCode(p.children[0])~")";
         case "Ident":
-            return p.capture[0];
+            return p.matches[0];
         case "IsExpr":
-            return p.capture[0];
+            return p.matches[0];
         default:
             break;
     }
@@ -87,7 +64,7 @@ string[] generateAllConstraints(ParseResult p)
 string testAllConstraints(string input)() @property
 {
     string result = "string[] testResult;\n";
-    string[] constraints = generateAllConstraints(Constraint.parse(input));
+    string[] constraints = generateAllConstraints(Constraint(input));
     foreach(i, c; constraints)
     {
         auto mock = "mock"~to!string(i);
@@ -105,13 +82,13 @@ string argListAlias(ParseResult p)
     foreach(i,arg; p.children)
         if (arg.children[0].name != "TupleParameter")
         {
-            aliases ~= "alias Args["~to!string(i)~"] " ~ arg.capture[0] ~ ";\n";
-            associations ~= "`" ~ arg.capture[0] ~ ": ` ~ Args["~to!string(i)~"].stringof ~ `, ` ~ "; 
+            aliases ~= "alias Args["~to!string(i)~"] " ~ arg.matches[0] ~ ";\n";
+            associations ~= "`" ~ arg.matches[0] ~ ": ` ~ Args["~to!string(i)~"].stringof ~ `, ` ~ "; 
         }
         else
         {
-            aliases ~= "alias Args["~to!string(i)~"..$] " ~ arg.capture[0] ~ ";\n";
-            associations ~= "`" ~ arg.capture[0] ~ ": ` ~ Args["~to!string(i)~"..$].stringof ~ `, `"; 
+            aliases ~= "alias Args["~to!string(i)~"..$] " ~ arg.matches[0] ~ ";\n";
+            associations ~= "`" ~ arg.matches[0] ~ ": ` ~ Args["~to!string(i)~"..$].stringof ~ `, `"; 
         }
     return aliases ~ associations[0..$-6]~" ~ `)`;\n";
 }
@@ -144,8 +121,8 @@ else
 auto testInstantiation(alias name, Args...)() @property
 {
     enum constraint = getConstraint!name;
-    enum argList0 = "("~ExtractTemplateArgumentList.parse(name.stringof).capture[0] ~")";
-    enum argList = Type.TemplateParametersList.parse(argList0);
+    enum argList0 = "("~ExtractTemplateArgumentList(name.stringof).matches[0] ~")";
+    enum argList = Type.TemplateParametersList(argList0);
     enum aliases = argListAlias(argList);
     mixin(aliases);
     enum constraints = generateAllConstraints(ConstraintExp.parse(constraint));
