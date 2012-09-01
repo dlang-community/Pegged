@@ -407,17 +407,20 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     result ~= "    static ParseTree[Tuple!(string, uint)] memo;\n";
                 }
                 
-                result ~= "    enum names = [";
+                result ~= "    static bool[string] names;\n"
+                        ~ "    static this()\n    {\n"
+                        ~ "        names = [";
                 
                 ParseTree[] definitions = p.children[1 .. $];
                 bool userDefinedSpacing = false;
-                foreach(def; definitions)
+                foreach(i,def; definitions)
                 {
                     result ~= "`" ~ def.matches[0] ~ "`:true, ";
+                    if (i%4 == 3) result ~= "\n                 ";
                     if (def.matches[0] == "Spacing") // user-defined spacing
                         userDefinedSpacing = true;
                 }
-                result = result[0..$-2] ~ "];\n";
+                result = result[0..$-2] ~ "];\n    }\n";
                 
                 result ~= "    mixin decimateTree;\n";
                 

@@ -26,7 +26,6 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
 
 enum Memoization { no, yes }
 
-
 string grammar(Memoization withMemo = Memoization.yes)(string definition)
 {
     ParseTree defAsParseTree = Pegged(definition);
@@ -56,17 +55,20 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     result ~= "    static ParseTree[Tuple!(string, uint)] memo;\n";
                 }
                 
-                result ~= "    enum names = [";
+                result ~= "    static bool[string] names;\n"
+                        ~ "    static this()\n    {\n"
+                        ~ "        names = [";
                 
                 ParseTree[] definitions = p.children[1 .. $];
                 bool userDefinedSpacing = false;
-                foreach(def; definitions)
+                foreach(i,def; definitions)
                 {
                     result ~= "`" ~ def.matches[0] ~ "`:true, ";
+                    if (i%4 == 3) result ~= "\n                 ";
                     if (def.matches[0] == "Spacing") // user-defined spacing
                         userDefinedSpacing = true;
                 }
-                result = result[0..$-2] ~ "];\n";
+                result = result[0..$-2] ~ "];\n    }\n";
                 
                 result ~= "    mixin decimateTree;\n";
                 
@@ -99,9 +101,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         
                     result ~= "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
                            ~  "    }\n";
-                
-                    //result ~= "    ParseTree opDispatch(string rule)(string input)\n{\n";
-                    //result ~= "        mixin(\"return \" ~ rule ~ \"(ParseTree(``, false, [], input, 0, 0))\");\n}\n";
                 }
                 result ~= "}\n\n"; // end of grammar struct definition
                 break;
@@ -161,8 +160,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result ~= "    }\n\n"
                        ~  "    static ParseTree " ~ generateCode(p.children[0]) ~ "(string s)\n    {\n";
                 static if (withMemo == Memoization.yes)
-                    result ~=  "        memo = null;";
-                    
+                    result ~=  "        memo = null;\n";
+                
                 result ~= "        return " ~ generateCode(p.children[0]) ~ "(ParseTree(\"\", false,[], s));\n    }\n\n";
 
                 break;

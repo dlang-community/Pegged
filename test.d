@@ -347,10 +347,22 @@ struct Arithmetic
     
 void main()
 {
-    auto input = "1+1";
-    
+    auto input = "1+(1*7898/(9-8+4/1*44-23/45))";
+writeln(grammar(`
+    Arithmetic2:
+    Term    < Factor (Add / Sub)*
+    Add     < "+" Factor
+    Sub     < "-" Factor
+    Factor  < Primary (Mul / Div)*
+    Mul     < "*" Primary
+    Div     < "/" Primary
+    Primary < Parens / Neg / Number
+    Parens  < :"(" Term :")"
+    Neg     < "-" Primary
+    Number  < ~([0-9]+)
+`));
     int N = 256;
-    foreach(i; 0..5)
+    foreach(i; 0..4)
     {
         auto b = benchmark!(()=> Arithmetic2(input), ()=> Arithmetic(input))(N);
         auto first = b[0].to!("msecs",float)/N;
@@ -359,5 +371,4 @@ void main()
         input = input ~ "+" ~ input ~ "-" ~ input;
     }
 
-    
 }
