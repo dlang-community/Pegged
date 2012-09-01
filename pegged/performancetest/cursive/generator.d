@@ -4,8 +4,8 @@ import pegged.grammar;
 
 void main()
 {
-    asModule("pegged.performancetest.cursive.parser",
-             "parser",
+    asModule("pegged.performancetest.cursive.parser2",
+             "parser2",
              
             
              "Cursive:

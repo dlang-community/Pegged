@@ -182,7 +182,35 @@ struct Cursive
                  `AccessorBody`:true, `Method`:true, `MethodModifiers`:true, `MethodBody`:true, 
                  `Constructor`:true, `Finalizer`:true, `BlockStatement`:true];
     }
-    mixin decimateTree;
+    static ParseTree decimateTree(ParseTree p)
+    {
+        if(p.children.length == 0) return p;
+        
+        ParseTree[] filterChildren(ParseTree pt)
+        {
+            ParseTree[] result;
+            foreach(child; pt.children)
+            {
+                if (child.name in names) // keep nodes that belongs to the current grammar
+                {
+                    child.children = filterChildren(child);
+                    result ~= child;
+                }
+                else if (child.name == "keep") // 'keep' node are never discarded. They have only one child, the node to keep
+                {
+                    result ~= child.children[0];
+                }
+                else // discard this node, but see if its children contain nodes to keep
+                {
+                    result ~= filterChildren(child);
+                }
+            }
+            return result;
+        }
+        p.children = filterChildren(p);
+        return p;
+    }
+
     alias spacing Spacing;
 
     static ParseTree Program(ParseTree p)
