@@ -116,11 +116,16 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 // children[0]: name
                 // children[1]: arrow (arrow type as first child)
                 // children[2]: description
-                if (p.children[0].children.length > 1)
-                    result =  "    static TParseTree " ~ generateCode(p.children[0])[0..$-1] ~ ", T : TParseTree)(T p)\n    {\n";
-                else
-                    result =  "    static TParseTree " ~ generateCode(p.children[0]) ~ "(TParseTree p)\n    {\n";
-    
+                bool parameterizedRule = p.children[0].children.length > 1;
+                
+                if (parameterizedRule)
+                {
+                    result =  "    template " ~ generateCode(p.children[0]) ~ "\n"
+                            ~ "    {\n";
+                }
+                
+                result ~=  "    static TParseTree " ~ p.matches[0] ~ "(TParseTree p)\n    {\n";
+                
                 static if (withMemo == Memoization.yes)
                     result ~= "        if(auto m = tuple(\""~p.matches[0]~"\",p.end) in memo)\n"
                             ~ "            return *m;\n"
@@ -170,24 +175,24 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        }\n";
                 
                 result ~= "    }\n\n";
-                if (p.children[0].children.length > 1)
-                    result ~= "    static TParseTree " ~ generateCode(p.children[0])[0..$-1] ~ ", T : string)(T s)\n    {\n";
-                else
-                    result ~= "    static TParseTree " ~ generateCode(p.children[0]) ~ "(string s)\n    {\n";
+                result ~= "    static TParseTree " ~ p.matches[0] ~ "(string s)\n    {\n";
+                                
                 static if (withMemo == Memoization.yes)
                     result ~=  "        memo = null;\n";
+                
                 ParseTree toCall = p.children[0];
-                if (toCall.children.length > 1)
+                if (parameterizedRule)
                 {
                     toCall.children[1].name = "ArgList";
                     foreach(ref child;toCall.children[1].children)
                         child.name = "SingleParam";
-                    result ~= "        return " ~ generateCode(toCall)[0..$-1] ~ ",TParseTree)(TParseTree(\"\", false,[], s));\n    }\n\n";
                 }
-                else
-                {
-                    result ~= "        return " ~ generateCode(toCall) ~ "(TParseTree(\"\", false,[], s));\n    }\n\n";
-                }
+                
+                result ~= "        return " ~ generateCode(toCall) ~ "(TParseTree(\"\", false,[], s));\n    }\n\n";
+                
+                if (parameterizedRule)
+                    result ~= "     }\n";
+                
                 break;
             case "GrammarName":
                 result = generateCode(p.children[0]);
@@ -281,7 +286,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result = "!(";
                 foreach(child; p.children)
                     result ~= generateCode(child) ~ ", "; // Allow  A <- List('A'*,',') 
-                result = result[0..$-2] ~ ", TParseTree)";
+                result = result[0..$-2] ~ ")";
                 break;
             case "Identifier":
                 result = p.matches[0];
