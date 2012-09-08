@@ -10,15 +10,26 @@ import std.stdio;
 import std.typecons;
 
 import pegged.grammar;
-import pegged.examples.peggedgrammar;
 
-mixin(grammar("
-Gram:
-    A <- 'a'*
-    "));
+enum parser = grammar(`
+PROTOBUF:
+    ProtoDefinition < (Import / ';')*
+    Import          < "import" identifier ';' 
+`);
+
+pragma(msg, parser);
+
+mixin(parser);
+
+enum ctParseTree = PROTOBUF(`
+    import "path/to/def.proto";
+
+    message ProtoMessage {}
+`);
+
+pragma(msg, ctParseTree);
 
 void main()
 {
-    writeln(Gram("aaab"));
-
+    writeln('\n',ctParseTree);
 }
