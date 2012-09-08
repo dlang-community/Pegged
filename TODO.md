@@ -13,6 +13,11 @@ TODO: Explain the tree decimation rules.
 
 Long term:
 
+TODO: 'hooked' rules: rules that can be extended at runtime, or modified. I want to have a D parser that accepts syntactic extensions. I have these hooked rules, they work, but the end-user code is not as polished as I'd like.
+TODO: parsing a range.
+TODO: a function that reconstitutes D code from a parse tree.
+TODO: tree functions (at least filtering, reducing and matching on trees).
+TODO: code lowerings.
 TODO: Better error report: explaining what was expected "rule Digit failed at XXX, expected '0'-'9'"
 TODO: Add a debug mode that logs everything a parser does: which rule was tested by sequences and choices, which was unsuccessful, and so on.
 TODO: add an enum inside ParseTree's, containing the rules's name, to enable final switch selection
