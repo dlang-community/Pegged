@@ -1,19 +1,22 @@
 module pegged.examples.arithmetic;
 
+import std.conv: to;
+
 import pegged.grammar;
 
 mixin(grammar(`
 Arithmetic:
-    Term    < Factor (Add / Sub)*
-    Add     < "+" Factor
-    Sub     < "-" Factor
-    Factor  < Primary (Mul / Div)*
-    Mul     < "*" Primary
-    Div     < "/" Primary
-    Primary < Parens / Neg / Number
-    Parens  < :"(" Term :")"
-    Neg     < "-" Primary
-    Number  < ~([0-9]+)
+    Term     < Factor (Add / Sub)*
+    Add      < "+" Factor
+    Sub      < "-" Factor
+    Factor   < Primary (Mul / Div)*
+    Mul      < "*" Primary
+    Div      < "/" Primary
+    Primary  < Parens / Neg / Number / Variable
+    Parens   < :"(" Term :")"
+    Neg      < "-" Primary
+    Number   < ~([0-9]+)
+    Variable <- identifier
 `));
 
 float interpreter(string expr)
