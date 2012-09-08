@@ -56,7 +56,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 static if (withMemo == Memoization.yes)
                 {
                     result ~= "    import std.typecons:Tuple, tuple;\n";
-                    result ~= "    static TParseTree[Tuple!(string, uint)] memo;\n";
+                    result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n";
                 }
                 
                 result ~= "    static bool isRule(string s)\n"
