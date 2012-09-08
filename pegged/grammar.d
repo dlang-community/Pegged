@@ -7,12 +7,12 @@ module pegged.grammar;
 public import pegged.peg;
 import pegged.parser;
 
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString)
+void asModule(Memoization withMemo = Memoization.no)(string moduleName, string grammarString)
 {
     asModule!(withMemo)(moduleName, moduleName, grammarString);
 }
 
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString)
+void asModule(Memoization withMemo = Memoization.no)(string moduleName, string fileName, string grammarString)
 {
     import std.stdio;
     auto f = File(fileName ~ ".d","w");
@@ -28,7 +28,7 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
 
 enum Memoization { no, yes }
 
-string grammar(Memoization withMemo = Memoization.yes)(string definition)
+string grammar(Memoization withMemo = Memoization.no)(string definition)
 {
     ParseTree defAsParseTree = Pegged(definition);
     
