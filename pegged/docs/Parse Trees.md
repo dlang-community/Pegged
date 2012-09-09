@@ -7,7 +7,7 @@ In **Pegged**, a parse tree is a very simple recursive struct:
 struct ParseTree
 {
     string name;
-    bool success;
+    bool successful;
     string[] matches;
     
     string input;
@@ -19,7 +19,7 @@ struct ParseTree
 
 `name` contains the qualified name of the rule that created the node: "Arithmetic.Expr", "Input.line", etc. It's useful to switch on nodes to generate D code, see [[Generating Code]]. The `grammarName.ruleName` was chosen to help disambiguate nodes created by different parsers. Predefined rules have a simple name, like `digit` or `identifier`.
 
-`success` indicates whether or not the parse was successful.
+`successful` indicates whether or not the parse was successful.
 
 `matches` contains the matches. It's a `string[]` and not a `string` since a complete parsing expression can produce many matches. For examples `a*` will contain all successive matches of rule `a`, which may well be different at each call.
 
