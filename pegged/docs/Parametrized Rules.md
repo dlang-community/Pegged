@@ -1,7 +1,7 @@
-Parametrized Rules
+Parameterized Rules
 ==================
 
-**Pegged** piggybacks on D nice template syntax to get parametrized rules: rules that take other parsing expressions as arguments. The syntax is quite simple, just put a comma-separated list right after the rule name (no space):
+**Pegged** piggybacks on D nice template syntax to get parameterized rules: rules that take other parsing expressions as arguments. The syntax is quite simple, just put a comma-separated list right after the rule name (no space):
 
 ```
 List(Elem, Sep) <  Elem (Sep Elem)*
@@ -9,7 +9,7 @@ List(Elem, Sep) <  Elem (Sep Elem)*
 
 Which, as you might gather, means `List(Elem, Sep)` is a parser recognizing an `Elem` possibly followed by more `Sep`-separated `Elem`s (it also skips the spacing).
 
-To use a parametrized rule, invoke it with parsing expressions, putting arguments inside parenthesis:
+To use a parameterized rule, invoke it with parsing expressions, putting arguments inside parenthesis:
 
 ```
 ArgList <- '(' List(Identifier, ',') ')'
@@ -17,10 +17,10 @@ ArgList <- '(' List(Identifier, ',') ')'
 
 So, an `ArgList` is a comma-separated list of identifiers enclosed between parenthesis. **Pegged** is smart enough to produce the correct code for parsing expressions used as argument, which can be as complicated as you want (any parsing expression will do). In the previous example, `','` is correctly transformed into the comma-matching parser.
 
-What Parametrized Rules Can Do For You
+What Parameterized Rules Can Do For You
 --------------------------------------
 
-That means any repetitive pattern you see in your grammar can be extracted and abstracted away as a parametrized rule. For example, it's common in PEG to see:
+That means any repetitive pattern you see in your grammar can be extracted and abstracted away as a parameterized rule. For example, it's common in PEG to see:
 
 ```
 Rule <~ (!Expr .)*
@@ -47,7 +47,7 @@ Until(Expr, Pred) <- (!Pred Expr)*
 AllUntil(Pred)    <~ Until(., Pred)
 ```
 
-**Pegged** parsers are classes (see [[Behind the Curtain: How Pegged Works]]). As you may gather, parametrized rules are just class templates:
+**Pegged** parsers are classes (see [[Behind the Curtain: How Pegged Works]]). As you may gather, parameterized rules are just class templates:
 
 ```d
 class Until(Expr, Pred) : ZeroOrMore!(Seq!(NegLookAhead!(Pred), Expr)) { ... }
@@ -62,7 +62,7 @@ World");
 assert(p.capture[0] == "Hello");
 ```
 
-That also means it's possible to define parametrized rules with different arities (number of args):
+That also means it's possible to define parameterized rules with different arities (number of args):
 
 ```d
 List(Elem, Sep) <- Elem (Sep Elem)*
@@ -80,10 +80,10 @@ List(Elem, Sep = ',') < Elem (:Sep Elem)*
 
 The default value is internally converted into a standard **Pegged** parser, and then the D engine for template default parameters does the rest of the job.
 
-Parametrized Grammars
+parameterized Grammars
 ---------------------
 
-Entire grammars can be parametrized and can use the passed expressions. The syntax is the same than for rules: put a comma-separated list right after the rule name, before the colon:
+Entire grammars can be parameterized and can use the passed expressions. The syntax is the same than for rules: put a comma-separated list right after the rule name, before the colon:
 
 ```d
 mixin(grammar(`
@@ -94,7 +94,7 @@ Arithmetic(Atom) :
 `));
 ```
 
-To use the parametrized grammar directly, call it with parsing expressions as arguments:
+To use the parameterized grammar directly, call it with parsing expressions as arguments:
 
 ```d
 alias Or!(Identifier, Fuse!(OneOrMore!(Digit))) Atom; // more or less equivalent to Atom <- Identifier / ~Digit+
@@ -120,7 +120,7 @@ void main()
 
 Note the `^` (promote aka 'keep') operator before the `Arithmetic(Atom)` call, to keep the resulting parse node, external to the grammar.
 
-We can continue this matrioshka construction even further: `Relation` itself can be parametrized and used into a Boolean grammar, recognizing sentences like `(x < 1) || (x+y == 0)`:
+We can continue this matrioshka construction even further: `Relation` itself can be parameterized and used into a Boolean grammar, recognizing sentences like `(x < 1) || (x+y == 0)`:
 
 ```d
 mixin(grammar(`
@@ -156,12 +156,12 @@ void main()
 So, `Boolean` calls `Relation`, which in turn calls `Arithmetic`. Isn't that cool?
 
 
-Parametrized First Rules for Anonymous Grammars
+Parameterized First Rules for Anonymous Grammars
 -----------------------------------------------
 
-Parametrized rules are inner class templates in the bigger class (the grammar itself). This means that, according to the D grammar, these definitions must be placed first in the class code else there is a forward reference error. **Pegged** does this automatically for you: it scans the grammar definitions and reorders them accordingly. You do not have to worry about it: just define your grammar in the order you wish.
+parameterized rules are inner class templates in the bigger class (the grammar itself). This means that, according to the D grammar, these definitions must be placed first in the class code else there is a forward reference error. **Pegged** does this automatically for you: it scans the grammar definitions and reorders them accordingly. You do not have to worry about it: just define your grammar in the order you wish.
 
-But there is a catch: **Pegged** considers that the root rule of a grammar (the one that's called when you just use the grammar name in the `.parse()` call) is the very first rule. In case this first rule is parametrized, **Pegged** cleans it up somewhat: it recognized the rule as parametrized and makes the entire grammar parametrized, with an non-parametrized internal first rule.
+But there is a catch: **Pegged** considers that the root rule of a grammar (the one that's called when you just use the grammar name in the `.parse()` call) is the very first rule. In case this first rule is parameterized, **Pegged** cleans it up somewhat: it recognized the rule as parameterized and makes the entire grammar parameterized, with an non-parameterized internal first rule.
 
 ```
 A(B) <- B*
@@ -174,7 +174,7 @@ A(B):
     A <- B
 ```
 
-Which was what I wanted all the time I used anonymous grammars with a parametrized first rule. It can be dangerous, though:
+Which was what I wanted all the time I used anonymous grammars with a parameterized first rule. It can be dangerous, though:
 
 ```d
 // This creates the 'List' grammar, with one rule called 'List' also.
@@ -193,9 +193,9 @@ In the previous example, that may seem obvious. But sometimes, while adding rule
 Other Examples
 --------------
 
-There is a module presenting different parametrized rules: [here](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/parametrized.d).  
+There is a module presenting different parameterized rules: [here](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/parameterized.d).  
 
-As it contains *only* parametrized rules, do not use it 'raw'.
+As it contains *only* parameterized rules, do not use it 'raw'.
 
 Future Extensions
 -----------------
@@ -215,7 +215,7 @@ Another very interesting thing would be to allow numerical arguments (2, as oppo
 Repeat(Expr, n) <- Expr  if(n > 1)(Repeat(Expr, n-1))
 ```
 
-Also, associated to that, guards/constraints on parametrized rules:
+Also, associated to that, guards/constraints on parameterized rules:
 
 ```
 Repeat(Expr,n) if (n> 0) <- Expr   if(n > 1)(Repeat(Expr, n-1))
@@ -223,7 +223,7 @@ Repeat(Expr,n) if (n> 0) <- Expr   if(n > 1)(Repeat(Expr, n-1))
 
 * * * *
 
-Next Lesson: [[Named Captures]]
+Next Lesson: [[Semantic Actions]]
 
 
 * * * *

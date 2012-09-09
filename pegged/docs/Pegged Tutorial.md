@@ -20,18 +20,18 @@ The following pages will show you how to use **Pegged** to create grammars and p
 
 8) [[Parametrized Rules]]
 
-9) [[Named Captures]]
+9) [[Semantic Actions]]
 
-10) [[Semantic Actions]]
+10) [[Generating Code]]
 
-11) [[Generating Code]]
+11) [[User-Defined Parsers]]
 
-12) [[User-Defined Parsers]]
+12) [[Writing Your Own Grammar]]
 
-13) [[Writing Your Own Grammar]]
+13) [[Behind the Curtain: How Pegged Works]]
 
-14) [[Four Levels of Encapsulation]]
+14) [[Optimizations]]
 
-15) [[Behind the Curtain: How Pegged Works]]
+To Add: 
 
-16) [[Optimizations]]
+* Memoization

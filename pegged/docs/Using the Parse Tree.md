@@ -3,16 +3,14 @@ Using the Parse Tree
 
 **Pegged** parse trees are described here: [[Parse Trees]].
 
-As you could see, there are a deliberately simple structure. There are not multiple types to encode AST nodes and whatnots. Since D has wonderful compile-time evaluation capabilities and code can be mixed-in, **Pegged** has all the power it needs: parse trees are structs, they are easy to use at compile-time (classes are a bit trickier for now, so I chose structs): you can iterate on them, search for specific nodes, delete nodes or simplify them, etc.
+As you could see, there are a deliberately simple structure. There are no multiple types to encode AST nodes and whatnots. Since D has wonderful compile-time evaluation capabilities and code can be mixed-in, **Pegged** has all the power it needs: parse trees are structs, they are easy to use at compile-time (classes are a bit trickier for now, so I chose structs): you can iterate on them, search for specific nodes, delete nodes or simplify them, etc.
 
 See [[Semantic Actions]], [[User-Defined Parsers]] and [[Generating Code]] for more on this.
 
-An `Output` contains a `ParseTree` member called `parseTree`. Since `Output` uses `alias this`, the parse tree is directly accessible:
-
 ```
-auto p = Expr.parse(input);
-writeln(p.capture); // really p.parseTree.capture
-foreach(ref child; p.children) // in truth, we are iterating on p.parseTree.children
+auto p = Arithmetic(input);
+writeln(p.matches);
+foreach(ref child; p.children)
     doSomething(child);
 ```
 
@@ -42,35 +40,37 @@ Once you have a parse tree, an external function can be called to transform the 
 And so on... First, let's define a small grammar for such a wiki syntax:
 
 ```d
-Document <- Element*
-Element  <- Section 
+Wiki:
+Document <  Element*
+Element  <  Section 
           / Subsection
           / Emph
           / List
           / Text
 
-Section     <- :SEC    Title :SEC
-Subsection  <- :SUBSEC Title :SUBSEC
-Title       <~ (!(SUBSEC / SEC)>.)*
-Emph        <- :EMPH Text :EMPH
-List        <- ListElement+
-ListElement <- :LIST (!EOL>.)*>EOL
-Text        <~ (!MARKUP>.)*
+Section     <  :SEC    Title :SEC
+Subsection  <  :SUBSEC Title :SUBSEC
+Title       <~ (!(SUBSEC / SEC) .)*
+Emph        <  :EMPH Text :EMPH
+List        <  ListElement+
+ListElement <  :LIST (!endOfLine .)* endOfLine
+Text        <~ (!MARKUP .)*
 
-MARKUP <- SUBSEC / SEC / EMPH / LIST
-SEC    <- "==="
-SUBSEC <- "=="
-EMPH   <- "_"
-LIST   <- "*"
+MARKUP <  SUBSEC / SEC / EMPH / LIST
+SEC    <  "==="
+SUBSEC <  "=="
+EMPH   <  "_"
+LIST   < "*"
 ```
 
-A wiki document is a bunch of elements, which can be any of (sections, subsection, ...). I put the markup elements in a different part of the grammar instead of inlining them to allow for an easier extension: if you decide that list can be marked by `+` and `-` also, just change `LIST` to:
+
+A wiki document is a bunch of elements, which can be any of (sections, subsection, ...). I put the markup elements in a different part of the grammar instead of inlining them to allow for an easier extension: if you decide that lists can be marked by `+` and `-` also, just change `LIST` to:
 
 ```
 LIST <- "*" / "+" / "-"
 ```
 
-The previous grammar uses some **pegged**-specific PEG extensions showed here: [[Extended PEG Syntax]], to simplify the output.
+The previous grammar uses some **pegged**-specific PEG extensions showed here: [[Extended PEG Syntax]], to simplify the output. For example, the short `< ` arrow is just to have **Pegged** create a space-consuming sequence: it will silently consume and drop any blank char before, in-between and after rules.
 
 I'll use the following input:
 
@@ -93,7 +93,7 @@ And a list:
 ";
 ```
 
-Used on `input`, `Document` gives the following parse tree (just do `writeln(Document.parse(input));`:
+Used on `input`, `Wiki` gives the following parse tree (just do `writeln(Wiki(input));`:
 
 ```
 Document: ["\n", "This is the Title", "\n\nA ", "very", " important introductory text.\n\n", "A nice small section ", "\n\nAnd some text.\n\n", "Another section ", "\n\nAnd a list:\n\n", "A", "\n", "B", "\n"]
