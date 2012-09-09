@@ -31,29 +31,29 @@ float interpreter(string expr)
         {
             case "Arithmetic":
                 return value(p.children[0]);
-            case "Term":
+            case "Arithmetic.Term":
                 float v = 0.0;
                 foreach(child; p.children) v += value(child);
                 return v;
-            case "Add":
+            case "Arithmetic.Add":
                 return value(p.children[0]);
-            case "Sub":
+            case "Arithmetic.Sub":
                 return -value(p.children[0]);
-            case "Factor":
+            case "Arithmetic.Factor":
                 float v = 1.0;
                 foreach(child; p.children) v *= value(child);
                 return v;
-            case "Mul":
+            case "Arithmetic.Mul":
                 return value(p.children[0]);
-            case "Div":
+            case "Arithmetic.Div":
                 return 1.0/value(p.children[0]);
-            case "Primary":
+            case "Arithmetic.Primary":
                 return value(p.children[0]);
-            case "Parens":
+            case "Arithmetic.Parens":
                 return value(p.children[0]);
-            case "Neg":
+            case "Arithmetic.Neg":
                 return -value(p.children[0]);
-            case "Number":
+            case "Arithmetic.Number":
                 return to!float(p.matches[0]);
             default:
                 return float.nan;
