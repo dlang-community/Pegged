@@ -41,28 +41,27 @@ And so on... First, let's define a small grammar for such a wiki syntax:
 
 ```d
 Wiki:
-Document <  Element*
-Element  <  Section 
-          / Subsection
-          / Emph
-          / List
-          / Text
+    Document <  Element*
+    Element  <  Section 
+            / Subsection
+            / Emph
+            / List
+            / Text
 
-Section     <  :SEC    Title :SEC
-Subsection  <  :SUBSEC Title :SUBSEC
-Title       <~ (!(SUBSEC / SEC) .)*
-Emph        <  :EMPH Text :EMPH
-List        <  ListElement+
-ListElement <  :LIST (!endOfLine .)* endOfLine
-Text        <~ (!MARKUP .)*
+    Section     <  :SEC    Title :SEC
+    Subsection  <  :SUBSEC Title :SUBSEC
+    Title       <~ (!(SUBSEC / SEC) .)+
+    Emph        <  :EMPH Text :EMPH
+    List        <  ListElement+
+    ListElement <- :LIST :Spacing (!endOfLine .)+ endOfLine
+    Text        <~ (!MARKUP .)+
 
-MARKUP <  SUBSEC / SEC / EMPH / LIST
-SEC    <  "==="
-SUBSEC <  "=="
-EMPH   <  "_"
-LIST   < "*"
+    MARKUP <  SUBSEC / SEC / EMPH / LIST
+    SEC    <  "==="
+    SUBSEC <  "=="
+    EMPH   <  "_"
+    LIST   <  "*"
 ```
-
 
 A wiki document is a bunch of elements, which can be any of (sections, subsection, ...). I put the markup elements in a different part of the grammar instead of inlining them to allow for an easier extension: if you decide that lists can be marked by `+` and `-` also, just change `LIST` to:
 
@@ -96,78 +95,79 @@ And a list:
 Used on `input`, `Wiki` gives the following parse tree (just do `writeln(Wiki(input));`:
 
 ```
-Document: ["\n", "This is the Title", "\n\nA ", "very", " important introductory text.\n\n", "A nice small section ", "\n\nAnd some text.\n\n", "Another section ", "\n\nAnd a list:\n\n", "A", "\n", "B", "\n"]
-  Element: ["\n"]
-      Text: ["\n"]
-  Element: ["This is the Title"]
-      Section: ["This is the Title"]
-          Title: ["This is the Title"]
-  Element: ["\n\nA "]
-      Text: ["\n\nA "]
-  Element: ["very"]
-      Emph: ["very"]
-          Text: ["very"]
-  Element: [" important introductory text.\n\n"]
-      Text: [" important introductory text.\n\n"]
-  Element: ["A nice small section "]
-      Subsection: ["A nice small section "]
-          Title: ["A nice small section "]
-  Element: ["\n\nAnd some text.\n\n"]
-      Text: ["\n\nAnd some text.\n\n"]
-  Element: ["Another section "]
-      Subsection: ["Another section "]
-          Title: ["Another section "]
-  Element: ["\n\nAnd a list:\n\n"]
-      Text: ["\n\nAnd a list:\n\n"]
-  Element: ["A", "\n", "B", "\n"]
-      List: ["A", "\n", "B", "\n"]
-          ListElement: ["A", "\n"]
-          ListElement: ["B", "\n"]
+Wiki  [0, 154]["This is the Title", "A", "very", "important introductory text.", "A nice small section", "And some text.", "Another section", "And a list:", "A", "\n", "B", "\n"]
+ +-Wiki.Document  [0, 154]["This is the Title", "A", "very", "important introductory text.", "A nice small section", "And some text.", "Another section", "And a list:", "A", "\n", "B", "\n"]
+    +-Wiki.Element  [1, 27]["This is the Title"]
+    |  +-Wiki.Section  [1, 27]["This is the Title"]
+    |     +-Wiki.Title  [5, 22]["This is the Title"]
+    +-Wiki.Element  [27, 29]["A"]
+    |  +-Wiki.Text  [27, 28]["A"]
+    +-Wiki.Element  [29, 36]["very"]
+    |  +-Wiki.Emph  [29, 36]["very"]
+    |     +-Wiki.Text  [30, 34]["very"]
+    +-Wiki.Element  [36, 66]["important introductory text."]
+    |  +-Wiki.Text  [36, 64]["important introductory text."]
+    +-Wiki.Element  [66, 94]["A nice small section"]
+    |  +-Wiki.Subsection  [66, 94]["A nice small section"]
+    |     +-Wiki.Title  [69, 89]["A nice small section"]
+    +-Wiki.Element  [94, 110]["And some text."]
+    |  +-Wiki.Text  [94, 108]["And some text."]
+    +-Wiki.Element  [110, 133]["Another section"]
+    |  +-Wiki.Subsection  [110, 133]["Another section"]
+    |     +-Wiki.Title  [113, 128]["Another section"]
+    +-Wiki.Element  [133, 146]["And a list:"]
+    |  +-Wiki.Text  [133, 144]["And a list:"]
+    +-Wiki.Element  [146, 154]["A", "\n", "B", "\n"]
+       +-Wiki.List  [146, 154]["A", "\n", "B", "\n"]
+          +-Wiki.ListElement  [146, 150]["A", "\n"]
+          +-Wiki.ListElement  [150, 154]["B", "\n"]
 ```
 
 Now, to generate the wanted LaTeX code, we will switch on the nodes names and use a D inner function to recurse on the tree elements:
 
 ```d
-string toLaTeX(Output o)
+string toLaTeX(ParseTree p)
 {
     string parseToCode(ParseTree p)
     {
-        switch(p.ruleName)
+        switch(p.name)
         {
-            case "Document":
-                string result = "\\documentclass{article}\n\\begin{document}";
+            case "Wiki":
+                return parseToCode(p.children[0]); // The grammar result has only child: the start rule's parse tree
+            case "Wiki.Document":
+                string result = "\\documentclass{article}\n\\begin{document}\n";
                 foreach(child; p.children) // child is a ParseTree
                     result ~= parseToCode(child);
                 return result ~ "\n\\end{document}\n";
-            case "Element":
+            case "Wiki.Element":
                 return parseToCode(p.children[0]); // one child only
-            case "Section":
-                return "\\section{" 
-                       ~ p.capture[0] // the capture contains the title
-                       ~ "}";
-            case "Subsection":
-                return "\\subsection{" 
-                       ~ p.capture[0] // the capture contains the title
-                       ~ "}"; 
-            case "Emph":
-                return "\\emph{" 
-                       ~ p.capture[0] // the capture contains the text to emphasize
-                       ~ "}";
-            case "List":
-                string result = "\\begin{itemize}\n";
+            case "Wiki.Section":
+                return "\n\\section{" 
+                       ~ p.matches[0] // the first match contains the title
+                       ~ "}\n";
+            case "Wiki.Subsection":
+                return "\n\\subsection{" 
+                       ~ p.matches[0] // the first match contains the title
+                       ~ "}\n"; 
+            case "Wiki.Emph":
+                return " \\emph{" 
+                       ~ p.matches[0] // the first match contains the text to emphasize
+                       ~ "} ";
+            case "Wiki.List":
+                string result = "\n\\begin{itemize}\n";
                 foreach(child; p.children)
                     result ~= parseToCode(child);
-                return result ~ "\\end{itemize}";
-            case "ListElement":
-                return "\\item " ~ p.capture[0] ~ "\n";
-            case "Text":
-                return p.capture[0];
+                return result ~ "\\end{itemize}\n";
+            case "Wiki.ListElement":
+                return "\\item " ~ p.matches[0] ~ "\n";
+            case "Wiki.Text":
+                return p.matches[0];
             default:
                 return "";
         }
     }
 
-    return parseToCode(o.parseTree);
+    return parseToCode(p);
 }
 ```
 
@@ -197,7 +197,7 @@ And a list:
 
 Which is ready to be compiled by LaTeX.
 
-This is all there is to it:
+It's all there is to it:
 
 1) Write a grammar
 
@@ -210,9 +210,7 @@ In fact, I keep finding myself writing this kind of code. I might be seeing a pa
 More Than Just Pushing Strings
 ------------------------------
 
-Of course, the tree-walking function can do much more than concatenating strings. It could for example increment a counter each time a certain kind of node is found.
-
-If [[Semantic Actions]] are examples of *internal* actions (from `Output` to `Output`, used internally during the parsing process), the functions presented here are *external* actions. You can use them to construct any D value from the parse tree. 
+Of course, the tree-walking function can do much more than concatenating strings. It could for example increment a counter each time a certain kind of node is found, transform the tree on-the-fly, make some verifications and comparison between nodes... If [[Semantic Actions]] are examples of *internal* actions (from `ParseTree` to `ParseTree`, used internally during the parsing process), the functions presented here are *external* actions. You can use them to construct any D value from the parse tree. 
 
 At Compile-Time?
 ----------------
@@ -220,11 +218,11 @@ At Compile-Time?
 What's mightily cool with D is its powerful evaluation capabilities at compile-time. In fact *everything* I presented previously can be done at compile time:
 
 ```d
-enum p = Document.parse(input); // CT-parsing
+enum p = Wiki(input); // CT-parsing
 enum code = toLaTeX(p); // CT-treewalking and transformation
 ```
 
-I admit that for the previous example, it's in the vast 'fun-but-not-really-useful' category. But just think for a moment: given a flat input, **Pegged** create a structured entity (the parse tree) at compile-time and offered a transformation on it, at CT also. Which means it can be used to create D code... which can be fluidly mixed in D code. See [[Generating Code]] for more on that.
+I admit that for the previous example, it's in the vast 'fun-but-not-really-useful' category. But just think for a moment: given a flat input, **Pegged** creates a structured entity (the parse tree) at compile-time and offered a transformation on it, at CT also. Which means it can be used to create D code... which can be fluidly mixed in D code. See [[Generating Code]] for more on that.
 
 * * * *
 

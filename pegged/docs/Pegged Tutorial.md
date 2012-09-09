@@ -18,7 +18,7 @@ The following pages will show you how to use **Pegged** to create grammars and p
 
 7) [[Extended PEG Syntax]]
 
-8) [[Parametrized Rules]]
+8) [[Parameterized Rules]]
 
 9) [[Semantic Actions]]
 
