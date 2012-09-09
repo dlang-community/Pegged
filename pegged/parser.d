@@ -88,60 +88,61 @@ public import pegged.peg;
 struct GenericPegged(TParseTree)
 {
     struct Pegged
-{
+    {
+    enum name = "Pegged";
     static bool isRule(string s)
     {
         switch(s)
         {
-            case "Grammar":
-            case "Definition":
-            case "Expression":
-            case "Sequence":
-            case "Prefix":
-            case "Suffix":
-            case "Primary":
-            case "Identifier":
-            case "GrammarName":
-            case "LhsName":
-            case "RhsName":
-            case "ParamList":
-            case "Param":
-            case "DefaultParam":
-            case "SingleParam":
-            case "ArgList":
-            case "Action":
-            case "Literal":
-            case "CharClass":
-            case "CharRange":
-            case "Char":
-            case "Arrow":
-            case "LEFTARROW":
-            case "FUSEARROW":
-            case "DISCARDARROW":
-            case "SPACEARROW":
-            case "OR":
-            case "POS":
-            case "NEG":
-            case "FUSE":
-            case "DISCARD":
-            case "KEEP":
-            case "DROP":
-            case "OPTION":
-            case "ZEROORMORE":
-            case "ONEORMORE":
-            case "ACTIONOPEN":
-            case "ACTIONCLOSE":
-            case "SEPARATOR":
-            case "ASSIGN":
-            case "NAMESEP":
-            case "OPEN":
-            case "CLOSE":
-            case "ANY":
-            case "Spacing":
-            case "Comment":
-            case "Space":
-            case "EndOfLine":
-            case "EndOfInput":
+            case "Pegged.Grammar":
+            case "Pegged.Definition":
+            case "Pegged.Expression":
+            case "Pegged.Sequence":
+            case "Pegged.Prefix":
+            case "Pegged.Suffix":
+            case "Pegged.Primary":
+            case "Pegged.Identifier":
+            case "Pegged.GrammarName":
+            case "Pegged.LhsName":
+            case "Pegged.RhsName":
+            case "Pegged.ParamList":
+            case "Pegged.Param":
+            case "Pegged.DefaultParam":
+            case "Pegged.SingleParam":
+            case "Pegged.ArgList":
+            case "Pegged.Action":
+            case "Pegged.Literal":
+            case "Pegged.CharClass":
+            case "Pegged.CharRange":
+            case "Pegged.Char":
+            case "Pegged.Arrow":
+            case "Pegged.LEFTARROW":
+            case "Pegged.FUSEARROW":
+            case "Pegged.DISCARDARROW":
+            case "Pegged.SPACEARROW":
+            case "Pegged.OR":
+            case "Pegged.POS":
+            case "Pegged.NEG":
+            case "Pegged.FUSE":
+            case "Pegged.DISCARD":
+            case "Pegged.KEEP":
+            case "Pegged.DROP":
+            case "Pegged.OPTION":
+            case "Pegged.ZEROORMORE":
+            case "Pegged.ONEORMORE":
+            case "Pegged.ACTIONOPEN":
+            case "Pegged.ACTIONCLOSE":
+            case "Pegged.SEPARATOR":
+            case "Pegged.ASSIGN":
+            case "Pegged.NAMESEP":
+            case "Pegged.OPEN":
+            case "Pegged.CLOSE":
+            case "Pegged.ANY":
+            case "Pegged.Spacing":
+            case "Pegged.Comment":
+            case "Pegged.Space":
+            case "Pegged.EndOfLine":
+            case "Pegged.EndOfInput":
                 return true;
             default:
                 return false;
@@ -150,7 +151,7 @@ struct GenericPegged(TParseTree)
     mixin decimateTree;
     static TParseTree Grammar(TParseTree p)
     {
-        return named!(and!(Spacing, GrammarName, oneOrMore!(Definition), discard!(eoi)), "Grammar")(p);
+        return named!(and!(Spacing, GrammarName, oneOrMore!(Definition), discard!(eoi)), name ~ ".Grammar")(p);
     }
 
     static TParseTree Grammar(string s)
@@ -160,7 +161,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Definition(TParseTree p)
     {
-        return named!(and!(LhsName, Arrow, Expression), "Definition")(p);
+        return named!(and!(LhsName, Arrow, Expression), name ~ ".Definition")(p);
     }
 
     static TParseTree Definition(string s)
@@ -170,7 +171,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Expression(TParseTree p)
     {
-        return named!(and!(Sequence, zeroOrMore!(and!(discard!(OR), Sequence))), "Expression")(p);
+        return named!(and!(Sequence, zeroOrMore!(and!(discard!(OR), Sequence))), name ~ ".Expression")(p);
     }
 
     static TParseTree Expression(string s)
@@ -180,7 +181,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Sequence(TParseTree p)
     {
-        return named!(and!(oneOrMore!(Prefix)), "Sequence")(p);
+        return named!(and!(oneOrMore!(Prefix)), name ~ ".Sequence")(p);
     }
 
     static TParseTree Sequence(string s)
@@ -190,7 +191,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Prefix(TParseTree p)
     {
-        return named!(and!(zeroOrMore!(or!(and!(POS), and!(NEG), and!(FUSE), and!(DISCARD), and!(KEEP), and!(DROP))), Suffix), "Prefix")(p);
+        return named!(and!(zeroOrMore!(or!(and!(POS), and!(NEG), and!(FUSE), and!(DISCARD), and!(KEEP), and!(DROP))), Suffix), name ~ ".Prefix")(p);
     }
 
     static TParseTree Prefix(string s)
@@ -200,7 +201,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Suffix(TParseTree p)
     {
-        return named!(and!(Primary, zeroOrMore!(or!(and!(OPTION), and!(ZEROORMORE), and!(ONEORMORE), and!(Action)))), "Suffix")(p);
+        return named!(and!(Primary, zeroOrMore!(or!(and!(OPTION), and!(ZEROORMORE), and!(ONEORMORE), and!(Action)))), name ~ ".Suffix")(p);
     }
 
     static TParseTree Suffix(string s)
@@ -210,7 +211,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Primary(TParseTree p)
     {
-        return named!(and!(negLookahead!(and!(LhsName, Arrow)), or!(and!(RhsName), and!(discard!(OPEN), Expression, discard!(CLOSE)), and!(Literal), and!(CharClass), and!(ANY))), "Primary")(p);
+        return named!(and!(negLookahead!(and!(LhsName, Arrow)), or!(and!(RhsName), and!(discard!(OPEN), Expression, discard!(CLOSE)), and!(Literal), and!(CharClass), and!(ANY))), name ~ ".Primary")(p);
     }
 
     static TParseTree Primary(string s)
@@ -220,7 +221,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Identifier(TParseTree p)
     {
-        return named!(and!(identifier), "Identifier")(p);
+        return named!(and!(identifier), name ~ ".Identifier")(p);
     }
 
     static TParseTree Identifier(string s)
@@ -230,7 +231,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree GrammarName(TParseTree p)
     {
-        return named!(and!(Identifier, option!(ParamList), Spacing, discard!(literal!(":")), Spacing), "GrammarName")(p);
+        return named!(and!(Identifier, option!(ParamList), Spacing, discard!(literal!(":")), Spacing), name ~ ".GrammarName")(p);
     }
 
     static TParseTree GrammarName(string s)
@@ -240,7 +241,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree LhsName(TParseTree p)
     {
-        return named!(and!(Identifier, option!(ParamList), Spacing), "LhsName")(p);
+        return named!(and!(Identifier, option!(ParamList), Spacing), name ~ ".LhsName")(p);
     }
 
     static TParseTree LhsName(string s)
@@ -250,7 +251,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree RhsName(TParseTree p)
     {
-        return named!(and!(Identifier, option!(ArgList), zeroOrMore!(and!(NAMESEP, Identifier, option!(ArgList))), Spacing), "RhsName")(p);
+        return named!(and!(Identifier, option!(ArgList), zeroOrMore!(and!(NAMESEP, Identifier, option!(ArgList))), Spacing), name ~ ".RhsName")(p);
     }
 
     static TParseTree RhsName(string s)
@@ -260,7 +261,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ParamList(TParseTree p)
     {
-        return named!(and!(discard!(OPEN), Param, zeroOrMore!(and!(discard!(SEPARATOR), Param)), discard!(CLOSE)), "ParamList")(p);
+        return named!(and!(discard!(OPEN), Param, zeroOrMore!(and!(discard!(SEPARATOR), Param)), discard!(CLOSE)), name ~ ".ParamList")(p);
     }
 
     static TParseTree ParamList(string s)
@@ -270,7 +271,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Param(TParseTree p)
     {
-        return named!(or!(and!(DefaultParam), and!(SingleParam)), "Param")(p);
+        return named!(or!(and!(DefaultParam), and!(SingleParam)), name ~ ".Param")(p);
     }
 
     static TParseTree Param(string s)
@@ -280,7 +281,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree DefaultParam(TParseTree p)
     {
-        return named!(and!(Identifier, Spacing, discard!(ASSIGN), Expression), "DefaultParam")(p);
+        return named!(and!(Identifier, Spacing, discard!(ASSIGN), Expression), name ~ ".DefaultParam")(p);
     }
 
     static TParseTree DefaultParam(string s)
@@ -290,7 +291,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree SingleParam(TParseTree p)
     {
-        return named!(and!(Identifier, Spacing), "SingleParam")(p);
+        return named!(and!(Identifier, Spacing), name ~ ".SingleParam")(p);
     }
 
     static TParseTree SingleParam(string s)
@@ -300,7 +301,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ArgList(TParseTree p)
     {
-        return named!(and!(discard!(OPEN), Expression, zeroOrMore!(and!(discard!(SEPARATOR), Expression)), discard!(CLOSE)), "ArgList")(p);
+        return named!(and!(discard!(OPEN), Expression, zeroOrMore!(and!(discard!(SEPARATOR), Expression)), discard!(CLOSE)), name ~ ".ArgList")(p);
     }
 
     static TParseTree ArgList(string s)
@@ -310,7 +311,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Action(TParseTree p)
     {
-        return named!(and!(ACTIONOPEN, qualifiedIdentifier, zeroOrMore!(and!(SEPARATOR, qualifiedIdentifier)), ACTIONCLOSE), "Action")(p);
+        return named!(and!(ACTIONOPEN, qualifiedIdentifier, zeroOrMore!(and!(SEPARATOR, qualifiedIdentifier)), ACTIONCLOSE), name ~ ".Action")(p);
     }
 
     static TParseTree Action(string s)
@@ -320,7 +321,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Literal(TParseTree p)
     {
-        return named!(fuse!(or!(and!(discard!(quote), zeroOrMore!(and!(negLookahead!(quote), Char)), discard!(quote), Spacing), and!(discard!(doublequote), zeroOrMore!(and!(negLookahead!(doublequote), Char)), discard!(doublequote), Spacing))), "Literal")(p);
+        return named!(fuse!(or!(and!(discard!(quote), zeroOrMore!(and!(negLookahead!(quote), Char)), discard!(quote), Spacing), and!(discard!(doublequote), zeroOrMore!(and!(negLookahead!(doublequote), Char)), discard!(doublequote), Spacing))), name ~ ".Literal")(p);
     }
 
     static TParseTree Literal(string s)
@@ -330,7 +331,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree CharClass(TParseTree p)
     {
-        return named!(and!(discard!(literal!("[")), zeroOrMore!(and!(negLookahead!(literal!("]")), CharRange)), discard!(literal!("]")), Spacing), "CharClass")(p);
+        return named!(and!(discard!(literal!("[")), zeroOrMore!(and!(negLookahead!(literal!("]")), CharRange)), discard!(literal!("]")), Spacing), name ~ ".CharClass")(p);
     }
 
     static TParseTree CharClass(string s)
@@ -340,7 +341,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree CharRange(TParseTree p)
     {
-        return named!(or!(and!(Char, literal!("-"), Char), and!(Char)), "CharRange")(p);
+        return named!(or!(and!(Char, literal!("-"), Char), and!(Char)), name ~ ".CharRange")(p);
     }
 
     static TParseTree CharRange(string s)
@@ -350,7 +351,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Char(TParseTree p)
     {
-        return named!(fuse!(or!(and!(backslash, or!(and!(quote), and!(doublequote), and!(backquote), and!(backslash), and!(literal!("-")), and!(literal!("[")), and!(literal!("]")), and!(or!(literal!("n"), literal!("r"), literal!("t"))), and!(charRange!('0', '2'), charRange!('0', '7'), charRange!('0', '7')), and!(charRange!('0', '7'), option!(charRange!('0', '7'))), and!(literal!("x"), hexDigit, hexDigit), and!(literal!("u"), hexDigit, hexDigit, hexDigit, hexDigit), and!(literal!("U"), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), and!(pegged.peg.any))), "Char")(p);
+        return named!(fuse!(or!(and!(backslash, or!(and!(quote), and!(doublequote), and!(backquote), and!(backslash), and!(literal!("-")), and!(literal!("[")), and!(literal!("]")), and!(or!(literal!("n"), literal!("r"), literal!("t"))), and!(charRange!('0', '2'), charRange!('0', '7'), charRange!('0', '7')), and!(charRange!('0', '7'), option!(charRange!('0', '7'))), and!(literal!("x"), hexDigit, hexDigit), and!(literal!("u"), hexDigit, hexDigit, hexDigit, hexDigit), and!(literal!("U"), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), and!(pegged.peg.any))), name ~ ".Char")(p);
     }
 
     static TParseTree Char(string s)
@@ -360,7 +361,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Arrow(TParseTree p)
     {
-        return named!(or!(and!(LEFTARROW), and!(FUSEARROW), and!(DISCARDARROW), and!(SPACEARROW)), "Arrow")(p);
+        return named!(or!(and!(LEFTARROW), and!(FUSEARROW), and!(DISCARDARROW), and!(SPACEARROW)), name ~ ".Arrow")(p);
     }
 
     static TParseTree Arrow(string s)
@@ -370,7 +371,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree LEFTARROW(TParseTree p)
     {
-        return named!(and!(literal!("<-"), Spacing), "LEFTARROW")(p);
+        return named!(and!(literal!("<-"), Spacing), name ~ ".LEFTARROW")(p);
     }
 
     static TParseTree LEFTARROW(string s)
@@ -380,7 +381,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree FUSEARROW(TParseTree p)
     {
-        return named!(and!(literal!("<~"), Spacing), "FUSEARROW")(p);
+        return named!(and!(literal!("<~"), Spacing), name ~ ".FUSEARROW")(p);
     }
 
     static TParseTree FUSEARROW(string s)
@@ -390,7 +391,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree DISCARDARROW(TParseTree p)
     {
-        return named!(and!(literal!("<:"), Spacing), "DISCARDARROW")(p);
+        return named!(and!(literal!("<:"), Spacing), name ~ ".DISCARDARROW")(p);
     }
 
     static TParseTree DISCARDARROW(string s)
@@ -400,7 +401,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree SPACEARROW(TParseTree p)
     {
-        return named!(and!(literal!("<"), Spacing), "SPACEARROW")(p);
+        return named!(and!(literal!("<"), Spacing), name ~ ".SPACEARROW")(p);
     }
 
     static TParseTree SPACEARROW(string s)
@@ -410,7 +411,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree OR(TParseTree p)
     {
-        return named!(and!(literal!("/"), Spacing), "OR")(p);
+        return named!(and!(literal!("/"), Spacing), name ~ ".OR")(p);
     }
 
     static TParseTree OR(string s)
@@ -420,7 +421,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree POS(TParseTree p)
     {
-        return named!(and!(literal!("&"), Spacing), "POS")(p);
+        return named!(and!(literal!("&"), Spacing), name ~ ".POS")(p);
     }
 
     static TParseTree POS(string s)
@@ -430,7 +431,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree NEG(TParseTree p)
     {
-        return named!(and!(literal!("!"), Spacing), "NEG")(p);
+        return named!(and!(literal!("!"), Spacing), name ~ ".NEG")(p);
     }
 
     static TParseTree NEG(string s)
@@ -440,7 +441,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree FUSE(TParseTree p)
     {
-        return named!(and!(literal!("~"), Spacing), "FUSE")(p);
+        return named!(and!(literal!("~"), Spacing), name ~ ".FUSE")(p);
     }
 
     static TParseTree FUSE(string s)
@@ -450,7 +451,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree DISCARD(TParseTree p)
     {
-        return named!(and!(literal!(":"), Spacing), "DISCARD")(p);
+        return named!(and!(literal!(":"), Spacing), name ~ ".DISCARD")(p);
     }
 
     static TParseTree DISCARD(string s)
@@ -460,7 +461,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree KEEP(TParseTree p)
     {
-        return named!(and!(literal!("^"), Spacing), "KEEP")(p);
+        return named!(and!(literal!("^"), Spacing), name ~ ".KEEP")(p);
     }
 
     static TParseTree KEEP(string s)
@@ -470,7 +471,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree DROP(TParseTree p)
     {
-        return named!(and!(literal!(";"), Spacing), "DROP")(p);
+        return named!(and!(literal!(";"), Spacing), name ~ ".DROP")(p);
     }
 
     static TParseTree DROP(string s)
@@ -480,7 +481,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree OPTION(TParseTree p)
     {
-        return named!(and!(literal!("?"), Spacing), "OPTION")(p);
+        return named!(and!(literal!("?"), Spacing), name ~ ".OPTION")(p);
     }
 
     static TParseTree OPTION(string s)
@@ -490,7 +491,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ZEROORMORE(TParseTree p)
     {
-        return named!(and!(literal!("*"), Spacing), "ZEROORMORE")(p);
+        return named!(and!(literal!("*"), Spacing), name ~ ".ZEROORMORE")(p);
     }
 
     static TParseTree ZEROORMORE(string s)
@@ -500,7 +501,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ONEORMORE(TParseTree p)
     {
-        return named!(and!(literal!("+"), Spacing), "ONEORMORE")(p);
+        return named!(and!(literal!("+"), Spacing), name ~ ".ONEORMORE")(p);
     }
 
     static TParseTree ONEORMORE(string s)
@@ -510,7 +511,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ACTIONOPEN(TParseTree p)
     {
-        return named!(and!(literal!("{"), Spacing), "ACTIONOPEN")(p);
+        return named!(and!(literal!("{"), Spacing), name ~ ".ACTIONOPEN")(p);
     }
 
     static TParseTree ACTIONOPEN(string s)
@@ -520,7 +521,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ACTIONCLOSE(TParseTree p)
     {
-        return named!(and!(literal!("}"), Spacing), "ACTIONCLOSE")(p);
+        return named!(and!(literal!("}"), Spacing), name ~ ".ACTIONCLOSE")(p);
     }
 
     static TParseTree ACTIONCLOSE(string s)
@@ -530,7 +531,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree SEPARATOR(TParseTree p)
     {
-        return named!(and!(literal!(","), Spacing), "SEPARATOR")(p);
+        return named!(and!(literal!(","), Spacing), name ~ ".SEPARATOR")(p);
     }
 
     static TParseTree SEPARATOR(string s)
@@ -540,7 +541,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ASSIGN(TParseTree p)
     {
-        return named!(and!(literal!("="), Spacing), "ASSIGN")(p);
+        return named!(and!(literal!("="), Spacing), name ~ ".ASSIGN")(p);
     }
 
     static TParseTree ASSIGN(string s)
@@ -550,7 +551,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree NAMESEP(TParseTree p)
     {
-        return named!(and!(literal!(".")), "NAMESEP")(p);
+        return named!(and!(literal!(".")), name ~ ".NAMESEP")(p);
     }
 
     static TParseTree NAMESEP(string s)
@@ -560,7 +561,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree OPEN(TParseTree p)
     {
-        return named!(and!(literal!("("), Spacing), "OPEN")(p);
+        return named!(and!(literal!("("), Spacing), name ~ ".OPEN")(p);
     }
 
     static TParseTree OPEN(string s)
@@ -570,7 +571,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree CLOSE(TParseTree p)
     {
-        return named!(and!(literal!(")"), Spacing), "CLOSE")(p);
+        return named!(and!(literal!(")"), Spacing), name ~ ".CLOSE")(p);
     }
 
     static TParseTree CLOSE(string s)
@@ -580,7 +581,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ANY(TParseTree p)
     {
-        return named!(and!(literal!("."), Spacing), "ANY")(p);
+        return named!(and!(literal!("."), Spacing), name ~ ".ANY")(p);
     }
 
     static TParseTree ANY(string s)
@@ -590,7 +591,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Spacing(TParseTree p)
     {
-        return named!(discard!(and!(zeroOrMore!(or!(and!(Space), and!(Comment))))), "Spacing")(p);
+        return named!(discard!(and!(zeroOrMore!(or!(and!(Space), and!(Comment))))), name ~ ".Spacing")(p);
     }
 
     static TParseTree Spacing(string s)
@@ -600,7 +601,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Comment(TParseTree p)
     {
-        return named!(and!(literal!("#"), zeroOrMore!(and!(negLookahead!(EndOfLine), pegged.peg.any)), EndOfLine), "Comment")(p);
+        return named!(and!(literal!("#"), zeroOrMore!(and!(negLookahead!(EndOfLine), pegged.peg.any)), EndOfLine), name ~ ".Comment")(p);
     }
 
     static TParseTree Comment(string s)
@@ -610,7 +611,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Space(TParseTree p)
     {
-        return named!(or!(and!(literal!(" ")), and!(literal!("\t")), and!(EndOfLine)), "Space")(p);
+        return named!(or!(and!(literal!(" ")), and!(literal!("\t")), and!(EndOfLine)), name ~ ".Space")(p);
     }
 
     static TParseTree Space(string s)
@@ -620,7 +621,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree EndOfLine(TParseTree p)
     {
-        return named!(or!(and!(literal!("\r\n")), and!(literal!("\n")), and!(literal!("\r"))), "EndOfLine")(p);
+        return named!(or!(and!(literal!("\r\n")), and!(literal!("\n")), and!(literal!("\r"))), name ~ ".EndOfLine")(p);
     }
 
     static TParseTree EndOfLine(string s)
@@ -630,7 +631,7 @@ struct GenericPegged(TParseTree)
 
     static TParseTree EndOfInput(TParseTree p)
     {
-        return named!(and!(negLookahead!(pegged.peg.any)), "EndOfInput")(p);
+        return named!(and!(negLookahead!(pegged.peg.any)), name ~ ".EndOfInput")(p);
     }
 
     static TParseTree EndOfInput(string s)
