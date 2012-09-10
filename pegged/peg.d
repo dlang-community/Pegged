@@ -37,6 +37,8 @@ ParseTree eoi(ParseTree p)
     return ParseTree("eoi", p.end == p.input.length, [], p.input, p.end, p.end);
 }
 
+alias eoi endOfInput;
+
 ParseTree any(ParseTree p)
 {
     if (p.end < p.input.length)
@@ -304,9 +306,11 @@ template negLookahead(alias r)
 }
 
 /* pre-defined rules */
+alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOfLine;
+alias endOfLine eol;
+
 alias or!(literal!(" "), literal!("\t")) space;
 alias named!(fuse!(discardChildren!(zeroOrMore!space)), "spaces") spaces;
-alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOfLine;
 alias or!(space, endOfLine) blank;
 alias named!(fuse!(discardChildren!(zeroOrMore!blank)), "spacing") spacing;
 
@@ -352,7 +356,8 @@ template spaceAnd(alias sp, rules...)
 {
     alias and!(discard!(option!sp), staticMap!(AddSpace!(option!sp), rules)) spaceAnd;
 }
-    
+
+/// Mixin to simplify a parse tree inside a grammar
 mixin template decimateTree()
 {
     static ParseTree decimateTree(ParseTree p)
