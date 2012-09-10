@@ -118,6 +118,44 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 // children[0]: name
                 // children[1]: arrow (arrow type as first child)
                 // children[2]: description
+                
+                string code = "named!(";
+                    
+                switch(p.children[1].children[0].name)
+                {
+                    case "Pegged.LEFTARROW":
+                        code ~= generateCode(p.children[2]);
+                        break;
+                    case "Pegged.FUSEARROW":
+                        code ~= "fuse!(" ~ generateCode(p.children[2]) ~ ")";
+                        break;
+                    case "Pegged.DISCARDARROW":
+                        code ~= "discard!(" ~ generateCode(p.children[2]) ~ ")";
+                        break;
+                    case "Pegged.SPACEARROW":
+                        string temp = generateCode(p.children[2]);
+                        size_t i = 0;
+                        while(i < temp.length-4) // a while loop to make it work at compile-time.
+                        {
+                            if (temp[i..i+5] == "and!(")
+                            {
+                                code ~= "spaceAnd!(Spacing, ";
+                                i = i + 5;
+                            }
+                            else
+                            {
+                                code ~= temp[i];
+                                i = i + 1; // ++i doesn't work at CT?
+                            }
+                        }
+                        code ~= temp[$-4..$];
+                        break;
+                    default:
+                        break;
+                }
+                
+                code ~= ", name ~ \"." ~ p.matches[0] ~ "\")";
+
                 bool parameterizedRule = p.children[0].children.length > 1;
                 
                 if (parameterizedRule)
@@ -127,50 +165,18 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 }
                 
                 result ~=  "    static TParseTree " ~ p.matches[0] ~ "(TParseTree p)\n    {\n";
-                
+                 
                 static if (withMemo == Memoization.yes)
                     result ~= "        if(auto m = tuple(\""~p.matches[0]~"\",p.end) in memo)\n"
                             ~ "            return *m;\n"
                             ~ "        else\n"
                             ~ "        {\n"
-                            ~ "            TParseTree result = named!(";
+                            ~ "            TParseTree result = ";
                 else
-                    result ~= "        return named!(";
-                    
-                switch(p.children[1].children[0].name)
-                {
-                    case "Pegged.LEFTARROW":
-                        result ~= generateCode(p.children[2]);
-                        break;
-                    case "Pegged.FUSEARROW":
-                        result ~= "fuse!(" ~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.DISCARDARROW":
-                        result ~= "discard!(" ~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.SPACEARROW":
-                        string temp = generateCode(p.children[2]);
-                        size_t i = 0;
-                        while(i < temp.length-4) // a while loop to make it work at compile-time.
-                        {
-                            if (temp[i..i+5] == "and!(")
-                            {
-                                result ~= "spaceAnd!(Spacing, ";
-                                i = i + 5;
-                            }
-                            else
-                            {
-                                result ~= temp[i];
-                                i = i + 1; // ++i doesn't work at CT
-                            }
-                        }
-                        result ~= temp[$-4..$];
-                        break;
-                    default:
-                        break;
-                }
+                    result ~= "        return ";
                 
-                result ~= ", name ~ \"." ~ p.matches[0] ~ "\")(p);\n";
+                result ~= code ~ "(p);\n";
+                
                 static if (withMemo == Memoization.yes)
                     result ~= "            memo[tuple(\"" ~ p.matches[0] ~ "\",p.end)] = result;\n"
                            ~  "            return result;\n"
@@ -182,15 +188,17 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 static if (withMemo == Memoization.yes)
                     result ~=  "        memo = null;\n";
                 
+                /+
                 ParseTree toCall = p.children[0];
+                
                 if (parameterizedRule)
                 {
                     toCall.children[1].name = "ArgList";
                     foreach(ref child;toCall.children[1].children)
                         child.name = "SingleParam";
                 }
-                
-                result ~= "        return " ~ generateCode(toCall) ~ "(TParseTree(\"\", false,[], s));\n    }\n\n";
+                +/
+                result ~= "        return " ~ code ~ "(TParseTree(\"\", false,[], s));\n    }\n\n";
                 
                 if (parameterizedRule)
                     result ~= "     }\n";
