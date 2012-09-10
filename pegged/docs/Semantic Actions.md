@@ -164,7 +164,7 @@ Side-Effects
 
 A consequence of the previous section is that side-effects (like storing a value in a variable) can be activated inside a failed rule. In the previous example, `foo` was called. If `foo` acts like `opening`, then something somewhere was changed. Even though `Rule1` failed, some partial modification was made. Maybe a cleaner solution would be to test each rule in a sandbox and undo any changes that were made by a failed rule. For actions acting on a grammar inner fields (something I plan to add), it's feasible: the current state can be duplicated, passed to a rule as a context variable and returned with the parse tree. If the rule fails, then the returned context is discarded. When the rule succeeds, the caller context is assigned the returned context.
 
-Of course, all this copying and passing around'll probably slow the parsing process down and I cannot protect any global variable modification.
+Of course, all this copying and passing around'll probably slow the parsing process down and I cannot protect against any global variable modification.
 
 Multiple Actions
 ----------------
@@ -195,9 +195,9 @@ Possible Extensions
 
 I'm playing with the following ideas concerning actions:
 
-* Permitting other arguments, like this: `{dropChild(1)}`, which would call `dropChild(ruleOutput, 1)`. Heck, in DMD 2.059 with UFCS enabled, it's just `ruleOutput.dropChild(1)` which is *quite* easy to code.
+* Permitting other arguments, like this: `{dropChild(1)}`, which would call `dropChild(ruleOutput, 1)`. Heck, in DMD with UFCS, it's just `ruleOutput.dropChild(1)` which is *quite* easy to code.
 
-* For now, actions are what I'd call *internal* actions: they act on the parse tree and any external action is a side-effect (assigning to external variables, for example). I could introduce 'external actions', for example with `<ActionName>` . These would return any D type and plug into one another during parsing.  This would allow **Pegged** to have the same run-of-the-mill example of calculus on arithmetic expressions as other parser generators. We'll se...
+* For now, actions are what I'd call *internal* actions: they act on the parse tree and any external action is a side-effect (assigning to external variables, for example). I could introduce 'external actions', for example with `<ActionName>` . These would return any D type and plug into one another during parsing.  This would allow **Pegged** to have the same run-of-the-mill example of calculus on arithmetic expressions as other parser generators. We'll see...
 
 * * * *
 

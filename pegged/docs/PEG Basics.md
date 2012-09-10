@@ -12,6 +12,9 @@ Using the PEG formalism, the terminals (parsing expressions that do not depend o
 
 - `'xxxx'` or `"xxxx"`, that matches literals. For example, `'('` matches one opening parenthesis (no more, no less, no other character). `"abc"` matches the string "abc", `" "` matches one space, and so on. If the input characters are not those waited for, the expression fails and does not consume any input. You can use `'xxxx'` or `"xxxx"` interchangeably for any character or string, though it's more common to use ' with lone characters and " for strings. 
 
+
+- `eps` (short for 'epsilon') is an expression matching 'the empty char': it always succeeds and does not consume anything. You can also use the empty literals: `''` or `""`.
+
 - `.` (dot) is an expression matching any character. It does _not_ match the empty string.
 
 - As a notation shortcut, regex-like char ranges are there : `[abc]` will match 'a' or 'b' or 'c'. If offered "abc" as input, it will match the first 'a' and then stop. `[a-z]` is a range of chars and will match any char in 'a', 'b', 'c', ..., 'z'. [0-9] will match any decimal digit. You can combine ranges in one expression, like this: [a-zA-Z0-9_]: any lowercase or uppercase English letter or any digit or an underscore.
@@ -21,7 +24,7 @@ Note that parsing expressions begin their parsing at the first character in the 
 Non-Terminals:
 --------------
 
-Given `a`, `b`, `c`, ... as parsing expressions, you can combine them using operators:
+Given the expressions `a`, `b`, `c`, ..., you can combine them using operators:
 
 - `a b` (with spaces between them) is a 'sequence' expression, matching `a` (consuming input characters in the process) and then `b`. It succeeds if `a` and `b` succeed, and fails if any of them fails. A major difference between PEG and other grammar formalisms (like regexen) is that there is no backtracking in PEGs. If `b` fails, the entire expression fails, even if `a` could offer different matches. That means, for example, that `"abc" "def"` is equivalent to `"abcdef"`.
 
@@ -56,7 +59,7 @@ lowerCase  <- [a-z]
 upperCase  <- [A-Z]
 digit      <- [0-9]
 underscore <- '_'
-Identifier <- (lowerCase / upperCase / underscore) (lowerCase / upperCase / underscore / digit)*
+identifier <- (lowerCase / upperCase / underscore) (lowerCase / upperCase / underscore / digit)*
 ```
 
 This defines five rules, the last one using the first four rules in its definition.
@@ -64,14 +67,14 @@ This defines five rules, the last one using the first four rules in its definiti
 Rule can call themselves, recursively: 
 
 ```
-Parens <- '(' Parens ')' / Identifier
-``` 
+Parens <- '(' Parens ')' / identifier
+```
 
 is a rule matching any identifier, optionally enclosed inside matching parenthesis. It will match "abc", but also "(abc)", "((abc))", but not "((abc)". Given "(abc))" it matches "(abc)", letting the last ')' unconsumed in the input. This is one place where PEGs shine compared to regular expressions which cannot parse recursive inputs like this.
 
 By the way, if you want to force a parsing expression to match the entire input, just put the previously seen `endOfInput` at the end of its definition. `Parens <- ('(' Parens ')' / Identifier) endOfInput` will fail on "(abc))".
 
-And yes, for those of you knowing grammar formalism, that means PEGs are prey to infinite recursion for left-recursive rules: `A <- A 'a'` really means 'to parse an A, first parse an A, and then...', which is nonsensical as far as PEGs are concerned. 
+And yes, for those of you knowing grammar formalism, that means PEGs are prey to infinite recursion for left-recursive rules: `A <- A 'a'` really means 'to parse an `A`, first parse an `A`, and then...', which is nonsensical as far as PEGs are concerned. 
 
 An Example Grammar
 ------------------
@@ -100,7 +103,7 @@ Operator precedence is there implicitly by the fact that an expression is seen a
 Next
 ----
 
-That's all for PEG themselves for PEG proper. Let's enter **Pegged** now. Go to [[Declaring a Grammar]] for the next lesson.
+That's all for PEGs themselves. Let's enter **Pegged** now. Go to [[Declaring a Grammar]] for the next lesson.
 
 * * * *
 
