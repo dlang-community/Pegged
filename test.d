@@ -14,9 +14,13 @@ import pegged.examples.peggedgrammar;
 
 void main()
 {
-    mixin(grammar(`Gram:
-    A <- 'a'
+mixin(grammar(`
+A(B):
+    Rule1(C) <- B C
+    Rule2 <- B*
     `));
-    
-    writeln(Gram("aa"));
+
+alias literal!"b" b;
+alias literal!"c" c;
+writeln(A!(b).Rule1!(c)("bcb"));
 }
