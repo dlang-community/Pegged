@@ -8,6 +8,7 @@ Basically, **Pegged** constructs [expression templates](http://www10.informatik.
 
 For your information, here is a table to associate the PEG syntax and the D building blocks:
 
+```
 |---------------------------------------------------|
 |     PEG                  |     PEGGED             |
 |---------------------------------------------------|
@@ -42,6 +43,7 @@ For your information, here is a table to associate the PEG syntax and the D buil
 | e {act} (semantic action)| action!(e, act)        |
 | space-discarding and     | spaceAnd!(a,b,c,...)   |
 |---------------------------------------------------|
+```
 
 For example, given rules `a`, `b` and `c`, a sequence `a b c` in a grammar is converted by **Pegged** into `and!(a, b, c)`. In the same way, `"abc" / d*` becomes `or!(literal!"abc", zeroOrMore!d)`, with `d` being another rule. By the way, you *can* assemble **Pegged** parsers in this way, if you want to. Just import `pegged.peg` (where they are defined) and play, no need for the `pegged.grammar` module. This is what most C++ PEG libraries do: they give you a collection of parsers which you can link together to construct complicated expressions. Just for fun, I did the same for types once, see [this module](http://svn.dsource.org/projects/dranges/trunk/dranges/docs/typepattern.html)). 
 
@@ -90,7 +92,7 @@ Grammars
 Grammars are just structs whose methods are rules. A global `opCall`operator allows the grammar to be called like a rule and defers to the start rule (the first rule in a grammar definition). Grammars also add some machinery to accelerate the parsing and present a nice parse tree:
 
 * The list of rules' names is stored and a `decimateTree` method is added to discard nodes external to the grammar. See [[Tree Decimation]].
-* A special rule called `Spacing` is added if the user does not define one, to be called by `spaceAnd`, the space-dscarding version of `and`. See [[User-Defined Spacing]]
+* A special rule called `Spacing` is added if the user does not define one, to be called by `spaceAnd`, the space-dscarding version of `and`. See 'User-Defined Spacing' in [[Extended PEG Syntax]].
 * If activated, memoizing stores all rules' results at all called parsing points. If a given rule was already called at a given index, then the result stored is used instead of parsing anew.
 
 As a future extension to **Pegged**, I'll probably add some grammar introspection: giving access to the list of rules, the call graph, some metadata on each rule (recursive or not, ...).
@@ -116,7 +118,7 @@ Yes, most of `pegged/parser.d` was written by the D compiler, not by a human bei
 
 That means you can do so also: Say you do not like the PEG way to denote rules: `ruleName <- Expression` and want an EBNF-like syntax: `ruleName ::= Expression`, just change the corresponding line in `pegged.examples.PEGGED`:
 
-```d
+```
 Definition   <- LhsName Arrow Expression
 Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / SPACEARROW
 LEFTARROW    <- '<-' Spacing
@@ -127,7 +129,7 @@ SPACEARROW   <- '<' Spacing
 
 into:
 
-```d
+```
 Definition <- LhsName DefSymb Expression
 DefSymb    <- "::="
 ```
@@ -146,4 +148,3 @@ Next Lesson : [[Optimizations]]
 * * * *
 
 [[Pegged Tutorial]]
-
