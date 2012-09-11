@@ -48,7 +48,7 @@ Gram.A
   +--Gram.D
   |
   +--Gram.D
-```               
+```
 
 Keeping Local Nodes / Rules
 ---------------------------
