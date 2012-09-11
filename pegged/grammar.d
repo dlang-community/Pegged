@@ -243,17 +243,22 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 }
                 break;
             case "Pegged.Sequence":
-                //if (p.children.length > 1) // real sequence
-                //{
+                if (p.children.length > 1) // real sequence
+                {
                     result = "and!(";
                     foreach(seq; p.children)
-                        result ~= generateCode(seq) ~ ", ";
+					{
+                        string elementCode = generateCode(seq);
+						if (elementCode.length > 6 && elementCode[0..5] == "and!(") // flattening inner sequences
+							elementCode = elementCode[5..$-1]; // cutting 'and!(' and ')'
+						result ~= elementCode ~ ", ";
+					}
                     result = result[0..$-2] ~ ")";
-                //}
-                //else // One child -> just a Suffix, no need for a and!( , )
-                //{
-                //    result = generateCode(p.children[0]);
-                //}
+                }
+                else // One child -> just a Suffix, no need for a and!( , )
+                {
+                    result = generateCode(p.children[0]);
+                }
                 break;
             case "Pegged.Prefix":
                 result = generateCode(p.children[$-1]);
