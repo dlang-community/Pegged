@@ -5,11 +5,10 @@ As we saw in [[PEG Basics]] and [[Declaring a Grammar]], **Pegged** implements t
 
 Now, I felt the need to extend this a little bit. At that time, semantic actions were not implemented in **Pegged** so now that they are, these extensions are not strictly necessary, but they are useful shortcuts.
 
+Discarding a Node
+-----------------
 
-Dropping a Node
----------------
-
-Given a parsing expression `e`, `:e` will drop `e`'s captures. And, due to the way sequences are implemented in **Pegged**, the mother expression will forget `e` result (that's deliberate). It allows one to write:
+Given a parsing expression `e`, `:e` will discard `e`'s parse result. The mother expression calling `e` will forget `e` result (that's deliberate). No node nor match will be in the final parse tree. It allows one to write:
 
 ```d
 mixin(grammar("
@@ -19,9 +18,9 @@ mixin(grammar("
 "));
 ```
 
-On the first rule, see the colon before `Spaces`. That means that the parse tree will contain only a `Rule2` and a `Rule3` node, and no `Spaces` node. It's a way to cut the parse tree so as to keep only the interesting parts, not the syntactic signs necessary to structure a grammar.
+On the first rule, see the colon before `Spaces`. That means that the parse tree will contain only a `Rule2` and a `Rule3` node, and no `Spaces` node. It's a way to cut the parse tree down, so as to keep only the interesting parts, not the syntactic signs necessary to structure a grammar.
 
-Note that **Pegged** automatically drops the rules that are outside a grammar (See [[Four Levels of Encapsulation]] for more thoughts on this). In particular, char and string literals are always dropped unless **Pegged** is told otherwise (see next extension). That allows one to write:
+Note that **Pegged** automatically drops the rules that are outside a grammar (See [[Four Levels of Encapsulation]] for more thoughts on this). In particular, char and string literals terminals are always dropped unless **Pegged** is told otherwise (see next extension). That allows one to write:
 
 ```
 JSON:
@@ -35,17 +34,27 @@ JSON:
 And given an input such as `{"Hello":42, "World":0}`, the parse tree will look like this:
 
 ```
-ParseTree("JSONObject",
-    ParseTree("Pair", ...
-        ParseTree("String", ...)
-        ParseTree("Number", ...)),
-     ParseTree("Pair",
-        ParseTree("String", ...)
-        ParseTree("Number", ...))  
-)
+JSON(
+	JSONObject(
+		Pair(
+			String (...),
+			Number (...)),
+		Pair(
+			String (...),
+			Number (...))))
 ```
 
-And no '{' nor ':' will be in the final output.  If you want to keep literals (or any other parsing expression), the standard way is to make it a rule, as it's done in the JSON grammar:
+And no '{' nor ':' will be in the final output.  
+
+Dropping Nodes
+--------------
+
+Completly discarding a node and its matches is sometimes a bit extreme. Since I regularly needed to cut a node, *but* keep its matches in the parent node, I added the `;` operator (cousin to `:`) to do just that. It's an intermediate between the default behavior and `:`'s behavior.
+
+Keeping Nodes
+-------------
+
+If you want to keep literals (or any other parsing expression), the standard way is to make it a rule, as it's done in the JSON grammar:
 
 ```
     Value  <  String 
@@ -62,12 +71,7 @@ And no '{' nor ':' will be in the final output.  If you want to keep literals (o
 
 Here, `"true"` and co are kept through the `True`, `False` and `Null` rules.
 
-Another way is the next extension:
-
-Keeping Nodes
--------------
-
-A recent addition to **Pegged** is the `^` operator, that tells **Pegged** to always keep a node, even when it should be dropped. It's a way to keep calls to external rules, like the predefined ones (`Identifier` for example) or the literals. For examples, given the two grammars `Gram1` and `Gram2`:
+Another way is the `^` operator, that tells **Pegged** to always keep a node, even when it should be dropped. It's a way to keep calls to external rules, like the predefined ones (`identifier` for example) or the literals. For example, given the two grammars `Gram1` and `Gram2`:
 
 ```
 Gram1:
@@ -93,11 +97,11 @@ Whereas `Gram2` will keep the literal child nodes:
 ```
 A ["b", "b", "b"]
     B ["b"]
-        Lit(b) ["b"]
+        literal!(b) ["b"]
     B ["b"]
-        Lit(b) ["b"]
+        literal!(b) ["b"]
     B ["b"]
-        Lit(b) ["b"]
+        literal!(b) ["b"]
 ```
 
 It's useful when you want the parse tree structure to keep the syntactic structure, with all markers reproduced as nodes. Also, in a programming language, it allows one to keep keywords. For example:
@@ -110,64 +114,47 @@ Given `"return i;"`, the previous rule will return a parse tree with "return" as
 
 ```
 ReturnStatement ["return", "i"]
-    Lit(return) ["return"]
+    literal!(return) ["return"]
     Expression ["i"]
         (... lots of intermediary nodes ...)
 ```
 
-Note that, as this is a recent addition, the example grammars given in [[Grammar Examples]] do not integrate this change. The main change will be a net decrease in the `:` operator used, as literals are now dropped from the parse tree.
+Fusing Matches
+--------------
 
-Fusing Captures
----------------
-
-The `~` (tilde) operator concatenates an expression's captures in one string. It was chosen for its proximity with the equivalent D operator. It's useful when an expression would otherwise return a long list of individual parses, whereas you're interested only in the global result:
+The `~` (tilde) operator concatenates an expression's matches in one string. It was chosen for its proximity with the equivalent D operator. It's useful when an expression would otherwise return a long list of individual matchss, whereas you're interested only in the global result:
 
 ```d
 mixin(grammar("
-    # See the ':' before DoubleQuote
-    # And the '~' before (Char*)
-    String <- :DoubleQuote ~(Char*) :DoubleQuote
-    Char <- !DoubleQuote . # Anything but a double quote
+Strings:
+    String <- doublequote ~(Char*) doublequote
+    Char   <- !doublequote . # Anything but a double quote
 "));
 ```
 
 Without the tilde operator, using `String` on a string would return a list of `Char` results. With tilde, you get the string content, which is most probably what you want:
 
 ```d
-auto p = String.parse(q{"Hello World!"});
-assert(p.capture == ["Hello World!"];
-// without tilde: p.capture == ["H", "e", "l", "l", "o", " ", "W", ...]
+auto p = Strings(q{"Hello World!"});
+assert(p.matches == ["Hello World!"];
+// without tilde: p.matches == ["H", "e", "l", "l", "o", " ", "W", ...]
 ```
 
 The same goes for number-recognizers:
 
 ```
-Number <- ~(Digit+)
-Digit <- [0-9]
+Numbers:
+	Number <- ~(Digit+)
+	Digit  <- [0-9]
 ```
 
 ```d
-auto n = Number.parse("1234");
-assert(n.capture == ["1234"]);
-// without tilde: n.capture == ["1", "2", "3", "4"]
+auto n = Numbers("1234");
+assert(n.matches == ["1234"]);
+// without tilde: n.matches == ["1", "2", "3", "4"]
 ```
 
-Internally, it's used by `Identifier` and `QualifiedIdentifier`.
-
-Named Captures
---------------
-
-The `=name` (equal) operator is used to name a particular capture. it's defined in [[Named Captures]]. But here is the idea:
-
-```
-Email <- QualifiedIdentifier=name :'@' QualifiedIdentifier=domain
-```
-
-```d
-enum p = Email.parse("john.doe@example.org");
-assert(p.namedCaptures["name"] == "John.Doe");
-assert(p.namedCaptures["domain"] == "example.org");
-```
+Internally, it's used by `identifier` and `qualifiedIdentifier`.
 
 Semantic Actions
 ----------------
@@ -178,7 +165,7 @@ Semantic actions are enclosed in curly braces and put behind the expression they
 XMLNode <- OpeningTag {OpeningAction} (Text / Node)* ClosingTag {ClosingAction}
 ```
 
-You can use any delegate from `Output` to `Output` as a semantic action. See [[Semantic Actions]].
+You can use any delegate from `ParseTree` to `ParseTree` as a semantic action. See [[Semantic Actions]].
 
 Range of Chars Extension
 ------------------------
@@ -206,7 +193,7 @@ I added them to deal with the W3C XML spec.
 Other Extensions
 ----------------
 
-I plan to add other extensions, such as `@` or `$` but these are in flux right now and I'll wait for the design to stabilize before documenting them.
+I plan to use other symbols, such as `=`, `@` or `$` but these are in flux right now and I'll wait for the design to stabilize before documenting them.
 
 Rule-Level Extensions
 ---------------------
@@ -223,8 +210,6 @@ This need is common enough for **Pegged** to provide a shortcut: put the operato
 
 `<:` (colon arrow) drops the entire rule result (useful to ignore comments, for example)
 
-`<{Action}` associates an action with a rule.
-
 (There is no `<^` (keep arrow) that would distribute the 'keep' operator to all subelements in a rule. I might add it if the needs is strong enough.)
 
 For example:
@@ -238,12 +223,12 @@ Comment <: "/*" (Comment / Text)* "*/"
 Text    <~ (!("/*"/"*/") .)* # Anything but begin/end markers
 ```
 
-That makes `Number` expression a bit more readable (if you use a font that rightly distinguishes between ~ and -, as GitHub does not really do...)
+That makes `Number` expression a bit more readable.
 
-Space Arrow
------------
+Space Arrow and User-Defined Spacing
+------------------------------------
 
-There is another kind of space-level rule, it's the 'space arrow', just using `< ` as an arrow. Instead of then treating the parsing expression as a standard non-space-consuming PEG sequence, it will consume spaces between elements.
+There is another kind of space-level rule, it's the 'space arrow', just using `< ` (lower-than followed by a space) as an arrow. Instead of then treating the parsing expression as a standard non-space-consuming PEG sequence, it will consume spaces between elements.
 
 So, given:
 
@@ -258,10 +243,14 @@ C <- 'c'
 
 `Rule1` will parse `"abc"` but not `"a   b c"`, where `Rule2` will parse the two inputs (and will output a parse tree holding only an `A` node, a `B` and a `C` node: no space node.
 
-The space-consuming is done by the predefined `Spacing` parser (see [[Predefined Parsers]]), which munches blank chars, tabs and co and line terminators.
+You can select what pattern is considered as blank: define a rule called `Spacing` in your grammar. This is the rule that will be called by **Pegged** for this grammar to consume space when the `< `arrow is used. If no user-defined `Spacing` is provided, **Pegged** use the predefined `spacing` rule that parse blank chars (whitespace, tabulation, etc).
 
-As a TODO, I plan to let the user define its own `Space` parser (that could for example consume both spaces and comments, as is done in the PEG grammar itself), which the space-sequence would call behind the scene. That way, the space consuming could be customized for each grammar. **Pegged** is not there yet.
+If you're using **Pegged** to parse a programming language with comments, a nice trick is to put a call to both whitechars and comments rules in `Spacing` (see **Pegged** own grammar for an example). That way, you can put comments anywhere a space can be and they will be recognized and discarded while parsing.
 
+Parameterized Rules
+-------------------
+
+Parameterized rules are another PEG extension, described in [[Parameterized Rules]].
 
 * * * *
 Next lesson: [[Parametrized Rules]]

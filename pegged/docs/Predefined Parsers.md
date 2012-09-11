@@ -3,37 +3,35 @@ Predefined Parsers
 
 **Pegged** comes with a bunch of predefined parsers, that I added once a pattern kept coming back in my own code:
 
-
 Expressed in PEG syntax (they are internally implemented as expression templates), they are:
 
 ```
-letter     <- [a-z]
-Letter     <- [A-Z]
-Alpha      <- letter / Letter / '_'
-Digit      <- [0-9]
-Alphanum   <- Alpha / Digit
+# Chars
+alpha       <- [a-z]
+Alpha       <- [A-Z]
+digit       <- [0-9]
+digits      <~ digit+
+hexdigit    <- [0-9a-fA-F]
 
-Identifier <~ Alpha Alphanum*
-QualifiedIdentifier <~ Identifier ('.' Identifier)*
+# End of Input
+endOfInput  <- !.   # alias: eoi
 
-Space   <- " "
-Blank   <- Space / '\t' / '\v' / '\b' / '\a'
-LF      <- '\n'
-CR      <- '\r'
-CRLF    <- "\r\n"
-EOL     <- CRLF / LF / CR
-Spacing <: (Blank / EOL)*  # Drops captured spaces
+# whitespace
+endofLine   <- '\r\n' / '\n' / '\r'  # alias: eol
+space       <- ' ' / '\t' 
+blank       <- space / endOfLine
+spacing     <~ blank* 
 
-DoubleQuote <- '"'
-Quote       <- "'"
-BackQuote   <- "`"
-Slash       <- "/"
-BackSlash   <- '\\'
+# Special chars
+quote       <- "'"
+doublequote <- '"'
+backquote   <- "`"
+slash       <- "/"
+backslash   <- '\\'
 
-Line  <~  (!EOL .)* (EOL/EOI)
-Lines <- Line+
+# Identifiers
+identifier  <~ [a-zA-Z_] [a-zA-Z_0-9]*
+qualifiedIdentifier <~ identifier ('.' identifier)*
 ```
 
-
-In `pegged.examples.numbers` and `pegged.examples.json`, some other useful rules are described, respectively for integral / floating point numbers and for double-quoted strings. I may put them in a special module, with the previous definitions.
-
+In `pegged.examples.numbers`, `pegged.examples.strings`, some other useful rules are described, respectively for integral / floating point numbers and for double-quoted strings.

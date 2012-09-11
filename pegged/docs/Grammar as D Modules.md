@@ -49,7 +49,7 @@ asModule("pegged.parser", "pegged/parser", PEGGEDgrammar);
 
 * * * *
 
-Next Lesson: [[Using the Parse Tree]].
+Next Lesson: [[Grammar Composition]].
 
 * * * *
 

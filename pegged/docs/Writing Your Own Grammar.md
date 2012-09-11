@@ -1,9 +1,9 @@
 Writing Your Own Grammar
 ========================
 
-**Pegged** allows you to build your grammar easily, using a short notation that allows you to make a top-down or bottom-up construction.
+**Pegged** allows you to build your grammar easily, using a simple notation. Let's see how to construct a grammar from scratch.
 
-My first advice would be to structure your grammar in big chunks and see how they play with one another. You can then refine each of these chunks and break it into smaller parts. If a small part seems useful enough, make it its own grammar. That way, it can be used again in other grammars (see [[Grammar Composition]]).
+My first advice would be to structure your grammar into big chunks and see how they play with one another. You can then refine each of these chunks and break it into smaller parts. If a small part seems useful enough, make it its own grammar. That way, it can be used again in other grammars (see [[Grammar Composition]]).
 
 For example, a standard question is 'How is operator precedence defined in grammar like these, there is no operator precedence table anywhere in sight!'. The trick is to begin with the weaker operators and then go down with the stronger binders. For example, let's consider arithmetic expressions that contain +(unary and binary),- (unary and binary),/,*,%, pow (^) and parenthesis. The standard mathematic precedence is (from weaker to stronger): 
 
@@ -52,11 +52,9 @@ Atom <- ...
 
 Where `Atom` is the atomic element in a boolean expression: identifiers, entire D expressions, what have you.
 
-And here is an idea: these small boolean grammar could be parametrized on `Atom` and work on any kind of expression (see [[Parametrized Rules]], though there is no way to parametrized an entire grammar in **Pegged** right now).
-
 -----------
 
-Next Lesson: [[Four Levels of Encapsulation]]
+Next Lesson: [[Behind the Curtain: How Pegged Works]]
 
 -----------
 
