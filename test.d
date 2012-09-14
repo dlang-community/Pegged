@@ -14,8 +14,6 @@ import pegged.grammar;
 import pegged.parser;
 import pegged.introspection;
 
-import G;
-
 void main()
 {
 	enum g = "
@@ -24,7 +22,7 @@ void main()
 		B <- 'c'? A 'c'*
 		";
 	
-	writeln(G.Gram.info);
+	mixin(grammar(g));
 	//asModule("G", g);
 	//mixin(grammar(g));
 	//writeln(Gram("abccc"));
