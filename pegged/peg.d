@@ -173,12 +173,12 @@ template named(alias r, string name)
 {
     ParseTree named(ParseTree p)
     {
-        static if (is(r))
+        /+static if (is(r))
         {
             r temp;
             ParseTree result = temp(p);
         }
-        else
+        else+/
             ParseTree result = r(p);
         
         result.name = name;
