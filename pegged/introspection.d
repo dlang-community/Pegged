@@ -301,7 +301,6 @@ RuleInfo[string] ruleInfo(string grammar)
 			case "Pegged.Primary":
 				return leftRecursion(p.children[0], target);
 			case "Pegged.RhsName":
-				writeln("entering RhsName for ", p.matches[0]);
 				if (p.matches[0] == target) // ?? Or generateCode(p) ?
 					return LeftRecursive.direct;
 				else
@@ -336,7 +335,6 @@ RuleInfo[string] ruleInfo(string grammar)
 		}
 		
 	auto rec = recursions(callGraph(p));
-	//import std.stdio; writeln("Inside:", rec);
 	foreach(rule, recursionType; rec)
 		if (rule in result) // external rules are in rec, but not in result
 			result[rule].recursion = recursionType;
