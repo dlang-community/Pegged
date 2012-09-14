@@ -303,14 +303,10 @@ RuleInfo[string] ruleInfo(string grammar)
 			case "Pegged.RhsName":
 				if (p.matches[0] == target) // ?? Or generateCode(p) ?
 					return LeftRecursive.direct;
-				else
-				{
-					auto lr = leftRecursion(rules[p.matches[0]], target); // Indirect left-recursion
-					if (lr != LeftRecursive.no)
-						return LeftRecursive.hidden;
-					else
-						return LeftRecursive.no;
-				}
+				else if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no))
+                    return LeftRecursive.hidden;
+                else
+                    return LeftRecursive.no;
 			case "Pegged.Literal":
 				return LeftRecursive.no;
 			case "Pegged.CharClass":
