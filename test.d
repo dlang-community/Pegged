@@ -8,19 +8,43 @@ import std.datetime;
 import std.range;
 import std.stdio;
 import std.typecons;
+import std.typetuple;
 
 import pegged.grammar;
-import pegged.examples.peggedgrammar;
+import pegged.parser;
+import pegged.introspection;
+
+import G;
 
 void main()
 {
-mixin(grammar(`
-A(B):
-    Rule1(C) <- B C
-    Rule2 <- B*
-    `));
-
-alias literal!"b" b;
-alias literal!"c" c;
-writeln(A!(b).Rule1!(c)("bcb"));
+	enum g = "
+	Gram:
+		A <- 'a'? B*
+		B <- 'c'? A 'c'*
+		";
+	
+	writeln(G.Gram.info);
+	//asModule("G", g);
+	//mixin(grammar(g));
+	//writeln(Gram("abccc"));
+	//writeln(Gram.info);
+	//writeln(Pegged(G));
+	//writeln(callGraph(G));
+	//writeln(ruleInfo(G));
+	//writeln(ruleInfo(G));
+	
+	//writeln(grammar(G));
+	//asModule("G2", g);
+	//alias Gram.A!(literal!"b") Rule;
+	
+	//writeln(Rule("abbbc"));
+	//writeln(Gram.A!(literal!"b")("abbbc"));
+	
+	//writeln(S.A!("abc","def")("abc"));
+	
+	//writeln(Gram.ruleNames);
+	//writeln(Gram.info["A"].recursion);
+	//writeln(Gram.info["A"].nullMatch);
+	//writeln(Gram.info["A"].infiniteLoop);
 }
