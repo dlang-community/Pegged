@@ -38,7 +38,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
     if (!defAsParseTree.successful)
         return "static assert(false, `" ~ defAsParseTree.toString() ~ "`);";
     
-	
+
     string generateCode(ParseTree p)
     {
         string result;
@@ -95,7 +95,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
 						~ "    static string[] ruleNames;\n" 
 						~ "    static this()\n"
 						~ "    {\n"
-						~ "         info = ruleInfo(\"" ~ definition ~"\");\n"
+						~ "         info = ruleInfo(q{" ~ definition ~"});\n"
 						~ "         ruleNames = info.keys;\n"
 						~ "    }\n";
                 
