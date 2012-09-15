@@ -374,14 +374,18 @@ RuleInfo[string] ruleInfo(string grammar)
     return result;
 }
 
-string introspectionAsString(string grammar)
+/**
+Act on rules parse tree as produced by pegged.parser.
+Replace every occurence of child in parent by child's parse tree
+*/
+ParseTree replaceInto(ParseTree parent, ParseTree child)
 {
-	string introspectionResult= "[";
-	auto ri = ruleInfo(grammar);
-	
-	foreach(name, info; ri)
-		introspectionResult ~= "\""~name~"\":"~to!string(info)~", ";
-	
-	introspectionResult = introspectionResult[0..$-2] ~ "]";
-	return introspectionResult;
+    if (parent.name == "Pegged.RhsName" && parent.matches[0] == child.matches[0])
+        return ParseTree("Pegged.Named", true, child.matches[0..1], "",0,0,
+                       [child.children[2], 
+                        ParseTree("Pegged.Identifier", true, child.matches[0..1])]);
+    else
+        foreach(ref branch; parent.children)
+            branch = replaceInto(branch, child);
+    return parent;
 }
