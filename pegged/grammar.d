@@ -1,9 +1,10 @@
 /**
- * Parser generation module for Pegged.
- * The Pegged parser itself is in pegged.parser, generated from pegged.examples.peggedgrammar.
- */
-module pegged.grammar;
+Parser generation module for Pegged.
+The Pegged parser itself is in pegged.parser, generated from pegged.examples.peggedgrammar.
 
+The documentation is in the /docs directory.
+*/
+module pegged.grammar;
 
 import std.conv: to;
 import std.stdio;
@@ -12,13 +13,21 @@ public import pegged.peg;
 public import pegged.introspection;
 import pegged.parser;
 
+/**
+Option enum to get internal memoization (parse results storing).
+*/
 enum Memoization { no, yes }
 
+/**
+This function takes a (future) module name, a (future) file name and a grammar as a string or a file. 
+It writes the corresponding parser inside a module with the given name.
+*/
 void asModule(Memoization withMemo = Memoization.no)(string moduleName, string grammarString)
 {
     asModule!(withMemo)(moduleName, moduleName, grammarString);
 }
 
+/// ditto
 void asModule(Memoization withMemo = Memoization.no)(string moduleName, string fileName, string grammarString)
 {
     import std.stdio;
@@ -33,16 +42,33 @@ void asModule(Memoization withMemo = Memoization.no)(string moduleName, string f
     f.write(grammar!(withMemo)(grammarString));
 }
 
+/// ditto
 void asModule(Memoization withMemo = Memoization.no)(string moduleName, File file)
 {
     string grammarDefinition;
     foreach(line; file.byLine)
-    {
+    { 
         grammarDefinition ~= line ~ '\n';
     }
     asModule!(withMemo)(moduleName, grammarDefinition);
 }
 
+/**
+Generate a parser from a PEG definition.
+The parser is a string containing D code, to be mixed in or written in a file.
+
+----
+enum string def = "
+Gram:
+    A <- 'a' B*
+    B <- 'b' / 'c'
+";
+
+mixin(grammar(def));
+
+ParseTree p = Gram("abcbccbcd");
+----
+*/
 string grammar(Memoization withMemo = Memoization.no)(string definition)
 {
     ParseTree defAsParseTree = Pegged(definition);
@@ -410,4 +436,77 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
 
 	
     return generateCode(defAsParseTree);
+}
+
+/**
+Mixin to get what a failed rule expected as input.
+Not used by Pegged yet.
+*/
+mixin template expected()
+{
+    string expected(ParseTree p)
+    {
+        
+        switch(p.name)
+        {
+            case "Pegged.Expression":
+                string expectation;
+                foreach(i, child; p.children)
+                    expectation ~= "(" ~ expected(child) ~ ")" ~ (i < p.children.length -1 ? " or " : "");
+                return expectation;
+            case "Pegged.Sequence":
+                string expectation;
+                foreach(i, expr; p.children)
+                    expectation ~= "(" ~ expected(expr) ~ ")" ~ (i < p.children.length -1 ? " followed by " : "");
+                return expectation;
+            case "Pegged.Prefix":
+                return expected(p.children[$-1]);
+            case "Pegged.Suffix":
+                string expectation;
+                string end;
+                foreach(prefix; p.children[1..$])
+                    switch(prefix.name)
+                    {
+                        case "Pegged.ZEROORMORE":
+                            expectation ~= "zero or more times (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.ONEORMORE":
+                            expectation ~= "one or more times (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.OPTION":
+                            expectation ~= "optionally (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.Action":
+                            break;
+                        default:
+                            break;
+                    }
+                return expectation ~ expected(p.children[0]) ~ end;
+            case "Pegged.Primary":
+                return expected(p.children[0]);
+            //case "Pegged.RhsName":
+            //    return "RhsName, not implemented.";
+            case "Pegged.Literal":
+                return "the literal `" ~ p.matches[0] ~ "`";
+            case "Pegged.CharClass":
+                string expectation;
+                foreach(i, child; p.children)
+                    expectation ~= expected(child) ~ (i < p.children.length -1 ? " or " : "");
+                return expectation;            
+            case "Pegged.CharRange":
+                if (p.children.length == 1)
+                    return expected(p.children[0]);
+                else
+                    return "any character between '" ~ p.matches[0] ~ "' and '" ~ p.matches[2] ~ "'";
+            case "Pegged.Char":
+                return "the character '" ~ p.matches[0] ~ "'";
+            case "Pegged.ANY":
+                return "any character";
+            default:
+                return "unknow rule (" ~ p.matches[0] ~ ")";
+        }
+    }
 }
