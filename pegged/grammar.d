@@ -4,10 +4,12 @@
  */
 module pegged.grammar;
 
+
 import std.conv: to;
+import std.stdio;
 
 public import pegged.peg;
-import pegged.introspection;
+public import pegged.introspection;
 import pegged.parser;
 
 enum Memoization { no, yes }
@@ -29,6 +31,16 @@ void asModule(Memoization withMemo = Memoization.no)(string moduleName, string f
     f.write("module " ~ moduleName ~ ";\n\n");
     f.write("public import pegged.peg;\n");
     f.write(grammar!(withMemo)(grammarString));
+}
+
+void asModule(Memoization withMemo = Memoization.no)(string moduleName, File file)
+{
+    string grammarDefinition;
+    foreach(line; file.byLine)
+    {
+        grammarDefinition ~= line ~ '\n';
+    }
+    asModule!(withMemo)(moduleName, grammarDefinition);
 }
 
 string grammar(Memoization withMemo = Memoization.no)(string definition)
