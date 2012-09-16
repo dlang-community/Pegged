@@ -1,10 +1,10 @@
 % based on the fantastic work from http://www.stdout.org/~winston/latex/
-\documentclass[10pt,landscape]{article}
+\documentclass[10pt]{article}
 
 \usepackage{multicol}
 \usepackage{calc}
 \usepackage{ifthen}
-\usepackage[landscape]{geometry}
+\usepackage{geometry}
 
 % conditional page margins based on paper size
 \ifthenelse{\lengthtest { \paperwidth = 11in}}
@@ -43,7 +43,7 @@
 
 \raggedright
 \footnotesize
-\begin{multicols}{3}
+\begin{multicols}{2}
 	% multicol parameters
 	\setlength{\premulticols}{1pt}
 	\setlength{\postmulticols}{1pt}
@@ -55,7 +55,25 @@
          \Large{\textbf{Pegged Cheat Sheet}} \\
     \end{center}
 
-	% content here
+    \section{Rules}
+    \begin{tabular}{@{}ll@{}}
+    \verb!  < !    & Creates a space consuming sequence. \\
+	\verb!  <~!    & Concatenates a sequences of matches into one string. \\
+	\verb!  <:!    & Creates a sequence to be discarded. \\
+	\verb!  <;!    & Creates a sequence stored in the parent node. \\
+    \end{tabular}
+
+Every operator suffix of a \verb!<! rule will work on token literals and on child rules from the parent context.
+
+    \section{Non-Terminals}
+    \begin{tabular}{@{}ll@{}}
+    \verb!book!    & Default is two-sided. \\
+    \end{tabular}
+
+    \section{Terminals}
+    \begin{tabular}{@{}ll@{}}
+    \verb!book!    & Default is two-sided. \\
+    \end{tabular}
 
     % footer
 	\rule{0.3\linewidth}{0.25pt}
