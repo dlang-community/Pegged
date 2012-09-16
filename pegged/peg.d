@@ -378,7 +378,7 @@ ParseTree option(alias r)(ParseTree p)
 {
     auto result = r(p);
     if (result.successful)
-        return result;
+        return ParseTree("option", true, result.matches, result.input, result.begin, result.end, [result]);
     else
         return ParseTree("option", true, [], p.input, p.end, p.end, null);
 }
