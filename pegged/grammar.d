@@ -128,7 +128,8 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 result ~= "    mixin decimateTree;\n";
                 
 				// Introspection information
-				result ~= "    import pegged.introspection;\n"
+				/+ Disabling it for now (2012/09/16), splicing definition into code causes problems.
+                result ~= "    import pegged.introspection;\n"
 				        ~ "    static RuleInfo[string] info;\n"
 						~ "    static string[] ruleNames;\n" 
 						~ "    static this()\n"
@@ -136,7 +137,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
 						~ "         info = ruleInfo(q{" ~ definition ~"});\n"
 						~ "         ruleNames = info.keys;\n"
 						~ "    }\n";
-                
+                +/
                 // If the grammar provides a Spacing rule, then this will be used.
                 // else, the predefined 'spacing' rule is used.
                 result ~= userDefinedSpacing ? "" : "    alias spacing Spacing;\n\n";
