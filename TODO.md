@@ -3,6 +3,7 @@ Pegged TODO:
 
 Short term:
 
+TODO: ParseTree comparison without aliasing problems. ParseTrees should be compared on their content, including for children.
 TODO: 'hooked' rules: rules that can be extended at runtime, or modified. I want to have a D parser that accepts syntactic extensions. I have these hooked rules, they work, but the end-user code is not as polished as I'd like.
 TODO: add an enum inside ParseTree's, containing the rules's name, to enable final switch selection
 TODO: option infrastructure (easier for the user: grammar!(memoizing, inlining, debug))
