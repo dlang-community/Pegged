@@ -1,19 +1,35 @@
+/**
+This module contains the engine behind Pegged, the expression templates building blocks to create a top-down
+recursive-descent parser.
+
+The terminals and non-terminals described here are meant to be used inside a Pegged grammar. As such, they are a bit less
+user-friendly than what's output by pegged.grammar. For example they take a ParseTree as input, not a string.
+
+See the /docs directory for the full documentation as markdown files.
+*/
 module pegged.peg;
 
 import std.conv;
 import std.typetuple;
 
+/**
+The basic parse tree, as used throughout the project. 
+You can defined your own parse tree node, but respect the basic layout.
+*/
 struct ParseTree
 {
-    string name;
-    bool successful;
-    string[] matches;
+    string name; /// The node name
+    bool successful; /// Indicates whether a parsing was successful or not
+    string[] matches; /// The matched input's parts. Some expressions match at more than one place, hence matches is an array.
     
-    string input;
-    size_t begin, end;
+    string input; /// The input string that generated the parse tree. Stored here for the parse tree to be passed to other expressions, as input.
+    size_t begin, end; /// Indices for the matched part (from the very beginning of the first match to the last char of the last match.
     
-    ParseTree[] children;
+    ParseTree[] children; /// The sub-trees created by sub-rules parsing.
     
+    /**
+    Basic toString for easy pretty-printing.
+    */
     string toString(string tabs = "") 
     {
         string result = name ~ (successful ? " " : "(failure) ") ~ " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
@@ -26,19 +42,28 @@ struct ParseTree
 }
 
 
-/* Standard rules */
+/**
+Basic rule, that always fail without consuming.
+*/
 ParseTree fail(ParseTree p)
 {
     return ParseTree("fail", false, [], p.input, p.end, p.end, null);
 }
 
+/**
+Matches the end of input. Fails if there is any character left.
+*/
 ParseTree eoi(ParseTree p)
 {
     return ParseTree("eoi", p.end == p.input.length, [], p.input, p.end, p.end);
 }
 
-alias eoi endOfInput;
+alias eoi endOfInput; /// helper alias.
 
+/**
+Match any character. As long as there is at least a character left in the input, it succeeds. 
+Conversely, it fails only if called at the end of the input.
+*/
 ParseTree any(ParseTree p)
 {
     if (p.end < p.input.length)
@@ -47,6 +72,10 @@ ParseTree any(ParseTree p)
         return ParseTree("any", false, [], p.input, p.end, p.end);
 }
 
+/**
+Represents a literal in a PEG, like "abc" or 'abc' (or even '').
+It succeeds if a prefix of the input is equal to its template parameter and fails otherwise.
+*/
 ParseTree literal(string s)(ParseTree p)
 {
     if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
@@ -55,6 +84,11 @@ ParseTree literal(string s)(ParseTree p)
         return ParseTree("literal("~s~")", false, [], p.input, p.end, p.end);
 }
 
+/**
+Represents a range of chars, from begin to end, included. So charRange!('a','z') matches
+all English lowercase letters. If fails if the input is empty or does not begin with a character
+between begin and end.
+*/
 ParseTree charRange(char begin, char end)(ParseTree p)
 {
     if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
@@ -63,12 +97,56 @@ ParseTree charRange(char begin, char end)(ParseTree p)
         return ParseTree("charRange("~begin~"," ~ end ~ ")", false, [], p.input, p.end, p.end);
 }
 
+/**
+eps matches the empty string (usually denoted by the Greek letter 'epsilon') and always succeeds.
+It's equivalent to literal!"".
+*/
 ParseTree eps(ParseTree p)
 {
     return ParseTree("eps", true, [""], p.input, p.end, p.end);
 }
 
-ParseTree and(rules...)(ParseTree p)
+/**
+Basic operator: it matches if all its subrules (stored in the rules template parameter tuple) match
+the input successively. Its subrules parse trees are stored as its children and its matches field
+will contain all its subrules matches, in order.
+
+----
+alias and!(literal!"abc", charRange!('a','z')) rule; // abc followed by any letter between a and z.
+ParseTree input = ParseTree("",false,[],"abcd"); // low-level plumbing, the rules described here act on ParseTree's not strings.
+                                                 // It's equivalent to "abcd" as input 
+auto result = rule(input);
+
+assert(result.successful); // OK, 'abc' followed by 'd'
+assert(result.matches == ["abc", "d"]); // stores the matches
+assert(result.children.length == 2); // two children, the result of "abc" on "abcd" and the result of [a-z] on "d"
+
+input.input = "abc"; // changing the input string;
+assert(!rule(input)).successful); // NOK, abc alone
+input.input = "ab";
+assert(!rule(input)).successful); // NOK, does not begin by abc
+----
+
+If it fails, the last children will contain the failed node. That way, when printing, as sort of diagnostic is given:
+
+----
+alias and!(literal!"abc", charRange!('a','z')) rule; // 'abc[a-z]', aka 'abc' followed by any letter between 'a' and 'z'.
+ParseTree input = ParseTree("",false,[],"abc1"); // equivalent to "abc1"
+
+auto failure = rule(input);
+writeln(failure);
+/+
+writes:
+and(failure)  [0, 3]["abc"]
+ +-literal(abc)  [0, 3]["abc"]
+ +-charRange(a,z)(failure)  [3, 3][]
++/
+----
+
+So we know the global 'and' failed, that the first sub-rule ('abc') succeeded on input[0..3] with "abc" 
+and that the second subrule ('[a-z]') failed at position 3 (so, on '1').
+*/
+ParseTree and(rules...)(ParseTree p) if (rules.length > 0)
 {
     bool isNullNode(ParseTree node)
     {
@@ -102,7 +180,48 @@ ParseTree and(rules...)(ParseTree p)
     return result;
 }
 
-ParseTree or(rules...)(ParseTree p)
+/**
+Basic operator: it matches if one of its subrules (stored in the rules template parameter tuple) match
+the input. The subrules are tested in order, from rules[0] to rules[$-1]. 
+
+The matching subrule parse trees is stored as its only child and its matches field
+will contain all the subrule matches, in order.
+
+----
+alias or!(literal!"abc", charRange!('a','z')) rule; // abc or, failing that, any letter between a and z.
+ParseTree input = ParseTree("",false,[],"defg"); // low-level plumbing, the rules described here act on ParseTree's not strings.
+                                                 // It's equivalent to "defg" as input 
+auto result = rule(input);
+
+assert(result.successful); // OK
+assert(result.matches == ["d"]); // stores the (in this case) only match
+assert(result.children.length == 1); // one child, the result of "abc" or [a-z], depending on which rule succeeded.
+
+input.input = "abc"; // changing the input string;
+assert(rule(input)).successful); // Still OK
+input.input = "1abc";
+assert(!rule(input)).successful); // NOK, does not begin by abc nor by [a-z]
+----
+
+If it fails, the last children will contain the failed node that matched furthest (longes match). That way, when printing, as sort of diagnostic is given:
+
+----
+alias or!(literal!"abc", and!(literal!"ab", charRange!('0','9'))) rule; // 'abc' or 'ab[0-9]'
+ParseTree input = ParseTree("",false,[],"abd"); // equivalent to "abd"
+
+auto failure = rule(input);
+writeln(failure);
+/+
+or(failure)  [0, 2]["ab"]
+ +-and(failure)  [0, 2]["ab"]
+    +-literal(ab)  [0, 2]["ab"]
+    +-charRange(0,9)(failure)  [2, 2][]
++/
+----
+
+So we know 'or' failed, that the 'and' sub-rule had the longest match, matching 'ab' and failing for [0-9] on index 2.
+*/
+ParseTree or(rules...)(ParseTree p) if (rules.length > 0)
 {
     ParseTree longestFail;
     foreach(i,r; rules)
@@ -117,12 +236,16 @@ ParseTree or(rules...)(ParseTree p)
         else
             longestFail = (temp.end > longestFail.end) ? temp : longestFail;  
     }            
-        /* both failed, we will take the longest match */
+    
+    /* all subrules failed, we will take the longest match */
     longestFail.children = [longestFail];
     longestFail.name = "or";
     return longestFail;
 }
 
+/**
+
+*/
 ParseTree zeroOrMore(alias r)(ParseTree p)
 {
     auto result = ParseTree("zeroOrMore", true, [], p.input, p.end, p.end);
