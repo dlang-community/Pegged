@@ -244,7 +244,44 @@ ParseTree or(rules...)(ParseTree p) if (rules.length > 0)
 }
 
 /**
+Tries to match subrule 'r' zero or more times. It always succeeds, since if 'r' fails
+from the very beginning, it matched 'r' zero times...
 
+Its matches are those of its subrules (they might be different for each match) and its
+children are all the parse trees returned by the successive application of 'r'.
+
+----
+alias zeroOrMore!(or!(literal!"abc", literal!"d")) rule; // in PEG-speak:  '("abc" / "d")*'
+ParseTree input = ParseTree("",false,[], "abcdabce");
+
+ParseTree result = rule(input);
+
+assert(result.successful);
+assert(result.matches == ["abc", "d", "abc"]);
+assert(result.end == 7); // matched "abcdabce"[0..7] => "abcdabc". "e" at the end is not part of the parse tree.
+assert(result.children.length == 3);
+writeln(result);
+/+
+writes:
+zeroOrMore  [0, 7]["abc", "d", "abc"]
+ +-or  [0, 3]["abc"]
+ |  +-literal(abc)  [0, 3]["abc"]
+ +-or  [3, 4]["d"]
+ |  +-literal(d)  [3, 4]["d"]
+ +-or  [4, 7]["abc"]
+    +-literal(abc)  [4, 7]["abc"]
++/
+----
+
+So we know the first child used the 'literal!"abc"' sub-rule and matched input[0..3]. 
+The second matched input[3..4] and the third input[4..7].
+
+----
+input = ParseTree("",false,[], "efgh");
+result = rule(input);
+assert(result.successful); // succeed, even though all patterns failed.
+assert(result.children.length == 0);
+----
 */
 ParseTree zeroOrMore(alias r)(ParseTree p)
 {
@@ -261,6 +298,45 @@ ParseTree zeroOrMore(alias r)(ParseTree p)
     return result;
 }
 
+/**
+Tries to match subrule 'r' one or more times. If 'r' fails
+from the very beginning, it fails and else succeeds.
+
+Its matches are those of its subrules (they might be different for each match) and its
+children are all the parse trees returned by the successive application of 'r'.
+
+----
+alias oneOrMore!(or!(literal!"abc", literal!"d")) rule; // in PEG-speak:  '("abc" / "d")*'
+ParseTree input = ParseTree("",false,[], "abcdabce");
+
+ParseTree result = rule(input);
+
+assert(result.successful);
+assert(result.matches == ["abc", "d", "abc"]);
+assert(result.end == 7); // matched "abcdabce"[0..7] => "abcdabc". "e" at the end is not part of the parse tree.
+assert(result.children.length == 3);
+writeln(result);
+/+
+writes:
+oneOrMore  [0, 7]["abc", "d", "abc"]
+ +-or  [0, 3]["abc"]
+ |  +-literal(abc)  [0, 3]["abc"]
+ +-or  [3, 4]["d"]
+ |  +-literal(d)  [3, 4]["d"]
+ +-or  [4, 7]["abc"]
+    +-literal(abc)  [4, 7]["abc"]
++/
+----
+
+So we know the first child used the 'literal!"abc"' sub-rule and matched input[0..3]. 
+The second matched input[3..4] and the third input[4..7].
+
+----
+input = ParseTree("",false,[], "efgh");
+result = rule(input);
+assert(!result.successful); // fails, since it failed on the first try.
+----
+*/
 ParseTree oneOrMore(alias r)(ParseTree p)
 {
     auto result = ParseTree("oneOrMore", false, [], p.input, p.end, p.end);
@@ -283,6 +359,21 @@ ParseTree oneOrMore(alias r)(ParseTree p)
     return result;
 }
 
+/**
+Given a subrule 'r', represents the expression 'r?'. It tries to match 'r' and if this matches
+successfully, it returns this match. If 'r' failed, 'r?' is still a success, but without any child nor match.
+
+----
+alias option!(literal!"abc") rule; // Aka '"abc"?'
+ParseTree input = ParseTree("",false,[],"abcd");
+
+ParseTree result = rule(input);
+assert(result.successful);
+assert(result.matches == ["abc"]);
+assert(result.children.length == 1);
+assert(result.children[0] == literal!"abc"(input));
+----
+*/
 ParseTree option(alias r)(ParseTree p)
 {
     auto result = r(p);
