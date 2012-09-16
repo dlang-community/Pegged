@@ -383,6 +383,21 @@ ParseTree option(alias r)(ParseTree p)
         return ParseTree("option", true, [], p.input, p.end, p.end, null);
 }
 
+/**
+Internal helper template, to get a parse tree node with a name. For example, given:
+----
+alias or!(literal!"abc", charRange!('0','9')) myRule;
+----
+
+myRule gives nodes named "or", since its the parent rule. If you want nodes to be named "myRule":
+
+----
+alias named!(
+             or!(literal!"abc", charRange!('0','9')),
+             "myRule"
+            ) myRule;
+----
+*/
 template named(alias r, string name)
 {
     ParseTree named(ParseTree p)
@@ -400,6 +415,10 @@ template named(alias r, string name)
     }
 }
 
+/**
+Low-level representation for the expression 'r {act}'. That is, it applies rule 'r'
+on the input and then calls 'act' on the resulting ParseTree.
+*/
 template action(alias r, alias act)
 {
     ParseTree action(ParseTree p)
@@ -408,6 +427,9 @@ template action(alias r, alias act)
     }
 }
 
+/**
+Concatenates a ParseTree's matches as one match and discards its children. Equivalent to the expression '~r'.
+*/
 ParseTree fuse(alias r)(ParseTree p)
 {
     p = r(p);
@@ -419,6 +441,9 @@ ParseTree fuse(alias r)(ParseTree p)
     return p;
 }
 
+/**
+Calls 'r' on the input and then discards its children nodes.
+*/
 ParseTree discardChildren(alias r)(ParseTree p)
 {
     p = r(p);
@@ -426,6 +451,9 @@ ParseTree discardChildren(alias r)(ParseTree p)
     return p;
 }
 
+/**
+Calls 'r' on the input and then discards its matches.
+*/
 ParseTree discardMatches(alias r)(ParseTree p)
 {
     p = r(p);
@@ -477,6 +505,10 @@ template filterRule(alias r, string target)
     alias action!(r, ruleFilter!target) filterRule;
 }
 
+/**
+Calls 'r' on the input and then discard everything 'r' returned: no children, no match and index
+put at the end of the match. It's the low-level engine behind ':r'.
+*/
 ParseTree discard(alias r)(ParseTree p)
 {
     ParseTree result = r(p);
@@ -486,6 +518,10 @@ ParseTree discard(alias r)(ParseTree p)
     return result;
 }
 
+/**
+Calls 'r' on the input and then discards everything 'r' did, except its matches (so that
+they propagate upwards). Equivalent to ';r'.
+*/
 ParseTree drop(alias r)(ParseTree p)
 {
     ParseTree result = r(p);
@@ -493,6 +529,10 @@ ParseTree drop(alias r)(ParseTree p)
     return result;    
 }
 
+/**
+Makes 'r's result be kept when it would be discarded by the tree-decimation done by a grammar.
+Equivalent to '^r'.
+*/
 ParseTree keep(alias r)(ParseTree p)
 {
     auto result = r(p);
@@ -501,6 +541,10 @@ ParseTree keep(alias r)(ParseTree p)
     return result;
 }
 
+/**
+Tries 'r' on the input. If it succeeds, the rule also succeeds, without consuming any input.
+If 'r' fails, then posLookahead!r also fails. Low-level implementation of '&r'.
+*/
 template posLookahead(alias r)
 {
     ParseTree posLookahead(ParseTree p)
@@ -510,6 +554,10 @@ template posLookahead(alias r)
     }
 }
 
+/**
+Tries 'r' on the input. If it fails, the rule succeeds, without consuming any input.
+If 'r' succeeds, then negLookahead!r fails. Low-level implementation of '!r'.
+*/
 template negLookahead(alias r)
 {
     ParseTree negLookahead(ParseTree p)
@@ -520,31 +568,32 @@ template negLookahead(alias r)
 }
 
 /* pre-defined rules */
-alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOfLine;
-alias endOfLine eol;
 
-alias or!(literal!(" "), literal!("\t")) space;
-alias named!(fuse!(discardChildren!(zeroOrMore!space)), "spaces") spaces;
-alias or!(space, endOfLine) blank;
-alias named!(fuse!(discardChildren!(zeroOrMore!blank)), "spacing") spacing;
+alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOfLine; /// predefined end-of-line parser
+alias endOfLine eol; /// helper alias.
 
-alias charRange!('0', '9') digit;
-alias named!(fuse!(discardChildren!(oneOrMore!digit)), "digits") digits;
+alias or!(literal!(" "), literal!("\t")) space; /// predefined space-recognizing parser (space or tabulation).
+alias named!(fuse!(discardChildren!(zeroOrMore!space)), "spaces") spaces; /// aka '~space*'
+alias or!(space, endOfLine) blank; /// Any blank char (spaces or end of line).
+alias named!(fuse!(discardChildren!(zeroOrMore!blank)), "spacing") spacing; /// The basic space-management parser: fuse zero or more blank spaces.
 
-alias or!(charRange!('0','9'), charRange!('a','f'), charRange!('A', 'F')) hexDigit;
+alias charRange!('0', '9') digit; /// Decimal digit: [0-9]
+alias named!(fuse!(discardChildren!(oneOrMore!digit)), "digits") digits; /// [0-9]+
 
-alias charRange!('a', 'z') alpha;
-alias charRange!('A', 'Z') Alpha;
+alias or!(charRange!('0','9'), charRange!('a','f'), charRange!('A', 'F')) hexDigit; /// Hexadecimal digit: [0-9a-fA-F]
 
-alias and!(oneOrMore!(or!(alpha, Alpha, literal!("_"))), zeroOrMore!(or!(digit, alpha, Alpha, literal!("_")))) ident;
-alias named!(fuse!(discardChildren!ident), "identifier")  identifier;
-alias named!(fuse!(discardChildren!(and!(identifier, zeroOrMore!(and!(literal!".", identifier))))), "qualifiedIdentifier") qualifiedIdentifier;
+alias charRange!('a', 'z') alpha; /// [a-z]
+alias charRange!('A', 'Z') Alpha; /// [A-Z]
 
-alias named!(literal!"/", "slash") slash;
-alias named!(literal!"\\", "backslash") backslash;
-alias named!(literal!"'", "quote") quote;
-alias named!(literal!"\"", "doublequote") doublequote;
-alias named!(literal!"`", "backquote") backquote;
+alias and!(oneOrMore!(or!(alpha, Alpha, literal!("_"))), zeroOrMore!(or!(digit, alpha, Alpha, literal!("_")))) ident; 
+alias named!(fuse!(discardChildren!ident), "identifier")  identifier; /// [a-zA-Z_][a-zA-Z_0-9]*, the basic C-family identifier
+alias named!(fuse!(discardChildren!(and!(identifier, zeroOrMore!(and!(literal!".", identifier))))), "qualifiedIdentifier") qualifiedIdentifier; /// qualified identifiers (identifers separated by dots: abd.def.g).
+
+alias named!(literal!"/", "slash") slash; /// A parser recognizing '/'
+alias named!(literal!"\\", "backslash") backslash; /// A parser recognizing '\'
+alias named!(literal!"'", "quote") quote; /// A parser recognizing ' (single quote)
+alias named!(literal!"\"", "doublequote") doublequote; /// A parser recognizing " (double quote)
+alias named!(literal!"`", "backquote") backquote; /// A parser recognizing ` (backquote)
 
 /// A list of elem's separated by sep's. One element minimum.
 template list(alias elem, alias sep)
@@ -566,6 +615,29 @@ template AddSpace(alias sp)
     }
 }
 
+/**
+The engine behind the '< ' Pegged rule: all sequence subelements of a rule are interspersed
+with a space-consuming rule, given as the first template parameter.
+
+----
+alias and!(literal!"abc", literal!"def") rule1; // "abc" "def", equivalent to "abcdef"
+alias spaceAnd!(spacing, literal!"abc", literal!"def") rule2; // "abc" "def", but with spaces in-between.
+
+auto input1 = ParseTree("",false,[], "abcdef");
+auto input2 = ParseTree("",false,[], "abc       
+
+def"); // with spaces and end of line markers.
+
+assert(rule1(input1).successful); // OK
+assert(!rule1(input2).successful); // NOK, couldn't find "def" after "abc"
+
+assert(rule2(input1).successful); // OK
+assert(rule2(input2).successful); // Still OK
+assert(rule2(input2).matches == ["abc","def"]);
+----
+
+As you can see on the previous line, spaceAnd discards the matched spaces and returns matches only for the 'real' subrules.
+*/
 template spaceAnd(alias sp, rules...)
 {
     alias and!(discard!(option!sp), staticMap!(AddSpace!(option!sp), rules)) spaceAnd;
