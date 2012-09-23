@@ -39,21 +39,37 @@ import pegged.grammar;
 
 mixin(grammar(`
 Pattern:
-    Choice     <  Sequence ('/' Sequence)* eoi
-    Sequence   <  Primary+
-    Primary    <  (Aggregate / Array / Identifier / Literal / REST / ANY) Name?
-    Name       <  identifier
-    Aggregate  <  (Identifier / ANY) '{' (Primary (',' Primary)*)? '}'
-    Array      <  '[' (Primary (',' Primary)*)? ']'
-    Identifier <  identifier
-    Literal    <  Number / Char / String
-    Number     <~ Digit+ ('.' Digit*)?
-    Digit      <  [0-9]
-    Char       <~ quote . quote
-    String     <~ doublequote (!doublequote .)* doublequote
-    REST       <  "..." Spacing
-    ANY        <  "." Spacing
-    Spacing    <: spacing
+    TopLevel         <  MainPattern eoi
+    MainPattern      <  Sequence ('/' Sequence)*
+    Sequence         <  Primary  (',' Primary )*
+    Primary          <  '(' MainPattern ')' / TypedPattern / AnonymousPattern / UntypedPattern
+    TypedPattern     <  TypePattern :':' Name REST?
+    AnonymousPattern <  TypePattern :':'
+    UntypedPattern   <  Name REST? / REST
+    Name             <- ~([a-zA-Z][a-zA-Z0-9]*) / ANONYMOUS
+    TypePattern      <  TypeSequence (:'/' TypeSequence)*
+    TypeSequence     <  TypePrimary (:',' TypePrimary)*
+    TypePrimary      <  :'(' TypePattern :')' / Type ZEROORMORE? / ANYTYPE / Literal
+    
+    Type             <  Aggregate / Range /SimpleType
+    SimpleType       <  "int" / "double"
+    
+    Aggregate        <  (Name / ANYTYPE) '{' (MainPattern (',' MainPattern)*)? '}'
+    Range            <  '[' (MainPattern (',' MainPattern)*)? ']'
+    
+    Literal          <  Float / Integer / Char / String
+    Float            <~ Digit+ '.' Digit*
+    Integer          <~ Digit+
+    Digit            <  [0-9]
+    Char             <~ quote (!quote .) quote
+    String           <~ doublequote (!doublequote .)* doublequote
+    
+    REST             <  "..."
+    ANYTUPLE         <  "..."
+    ZEROORMORE       <  "..."
+    ANONYMOUS        <  "_"
+    ANYTYPE          <  "."
+    Spacing        <: spacing
 `));
 
 template TypeFailure(T...)
@@ -181,15 +197,15 @@ struct TypeAnd(alias Pattern1, alias Pattern2)
 {
     template Match(T...)
     {
-        alias Pattern1.Match!(T) P1;
-        alias Pattern2.Match!(Pattern1.Match!(T).Rest) P2;
-        static if (P1.successful && P2.successful)
+        alias Pattern1.Match!(T) M1;
+        alias Pattern2.Match!(M1.Rest) M2;
+        static if (M1.successful && M2.successful)
         {
             enum successful = true;
-            alias TypeTuple!(P1.Types, P2.Types) Types;
-			enum begin = P1.begin;
-			enum end = P2.end;
-            alias P2.Rest Rest;
+            alias TypeTuple!(M1.Types, M2.Types) Types;
+			enum begin = M1.begin;
+			enum end = M2.end;
+            alias M2.Rest Rest;
         }
         else
             mixin TypeFailure!(T);
@@ -406,6 +422,7 @@ auto endValue(Args...)(Args args)
 		return failure(args);
 }
 
+/+
 template literalValue(values...)
 {
 	auto literalValue(Args...)(Args args)
@@ -416,6 +433,7 @@ template literalValue(values...)
 			return failure(args);
 	}
 }
++/
 
 Tuple!(ElementType!R, R) rangeAny(R)(R r) if (isInputRange!R)
 {
@@ -471,3 +489,97 @@ template onRange(RangePatterns...)
 	}
 }
 
+struct Literal(alias lit)
+{
+    alias typeof(lit) Type;
+    
+    struct MatchResult
+    {
+        alias typeof(lit) M;
+        
+        bool successful;
+        M _match;
+        enum size_t end = 1;
+    }
+    
+    static MatchResult match(T...)(T t)
+    {
+        static if (t.length > 0 && is(typeof(t[0] == lit)))
+            if (t[0] == lit)
+                return MatchResult(true, lit);
+            else
+                return MatchResult(false);
+        else
+            return MatchResult(false);
+    }    
+}
+
+struct And(alias p1, alias p2)
+{
+    
+    alias TypeTuple!(p1.Type, p2.Type) Type;
+    
+    static match(T...)(T t)
+    {
+        struct MatchResult
+        {
+            /// TODO
+            alias TypeAnd!(TypeLiteral!(p1.Type), TypeLiteral!(p2.Type)).Match!(T) P;
+            alias P.Types M;
+            
+            bool successful;
+            M _match;
+            enum size_t end = P.end;
+        }
+
+        auto m1 = p1.match(t);
+        if (m1.successful)
+        {
+            auto m2 = p2.match(t[m1.end..$]);
+            if (m2.successful)
+                return MatchResult(true, tuple(m1._match, m2._match).expand);
+        }
+        return MatchResult(false);
+    }
+}
+
+struct Or(alias p1, alias p2)
+{
+
+    static match(T...)(T t)
+    {
+        struct MatchResult
+        {
+            /// TODO: all types must be determined by the typep-pattern beforehand.
+            alias TypeOr!(TypeLiteral!(p1.Type), TypeLiteral!(p2.Type)).Match!(T) P;
+            alias P.Types M;
+            
+            bool successful;
+            M _match;
+            enum size_t end = P.end;
+        }
+    
+        alias TypeLiteral!(p1.Type).Match!(T) M1;
+        alias TypeLiteral!(p2.Type).Match!(T) M2;
+        static if (M1.successful)
+        {
+            auto m1 = p1.match(t);
+            if (m1.successful)
+            {
+                return MatchResult(true, m1._match);
+            }
+            else
+                return MatchResult(false);
+        }
+        else static if (M2.successful)
+        {
+            auto m2 = p2.match(t);
+            if (m2.successful)
+                return MatchResult(true, m2._match);
+            else
+                return MatchResult(false);
+        }
+        else
+            return MatchResult(false); // What type?
+    }
+}
