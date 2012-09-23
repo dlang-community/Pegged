@@ -406,6 +406,7 @@ auto endValue(Args...)(Args args)
 		return failure(args);
 }
 
+/+
 template literalValue(values...)
 {
 	auto literalValue(Args...)(Args args)
@@ -416,6 +417,7 @@ template literalValue(values...)
 			return failure(args);
 	}
 }
++/
 
 Tuple!(ElementType!R, R) rangeAny(R)(R r) if (isInputRange!R)
 {
