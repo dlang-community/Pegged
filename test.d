@@ -11,6 +11,7 @@ import std.range;
 import std.stdio;
 import std.typecons;
 import std.typetuple;
+import std.variant;
 
 import pegged.grammar;
 import pegged.parser;
@@ -18,56 +19,105 @@ import pegged.introspection;
 
 import pegged.examples.pattern;
 
-struct MatchFailure {};
-
-auto pair(Args...)(Args args) 
+struct Literal(alias lit)
 {
-	alias isRange		 	P0;
-	alias DiscardMatch!Any	P1;
-	alias ZeroOrMore!(Any)	P2;
-	alias And!(P0,P1,P2) 	P;
-	
-	alias P.Match!(Args) M;
-	
-	static if(M.successful)
-	{
-		alias P0.Match!(Args) 		M0;
-		alias P1.Match!(M0.Rest) 	M1; // discarded
-		alias P2.Match!(M1.Rest) 	M2;
-		
-		struct MatchResult
-		{
-			M0.Types a;
-			M2.Types b;
-		}
-		return MatchResult(args[M0.begin .. M0.end], 
-		                   args[M0.end+M1.end+M2.begin .. M0.end+M1.end+M2.end]);
-	}
-	else
-		return MatchFailure();
+    alias typeof(lit) Type;
+    
+    struct MatchResult
+    {
+        alias typeof(lit) M;
+        
+        bool successful;
+        M _match;
+        enum size_t end = 1;
+    }
+    
+    static MatchResult match(T...)(T t)
+    {
+        static if (t.length > 0 && is(typeof(t[0] == lit)))
+            if (t[0] == lit)
+                return MatchResult(true, lit);
+            else
+                return MatchResult(false);
+        else
+            return MatchResult(false);
+    }    
 }
 
-
-
-class C
+struct And(alias p1, alias p2)
 {
-	int[] i;
-	double d;
-	string s;
-	char c;
-	
-	this(int[] i, double d, string s, char c)
-	{
-		this.i = i;
-		this.d = d;
-		this.s = s;
-		this.c = c;
-	}
+    alias TypeTuple!(p1.Type, p2.Type) Type;
+    
+    static match(T...)(T t)
+    {
+        struct MatchResult
+        {
+            /// TODO
+            alias TypeAnd!(TypeLiteral!(p1.Type), TypeLiteral!(p2.Type)).Match!(T) P;
+            alias P.Types M;
+            
+            bool successful;
+            M _match;
+            enum size_t end = P.end;
+        }
+
+        auto m1 = p1.match(t);
+        if (m1.successful)
+        {
+            auto m2 = p2.match(t[m1.end..$]);
+            if (m2.successful)
+                return MatchResult(true, tuple(m1._match, m2._match).expand);
+        }
+        return MatchResult(false);
+    }
 }
+
+struct Or(alias p1, alias p2)
+{
+
+    static match(T...)(T t)
+    {
+        struct MatchResult
+        {
+            /// TODO
+            alias TypeOr!(TypeLiteral!(p1.Type), TypeLiteral!(p2.Type)).Match!(T) P;
+            alias P.Types M;
+            
+            bool successful;
+            M _match;
+            enum size_t end = P.end;
+        }
+    
+        alias TypeLiteral!(p1.Type).Match!(T) M1;
+        alias TypeLiteral!(p2.Type).Match!(T) M2;
+        static if (M1.successful)
+        {
+            auto m1 = p1.match(t);
+            if (m1.successful)
+            {
+                return MatchResult(true, m1._match);
+            }
+            else
+                return MatchResult(false);
+        }
+        else static if (M2.successful)
+        {
+            auto m2 = p2.match(t);
+            if (m2.successful)
+                return MatchResult(true, m2._match);
+            else
+                return MatchResult(false);
+        }
+        else
+            return MatchResult(false); // What type?
+    }
+}
+
 
 
 void main()
 {
-    	
-	writeln(literalValue!(0,1)(0,1,2));
+	alias Or!(And!(Literal!123, Literal!"abc"), Literal!"abc") P;
+    auto m = P.match(123);
+    writeln(m);
 }
