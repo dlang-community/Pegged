@@ -16,75 +16,70 @@ import pegged.grammar;
 import pegged.parser;
 import pegged.introspection;
 
-struct GenericTest(TParseTree)
-{
-    struct Test
-    {
-    enum name = "Test";
-    static bool isRule(string s)
-    {
-        switch(s)
-        {
-            case "Test.A":
-            case "Test.B":
-                return true;
-            default:
-                return false;
-        }
-    }
-    mixin decimateTree;
-    alias spacing Spacing;
-
-    static TParseTree A(TParseTree p)
-    {
-        return named!(literal!("a"), name ~ ".A")(p);
-    }
-
-    static TParseTree A(string s)
-    {
-        return named!(literal!("a"), name ~ ".A")(TParseTree("", false,[], s));
-    }
-
-    template B(alias b)
-    {
-        static TParseTree B(T)(T t) if (is(T == TParseTree) || is(T == string))
-        {
-            static if (is(T == TParseTree))
-                return named!(b, name ~ ".B")(t);
-            else
-                return named!(b, name ~ ".B")(TParseTree("", false,[], t));
-        }
-
-        
-    }
-    
-    static TParseTree opCall(TParseTree p)
-    {
-        TParseTree result = decimateTree(A(p));
-        result.children = [result];
-        result.name = "Test";
-        return result;
-    }
-
-    static TParseTree opCall(string input)
-    {
-        return Test(TParseTree(``, false, [], input, 0, 0));
-    }
-    }
-}
-
-alias GenericTest!(ParseTree).Test Test;
-
 /// TODO: modify the way generic rules are written, again.
 /// Caution: memoization code
 void main()
 {
-    writeln(grammar(`
-    Test:
-        A <- "a"
-        B(b) <- b
-        `));
+    enum G =`
+    Gram:
+        Keywords <- "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / "bool" / "break" / "byte" 
+         / "case" / "cast" / "catch" / "cdouble" / "cent" / "cfloat" / "char" / "class" / "const" / "continue" / "creal" / "dchar" 
+         / "debug" / "default" / "delegate" / "delete" / "deprecated" / "do"/ "double" / "else" / "enum" / "export" / "extern" 
+         / "false" / "final"/ "finally" / "float" / "for"/ "foreach"/ "foreach_reverse" / "function" / "goto" / "idouble" / "if" 
+         / "ifloat" / "immutable" / "import" / "in"/ "inout" / "int"/ "interface" / "invariant"/ "ireal" / "is" / "lazy" 
+         / "long" / "macro" / "mixin" / "module" / "new" / "nothrow" / "null" / "out" / "override" / "package" / "pragma" 
+         / "private" / "protected" / "public" / "pure" / "real" / "ref" / "return" / "scope" / "shared" / "short" / "static" 
+         / "struct" / "super" / "switch" / "synchronized" / "template" / "this" / "throw" / "true" / "try" / "typedef" / "typeid" 
+         / "typeof" / "ubyte" / "ucent" / "uint" / "ulong" / "union" / "unittest" / "ushort" / "version" / "void" / "volatile" 
+         / "wchar" / "while" / "with" / "__FILE__" / "__LINE__" / "__gshared" / "__thread" / "__traits" 
+         / . # dot to kill the keywords-specific code 
+    `;
     
-    writeln(Test("a"));
-    writeln(and!(Test.A, Test.B!(literal!"b"))(ParseTree("",false,[],"ab")));
+    enum G2 =`
+    Gram2:
+        Keywords <- "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / "bool" / "break" / "byte" 
+         / "case" / "cast" / "catch" / "cdouble" / "cent" / "cfloat" / "char" / "class" / "const" / "continue" / "creal" / "dchar" 
+         / "debug" / "default" / "delegate" / "delete" / "deprecated" / "do"/ "double" / "else" / "enum" / "export" / "extern" 
+         / "false" / "final"/ "finally" / "float" / "for"/ "foreach"/ "foreach_reverse" / "function" / "goto" / "idouble" / "if" 
+         / "ifloat" / "immutable" / "import" / "in"/ "inout" / "int"/ "interface" / "invariant"/ "ireal" / "is" / "lazy" 
+         / "long" / "macro" / "mixin" / "module" / "new" / "nothrow" / "null" / "out" / "override" / "package" / "pragma" 
+         / "private" / "protected" / "public" / "pure" / "real" / "ref" / "return" / "scope" / "shared" / "short" / "static" 
+         / "struct" / "super" / "switch" / "synchronized" / "template" / "this" / "throw" / "true" / "try" / "typedef" / "typeid" 
+         / "typeof" / "ubyte" / "ucent" / "uint" / "ulong" / "union" / "unittest" / "ushort" / "version" / "void" / "volatile" 
+         / "wchar" / "while" / "with" / "__FILE__" / "__LINE__" / "__gshared" / "__thread" / "__traits" 
+    `;
+
+    mixin(grammar(G));
+    mixin(grammar(G2));
+         
+         
+    auto b = benchmark!(()=>Gram("Hello"),()=>Gram("abstract"),()=>Gram("__traits"),
+                        ()=>Gram2("Hello"),()=>Gram2("abstract"),()=>Gram2("__traits"))(10_000);
+    float b0 = b[0].to!("msecs",float);
+    float b1 = b[1].to!("msecs",float);
+    float b2 = b[2].to!("msecs",float);
+    float b3 = b[3].to!("msecs",float);
+    float b4 = b[4].to!("msecs",float);
+    float b5 = b[5].to!("msecs",float);
+    auto ratio1 = 100*(b0/b1-1);
+    auto ratio2 = 100*(b1/b4-1);
+    auto ratio3 = 100*(b2/b5-1);
+    
+    writeln("On failure: ", ratio1, "% speedup.");
+    writeln("On match, first case: ",ratio2, "% speedup.");
+    writeln("On match, last case: ", ratio3, "% speedup.");
+    /+
+    writeln(keywordCode(["abstract" , "alias" , "align" , "asm" , "assert" , "auto" , "body" , "bool" , "break" , "byte" 
+         , "case" , "cast" , "catch" , "cdouble" , "cent" , "cfloat" , "char" , "class" , "const" , "continue" , "creal" , "dchar" 
+         , "debug" , "default" , "delegate" , "delete" , "deprecated" , "do", "double" , "else" , "enum" , "export" , "extern" 
+         , "false" , "final", "finally" , "float" , "for", "foreach", "foreach_reverse" , "function" , "goto" , "idouble" , "if" 
+         , "ifloat" , "immutable" , "import" , "in", "inout" , "int", "interface" , "invariant", "ireal" , "is" , "lazy" 
+         , "long" , "macro" , "mixin" , "module" , "new" , "nothrow" , "null" , "out" , "override" , "package" , "pragma" 
+         , "private" , "protected" , "public" , "pure" , "real" , "ref" , "return" , "scope" , "shared" , "short" , "static" 
+         , "struct" , "super" , "switch" , "synchronized" , "template" , "this" , "throw" , "true" , "try" , "typedef" , "typeid" 
+         , "typeof" , "ubyte" , "ucent" , "uint" , "ulong" , "union" , "unittest" , "ushort" , "version" , "void" , "volatile" 
+         , "wchar" , "while" , "with" , "__FILE__" , "__LINE__" , "__gshared" , "__thread" , "__traits"]));
+         +/
+    
+    
 }
