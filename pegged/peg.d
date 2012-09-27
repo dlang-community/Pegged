@@ -244,6 +244,24 @@ ParseTree or(rules...)(ParseTree p) if (rules.length > 0)
 }
 
 /**
+or special case for literal list ("abstract"/"alias"/...)
+*/
+ParseTree keywords(kws...)(ParseTree p) if (kws.length > 0)
+{
+    string keywordCode(string[] keywords)
+    {
+        string result;
+        foreach(kw; keywords)
+            result ~= "if (p.input.length >= "~to!string(kw.length)
+                ~" && p.input[0.."~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(``,true,[\""~kw~"\"],p.input,0,"~to!string(kw.length)~");\n";
+        result ~= "return ParseTree(``,false,[],p.input,0,0);";
+        return result;
+    }
+    
+    mixin(keywordCode([kws]));
+}
+
+/**
 Tries to match subrule 'r' zero or more times. It always succeeds, since if 'r' fails
 from the very beginning, it matched 'r' zero times...
 

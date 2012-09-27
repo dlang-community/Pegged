@@ -279,10 +279,38 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
             case "Pegged.Expression":
                 if (p.children.length > 1) // OR expression
                 {
-                    result = "or!(";
-                    foreach(seq; p.children)
-                        result ~= generateCode(seq) ~ ", ";
-                    result = result[0..$-2] ~ ")";
+                    // Keyword list detection: "abstract"/"alias"/...
+                    bool isLiteral(ParseTree p)
+                    {
+                        return ( p.name == "Pegged.Sequence"
+                              && p.children.length == 1
+                              && p.children[0].children.length == 1
+                              && p.children[0].children[0].children.length == 1
+                              && p.children[0].children[0].children[0].children.length == 1
+                              && p.children[0].children[0].children[0].children[0].name == "Pegged.Literal");
+                    }
+                    bool keywordList = true;
+                    foreach(child;p.children)
+                        if (!isLiteral(child))
+                        {
+                            keywordList = false;
+                            break;
+                        }
+                    
+                    if (keywordList)
+                    {
+                        result = "pegged.peg.keywords!(";
+                        foreach(seq; p.children)
+                            result ~= "\"" ~ seq.matches[0] ~ "\", ";
+                        result = result[0..$-2] ~ ")";
+                    }
+                    else
+                    {
+                        result = "or!(";
+                        foreach(seq; p.children)
+                            result ~= generateCode(seq) ~ ", ";
+                        result = result[0..$-2] ~ ")";
+                    }
                 }
                 else // One child -> just a sequence, no need for a or!( , )
                 {
