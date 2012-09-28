@@ -34,7 +34,7 @@ A possible future extension is to have the memoization option selected on whethe
 This means inserting a `if (__ctfe)` branch everywhere. Its influence on parsing speed remains to be tested.
 
 
-Next step: [[Grammar as D Modules]]
+Next step: [[Grammars as D Modules]]
 
 * * * *
 
