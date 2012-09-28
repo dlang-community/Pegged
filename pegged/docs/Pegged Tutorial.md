@@ -10,30 +10,28 @@ The following pages will show you how to use **Pegged** to create grammars and p
 
 3) [[Using a Grammar]]
 
-4) [[Grammars as D Modules]]
+4) [[Memoization]]
 
-5) [[Grammar Composition]]
+5) [[Grammars as D Modules]]
 
-6) [[Using the Parse Tree]]
+6) [[Grammar Composition]]
 
-7) [[Tree Decimation]]
+7) [[Using the Parse Tree]]
 
-8) [[Extended PEG Syntax]]
+8) [[Tree Decimation]]
 
-9) [[Parameterized Rules]]
+9) [[Extended PEG Syntax]]
 
-10) [[Semantic Actions]]
+10) [[Parameterized Rules]]
 
-11) [[Generating Code]]
+11) [[Semantic Actions]]
 
-12) [[User-Defined Parsers]]
+12) [[Generating Code]]
 
-13) [[Writing Your Own Grammar]]
+13) [[User-Defined Parsers]]
 
-14) [[Behind the Curtain: How Pegged Works]]
+14) [[Writing Your Own Grammar]]
 
-15) [[Optimizations]]
+15) [[Behind the Curtain: How Pegged Works]]
 
-To Add: 
-
-* Memoization
+16) [[Optimizations]]

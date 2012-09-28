@@ -45,7 +45,7 @@ To parse at runtime, just call the grammar in a standard way:
 auto p = line(input[0]);
 ```
 
-Next step: using [[Grammars as D Modules]]
+Next step: [[Memoization]]
 
 * * * *
 
