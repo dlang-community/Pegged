@@ -210,7 +210,7 @@ This need is common enough for **Pegged** to provide a shortcut: put the operato
 
 `<:` (colon arrow) drops the entire rule result (useful to ignore comments, for example)
 
-(There is no `<^` (keep arrow) that would distribute the 'keep' operator to all subelements in a rule. I might add it if the needs is strong enough.)
+`<^` (keep arrow) that calls the 'keep' operator to all subelements in a rule.
 
 For example:
 
