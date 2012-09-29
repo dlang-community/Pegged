@@ -189,6 +189,9 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                     case "Pegged.DISCARDARROW":
                         code ~= "discard!(" ~ generateCode(p.children[2]) ~ ")";
                         break;
+                    case "Pegged.KEEPARROW":
+                        code ~= "keep!("~ generateCode(p.children[2]) ~ ")";
+                        break;
                     case "Pegged.SPACEARROW":
                         string temp = generateCode(p.children[2]);
                         size_t i = 0;

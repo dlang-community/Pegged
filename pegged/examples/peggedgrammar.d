@@ -52,10 +52,11 @@ Char         <~ backslash ( quote
                           / 'U' hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit
                           )
               / . # or anything else
-Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / SPACEARROW
+Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / SPACEARROW
 LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing
+KEEPARROW    <- '<^' Spacing
 SPACEARROW   <- '<' Spacing
 OR           <- '/' Spacing
 POS          <- '&' Spacing
