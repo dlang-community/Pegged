@@ -28,24 +28,28 @@ Arithmetic:
     Factor   < Primary (Mul / Div)*
     Mul      < "*" Primary
     Div      < "/" Primary
-    Primary  < Parens / Neg / Number / Variable
+    Primary  < Parens / Neg / Pos / Number / Variable
     Parens   < "(" Term ")"
     Neg      < "-" Primary
+    Pos      < "+" Primary
     Number   < ~([0-9]+)
+
     Variable <- identifier
 `));
 
+
 void main() 
 {
-  // Parsing at compile-time:
-enum parseTree1 = Arithmetic("1 + 2 - (3*x-5)*6");
+    // Parsing at compile-time:
+    enum parseTree1 = Arithmetic("1 + 2 - (3*x-5)*6");
 
-pragma(msg, parseTree1.matches);
-assert(parseTree1.matches == ["1", "+", "2", "-", "(", "3", "*", "x", "-", "5", ")", "*", "6"]);
-writeln(parseTree1);
+    pragma(msg, parseTree1.matches);
+    assert(parseTree1.matches == ["1", "+", "2", "-", "(", "3", "*", "x", "-", "5", ")", "*", "6"]);
+    writeln(parseTree1);
 
-// And at runtime too:
-auto parseTree2 = Arithmetic(" 0 + 123 - 456 ");
-assert(parseTree2.matches == ["0", "+", "123", "-", "456"]);
+    // And at runtime too:
+    auto parseTree2 = Arithmetic(" 0 + 123 - 456 ");
+    assert(parseTree2.matches == ["0", "+", "123", "-", "456"]);
 
+    writeln(Arithmetic("+1+1"));
 }

@@ -26,10 +26,12 @@ Arithmetic:
     Factor   < Primary (Mul / Div)*
     Mul      < "*" Primary
     Div      < "/" Primary
-    Primary  < Parens / Neg / Number / Variable
+    Primary  < Parens / Neg / Pos / Number / Variable
     Parens   < "(" Term ")"
     Neg      < "-" Primary
+    Pos      < "+" Primary
     Number   < ~([0-9]+)
+
     Variable <- identifier
 `));
 ```
