@@ -252,9 +252,9 @@ ParseTree keywords(kws...)(ParseTree p) if (kws.length > 0)
     {
         string result;
         foreach(kw; keywords)
-            result ~= "if (p.input.length >= "~to!string(kw.length)
-                ~" && p.input[0.."~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(``,true,[\""~kw~"\"],p.input,0,"~to!string(kw.length)~");\n";
-        result ~= "return ParseTree(``,false,[],p.input,0,0);";
+            result ~= "if (p.end+"~to!string(kw.length) ~ " < p.input.length "
+                ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(``,true,[\""~kw~"\"],p.input,p.end,p.end+"~to!string(kw.length)~");\n";
+        result ~= "return ParseTree(``,false,[],p.input,p.end,p.end);";
         return result;
     }
     
