@@ -693,3 +693,30 @@ mixin template decimateTree()
         return p;
     }
 }
+
+/**
+Discard one-child nodes and replace them with their children. 
+Most grammar tend to produce long one-child/one-child branches, 
+simplifyTree compacts these.
+*/
+ParseTree simplifyTree(ParseTree p) 
+{ 
+    foreach(ref child; p.children) 
+        child = simplifyTree(child); 
+    
+    if (p.children.length != 1) 
+        return p; 
+    else // linear tree 
+        return p.children[0]; 
+} 
+
+/**
+Returns: the number of nodes in a parse tree.
+*/
+size_t size(ParseTree p) 
+{ 
+        size_t result = 1; 
+        foreach(child; p.children) 
+                result += size(child); 
+        return result; 
+} 
