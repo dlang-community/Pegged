@@ -119,6 +119,20 @@ ReturnStatement ["return", "i"]
         (... lots of intermediary nodes ...)
 ```
 
+Note the subtile difference between
+
+```
+AddExpr  < ^('+'/'-') Factor 
+```
+
+and
+
+```
+AddExpr  <  (^'+'/^'-') Factor 
+```
+
+In the former case the entire choice node (`pegged.peg.or` behind the scenes) is kept in the parse tree. In the latter case, the `or` node will be discarded and only the literal will be kept.
+
 Fusing Matches
 --------------
 
