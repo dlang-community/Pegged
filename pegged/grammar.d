@@ -176,7 +176,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 // children[1]: arrow (arrow type as first child)
                 // children[2]: description
                 
-                string code = "named!(";
+                string code = "pegged.peg.named!(";
                     
                 switch(p.children[1].children[0].name)
                 {
@@ -184,22 +184,22 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                         code ~= generateCode(p.children[2]);
                         break;
                     case "Pegged.FUSEARROW":
-                        code ~= "fuse!(" ~ generateCode(p.children[2]) ~ ")";
+                        code ~= "pegged.peg.fuse!(" ~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.DISCARDARROW":
-                        code ~= "discard!(" ~ generateCode(p.children[2]) ~ ")";
+                        code ~= "pegged.peg.discard!(" ~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.KEEPARROW":
-                        code ~= "keep!("~ generateCode(p.children[2]) ~ ")";
+                        code ~= "pegged.peg.keep!("~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.SPACEARROW":
                         string temp = generateCode(p.children[2]);
                         size_t i = 0;
                         while(i < temp.length-4) // a while loop to make it work at compile-time.
                         {
-                            if (temp[i..i+5] == "and!(")
+                            if (temp[i..i+5] == "pegged.peg.and!(")
                             {
-                                code ~= "spaceAnd!(Spacing, ";
+                                code ~= "pegged.peg.spaceAnd!(Spacing, ";
                                 i = i + 5;
                             }
                             else
@@ -309,7 +309,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                     }
                     else
                     {
-                        result = "or!(";
+                        result = "pegged.peg.or!(";
                         foreach(seq; p.children)
                             result ~= generateCode(seq) ~ ", ";
                         result = result[0..$-2] ~ ")";
@@ -323,11 +323,11 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
             case "Pegged.Sequence":
                 if (p.children.length > 1) // real sequence
                 {
-                    result = "and!(";
+                    result = "pegged.peg.and!(";
                     foreach(seq; p.children)
 					{
                         string elementCode = generateCode(seq);
-						if (elementCode.length > 6 && elementCode[0..5] == "and!(") // flattening inner sequences
+						if (elementCode.length > 6 && elementCode[0..5] == "pegged.peg.and!(") // flattening inner sequences
 							elementCode = elementCode[5..$-1]; // cutting 'and!(' and ')'
 						result ~= elementCode ~ ", ";
 					}
@@ -350,17 +350,17 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                     switch (child.name)
                     {
                         case "Pegged.OPTION":
-                            result = "option!(" ~ result ~ ")";
+                            result = "pegged.peg.option!(" ~ result ~ ")";
                             break;
                         case "Pegged.ZEROORMORE":
-                            result = "zeroOrMore!(" ~ result ~ ")";
+                            result = "pegged.peg.zeroOrMore!(" ~ result ~ ")";
                             break;
                         case "Pegged.ONEORMORE":
-                            result = "oneOrMore!(" ~ result ~ ")";
+                            result = "pegged.peg.oneOrMore!(" ~ result ~ ")";
                             break;
                         case "Pegged.Action":
                             foreach(action; child.matches)
-                                result = "action!(" ~ result ~ ", " ~ action ~ ")";
+                                result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
                             break;
                         default:
                             break;
@@ -388,12 +388,12 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 result = ".";
                 break;
             case "Pegged.Literal":
-                result = "literal!(\"" ~ p.matches[0] ~ "\")";
+                result = "pegged.peg.literal!(\"" ~ p.matches[0] ~ "\")";
                 break;
             case "Pegged.CharClass":
                 if (p.children.length > 1)
                 {
-                    result = "or!(";
+                    result = "pegged.peg.or!(";
                     foreach(seq; p.children)
                         result ~= generateCode(seq) ~ ", ";
                     result = result[0..$-2] ~ ")";
@@ -406,11 +406,11 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
             case "Pegged.CharRange":
                 if (p.children.length > 1) // a-b range
                 {
-                    result = "charRange!('" ~ generateCode(p.children[0]) ~ "', '" ~ generateCode(p.children[1]) ~ "')";
+                    result = "pegged.peg.charRange!('" ~ generateCode(p.children[0]) ~ "', '" ~ generateCode(p.children[1]) ~ "')";
                 }
                 else // lone char
                 {
-                    result = "literal!(\"" ~ generateCode(p.children[0]) ~ "\")";
+                    result = "pegged.peg.literal!(\"" ~ generateCode(p.children[0]) ~ "\")";
                 }
                 break;
             case "Pegged.Char":
@@ -421,39 +421,39 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                     result = ch;
                 break;
             case "Pegged.POS":
-                result = "posLookahead!(";
+                result = "pegged.peg.posLookahead!(";
                 break;
             case "Pegged.NEG":
-                result = "negLookahead!(";
+                result = "pegged.peg.negLookahead!(";
                 break;
             case "Pegged.FUSE":
-                result = "fuse!(";
+                result = "pegged.peg.fuse!(";
                 break;
             case "Pegged.DISCARD":
-                result = "discard!(";
+                result = "pegged.peg.discard!(";
                 break;
             //case "Pegged.CUT":
             //    result = "discardChildren!(";
             //    break;
             case "Pegged.KEEP":
-                result = "keep!(";
+                result = "pegged.peg.keep!(";
                 break;
             case "Pegged.DROP":
-                result = "drop!(";
+                result = "pegged.peg.drop!(";
                 break;
             case "Pegged.OPTION":
-                result = "option!(";
+                result = "pegged.peg.option!(";
                 break;
             case "Pegged.ZEROORMORE":
-                result = "zeroOrMore!(";
+                result = "pegged.peg.zeroOrMore!(";
                 break;
             case "Pegged.ONEORMORE":
-                result = "oneOrMore!(";
+                result = "pegged.peg.oneOrMore!(";
                 break;
             case "Pegged.Action":
                 result = generateCode(p.children[0]);
                 foreach(action; p.matches[1..$])
-                    result = "action!(" ~ result ~ ", " ~ action ~ ")";
+                    result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
                 break;
             case "Pegged.ANY":
                 result = "pegged.peg.any";
