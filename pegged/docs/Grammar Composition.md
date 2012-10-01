@@ -1,7 +1,7 @@
 Grammar Composition
 ===================
 
-As seen in [[Using a Grammar]], a grammar is a standard **Pegged** parser. That means you can call a grammar in another grammar, as you do for the predefined parsers. In fact, a grammar is nothing but a parser with a lot of plumbing inside. That opens whole vistas for modularization and code re-use. If you see in a grammar any functionality in a grammar that could be extracted and stand by itself, make it another grammar.
+As seen in [[Using a Grammar]], a grammar is a standard **Pegged** parser. That means you can call a grammar in another grammar, as you do for the predefined parsers. In fact, a grammar is nothing but a parser with a lot of plumbing inside. That opens whole vistas for modularization and code re-use. If you see in a grammar any functionality that could be extracted and stand by itself, make it another grammar.
 
 Have a look for example at the `pegged.examples.strings` and `pegged.examples.numbers` modules. They define grammars that recognize respectively double-quote-delimited strings and standard integer and floating point numbers. To use them in your own grammar definitions, just import the modules to make the symbols visible.
 
@@ -28,7 +28,7 @@ File3: 0.00, 10";
 }
 ```
 
-`Numbers` also defines an `Hexa` rule to recognize hexadecimal numbers. It's never invoked directly by `Numbers` itself, but can be called by qualifiying its name: `Numbers.Hexa("A73FEC384CBB")`. If two grammars define a rule with the same name, you can also use their qualified names to distinguish them. **Pegged** allows rule invokation (the rhs in a rule definition) to contain qualified identifiers:
+`Numbers` also defines an `Hexa` rule to recognize hexadecimal numbers. It's never invoked directly by `Numbers` itself, but, as seen in [[Using a Grammar]], it can be called by qualifiying its name: `Numbers.Hexa("A73FEC384CBB")`. If two grammars define a rule with the same name, you can also use their qualified names to distinguish them. **Pegged** allows rule invokation (the rhs in a rule definition) to contain qualified identifiers:
 
 ```d
 module my.grammar;

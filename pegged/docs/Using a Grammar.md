@@ -42,8 +42,64 @@ Runtime Parsing
 To parse at runtime, just call the grammar in a standard way:
 
 ```d
-auto p = line(input[0]);
+ParseTree p = line(input[0]);
 ```
+
+Calling a Rule
+--------------
+
+Though this is not usual, you can call a grammar rule directly, by qualifying its name with the grammar's name.
+
+```
+ParseTree p = Input.date("01-01-1970");
+
+writeln(p);
+```
+
+Which prints:
+
+```
+Input.date  [0, 10]["0", "1", "-", "0", "1", "-", "1", "9", "7", "0"]
+ +-Input.digit  [0, 1]["0"]
+ +-Input.digit  [1, 2]["1"]
+ +-literal(-)  [2, 3]["-"]
+ +-Input.digit  [3, 4]["0"]
+ +-Input.digit  [4, 5]["1"]
+ +-literal(-)  [5, 6]["-"]
+ +-Input.digit  [6, 7]["1"]
+ +-Input.digit  [7, 8]["9"]
+ +-Input.digit  [8, 9]["7"]
+ +-Input.digit  [9, 10]["0"]
+```
+
+First, this works (wew!).
+
+Second, by using the 'concatenate' operator (`~`) in `date` definition, we would have a more readable and usable result (namely `Input.date  [0,10]["01-10-1970"]`). PEG extensions are described in [[Extended PEG Syntax]].
+
+Then, please notice how the parse tree contains nodes from the `Input` grammar (`Input.digit`) and nodes from **Pegged** (`literal`). If you want to get a standard, decimated parse tree, call the grammar's `decimateTree` method:
+
+```
+ParseTree p = Input.decimateTree(Input.date("01-01-1970")));
+writeln(p);
+```
+
+Which prints:
+
+```
+Input.date  [0, 10]["0", "1", "-", "0", "1", "-", "1", "9", "7", "0"]
+ +-Input.digit  [0, 1]["0"]
+ +-Input.digit  [1, 2]["1"]
+ +-Input.digit  [3, 4]["0"]
+ +-Input.digit  [4, 5]["1"]
+ +-Input.digit  [6, 7]["1"]
+ +-Input.digit  [7, 8]["9"]
+ +-Input.digit  [8, 9]["7"]
+ +-Input.digit  [9, 10]["0"]
+```
+
+There is another lesson on [[Tree Decimation]].
+
+* * * *
 
 Next step: [[Memoization]]
 

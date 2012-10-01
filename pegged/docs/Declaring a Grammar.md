@@ -74,7 +74,7 @@ Input:
 Rule Names
 ----------
 
-You might have seen that in the first example, rules were PascalCased, whereas they are mixed (mainly lowercase) in the `Input` example. There is no particular rule or convention for this. You can use 'lowercase', 'camelCase', 'PascalCase' or 'SHOUTING' as grammar and/or rule names. But, as will be explained in[[Behind the Curtain: How Pegged Works]], **Pegged** grammars are structs and rules are (mostly) methods. So the only rule for naming is: *you shall not use D keywords*.
+You might have seen that in the first example, rules were PascalCased, whereas they are mixed (mainly lowercase) in the `Input` example. There is no particular rule or convention for this. You can use 'lowercase', 'camelCase', 'PascalCase' or 'SHOUTING' as grammar and/or rule names. But, as will be explained in [[Behind the Curtain: How Pegged Works]], **Pegged** grammars are structs and rules are (mostly) methods. So the only rule for naming is: *you shall not use D keywords*.
 
 ```d
 class <- ...
