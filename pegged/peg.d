@@ -39,6 +39,23 @@ struct ParseTree
         
         return result;
     }
+    
+        
+    /**
+    Comparing ParseTree's.
+    */
+    bool opEquals(ParseTree p)
+    {
+        return ( p.name       == name
+              && p.successful == successful
+              && p.matches    == matches
+              && p.input      == input
+              && p.begin      == begin
+              && p.end        == end
+              && equal(p.children, children));
+    }
+}
+
 }
 
 
