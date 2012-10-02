@@ -90,6 +90,27 @@ ParseTree fail(ParseTree p)
     return ParseTree("fail", false, [], p.input, p.end, p.end, null);
 }
 
+
+/// ditto
+ParseTree fail(string input)
+{
+    return fail(ParseTree("", false, [], input));
+}
+
+unittest // 'fail' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
+    ParseTree result = fail(input);
+    assert(!result.successful, "'fail' fails.");
+    assert(result.matches is null, "'fail' makes no match.");
+    assert(result.input == input.input, "'fail' does not change the input.");
+    assert(result.end == input.end, "'fail' puts the index after the previous parse.");
+    assert(result.children is null, "'fail' has no children.");
+    
+    result = fail("This is the input string.");
+    assert(!result.successful, "'fail' fails.");
+}
+
 /**
 Matches the end of input. Fails if there is any character left.
 */
