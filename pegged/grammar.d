@@ -197,9 +197,9 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                         size_t i = 0;
                         while(i < temp.length-4) // a while loop to make it work at compile-time.
                         {
-                            if (temp[i..i+5] == "pegged.peg.and!(")
+                            if (temp[i..i+5] == "and!(")
                             {
-                                code ~= "pegged.peg.spaceAnd!(Spacing, ";
+                                code ~= "spaceAnd!(Spacing, ";
                                 i = i + 5;
                             }
                             else
