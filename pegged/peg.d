@@ -10,6 +10,7 @@ See the /docs directory for the full documentation as markdown files.
 module pegged.peg;
 
 import std.conv;
+import std.range: equal;
 import std.typetuple;
 
 /**
@@ -156,6 +157,48 @@ ParseTree any(ParseTree p)
         return ParseTree("any", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
     else
         return ParseTree("any", false, [], p.input, p.end, p.end);
+}
+
+/// ditto
+ParseTree any(string input)
+{
+    return any(ParseTree("", false, [], input));
+}
+
+unittest // 'any' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
+    ParseTree result = any(input);
+    
+    assert(result.successful, "'any' succeeds on non-null strings.");
+    assert(result.matches  == ["T"], "'any' matches the first char in an input.");
+    assert(result.input == input.input, "'any' does not change the input.");
+    assert(result.end == input.end+1, "'any' advances the index by one position.");
+    assert(result.children is null, "'any' has no children.");
+    
+    result = any("a");
+    assert(result.successful, "'any' matches on strings of length one.");
+    assert(result.matches == ["a"], "'any' matches the first char in an input.");
+    assert(result.input == "a", "'any' does not change the input.");
+    assert(result.end == 1, "'any' advances the index by one position.");
+    assert(result.children is null, "'any' has no children.");
+        
+    input = ParseTree("input", true, [], "", 0,0, null);
+    
+    result = any(input);
+    assert(!result.successful, "'any' fails on strings of length 0.");
+    assert(result.matches is null, "'any' does not match on strings of length 0.");
+    assert(result.end == 0, "'any' does not advance the index.");
+    
+    result = any("");
+    assert(!result.successful, "'any' fails on strings of length 0.");
+    assert(result.matches is null, "'any' does not match on strings of length 0.");
+    assert(result.end == 0, "'any' does not advance the index.");
+    
+    result = any(null);
+    assert(!result.successful, "'any' fails on null strings.");
+    assert(result.matches is null, "'any' does not match on strings of length 0.");
+    assert(result.end == 0, "'any' does not advance the index.");
 }
 
 /**
