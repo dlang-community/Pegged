@@ -478,11 +478,39 @@ unittest // 'charRange' unit test
 
 /**
 eps matches the empty string (usually denoted by the Greek letter 'epsilon') and always succeeds.
-It's equivalent to literal!"".
+It's equivalent to literal!"" (for example, it creates a match of [""]: one match, the empty string).
 */
 ParseTree eps(ParseTree p)
 {
     return ParseTree("eps", true, [""], p.input, p.end, p.end);
+}
+
+ParseTree eps(string input)
+{
+    return eps(ParseTree("",false,[], input));
+}
+
+unittest // 'eps' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
+    
+    ParseTree result = eps(input);
+    
+    assert(result.successful, "'eps' succeeds on non-null inputs.");
+    assert(result.matches  == [""], "'eps' matches '' at the beginning.");
+    assert(result.input == input.input, "'eps' does not change the input.");
+    assert(result.end == input.end+0, "'eps' does not advance the index.");
+    assert(result.children is null, "'eps' has no children.");
+    
+    input.input = "";
+    
+    result = eps(input);
+    
+    assert(result.successful, "'eps' succeeds on empty strings.");
+    assert(result.matches  == [""], "'eps' matches '' at the beginning, even on empty strings.");
+    assert(result.input == input.input, "'eps' does not change the input.");
+    assert(result.end == input.end+0, "'eps' does not advance the index.");
+    assert(result.children is null, "'eps' has no children.");
 }
 
 /**
