@@ -56,6 +56,29 @@ struct ParseTree
     }
 }
 
+
+unittest // ParseTree testing
+{
+    ParseTree p;
+    assert(p == p, "Self-identity on null tree.");
+    
+    p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
+    assert(p == p, "Self identity on non-null tree.");
+    
+    ParseTree q = p;
+    assert(p == q, "Copying makes equal trees.");
+    
+    q.children = [p,p];
+    assert(p != q, "Tree with different children are not equal.");
+    
+    p.children = [p,p];
+    assert(p == q, "Adding equivalent children is OK.");
+    
+    p.matches = null;
+    assert(p != q, "Nulling matches makes trees unequal.");
+    
+    p.matches = q.matches;
+    assert(p == q, "Copying matches makes equal trees.");
 }
 
 
