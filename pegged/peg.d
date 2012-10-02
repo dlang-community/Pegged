@@ -606,6 +606,73 @@ template and(rules...) if (rules.length > 0)
     }
 }
 
+unittest // 'and' unit test
+{
+    alias literal!"abc" abc;
+    alias literal!"de" de;
+    alias literal!"f" f;
+    
+    alias and!(abc) abcAnd; 
+    alias and!(abc,de) abcde;
+    alias and!(abc,de,f) abcdef;
+    alias and!(eps, abc, eps, de, eps, f, eps) withEps;
+    
+    ParseTree input = ParseTree("",false,[], "abcdefghi");
+    
+    ParseTree result = abcAnd(input);
+    
+    assert(result.name == "and");
+    assert(result.successful, "and!('abc') parses 'abcdefghi'");
+    assert(result.matches == ["abc"], "and!('abc') matches 'abc' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+3, "and!('abc') advances the index by 'abc' size (3).");
+    assert(result.children == [abc(input)], "and!('abc') has one child: the one created by 'abc'.");
+    
+    result = abcde(input);
+
+    assert(result.name == "and");
+    assert(result.successful, "and!('abc','de') parses 'abcdefghi'");
+    assert(result.matches == ["abc","de"], "and!('abc','de') matches 'abc' and 'de' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+5, "and!('abc','de') advances the index by 3+2 positions.");
+    import std.stdio;
+    assert(result.children == [abc(input), de(abc(input))]
+            , "and!('abc','de') has two children, created by 'abc' and 'de'.");
+    
+    result = abcdef(input);
+
+    assert(result.name == "and");
+    assert(result.successful, "and!('abc','de','f') parses 'abcdefghi'");
+    assert(result.matches == ["abc","de","f"], "and!('abc','de','f') matches 'abcdef' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+6, "and!('abc','de','f') advances the index by 3+2+1 positions.");
+    assert(result.children == [abc(input), de(abc(input)), f(de(abc(input)))]
+            , "and!('abc','de') has two children, created by 'abc' and 'de'.");
+    
+    result = withEps(input);
+    
+    assert(result.name == "and");
+    assert(result.successful, "and!('','abc','','de','','f','') parses 'abcdefghi'");
+    assert(result.matches == ["","abc","","de","","f",""], "and!('','abc','','de','','f','') matches 'abcdef' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+6, "and!('','abc','','de','','f','') advances the index by 0+3+0+2+0+1+0 positions.");
+    
+    input.input = "bcdefghi";
+    
+    result = abcdef(input);
+    
+    assert(!result.successful, "'abc' 'de' 'f' fails on 'bcdefghi'");
+    assert(result.matches is null, "'abc' 'de' 'f' has no match on 'bcdefghi'");
+    assert(result.end == input.end);
+    assert(result.children == [abc(input)], "'abc' 'de' 'f' has one child (a failure) on 'bcdefghi'");
+    
+    input.input = "abc_efghi";
+    
+    result = abcdef(input);
+    
+    assert(!result.successful, "'abc' 'de' 'f' fails on 'abc_efghi'");
+    assert(result.matches == ["abc"], "Only the first match, from 'abc'.");
+    assert(result.end == input.end+3, "Advances by 3 positions, due to 'abc'");
+    assert(result.children == [abc(input), de(abc(input))]
+    , "'abc' 'de' 'f' has two child on 'abc_efghi', the one from 'abc' (success) and the one from 'de' (failure).");
+}
+
 /**
 Basic operator: it matches if one of its subrules (stored in the rules template parameter tuple) match
 the input. The subrules are tested in order, from rules[0] to rules[$-1]. 
