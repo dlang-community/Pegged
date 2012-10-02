@@ -119,7 +119,32 @@ ParseTree eoi(ParseTree p)
     return ParseTree("eoi", p.end == p.input.length, [], p.input, p.end, p.end);
 }
 
+/// ditto
+ParseTree eoi(string input)
+{
+    return eoi(ParseTree("", false, [], input));
+}
+
 alias eoi endOfInput; /// helper alias.
+
+unittest // 'eoi' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
+    ParseTree result = eoi(input);
+    assert(!result.successful, "'eoi' fails on non-null string.");
+    assert(result.matches is null, "'eoi' makes no match.");
+    assert(result.input == input.input, "'eoi' does not change the input.");
+    assert(result.end == input.end, "'eoi' puts the index after the previous parse.");
+    assert(result.children is null, "'eoi' has no children.");
+    
+    input = ParseTree("input", true, [], "", 0,0, null);
+    result = eoi(input);
+    assert(result.successful, "'eoi' succeeds on strings of length 0.");
+    result = eoi("");
+    assert(result.successful, "'eoi' succeeds on strings of length 0.");
+    result = eoi(null);
+    assert(result.successful, "'eoi' succeeds on null strings");
+}   
 
 /**
 Match any character. As long as there is at least a character left in the input, it succeeds. 
