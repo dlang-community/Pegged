@@ -102,6 +102,7 @@ unittest // 'fail' unit test
 {
     ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
     ParseTree result = fail(input);
+    assert(result.name == "fail");
     assert(!result.successful, "'fail' fails.");
     assert(result.matches is null, "'fail' makes no match.");
     assert(result.input == input.input, "'fail' does not change the input.");
@@ -132,6 +133,7 @@ unittest // 'eoi' unit test
 {
     ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
     ParseTree result = eoi(input);
+    assert(result.name == "eoi");
     assert(!result.successful, "'eoi' fails on non-null string.");
     assert(result.matches is null, "'eoi' makes no match.");
     assert(result.input == input.input, "'eoi' does not change the input.");
@@ -170,6 +172,7 @@ unittest // 'any' unit test
     ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
     ParseTree result = any(input);
     
+    assert(result.name == "any");
     assert(result.successful, "'any' succeeds on non-null strings.");
     assert(result.matches  == ["T"], "'any' matches the first char in an input.");
     assert(result.input == input.input, "'any' does not change the input.");
@@ -231,6 +234,7 @@ unittest // 'literal' unit test
     
     ParseTree result = a(input);
     
+    assert(result.name == "literal(a)");
     assert(result.successful, "'a' succeeds on inputs beginning with 'a'.");
     assert(result.matches  == ["a"], "'a' matches the 'a' at the beginning.");
     assert(result.input == input.input, "'a' does not change the input.");
@@ -247,6 +251,7 @@ unittest // 'literal' unit test
     
     result = abc(input);
     
+    assert(result.name == "literal(abc)");
     assert(result.successful, "'abc' succeeds on inputs beginning with 'abc'.");
     assert(result.matches  == ["abc"], "'abc' matches 'abc' at the beginning.");
     assert(result.input == input.input, "'abc' does not change the input.");
@@ -263,6 +268,7 @@ unittest // 'literal' unit test
     
     result = empty(input);
     
+    assert(result.name == "literal()");
     assert(result.successful, "'' succeeds on non-null inputs.");
     assert(result.matches  == [""], "'' matches '' at the beginning.");
     assert(result.input == input.input, "'' does not change the input.");
@@ -367,6 +373,7 @@ unittest // 'charRange' unit test
     
     ParseTree result = aa(input);
     
+    assert(result.name == "charRange(a,a)");
     assert(result.successful, "'a-a' succeeds on inputs beginning with 'a'.");
     assert(result.matches  == ["a"], "'a-a' matches the 'a' at the beginning.");
     assert(result.input == input.input, "'a-a' does not change the input.");
@@ -375,6 +382,7 @@ unittest // 'charRange' unit test
     
     result = ab("abcdef");
     
+    assert(result.name == "charRange(a,b)");
     assert(result.successful, "'a-b' succeeds on inputs beginning with 'a'.");
     assert(result.matches  == ["a"], "'a-b' matches the 'a' at the beginning.");
     assert(result.input == input.input, "'a-b' does not change the input.");
@@ -383,6 +391,7 @@ unittest // 'charRange' unit test
     
     result = az(input);
     
+    assert(result.name == "charRange(a,z)");
     assert(result.successful, "'a-z' succeeds on inputs beginning with 'abc'.");
     assert(result.matches  == ["a"], "'a-z' matches 'a' at the beginning.");
     assert(result.input == input.input, "'a-z' does not change the input.");
@@ -496,6 +505,7 @@ unittest // 'eps' unit test
     
     ParseTree result = eps(input);
     
+    assert(result.name == "eps");
     assert(result.successful, "'eps' succeeds on non-null inputs.");
     assert(result.matches  == [""], "'eps' matches '' at the beginning.");
     assert(result.input == input.input, "'eps' does not change the input.");
@@ -505,7 +515,7 @@ unittest // 'eps' unit test
     input.input = "";
     
     result = eps(input);
-    
+    assert(result.name == "eps");
     assert(result.successful, "'eps' succeeds on empty strings.");
     assert(result.matches  == [""], "'eps' matches '' at the beginning, even on empty strings.");
     assert(result.input == input.input, "'eps' does not change the input.");
@@ -553,38 +563,47 @@ and(failure)  [0, 3]["abc"]
 So we know the global 'and' failed, that the first sub-rule ('abc') succeeded on input[0..3] with "abc" 
 and that the second subrule ('[a-z]') failed at position 3 (so, on '1').
 */
-ParseTree and(rules...)(ParseTree p) if (rules.length > 0)
+template and(rules...) if (rules.length > 0)
 {
-    bool isNullNode(ParseTree node)
-    {
-        return (  node.name == "discard" || node.matches is null 
-        //|| node.begin == node.end
-        ) && node.name != "keep";
-    }
     
-    ParseTree result = ParseTree("and", false, [], p.input, p.end, p.end, []);
-    
-    foreach(i,r; rules)
+    ParseTree and(ParseTree p) 
     {
-        ParseTree temp = r(result);
-        result.end = temp.end;
-        if (temp.successful) 
+        bool isNullNode(ParseTree node)
         {
-            if (!isNullNode(temp)) // discard empty nodes
+            return (  node.name == "discard" || node.matches is null 
+            //|| node.begin == node.end
+            ) && node.name != "keep";
+        }
+        
+        ParseTree result = ParseTree("and", false, [], p.input, p.end, p.end, []);
+        
+        foreach(i,r; rules)
+        {
+            ParseTree temp = r(result);
+            result.end = temp.end;
+            if (temp.successful) 
             {
-                result.matches ~= temp.matches;
-                if (temp.name != "drop")
-                    result.children ~= temp;
+                if (!isNullNode(temp)) // discard empty nodes
+                {
+                    result.matches ~= temp.matches;
+                    if (temp.name != "drop")
+                        result.children ~= temp;
+                }
             }
-        }
-        else
-        {
-            result.children ~= temp;// add the failed node, to indicate which failed
-            return result; // and end the parsing attempt right there
-        }
-    }        
-    result.successful = true;
-    return result;
+            else
+            {
+                result.children ~= temp;// add the failed node, to indicate which failed
+                return result; // and end the parsing attempt right there
+            }
+        }        
+        result.successful = true;
+        return result;
+    }
+
+    ParseTree and(string input)
+    {
+        return .and!(rules)(ParseTree("",false,[],input));
+    }
 }
 
 /**
