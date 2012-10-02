@@ -334,13 +334,140 @@ unittest // 'literal' unit test
 Represents a range of chars, from begin to end, included. So charRange!('a','z') matches
 all English lowercase letters. If fails if the input is empty or does not begin with a character
 between begin and end.
+
+If begin == end, it will match one char (begin... or end).
+
+begin > end is non-legal.
 */
-ParseTree charRange(char begin, char end)(ParseTree p)
+template charRange(char begin, char end) if (begin <= end)
 {
-    if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
-        return ParseTree("charRange("~begin~"," ~ end ~ ")", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
-    else
-        return ParseTree("charRange("~begin~"," ~ end ~ ")", false, [], p.input, p.end, p.end);
+    ParseTree charRange(ParseTree p)
+    {
+        if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
+            return ParseTree("charRange("~begin~"," ~ end ~ ")", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
+        else
+            return ParseTree("charRange("~begin~"," ~ end ~ ")", false, [], p.input, p.end, p.end);
+    }
+    
+    ParseTree charRange(string input)
+    {
+        return .charRange!(begin,end)(ParseTree("",false,[],input));
+    }
+}
+
+unittest // 'charRange' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
+    
+    alias charRange!('a','a') aa;
+    alias charRange!('a','b') ab;
+    alias charRange!('a','z') az;
+    
+    static assert(!__traits(compiles, {alias charRange!('z','a') za;}));
+    
+    ParseTree result = aa(input);
+    
+    assert(result.successful, "'a-a' succeeds on inputs beginning with 'a'.");
+    assert(result.matches  == ["a"], "'a-a' matches the 'a' at the beginning.");
+    assert(result.input == input.input, "'a-a' does not change the input.");
+    assert(result.end == input.end+1, "'a-a' advances the index by one position.");
+    assert(result.children is null, "'a-a' has no children.");
+    
+    result = ab("abcdef");
+    
+    assert(result.successful, "'a-b' succeeds on inputs beginning with 'a'.");
+    assert(result.matches  == ["a"], "'a-b' matches the 'a' at the beginning.");
+    assert(result.input == input.input, "'a-b' does not change the input.");
+    assert(result.end == input.end+1, "'a-b' advances the index by one position.");
+    assert(result.children is null, "'a-b' has no children.");
+    
+    result = az(input);
+    
+    assert(result.successful, "'a-z' succeeds on inputs beginning with 'abc'.");
+    assert(result.matches  == ["a"], "'a-z' matches 'a' at the beginning.");
+    assert(result.input == input.input, "'a-z' does not change the input.");
+    assert(result.end == input.end+1, "'a-z' advances the index by one position.");
+    assert(result.children is null, "'a-z' has no children.");
+    
+    input.input = "bcdef";
+    
+    result = aa(input);
+    
+    assert(!result.successful, "'a-a' fails on inputs not beginning with 'a'.");
+    assert(result.matches is null, "'a-a' makes no match on 'bcdef'.");
+    assert(result.input == input.input, "'a-a' does not change the input.");
+    assert(result.end == input.end, "'a-a' does not advances the index on 'bcdef'.");
+    assert(result.children is null, "'a-a' has no children.");
+    
+    result = ab(input);
+    
+    assert(result.successful, "'a-b' succeeds on inputs beginning with 'b'.");
+    assert(result.matches == ["b"], "'a-b' matches on 'bcdef'.");
+    assert(result.input == input.input, "'a-b' does not change the input.");
+    assert(result.end == input.end+1, "'a-b' advances the index by one position'.");
+    assert(result.children is null, "'a-b' has no children.");
+    
+    result = az(input);
+    
+    assert(result.successful, "'a-z' succeeds on 'bcdef'.");
+    assert(result.matches == ["b"], "'a-z' matches 'b' at the beginning of 'bcdef'.");
+    assert(result.input == input.input, "'a-z' does not change the input.");
+    assert(result.end == input.end+1, "'a-z' advances the index by one position.");
+    assert(result.children is null, "'a-z' has no children.");
+    
+    input.input = "";
+    
+    result = aa(input);
+    
+    assert(!result.successful, "'a-a' fails on empty strings.");
+    assert(result.matches is null, "'a-a' does not match ''.");
+    assert(result.input == input.input, "'a-a' does not change the input.");
+    assert(result.end == input.end, "'a-a' does not advance the index on ''.");
+    assert(result.children is null, "'a-a' has no children.");
+    
+    result = ab(input);
+    
+    assert(!result.successful, "'a-b' fails on empty strings.");
+    assert(result.matches is null, "'a-b' does not match ''.");
+    assert(result.input == input.input, "'a-b' does not change the input.");
+    assert(result.end == input.end, "'a-b' does not advance the index on ''.");
+    assert(result.children is null, "'a-b' has no children.");
+    
+    result = az(input);
+    
+    assert(!result.successful, "'a-z' fails on empty strings.");
+    assert(result.matches is null, "'a-z' does not match ''.");
+    assert(result.input == input.input, "'a-z' does not change the input.");
+    assert(result.end == input.end, "'a-z' does not advance the index on ''.");
+    assert(result.children is null, "'a-z' has no children.");
+    
+    input.input = "123";
+    
+    result = aa(input);
+    
+    assert(!result.successful, "'a-a' fails on '123'.");
+    assert(result.matches is null, "'a-a' does not match '123'.");
+    assert(result.input == input.input, "'a-a' does not change the input.");
+    assert(result.end == input.end, "'a-a' does not advance the index on '123'.");
+    assert(result.children is null, "'a-a' has no children.");
+    
+    result = ab(input);
+    
+    assert(!result.successful, "'a-b' fails on '123'.");
+    assert(result.matches is null, "'a-b' does not match '123'.");
+    assert(result.input == input.input, "'a-b' does not change the input.");
+    assert(result.end == input.end, "'a-b' does not advance the index on '123'.");
+    assert(result.children is null, "'a-b' has no children.");
+    
+    result = az(input);
+    
+    assert(!result.successful, "'a-z' fails on '123'.");
+    assert(result.matches is null, "'a-z' does not match '123'.");
+    assert(result.input == input.input, "'a-z' does not change the input.");
+    assert(result.end == input.end, "'a-z' does not advance the index on '123'.");
+    assert(result.children is null, "'a-z' has no children.");
+    
+    alias charRange!(char.min,char.max) allChars;
 }
 
 /**
