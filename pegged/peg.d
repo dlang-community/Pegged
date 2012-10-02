@@ -205,12 +205,129 @@ unittest // 'any' unit test
 Represents a literal in a PEG, like "abc" or 'abc' (or even '').
 It succeeds if a prefix of the input is equal to its template parameter and fails otherwise.
 */
-ParseTree literal(string s)(ParseTree p)
+template literal(string s)
 {
-    if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
-        return ParseTree("literal("~s~")", true, [s], p.input, p.end, p.end+s.length);
-    else
-        return ParseTree("literal("~s~")", false, [], p.input, p.end, p.end);
+    ParseTree literal(ParseTree p)
+    {
+        if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
+            return ParseTree("literal("~s~")", true, [s], p.input, p.end, p.end+s.length);
+        else
+            return ParseTree("literal("~s~")", false, [], p.input, p.end, p.end);
+    }
+
+    ParseTree literal(string input)
+    {
+        return .literal!(s)(ParseTree("", false, [], input));
+    }
+}
+
+unittest // 'literal' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
+    
+    alias literal!"a" a;
+    alias literal!"abc" abc;
+    alias literal!"" empty;
+    
+    ParseTree result = a(input);
+    
+    assert(result.successful, "'a' succeeds on inputs beginning with 'a'.");
+    assert(result.matches  == ["a"], "'a' matches the 'a' at the beginning.");
+    assert(result.input == input.input, "'a' does not change the input.");
+    assert(result.end == input.end+1, "'a' advances the index by one position.");
+    assert(result.children is null, "'a' has no children.");
+    
+    result = a("abcdef");
+    
+    assert(result.successful, "'a' succeeds on inputs beginning with 'a'.");
+    assert(result.matches  == ["a"], "'a' matches the 'a' at the beginning.");
+    assert(result.input == input.input, "'a' does not change the input.");
+    assert(result.end == input.end+1, "'a' advances the index by one position.");
+    assert(result.children is null, "'a' has no children.");
+    
+    result = abc(input);
+    
+    assert(result.successful, "'abc' succeeds on inputs beginning with 'abc'.");
+    assert(result.matches  == ["abc"], "'abc' matches 'abc' at the beginning.");
+    assert(result.input == input.input, "'abc' does not change the input.");
+    assert(result.end == input.end+3, "'abc' advances the index by 3 positions.");
+    assert(result.children is null, "'abc' has no children.");
+    
+    result = abc("abcdef");
+    
+    assert(result.successful, "'abc' succeeds on inputs beginning with 'abc'.");
+    assert(result.matches  == ["abc"], "'abc' matches 'abc' at the beginning.");
+    assert(result.input == input.input, "'abc' does not change the input.");
+    assert(result.end == input.end+3, "'abc' advances the index by 3 positions.");
+    assert(result.children is null, "'abc' has no children.");
+    
+    result = empty(input);
+    
+    assert(result.successful, "'' succeeds on non-null inputs.");
+    assert(result.matches  == [""], "'' matches '' at the beginning.");
+    assert(result.input == input.input, "'' does not change the input.");
+    assert(result.end == input.end+0, "'' does not advance the index.");
+    assert(result.children is null, "'' has no children.");
+    
+    result = empty("abcdef");
+    
+    assert(result.successful, "'' succeeds on non-null inputs.");
+    assert(result.matches  == [""], "'' matches '' at the beginning.");
+    assert(result.input == input.input, "'' does not change the input.");
+    assert(result.end == input.end+0, "'' does not advance the index.");
+    assert(result.children is null, "'' has no children.");
+    
+    input.input = "bcdef";
+    
+    result = a(input);
+    
+    assert(!result.successful, "'a' fails on inputs not beginning with 'a'.");
+    assert(result.matches is null, "'a' makes no match on 'bcdef'.");
+    assert(result.input == input.input, "'a' does not change the input.");
+    assert(result.end == input.end, "'a' does not advances the index on 'bcdef'.");
+    assert(result.children is null, "'a' has no children.");
+    
+    result = abc(input);
+    
+    assert(!result.successful, "'abc' fails on inputs not beginning with 'abc'.");
+    assert(result.matches is null, "'abc' does no match on 'bcdef'.");
+    assert(result.input == input.input, "'abc' does not change the input.");
+    assert(result.end == input.end, "'abc' does not advance the index on 'bcdef'.");
+    assert(result.children is null, "'abc' has no children.");
+    
+    result = empty(input);
+    
+    assert(result.successful, "'' succeeds on non-null inputs.");
+    assert(result.matches == [""], "'' matches '' at the beginning.");
+    assert(result.input == input.input, "'' does not change the input.");
+    assert(result.end == input.end+0, "'' does not advance the index.");
+    assert(result.children is null, "'' has no children.");
+    
+    input.input = "";
+    
+    result = a(input);
+    
+    assert(!result.successful, "'a' fails on empty strings.");
+    assert(result.matches is null, "'a' does not match ''.");
+    assert(result.input == input.input, "'a' does not change the input.");
+    assert(result.end == input.end, "'a' does not advance the index on 'bcdef'.");
+    assert(result.children is null, "'a' has no children.");
+    
+    result = abc(input);
+    
+    assert(!result.successful, "'abc' fails on empty strings.");
+    assert(result.matches is null, "'abc' does not match ''.");
+    assert(result.input == input.input, "'abc' does not change the input.");
+    assert(result.end == input.end, "'abc' does not advance the index on 'bcdef'.");
+    assert(result.children is null, "'abc' has no children.");
+    
+    result = empty(input);
+    
+    assert(result.successful, "'' succeeds on empty strings.");
+    assert(result.matches  == [""], "'' matches '' at the beginning, even on empty strings.");
+    assert(result.input == input.input, "'' does not change the input.");
+    assert(result.end == input.end+0, "'' does not advance the index.");
+    assert(result.children is null, "'' has no children.");
 }
 
 /**
