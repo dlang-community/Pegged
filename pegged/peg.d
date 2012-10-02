@@ -468,6 +468,12 @@ unittest // 'charRange' unit test
     assert(result.children is null, "'a-z' has no children.");
     
     alias charRange!(char.min,char.max) allChars;
+        
+    assert(allChars("\0").successful);
+    assert(allChars("" ~ char.min).successful);
+    assert(allChars("" ~ char.max).successful);
+    assert(!allChars("").successful);
+    assert(allChars("\xFF").successful);
 }
 
 /**
