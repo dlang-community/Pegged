@@ -242,7 +242,7 @@ That makes `Number` expression a bit more readable.
 Space Arrow and User-Defined Spacing
 ------------------------------------
 
-There is another kind of space-level rule, it's the 'space arrow', just using `< ` (lower-than followed by a space) as an arrow. Instead of then treating the parsing expression as a standard non-space-consuming PEG sequence, it will consume spaces between elements.
+There is another kind of space-level rule, it's the 'space arrow', just using `< ` (lower-than followed by a space) as an arrow. Instead of then treating the parsing expression as a standard non-space-consuming PEG sequence, it will consume spaces before, between and after elements.
 
 So, given:
 
@@ -255,7 +255,7 @@ B <- 'b'
 C <- 'c'
 ```
 
-`Rule1` will parse `"abc"` but not `"a   b c"`, where `Rule2` will parse the two inputs (and will output a parse tree holding only an `A` node, a `B` and a `C` node: no space node.
+`Rule1` will parse `"abc"` but not `"a   b c"`, where `Rule2` will parse the two inputs (and will output a parse tree holding only an `A` node, a `B` and a `C` node: no space node. `Rule2` will also parse `"   ab c    "` up to `d`.
 
 You can select what pattern is considered as blank: define a rule called `Spacing` in your grammar. This is the rule that will be called by **Pegged** for this grammar to consume space when the `< `arrow is used. If no user-defined `Spacing` is provided, **Pegged** use the predefined `spacing` rule that parse blank chars (whitespace, tabulation, etc).
 

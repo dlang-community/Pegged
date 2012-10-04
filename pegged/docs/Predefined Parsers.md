@@ -20,7 +20,7 @@ endOfInput  <- !.   # alias: eoi
 endofLine   <- '\r\n' / '\n' / '\r'  # alias: eol
 space       <- ' ' / '\t' 
 blank       <- space / endOfLine
-spacing     <~ blank* 
+spacing     <~ blank+ 
 
 # Special chars
 quote       <- "'"

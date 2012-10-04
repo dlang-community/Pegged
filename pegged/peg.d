@@ -1084,9 +1084,9 @@ alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOf
 alias endOfLine eol; /// helper alias.
 
 alias or!(literal!(" "), literal!("\t")) space; /// predefined space-recognizing parser (space or tabulation).
-alias named!(fuse!(discardChildren!(zeroOrMore!space)), "spaces") spaces; /// aka '~space*'
+alias named!(fuse!(discardChildren!(oneOrMore!space)), "spaces") spaces; /// aka '~space+'
 alias or!(space, endOfLine) blank; /// Any blank char (spaces or end of line).
-alias named!(fuse!(discardChildren!(zeroOrMore!blank)), "spacing") spacing; /// The basic space-management parser: fuse zero or more blank spaces.
+alias named!(fuse!(discardChildren!(oneOrMore!blank)), "spacing") spacing; /// The basic space-management parser: fuse one or more blank spaces.
 
 alias charRange!('0', '9') digit; /// Decimal digit: [0-9]
 alias named!(fuse!(discardChildren!(oneOrMore!digit)), "digits") digits; /// [0-9]+
@@ -1151,7 +1151,7 @@ As you can see on the previous line, spaceAnd discards the matched spaces and re
 */
 template spaceAnd(alias sp, rules...)
 {
-    alias and!(discard!(option!sp), staticMap!(AddSpace!(option!sp), rules)) spaceAnd;
+    alias and!(discard!(zeroOrMore!sp), staticMap!(AddSpace!(zeroOrMore!sp), rules)) spaceAnd;
 }
 
 /// Mixin to simplify a parse tree inside a grammar
