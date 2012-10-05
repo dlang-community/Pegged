@@ -17,19 +17,19 @@ import pegged.grammar;
 
 /// TODO: modify the way generic rules are written, again.
 /// Caution: memoization code
-import std.stdio;
-import pegged.grammar;
 
 mixin(grammar(`
-    Parse:
-        Line < (Keyword )*
-        Keyword <- "one" / "two" / "three"
+TEST:
+    recordDeclaration < :"rec" identifier '{' '}'
+
+    keywords <- "rec" / "foo" / "bar"
+    identifier <- !(keywords Spacing) ident
+    ident <~ [a-zA-Z_] [a-zA-Z_0-9]*
 `));
+
+
 
 void main()
 {
-    
-    string input =  "one two three ";
-    auto res = Parse(input);
-    writeln(res);
+    writeln(TEST("rec record { []}"));
 }
