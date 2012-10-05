@@ -33,7 +33,25 @@ struct ParseTree
     */
     string toString(string tabs = "") 
     {
-        string result = name ~ (successful ? " " : "(failure) ") ~ " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
+        string result = name ~ " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
+        if (!successful)
+        {
+            Position pos = position(this);
+            string left, right;
+            
+            if (pos.index < 10)
+                left = input[0 .. pos.index];
+            else
+                left = "..." ~ input[pos.index-10 .. pos.index];
+            
+            if (pos.index + 10 < input.length)
+                right = input[pos.index .. pos.index + 10] ~ "...";
+            else
+                right = input[pos.index .. $];
+            
+            result = result[0..$-1] ~ " (failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", between \"" ~ left ~ "\" and \"" ~ right ~ "\")\n";
+        }
+
         foreach(i,child; children)
             result ~= tabs ~ " +-" ~ child.toString(tabs ~ ((i < children.length -1 ) ? " | " : "   "));
         //result ~= "\n";
@@ -82,6 +100,73 @@ unittest // ParseTree testing
     assert(p == q, "Copying matches makes equal trees.");
 }
 
+/// To record a position in a text
+struct Position
+{
+    size_t line;/// line number (starts at 0)
+    size_t col;/// column number (starts at 0)
+    size_t index;/// index (starts at 0)
+}
+
+/**
+Given an input string, returns the position corresponding to the end of the string.
+
+For example:
+---
+assert(position("abc") == Position(0,3,3));
+assert(position("abc
+") == Position(1,0,4));
+assert(position("abc
+
+    ") == Position(2,4,8));
+---
+*/
+Position position(string s)
+{
+    size_t col, line, index;
+    foreach(i,c; s)
+    {
+        if (eol(ParseTree("", false, [], s, 0,i)).successful)
+        {
+            col = 0;
+            ++line;
+            ++index;
+        }
+        else
+        {
+            ++col;
+            ++index;
+        }
+    }
+    
+    return Position(line,col,index);
+}
+
+/**
+Same as previous overload, but from the begin of P.input to p.end
+*/
+Position position(ParseTree p)
+{
+    return position(p.input[0..p.end]);
+}
+
+unittest
+{
+    assert(position("") == Position(0,0,0), "Null string, position 0.");
+    assert(position("abc") == Position(0,3,3), "length 3 string, no line feed.");
+    assert(position("abc
+") == Position(1,0,4), "One end of line.");
+    assert(position("abc
+
+----") == Position(2,4,9), "Three lines (second one empty).");
+    assert(position("abc
+----
+----") == Position(2,4,13), "Three lines.");
+    assert(position("
+
+
+") == Position(3,0,3), "Four lines, all empty.");
+}
 
 /**
 Basic rule, that always fail without consuming.
