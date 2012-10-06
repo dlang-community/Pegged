@@ -216,18 +216,20 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 
                 code ~= ", name ~ \"." ~ p.matches[0] ~ "\")";
 
-                //bool parameterizedRule = p.children[0].children.length > 1;
+                bool parameterizedRule = p.children[0].children.length > 1;
+                string completeName = generateCode(p.children[0]);
+                string shortName = p.matches[0];
                 
-                //if (parameterizedRule)
-                //{
-                //    result =  "    template " ~ generateCode(p.children[0]) ~ "\n"
-                //            ~ "    {\n";
-                //}
+                if (parameterizedRule)
+                {
+                    result =  "    template " ~ completeName ~ "\n"
+                            ~ "    {\n";
+                }
                 
-                result ~=  "    static TParseTree " ~ generateCode(p.children[0]) ~ "(TParseTree p)\n    {\n";
+                result ~=  "    static TParseTree " ~ shortName ~ "(TParseTree p)\n    {\n";
                  
                 static if (withMemo == Memoization.yes)
-                    result ~= "        if(auto m = tuple(\""~generateCode(p.children[0])~"\",p.end) in memo)\n"
+                    result ~= "        if(auto m = tuple(\""~shortName~"\",p.end) in memo)\n"
                             ~ "            return *m;\n"
                             ~ "        else\n"
                             ~ "        {\n"
@@ -238,20 +240,20 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 result ~= code ~ "(p);\n";
                 
                 static if (withMemo == Memoization.yes)
-                    result ~= "            memo[tuple(\"" ~ generateCode(p.children[0]) ~ "\",p.end)] = result;\n"
+                    result ~= "            memo[tuple(\"" ~ shortName ~ "\",p.end)] = result;\n"
                            ~  "            return result;\n"
                            ~  "        }\n";
                 
                 result ~= "    }\n\n";
-                result ~= "    static TParseTree " ~ generateCode(p.children[0]) ~ "(string s)\n    {\n";
+                result ~= "    static TParseTree " ~ shortName ~ "(string s)\n    {\n";
                                 
                 static if (withMemo == Memoization.yes)
                     result ~=  "        memo = null;\n";
                 
                 result ~= "        return " ~ code ~ "(TParseTree(\"\", false,[], s));\n    }\n\n";
                 
-                //if (parameterizedRule)
-                //    result ~= "     }\n";
+                if (parameterizedRule)
+                    result ~= "     }\n";
                 
                 break;
             case "Pegged.GrammarName":
