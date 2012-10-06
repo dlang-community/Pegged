@@ -34,29 +34,43 @@ struct ParseTree
     string toString(string tabs = "") 
     {
         string result = name ~ " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
-        if (!successful)
-        {
-            Position pos = position(this);
-            string left, right;
-            
-            if (pos.index < 10)
-                left = input[0 .. pos.index];
-            else
-                left = "..." ~ input[pos.index-10 .. pos.index];
-            
-            if (pos.index + 10 < input.length)
-                right = input[pos.index .. pos.index + 10] ~ "...";
-            else
-                right = input[pos.index .. $];
-            
-            result = result[0..$-1] ~ " (failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", between \"" ~ left ~ "\" and \"" ~ right ~ "\")\n";
-        }
-
-        foreach(i,child; children)
-            result ~= tabs ~ " +-" ~ child.toString(tabs ~ ((i < children.length -1 ) ? " | " : "   "));
-        //result ~= "\n";
         
-        return result;
+        string childrenString;
+        bool allChildSuccessful = true;
+        
+        foreach(i,child; children)
+        {
+            childrenString ~= tabs ~ " +-" ~ child.toString(tabs ~ ((i < children.length -1 ) ? " | " : "   "));
+            if (!child.successful)
+                allChildSuccessful = false;
+        }
+        
+        if (!successful) // some failure info is needed
+        {
+            if (allChildSuccessful) // no one calculated the position yet
+            {    
+                Position pos = position(this);
+                string left, right;
+                
+                if (pos.index < 10)
+                    left = input[0 .. pos.index];
+                else
+                    left = "..." ~ input[pos.index-10 .. pos.index];
+                
+                if (pos.index + 10 < input.length)
+                    right = input[pos.index .. pos.index + 10] ~ "...";
+                else
+                    right = input[pos.index .. $];
+                
+                result = result[0..$-1] ~ " (failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", between \"" ~ left ~ "\" and \"" ~ right ~ "\")\n";
+            }
+            else
+            {
+                result = result[0..$-1] ~ " (failure)\n";
+            }
+        }
+        
+        return result ~ childrenString;
     }
     
         
