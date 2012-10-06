@@ -744,7 +744,6 @@ unittest // 'and' unit test
     assert(result.successful, "and!('abc','de') parses 'abcdefghi'");
     assert(result.matches == ["abc","de"], "and!('abc','de') matches 'abc' and 'de' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+5, "and!('abc','de') advances the index by 3+2 positions.");
-    import std.stdio;
     assert(result.children == [abc(input), de(abc(input))]
             , "and!('abc','de') has two children, created by 'abc' and 'de'.");
     
@@ -825,36 +824,92 @@ or (failure)
 
 So we know 'or' failed, that the 'and' sub-rule had the longest match, matching 'ab' and failing for [0-9] on index 2.
 */
-ParseTree or(rules...)(ParseTree p) if (rules.length > 0)
+template or(rules...) if (rules.length > 0)
 {
-    ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, p.end);
-    string[] errorStrings;
-    string orErrorString;
-    foreach(i,r; rules)
+    ParseTree or(ParseTree p) 
     {
-        ParseTree temp = r(p);
-        if (temp.successful)
+        ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, p.end);
+        string[] errorStrings;
+        string orErrorString;
+        foreach(i,r; rules)
         {
-            temp.children = [temp];
-            temp.name = "or";
-            return temp;
-        }
-        else
-        {
-            if (temp.end > longestFail.end)
-                longestFail = temp;
-            errorStrings ~= temp.matches;
-        }
-    }            
-    
-    /* all subrules failed, we will take the longest match */
-    longestFail.children = [longestFail];
-    foreach(i,error; errorStrings)
-        orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
-    longestFail.matches = [orErrorString];
-    longestFail.name = "or";
-    return longestFail;
+            ParseTree temp = r(p);
+            if (temp.successful)
+            {
+                temp.children = [temp];
+                temp.name = "or";
+                return temp;
+            }
+            else
+            {
+                if (temp.end > longestFail.end)
+                    longestFail = temp;
+                errorStrings ~= temp.matches;
+            }
+        }            
+        
+        /* all subrules failed, we will take the longest match */
+        longestFail.children = [longestFail];
+        foreach(i,error; errorStrings)
+            orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
+        longestFail.matches = [orErrorString];
+        longestFail.name = "or";
+        return longestFail;
+    }
+
+    ParseTree or(string input)
+    {
+        return .or!(rules)(ParseTree("",false,[],input));
+    }
 }
+    
+unittest // 'or' unit test
+{
+    alias charRange!('a','b') ab;
+    alias charRange!('c','d') cd;
+    
+    alias or!(ab) abOr; 
+    alias or!(ab,cd) abOrcd;
+    
+    ParseTree input = ParseTree("",false,[], "abcdefghi");
+    
+    ParseTree result = abOr(input);
+    
+    assert(result.name == "or");
+    assert(result.successful, "or!([a-b]) parses 'abcdefghi'");
+    assert(result.matches == ["a"], "or!([a-b]) matches 'a' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+1, "or!([a-b]) advances the index by 'a' size (1).");
+    assert(result.children == [ab(input)], "or!([a-b]) has one child: the one created by '[a-b]'.");
+    
+    result = abOrcd(input);
+
+    assert(result.name == "or");
+    assert(result.successful, "or!([a-b],[c-d]) parses 'abcdefghi'");
+    assert(result.matches == ["a"], "or!([a-b],[c-d]) matches 'a' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+1, "or!([a-b],[c-d]) advances the index by 1 position.");
+    
+    assert(result.children == [ab(input)], "or!([a-b],[c-d]) has one child, created by [a-b].");
+    
+    input.input = "cdefghi";
+    
+    result = abOrcd(input);
+
+    assert(result.name == "or");
+    assert(result.successful, "or!([a-b],[c-d]) parses 'cdefghi'");
+    assert(result.matches == ["c"], "or!([a-b],[c-d]) matches 'c' at the beginning of 'cdefghi'");
+    assert(result.end == input.end+1, "or!([a-b],[c-d]) advances the index by 1 position.");
+    
+    assert(result.children == [cd(input)], "or!([a-b],[c-d]) has one child, created by [c-d].");
+    
+    input.input = "_abcdefghi";
+    
+    result = abOrcd(input);
+    
+    assert(!result.successful, "or!([a-b],[c-d]) fails on '_abcdefghi'");
+    assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
+    
+}
+
 
 /**
 or special case for literal list ("abstract"/"alias"/...)
