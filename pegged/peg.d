@@ -33,7 +33,7 @@ struct ParseTree
     */
     string toString(string tabs = "") 
     {
-        string result = name ~ " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
+        string result = name;
         
         string childrenString;
         bool allChildSuccessful = true;
@@ -45,7 +45,11 @@ struct ParseTree
                 allChildSuccessful = false;
         }
         
-        if (!successful) // some failure info is needed
+        if (successful) 
+        {
+            result ~= " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
+        }
+        else // some failure info is needed
         {
             if (allChildSuccessful) // no one calculated the position yet
             {    
@@ -62,11 +66,14 @@ struct ParseTree
                 else
                     right = input[pos.index .. $];
                 
-                result = result[0..$-1] ~ " (failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", between \"" ~ left ~ "\" and \"" ~ right ~ "\")\n";
+                result ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) 
+                       ~ ", after \"" ~ left ~ "\" "
+                       ~ "expected "~ (matches.length > 0 ? matches[$-1] : "NO MATCH")
+                       ~ ", but got \"" ~ right ~ "\"\n";
             }
             else
             {
-                result = result[0..$-1] ~ " (failure)\n";
+                result ~= " (failure)\n";
             }
         }
         
@@ -217,7 +224,10 @@ Matches the end of input. Fails if there is any character left.
 */
 ParseTree eoi(ParseTree p)
 {
-    return ParseTree("eoi", p.end == p.input.length, [], p.input, p.end, p.end);
+    if (p.end == p.input.length)
+        return ParseTree("eoi", true, [], p.input, p.end, p.end);
+    else
+        return ParseTree("eoi", false, ["end of input"], p.input, p.end, p.end);
 }
 
 /// ditto
@@ -234,7 +244,7 @@ unittest // 'eoi' unit test
     ParseTree result = eoi(input);
     assert(result.name == "eoi");
     assert(!result.successful, "'eoi' fails on non-null string.");
-    assert(result.matches is null, "'eoi' makes no match.");
+    assert(result.matches == ["end of input"], "'eoi' error message.");
     assert(result.input == input.input, "'eoi' does not change the input.");
     assert(result.end == input.end, "'eoi' puts the index after the previous parse.");
     assert(result.children is null, "'eoi' has no children.");
@@ -257,7 +267,7 @@ ParseTree any(ParseTree p)
     if (p.end < p.input.length)
         return ParseTree("any", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
     else
-        return ParseTree("any", false, [], p.input, p.end, p.end);
+        return ParseTree("any", false, ["any char"], p.input, p.end, p.end);
 }
 
 /// ditto
@@ -289,17 +299,17 @@ unittest // 'any' unit test
     
     result = any(input);
     assert(!result.successful, "'any' fails on strings of length 0.");
-    assert(result.matches is null, "'any' does not match on strings of length 0.");
+    assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
     assert(result.end == 0, "'any' does not advance the index.");
     
     result = any("");
     assert(!result.successful, "'any' fails on strings of length 0.");
-    assert(result.matches is null, "'any' does not match on strings of length 0.");
+    assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
     assert(result.end == 0, "'any' does not advance the index.");
     
     result = any(null);
     assert(!result.successful, "'any' fails on null strings.");
-    assert(result.matches is null, "'any' does not match on strings of length 0.");
+    assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
     assert(result.end == 0, "'any' does not advance the index.");
 }
 
@@ -314,7 +324,7 @@ template literal(string s)
         if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
             return ParseTree("literal("~s~")", true, [s], p.input, p.end, p.end+s.length);
         else
-            return ParseTree("literal("~s~")", false, [], p.input, p.end, p.end);
+            return ParseTree("literal("~s~")", false, ["\"" ~ s ~ "\""], p.input, p.end, p.end);
     }
 
     ParseTree literal(string input)
@@ -387,7 +397,7 @@ unittest // 'literal' unit test
     result = a(input);
     
     assert(!result.successful, "'a' fails on inputs not beginning with 'a'.");
-    assert(result.matches is null, "'a' makes no match on 'bcdef'.");
+    assert(result.matches == ["\"a\""], "'a' makes no match on 'bcdef'.");
     assert(result.input == input.input, "'a' does not change the input.");
     assert(result.end == input.end, "'a' does not advances the index on 'bcdef'.");
     assert(result.children is null, "'a' has no children.");
@@ -395,7 +405,7 @@ unittest // 'literal' unit test
     result = abc(input);
     
     assert(!result.successful, "'abc' fails on inputs not beginning with 'abc'.");
-    assert(result.matches is null, "'abc' does no match on 'bcdef'.");
+    assert(result.matches == ["\"abc\""], "'abc' does no match on 'bcdef'.");
     assert(result.input == input.input, "'abc' does not change the input.");
     assert(result.end == input.end, "'abc' does not advance the index on 'bcdef'.");
     assert(result.children is null, "'abc' has no children.");
@@ -413,7 +423,7 @@ unittest // 'literal' unit test
     result = a(input);
     
     assert(!result.successful, "'a' fails on empty strings.");
-    assert(result.matches is null, "'a' does not match ''.");
+    assert(result.matches == ["\"a\""], "'a' does not match ''.");
     assert(result.input == input.input, "'a' does not change the input.");
     assert(result.end == input.end, "'a' does not advance the index on 'bcdef'.");
     assert(result.children is null, "'a' has no children.");
@@ -421,7 +431,7 @@ unittest // 'literal' unit test
     result = abc(input);
     
     assert(!result.successful, "'abc' fails on empty strings.");
-    assert(result.matches is null, "'abc' does not match ''.");
+    assert(result.matches == ["\"abc\""], "'abc' does not match ''.");
     assert(result.input == input.input, "'abc' does not change the input.");
     assert(result.end == input.end, "'abc' does not advance the index on 'bcdef'.");
     assert(result.children is null, "'abc' has no children.");
@@ -451,7 +461,7 @@ template charRange(char begin, char end) if (begin <= end)
         if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
             return ParseTree("charRange("~begin~"," ~ end ~ ")", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
         else
-            return ParseTree("charRange("~begin~"," ~ end ~ ")", false, [], p.input, p.end, p.end);
+            return ParseTree("charRange("~begin~"," ~ end ~ ")", false, ["a char between '"~begin~"' and '"~end~"'"], p.input, p.end, p.end);
     }
     
     ParseTree charRange(string input)
@@ -502,7 +512,7 @@ unittest // 'charRange' unit test
     result = aa(input);
     
     assert(!result.successful, "'a-a' fails on inputs not beginning with 'a'.");
-    assert(result.matches is null, "'a-a' makes no match on 'bcdef'.");
+    assert(result.matches == ["a char between 'a' and 'a'"], "'a-a' makes no match on 'bcdef'.");
     assert(result.input == input.input, "'a-a' does not change the input.");
     assert(result.end == input.end, "'a-a' does not advances the index on 'bcdef'.");
     assert(result.children is null, "'a-a' has no children.");
@@ -528,7 +538,7 @@ unittest // 'charRange' unit test
     result = aa(input);
     
     assert(!result.successful, "'a-a' fails on empty strings.");
-    assert(result.matches is null, "'a-a' does not match ''.");
+    assert(result.matches == ["a char between 'a' and 'a'"], "'a-a' does not match ''.");
     assert(result.input == input.input, "'a-a' does not change the input.");
     assert(result.end == input.end, "'a-a' does not advance the index on ''.");
     assert(result.children is null, "'a-a' has no children.");
@@ -536,7 +546,7 @@ unittest // 'charRange' unit test
     result = ab(input);
     
     assert(!result.successful, "'a-b' fails on empty strings.");
-    assert(result.matches is null, "'a-b' does not match ''.");
+    assert(result.matches == ["a char between 'a' and 'b'"], "'a-b' does not match ''.");
     assert(result.input == input.input, "'a-b' does not change the input.");
     assert(result.end == input.end, "'a-b' does not advance the index on ''.");
     assert(result.children is null, "'a-b' has no children.");
@@ -544,7 +554,7 @@ unittest // 'charRange' unit test
     result = az(input);
     
     assert(!result.successful, "'a-z' fails on empty strings.");
-    assert(result.matches is null, "'a-z' does not match ''.");
+    assert(result.matches == ["a char between 'a' and 'z'"], "'a-z' does not match ''.");
     assert(result.input == input.input, "'a-z' does not change the input.");
     assert(result.end == input.end, "'a-z' does not advance the index on ''.");
     assert(result.children is null, "'a-z' has no children.");
@@ -554,7 +564,7 @@ unittest // 'charRange' unit test
     result = aa(input);
     
     assert(!result.successful, "'a-a' fails on '123'.");
-    assert(result.matches is null, "'a-a' does not match '123'.");
+    assert(result.matches == ["a char between 'a' and 'a'"], "'a-a' does not match '123'.");
     assert(result.input == input.input, "'a-a' does not change the input.");
     assert(result.end == input.end, "'a-a' does not advance the index on '123'.");
     assert(result.children is null, "'a-a' has no children.");
@@ -562,7 +572,7 @@ unittest // 'charRange' unit test
     result = ab(input);
     
     assert(!result.successful, "'a-b' fails on '123'.");
-    assert(result.matches is null, "'a-b' does not match '123'.");
+    assert(result.matches == ["a char between 'a' and 'b'"], "'a-b' does not match '123'.");
     assert(result.input == input.input, "'a-b' does not change the input.");
     assert(result.end == input.end, "'a-b' does not advance the index on '123'.");
     assert(result.children is null, "'a-b' has no children.");
@@ -570,7 +580,7 @@ unittest // 'charRange' unit test
     result = az(input);
     
     assert(!result.successful, "'a-z' fails on '123'.");
-    assert(result.matches is null, "'a-z' does not match '123'.");
+    assert(result.matches == ["a char between 'a' and 'z'"], "'a-z' does not match '123'.");
     assert(result.input == input.input, "'a-z' does not change the input.");
     assert(result.end == input.end, "'a-z' does not advance the index on '123'.");
     assert(result.children is null, "'a-z' has no children.");
@@ -653,9 +663,9 @@ auto failure = rule(input);
 writeln(failure);
 /+
 writes:
-and(failure)  [0, 3]["abc"]
- +-literal(abc)  [0, 3]["abc"]
- +-charRange(a,z)(failure)  [3, 3][]
+and (failure)
+ +-literal(abc) [0, 3]["abc"]
+ +-charRange(a,z) failure at line 0, col 3, after "abc" a char between 'a' and 'z', but got "1"
 +/
 ----
 
@@ -692,6 +702,8 @@ template and(rules...) if (rules.length > 0)
             else
             {
                 result.children ~= temp;// add the failed node, to indicate which failed
+                if (temp.matches.length > 0)
+                    result.matches ~= temp.matches[$-1];
                 return result; // and end the parsing attempt right there
             }
         }        
@@ -757,7 +769,7 @@ unittest // 'and' unit test
     result = abcdef(input);
     
     assert(!result.successful, "'abc' 'de' 'f' fails on 'bcdefghi'");
-    assert(result.matches is null, "'abc' 'de' 'f' has no match on 'bcdefghi'");
+    //assert(result.matches is null, "'abc' 'de' 'f' has no match on 'bcdefghi'");
     assert(result.end == input.end);
     assert(result.children == [abc(input)], "'abc' 'de' 'f' has one child (a failure) on 'bcdefghi'");
     
@@ -766,7 +778,7 @@ unittest // 'and' unit test
     result = abcdef(input);
     
     assert(!result.successful, "'abc' 'de' 'f' fails on 'abc_efghi'");
-    assert(result.matches == ["abc"], "Only the first match, from 'abc'.");
+    //assert(result.matches == ["abc"], "Only the first match, from 'abc'.");
     assert(result.end == input.end+3, "Advances by 3 positions, due to 'abc'");
     assert(result.children == [abc(input), de(abc(input))]
     , "'abc' 'de' 'f' has two child on 'abc_efghi', the one from 'abc' (success) and the one from 'de' (failure).");
@@ -804,10 +816,10 @@ ParseTree input = ParseTree("",false,[],"abd"); // equivalent to "abd"
 auto failure = rule(input);
 writeln(failure);
 /+
-or(failure)  [0, 2]["ab"]
- +-and(failure)  [0, 2]["ab"]
-    +-literal(ab)  [0, 2]["ab"]
-    +-charRange(0,9)(failure)  [2, 2][]
+or (failure)
+ +-and (failure)
+    +-literal(ab) [0, 2]["ab"]
+    +-charRange(0,9) failure at line 0, col 2, after "ab" expected a char between '0' and '9', but got "d"
 +/
 ----
 
@@ -815,7 +827,9 @@ So we know 'or' failed, that the 'and' sub-rule had the longest match, matching 
 */
 ParseTree or(rules...)(ParseTree p) if (rules.length > 0)
 {
-    ParseTree longestFail;
+    ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, p.end);
+    string[] errorStrings;
+    string orErrorString;
     foreach(i,r; rules)
     {
         ParseTree temp = r(p);
@@ -826,11 +840,18 @@ ParseTree or(rules...)(ParseTree p) if (rules.length > 0)
             return temp;
         }
         else
-            longestFail = (temp.end > longestFail.end) ? temp : longestFail;  
+        {
+            if (temp.end > longestFail.end)
+                longestFail = temp;
+            errorStrings ~= temp.matches;
+        }
     }            
     
     /* all subrules failed, we will take the longest match */
     longestFail.children = [longestFail];
+    foreach(i,error; errorStrings)
+        orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
+    longestFail.matches = [orErrorString];
     longestFail.name = "or";
     return longestFail;
 }
@@ -953,6 +974,7 @@ ParseTree oneOrMore(alias r)(ParseTree p)
     auto temp = r(result);
     if (!temp.successful)
     {
+        result.matches = temp.matches;
         result.end = temp.end;
     }
     else
@@ -1043,11 +1065,14 @@ Concatenates a ParseTree's matches as one match and discards its children. Equiv
 ParseTree fuse(alias r)(ParseTree p)
 {
     p = r(p);
-    string fused;
-    foreach(match; p.matches)
-        fused ~= match;
-    p.matches = [fused];
-    p.children = null; // also discard children
+    if(p.successful)
+    {
+        string fused;
+        foreach(match; p.matches)
+            fused ~= match;
+        p.matches = [fused];
+        p.children = null; // also discard children
+    }
     return p;
 }
 
@@ -1067,7 +1092,8 @@ Calls 'r' on the input and then discards its matches.
 ParseTree discardMatches(alias r)(ParseTree p)
 {
     p = r(p);
-    p.matches = null;
+    if (p.successful)
+        p.matches = null;
     return p;
 }
 
@@ -1160,7 +1186,10 @@ template posLookahead(alias r)
     ParseTree posLookahead(ParseTree p)
     {
         auto temp = r(p);
-        return ParseTree("posLookahead", temp.successful, [], p.input, p.end, p.end);
+        if (temp.successful)
+            return ParseTree("posLookahead", temp.successful, [], p.input, p.end, p.end);
+        else
+            return ParseTree("posLookahead", temp.successful, temp.matches, p.input, p.end, p.end);
     }
 }
 
@@ -1173,7 +1202,10 @@ template negLookahead(alias r)
     ParseTree negLookahead(ParseTree p)
     {
         auto temp = r(p);
-        return ParseTree("negLookahead", !temp.successful, [], p.input, p.end, p.end);
+        if (temp.successful)
+            return ParseTree("negLookahead", false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
+        else
+            return ParseTree("negLookahead", true, [], p.input, p.end, p.end);
     }
 }
 
