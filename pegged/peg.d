@@ -66,8 +66,8 @@ struct ParseTree
                 else
                     right = input[pos.index .. $];
                 
-                result ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) 
-                       ~ ", after \"" ~ left ~ "\" "
+                result ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
+                       ~ (left.length > 0 ? "after \"" ~ left ~ "\" " : "")
                        ~ "expected "~ (matches.length > 0 ? matches[$-1] : "NO MATCH")
                        ~ ", but got \"" ~ right ~ "\"\n";
             }
@@ -828,7 +828,7 @@ template or(rules...) if (rules.length > 0)
 {
     ParseTree or(ParseTree p) 
     {
-        ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, p.end);
+        ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, 0);
         string[] errorStrings;
         string orErrorString;
         foreach(i,r; rules)
@@ -842,8 +842,9 @@ template or(rules...) if (rules.length > 0)
             }
             else
             {
-                if (temp.end > longestFail.end)
+                if (temp.end >= longestFail.end)
                     longestFail = temp;
+                
                 errorStrings ~= temp.matches;
             }
         }            
@@ -907,7 +908,7 @@ unittest // 'or' unit test
     
     assert(!result.successful, "or!([a-b],[c-d]) fails on '_abcdefghi'");
     assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
-    
+    assert(result.matches == ["a char between 'c' and 'd'"], "or!([a-b],[c-d]) error message.");
 }
 
 
@@ -922,12 +923,13 @@ ParseTree keywords(kws...)(ParseTree p) if (kws.length > 0)
         foreach(kw; keywords)
             result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
                 ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(``,true,[\""~kw~"\"],p.input,p.end,p.end+"~to!string(kw.length)~");\n";
-        result ~= "return ParseTree(``,false,[],p.input,p.end,p.end);";
+        result ~= `return ParseTree("",false,["one among " ~ to!string([kws])],p.input,p.end,p.end);`;
         return result;
     }
     
     mixin(keywordCode([kws]));
 }
+
 
 /**
 Tries to match subrule 'r' zero or more times. It always succeeds, since if 'r' fails
