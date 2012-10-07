@@ -189,6 +189,11 @@ unittest
 ") == Position(3,0,3), "Four lines, all empty.");
 }
 
+string getName(alias expr)() @property
+{
+    return expr(ParseTree("",false,null,"")).name;
+}
+
 /**
 Basic rule, that always fail without consuming.
 */
@@ -322,9 +327,9 @@ template literal(string s)
     ParseTree literal(ParseTree p)
     {
         if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
-            return ParseTree("literal("~s~")", true, [s], p.input, p.end, p.end+s.length);
+            return ParseTree("literal!(\""~s~"\")", true, [s], p.input, p.end, p.end+s.length);
         else
-            return ParseTree("literal("~s~")", false, ["\"" ~ s ~ "\""], p.input, p.end, p.end);
+            return ParseTree("literal!(\""~s~"\")", false, ["\"" ~ s ~ "\""], p.input, p.end, p.end);
     }
 
     ParseTree literal(string input)
@@ -343,7 +348,7 @@ unittest // 'literal' unit test
     
     ParseTree result = a(input);
     
-    assert(result.name == "literal(a)");
+    assert(result.name == `literal!("a")`, "Literal name test.");
     assert(result.successful, "'a' succeeds on inputs beginning with 'a'.");
     assert(result.matches  == ["a"], "'a' matches the 'a' at the beginning.");
     assert(result.input == input.input, "'a' does not change the input.");
@@ -360,7 +365,7 @@ unittest // 'literal' unit test
     
     result = abc(input);
     
-    assert(result.name == "literal(abc)");
+    assert(result.name == `literal!("abc")`, "Literal name test.");
     assert(result.successful, "'abc' succeeds on inputs beginning with 'abc'.");
     assert(result.matches  == ["abc"], "'abc' matches 'abc' at the beginning.");
     assert(result.input == input.input, "'abc' does not change the input.");
@@ -377,7 +382,7 @@ unittest // 'literal' unit test
     
     result = empty(input);
     
-    assert(result.name == "literal()");
+    assert(result.name == `literal!("")`, "Literal name test.");
     assert(result.successful, "'' succeeds on non-null inputs.");
     assert(result.matches  == [""], "'' matches '' at the beginning.");
     assert(result.input == input.input, "'' does not change the input.");
@@ -459,9 +464,9 @@ template charRange(char begin, char end) if (begin <= end)
     ParseTree charRange(ParseTree p)
     {
         if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
-            return ParseTree("charRange("~begin~"," ~ end ~ ")", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
+            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
         else
-            return ParseTree("charRange("~begin~"," ~ end ~ ")", false, ["a char between '"~begin~"' and '"~end~"'"], p.input, p.end, p.end);
+            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", false, ["a char between '"~begin~"' and '"~end~"'"], p.input, p.end, p.end);
     }
     
     ParseTree charRange(string input)
@@ -482,7 +487,7 @@ unittest // 'charRange' unit test
     
     ParseTree result = aa(input);
     
-    assert(result.name == "charRange(a,a)");
+    assert(result.name == "charRange!('a','a')", "charRange name test.");
     assert(result.successful, "'a-a' succeeds on inputs beginning with 'a'.");
     assert(result.matches  == ["a"], "'a-a' matches the 'a' at the beginning.");
     assert(result.input == input.input, "'a-a' does not change the input.");
@@ -491,7 +496,7 @@ unittest // 'charRange' unit test
     
     result = ab("abcdef");
     
-    assert(result.name == "charRange(a,b)");
+    assert(result.name == "charRange!('a','b')", "charRange name test.");
     assert(result.successful, "'a-b' succeeds on inputs beginning with 'a'.");
     assert(result.matches  == ["a"], "'a-b' matches the 'a' at the beginning.");
     assert(result.input == input.input, "'a-b' does not change the input.");
@@ -500,7 +505,7 @@ unittest // 'charRange' unit test
     
     result = az(input);
     
-    assert(result.name == "charRange(a,z)");
+    assert(result.name == "charRange!('a','z')", "charRange name test.");
     assert(result.successful, "'a-z' succeeds on inputs beginning with 'abc'.");
     assert(result.matches  == ["a"], "'a-z' matches 'a' at the beginning.");
     assert(result.input == input.input, "'a-z' does not change the input.");
@@ -677,6 +682,12 @@ template and(rules...) if (rules.length > 0)
     
     ParseTree and(ParseTree p) 
     {
+        string name = "and!(";
+        foreach(i,rule; rules)
+            name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
+                                               // for recursive rules
+                    ~ (i < rules.length -1 ? ", " : "");
+        name ~= ")";
         bool isNullNode(ParseTree node)
         {
             return (  node.name == "discard" || node.matches is null 
@@ -684,7 +695,7 @@ template and(rules...) if (rules.length > 0)
             ) && node.name != "keep";
         }
         
-        ParseTree result = ParseTree("and", false, [], p.input, p.end, p.end, []);
+        ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end, []);
         
         foreach(i,r; rules)
         {
@@ -732,7 +743,7 @@ unittest // 'and' unit test
     
     ParseTree result = abcAnd(input);
     
-    assert(result.name == "and");
+    //assert(result.name == `and!(literal!("abc"))`, "and name test.");
     assert(result.successful, "and!('abc') parses 'abcdefghi'");
     assert(result.matches == ["abc"], "and!('abc') matches 'abc' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+3, "and!('abc') advances the index by 'abc' size (3).");
@@ -740,7 +751,7 @@ unittest // 'and' unit test
     
     result = abcde(input);
 
-    assert(result.name == "and");
+    //assert(result.name == `and!(literal!("abc"), literal!("de"))`, "and name test.");
     assert(result.successful, "and!('abc','de') parses 'abcdefghi'");
     assert(result.matches == ["abc","de"], "and!('abc','de') matches 'abc' and 'de' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+5, "and!('abc','de') advances the index by 3+2 positions.");
@@ -749,7 +760,7 @@ unittest // 'and' unit test
     
     result = abcdef(input);
 
-    assert(result.name == "and");
+    //assert(result.name == `and!(literal!("abc"), literal!("de"), literal!("f"))`, "and name test.");
     assert(result.successful, "and!('abc','de','f') parses 'abcdefghi'");
     assert(result.matches == ["abc","de","f"], "and!('abc','de','f') matches 'abcdef' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+6, "and!('abc','de','f') advances the index by 3+2+1 positions.");
@@ -758,7 +769,6 @@ unittest // 'and' unit test
     
     result = withEps(input);
     
-    assert(result.name == "and");
     assert(result.successful, "and!('','abc','','de','','f','') parses 'abcdefghi'");
     assert(result.matches == ["","abc","","de","","f",""], "and!('','abc','','de','','f','') matches 'abcdef' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+6, "and!('','abc','','de','','f','') advances the index by 0+3+0+2+0+1+0 positions.");
@@ -828,7 +838,11 @@ template or(rules...) if (rules.length > 0)
 {
     ParseTree or(ParseTree p) 
     {
-        ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, 0);
+        string name = "or!(";
+        foreach(i,rule; rules)
+            name ~= getName!(rule) ~ (i < rules.length -1 ? ", " : "");
+        name ~= ")";
+        ParseTree longestFail = ParseTree(name, false, [], p.input, p.end, 0);
         string[] errorStrings;
         string orErrorString;
         foreach(i,r; rules)
@@ -837,7 +851,7 @@ template or(rules...) if (rules.length > 0)
             if (temp.successful)
             {
                 temp.children = [temp];
-                temp.name = "or";
+                temp.name = name;
                 return temp;
             }
             else
@@ -854,7 +868,7 @@ template or(rules...) if (rules.length > 0)
         foreach(i,error; errorStrings)
             orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
         longestFail.matches = [orErrorString];
-        longestFail.name = "or";
+        longestFail.name = name;
         return longestFail;
     }
 
@@ -876,7 +890,7 @@ unittest // 'or' unit test
     
     ParseTree result = abOr(input);
     
-    assert(result.name == "or");
+    assert(result.name == "or!(charRange!('a','b'))", "or name test.");
     assert(result.successful, "or!([a-b]) parses 'abcdefghi'");
     assert(result.matches == ["a"], "or!([a-b]) matches 'a' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+1, "or!([a-b]) advances the index by 'a' size (1).");
@@ -884,7 +898,7 @@ unittest // 'or' unit test
     
     result = abOrcd(input);
 
-    assert(result.name == "or");
+    assert(result.name == "or!(charRange!('a','b'), charRange!('c','d'))", "or name test.");
     assert(result.successful, "or!([a-b],[c-d]) parses 'abcdefghi'");
     assert(result.matches == ["a"], "or!([a-b],[c-d]) matches 'a' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+1, "or!([a-b],[c-d]) advances the index by 1 position.");
@@ -895,7 +909,7 @@ unittest // 'or' unit test
     
     result = abOrcd(input);
 
-    assert(result.name == "or");
+    assert(result.name == "or!(charRange!('a','b'), charRange!('c','d'))", "or name test.");
     assert(result.successful, "or!([a-b],[c-d]) parses 'cdefghi'");
     assert(result.matches == ["c"], "or!([a-b],[c-d]) matches 'c' at the beginning of 'cdefghi'");
     assert(result.end == input.end+1, "or!([a-b],[c-d]) advances the index by 1 position.");
@@ -929,11 +943,15 @@ template keywords(kws...) if (kws.length > 0)
     {
         string keywordCode(string[] keywords)
         {
+            string name= "keywords!(";
+            foreach(i,kw;keywords)
+                name ~= "\"" ~ kw ~ "\""~ (i < keywords.length -1 ? ", " : "");
+            name ~= ")";
             string result;
             foreach(kw; keywords)
                 result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
-                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(``,true,[\""~kw~"\"],p.input,p.end,p.end+"~to!string(kw.length)~");\n";
-            result ~= `return ParseTree("",false,["one among " ~ to!string([kws])],p.input,p.end,p.end);`;
+                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(`"~name~"`,true,[\""~kw~"\"],p.input,p.end,p.end+"~to!string(kw.length)~");\n";
+            result ~= "return ParseTree(`"~name~"`,false,[`one among ` ~ to!string([kws])],p.input,p.end,p.end);";
             return result;
         }
         
@@ -954,6 +972,7 @@ unittest
     
     ParseTree result = kw(input);
     
+    assert(result.name == `keywords!("abc", "de", "f")`, "keywords name test.");
     assert(result.successful, "keywords success on `abcd`");
     assert(result.matches == ["abc"], "keywords matches `abc` on `abcd`");
     assert(result.end == input.end+3, "keywords advances the index by 3 positions.");
@@ -1030,7 +1049,7 @@ assert(result.children.length == 0);
 */
 ParseTree zeroOrMore(alias r)(ParseTree p)
 {
-    auto result = ParseTree("zeroOrMore", true, [], p.input, p.end, p.end);
+    auto result = ParseTree("zeroOrMore!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
     auto temp = r(result);
     while(temp.successful)
     {
@@ -1084,7 +1103,7 @@ assert(!result.successful); // fails, since it failed on the first try.
 */
 ParseTree oneOrMore(alias r)(ParseTree p)
 {
-    auto result = ParseTree("oneOrMore", false, [], p.input, p.end, p.end);
+    auto result = ParseTree("oneOrMore!(" ~ getName!(r) ~ ")", false, [], p.input, p.end, p.end);
     auto temp = r(result);
     if (!temp.successful)
     {
@@ -1124,9 +1143,9 @@ ParseTree option(alias r)(ParseTree p)
 {
     auto result = r(p);
     if (result.successful)
-        return ParseTree("option", true, result.matches, result.input, result.begin, result.end, [result]);
+        return ParseTree("option!(" ~ getName!(r) ~ ")", true, result.matches, result.input, result.begin, result.end, [result]);
     else
-        return ParseTree("option", true, [], p.input, p.end, p.end, null);
+        return ParseTree("option!(" ~ getName!(r)~ ")", true, [], p.input, p.end, p.end, null);
 }
 
 /**
@@ -1148,14 +1167,7 @@ template named(alias r, string name)
 {
     ParseTree named(ParseTree p)
     {
-        /+static if (is(r))
-        {
-            r temp;
-            ParseTree result = temp(p);
-        }
-        else+/
-            ParseTree result = r(p);
-        
+        ParseTree result = r(p);
         result.name = name;
         return result;
     }
@@ -1301,9 +1313,9 @@ template posLookahead(alias r)
     {
         auto temp = r(p);
         if (temp.successful)
-            return ParseTree("posLookahead", temp.successful, [], p.input, p.end, p.end);
+            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, [], p.input, p.end, p.end);
         else
-            return ParseTree("posLookahead", temp.successful, temp.matches, p.input, p.end, p.end);
+            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, temp.matches, p.input, p.end, p.end);
     }
 }
 
@@ -1317,9 +1329,9 @@ template negLookahead(alias r)
     {
         auto temp = r(p);
         if (temp.successful)
-            return ParseTree("negLookahead", false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
+            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
         else
-            return ParseTree("negLookahead", true, [], p.input, p.end, p.end);
+            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
     }
 }
 
