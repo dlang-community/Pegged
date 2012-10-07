@@ -908,28 +908,85 @@ unittest // 'or' unit test
     
     assert(!result.successful, "or!([a-b],[c-d]) fails on '_abcdefghi'");
     assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
-    assert(result.matches == ["a char between 'c' and 'd'"], "or!([a-b],[c-d]) error message.");
+    assert(result.matches == ["a char between 'a' and 'b' or a char between 'c' and 'd'"], "or!([a-b],[c-d]) error message.");
+    
+    input.input = "";
+    
+    result = abOrcd(input);
+    
+    assert(!result.successful, "or!([a-b],[c-d]) fails on and empty input");
+    assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
+    assert(result.matches == ["a char between 'a' and 'b' or a char between 'c' and 'd'"], "or!([a-b],[c-d]) error message.");
+    
 }
-
 
 /**
 or special case for literal list ("abstract"/"alias"/...)
 */
-ParseTree keywords(kws...)(ParseTree p) if (kws.length > 0)
+template keywords(kws...) if (kws.length > 0)
 {
-    string keywordCode(string[] keywords)
+    ParseTree keywords(ParseTree p)
     {
-        string result;
-        foreach(kw; keywords)
-            result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
-                ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(``,true,[\""~kw~"\"],p.input,p.end,p.end+"~to!string(kw.length)~");\n";
-        result ~= `return ParseTree("",false,["one among " ~ to!string([kws])],p.input,p.end,p.end);`;
-        return result;
+        string keywordCode(string[] keywords)
+        {
+            string result;
+            foreach(kw; keywords)
+                result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
+                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(``,true,[\""~kw~"\"],p.input,p.end,p.end+"~to!string(kw.length)~");\n";
+            result ~= `return ParseTree("",false,["one among " ~ to!string([kws])],p.input,p.end,p.end);`;
+            return result;
+        }
+        
+        mixin(keywordCode([kws]));
     }
-    
-    mixin(keywordCode([kws]));
+
+    ParseTree keywords(string input)
+    {
+        return .keywords!(kws)(ParseTree("",false,[],input));
+    }
 }
 
+unittest
+{
+    alias keywords!("abc","de","f") kw;
+    
+    ParseTree input = ParseTree("",false,[],"abcd");
+    
+    ParseTree result = kw(input);
+    
+    assert(result.successful, "keywords success on `abcd`");
+    assert(result.matches == ["abc"], "keywords matches `abc` on `abcd`");
+    assert(result.end == input.end+3, "keywords advances the index by 3 positions.");
+    assert(result.children is null, "No children for `keywords`.");
+    
+    input.input = "def";
+    
+    result = kw(input);
+    
+    assert(result.successful, "keywords success on `def`");
+    assert(result.matches == ["de"], "keywords matches `de` on `def`");
+    assert(result.end == input.end+2, "keywords advances the index by 2 positions.");
+    assert(result.children is null, "No children for `keywords`.");
+    
+    
+    input.input = "ab_def";
+    
+    result = kw(input);
+    
+    assert(!result.successful, "keywords fails on `ab_def`.");
+    assert(result.matches == [`one among ["abc", "de", "f"]`], "keywords error message.");
+    assert(result.end == input.end, "keywords does not advance the index.");
+    assert(result.children is null, "No children for `keywords`.");
+    
+    input.input = "";
+    
+    result = kw(input);
+    
+    assert(!result.successful, "keywords fails on an empty input.");
+    assert(result.matches == [`one among ["abc", "de", "f"]`], "keywords error message.");
+    assert(result.end == input.end, "keywords does not advance the index.");
+    assert(result.children is null, "No children for `keywords`.");
+}
 
 /**
 Tries to match subrule 'r' zero or more times. It always succeeds, since if 'r' fails
