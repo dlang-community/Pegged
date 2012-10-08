@@ -1446,9 +1446,12 @@ template discard(alias r)
     ParseTree discard(ParseTree p)
     {
         ParseTree result = r(p);
-        result.matches = null;
-        result.begin = result.end;
-        result.name = "discard";
+        if (result.successful)
+        {
+            result.matches = null;
+            result.begin = result.end;
+            result.name = "discard";
+        }
         return result;
     }
 
@@ -1472,7 +1475,8 @@ template drop(alias r)
     ParseTree drop(ParseTree p)
     {
         ParseTree result = r(p);
-        result.name = "drop";
+        if (result.successful)
+            result.name = "drop";
         return result;    
     }
 
@@ -1494,9 +1498,12 @@ template keep(alias r)
 {
     ParseTree keep(ParseTree p)
     {
-        auto result = r(p);
-        result.children = [result];
-        result.name = "keep";
+        ParseTree result = r(p);
+        if (result.successful)
+        {
+            result.children = [result];
+            result.name = "keep";
+        }
         return result;
     }
 
