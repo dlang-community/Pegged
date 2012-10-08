@@ -110,19 +110,32 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 
                 ParseTree[] definitions = p.children[1 .. $];
                 bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
+                string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
                 bool userDefinedSpacing = false;
+                
+                string paramRuleHandler(string target)
+                {
+                    return "if (s.length >= "~to!string(shortGrammarName.length + target.length + 3)
+                          ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""~shortGrammarName ~ "." ~ target~"!(\") return true;";
+                }
+                
                 foreach(i,def; definitions)
                 {
                     if (def.matches[0] !in ruleNames)
                     {
                         ruleNames[def.matches[0]] = true;
-                        result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
+                        
+                        if (def.children[0].children.length > 1)
+                            parameterizedRulesSpecialCode ~= "                " ~ paramRuleHandler(def.matches[0])~ "\n";
+                        else
+                            result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
                     }
                     if (def.matches[0] == "Spacing") // user-defined spacing
                         userDefinedSpacing = true;
                 }
                 result ~= "                return true;\n"
                         ~ "            default:\n"
+                        ~ parameterizedRulesSpecialCode
                         ~ "                return false;\n        }\n    }\n";
                 
                 result ~= "    mixin decimateTree;\n";
@@ -230,7 +243,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                             ~ "    {\n";
                     innerName ~= "`" ~ shortName ~ "!(` ~ ";
                     foreach(i,param; p.children[0].children[1].children)
-                        innerName ~= "getName!("~ generateCode(param.children[0]) ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ `, ` ~ " : ")");
+                        innerName ~= "getName!("~ param.children[0].matches[0] ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ `, ` ~ " : ")");
                     innerName ~= " ~ `)`";
                 }
                 else
