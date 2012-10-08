@@ -109,15 +109,15 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                         ~ "        {\n";
                 
                 ParseTree[] definitions = p.children[1 .. $];
-				bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
+                bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
                 bool userDefinedSpacing = false;
                 foreach(i,def; definitions)
                 {
                     if (def.matches[0] !in ruleNames)
-					{
-						ruleNames[def.matches[0]] = true;
-						result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
-					}
+                    {
+                        ruleNames[def.matches[0]] = true;
+                        result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
+                    }
                     if (def.matches[0] == "Spacing") // user-defined spacing
                         userDefinedSpacing = true;
                 }
@@ -166,6 +166,11 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                         
                     result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
                            ~  "    }\n";
+                           
+                    result ~= "    static string opCall(GetName g)\n"
+                            ~ "    {\n"
+                            ~ "        return \"" ~ shortGrammarName ~ "\";\n"
+                            ~ "    }\n\n";
                 }
                 result ~= "    }\n" // end of grammar struct definition
                         ~ "}\n\n" // end of template definition
@@ -214,22 +219,32 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                         break;
                 }
                 
-                code ~= ", name ~ \"." ~ p.matches[0] ~ "\")";
-
                 bool parameterizedRule = p.children[0].children.length > 1;
                 string completeName = generateCode(p.children[0]);
                 string shortName = p.matches[0];
+                string innerName;
                 
                 if (parameterizedRule)
                 {
                     result =  "    template " ~ completeName ~ "\n"
                             ~ "    {\n";
+                    innerName ~= "`" ~ shortName ~ "!(` ~ ";
+                    foreach(i,param; p.children[0].children[1].children)
+                        innerName ~= "getName!("~ generateCode(param.children[0]) ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ `, ` ~ " : ")");
+                    innerName ~= " ~ `)`";
+                }
+                else
+                {
+                    innerName ~= "`" ~ completeName ~ "`";
                 }
                 
+                code ~= ", name ~ `.`~ " ~ innerName ~ ")";
+
                 result ~=  "    static TParseTree " ~ shortName ~ "(TParseTree p)\n    {\n";
+                        //~  "        " ~ innerName;
                  
                 static if (withMemo == Memoization.yes)
-                    result ~= "        if(auto m = tuple(\""~shortName~"\",p.end) in memo)\n"
+                    result ~= "        if(auto m = tuple("~innerName~",p.end) in memo)\n"
                             ~ "            return *m;\n"
                             ~ "        else\n"
                             ~ "        {\n"
@@ -240,7 +255,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 result ~= code ~ "(p);\n";
                 
                 static if (withMemo == Memoization.yes)
-                    result ~= "            memo[tuple(\"" ~ shortName ~ "\",p.end)] = result;\n"
+                    result ~= "            memo[tuple("~innerName~",p.end)] = result;\n"
                            ~  "            return result;\n"
                            ~  "        }\n";
                 
@@ -251,6 +266,9 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                     result ~=  "        memo = null;\n";
                 
                 result ~= "        return " ~ code ~ "(TParseTree(\"\", false,[], s));\n    }\n\n";
+                
+                result ~= "    static string " ~ shortName ~ "(GetName g)\n    {\n"
+                        ~ "        return name ~ `.`~ " ~ innerName ~ ";\n    }\n\n";
                 
                 if (parameterizedRule)
                     result ~= "     }\n";
