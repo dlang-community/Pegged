@@ -16,19 +16,50 @@ import pegged.grammar;
 
 mixin( grammar!(Memoization.yes)( `
 Test:
-  Div <- Block( 'div' )
-  Block( Tag ) <- Open1( Tag )
-                  ( Block( Tag ) / ( !(HtmlTag( "/" Tag )) .))*
-                  HtmlTag( "/" Tag )
+  Div <- HtmlBlockTag( 'div' )
+  HtmlBlockTag( Tag ) <- HtmlTagOpen( Tag )
+                        ( HtmlBlockTag( Tag ) /
+                          AllIfNot( HtmlTagClose( Tag ) ) )*
+                        HtmlTagClose( Tag )
 
-  HtmlTag( Tag ) <- "<" Tag ">"
+  HtmlTag( Contents ) <- Lt Spnl ^Contents Spnl Gt
+  HtmlTagClose( Tag ) <- HtmlTag( ^slash ^Tag )
 
-  Open1( Tag )  <- "<" Tag ">"
-  Open2( Tag )  <- HtmlTag( Tag )
+  # The version of HtmTagOpen that uses the HtmlTag rule fails under memoization;
+  # both versions work under no memoization
+  HtmlTagOpen( Tag )  <- Lt Spnl ^Tag Spnl ( HtmlAttribute Spnl )* Spnl Gt
+  #HtmlTagOpen( Tag )  <- HtmlTag( ^Tag Spnl HtmlAttribute* )
+
+  HtmlAttributeValue <~ (Quoted / (!"/" !">" Nonspacechar)+)
+  HtmlAttributeName <~ (AlphanumericAscii / "-")+
+  HtmlAttribute <- HtmlAttributeName Spnl (^"=" Spnl HtmlAttributeValue)? Spnl
+
+  Lt <- "<"
+  Gt <- ">"
+
+  Quoted <-    ^doublequote FuseAllUntil(doublequote) ^doublequote
+             / ^quote FuseAllUntil(quote) ^quote
+  BlankLine <~     Spaces Newline
+  AlphanumericAscii <~ [A-Za-z0-9]
+  Nonspacechar <~  !Spacechar !Newline .
+  Spacechar <~     " " / "\t"
+  Newline <~       "\n" / "\r" "\n"?
+  Spaces <~        Spacechar*
+  Spnl <~          Spaces (Newline Spaces)?
+
+  AllIfNot(Predicate) <- (!Predicate .)
+  AllUntil(Predicate) <- AllIfNot(Predicate)*
+  FuseAllUntil(Predicate) <~ AllUntil(Predicate)
 `));
 
-void main() 
-{
-    writeln(Test("<div></div>"));
+void main() {
+  auto tree = Test(
+`<div id="bar">
+  foo <br/> bar
+</div>
 
+`);
+
+  writeln( tree );
+  writeln( tree.matches );
 }
