@@ -191,8 +191,13 @@ unittest
 
 string getName(alias expr)() @property
 {
-    return expr(ParseTree("",false,null,"")).name;
+    static if (is(typeof( { expr(GetName()); })))
+        return expr(GetName());
+    else
+        return __traits(identifier, expr);
 }
+
+struct GetName {}
 
 /**
 Basic rule, that always fail without consuming.
@@ -202,11 +207,15 @@ ParseTree fail(ParseTree p)
     return ParseTree("fail", false, [], p.input, p.end, p.end, null);
 }
 
-
 /// ditto
 ParseTree fail(string input)
 {
     return fail(ParseTree("", false, [], input));
+}
+
+string fail(GetName g)
+{
+    return "fail";
 }
 
 unittest // 'fail' unit test
@@ -239,6 +248,11 @@ ParseTree eoi(ParseTree p)
 ParseTree eoi(string input)
 {
     return eoi(ParseTree("", false, [], input));
+}
+
+string eoi(GetName g)
+{
+    return "eoi";
 }
 
 alias eoi endOfInput; /// helper alias.
@@ -279,6 +293,11 @@ ParseTree any(ParseTree p)
 ParseTree any(string input)
 {
     return any(ParseTree("", false, [], input));
+}
+
+string any(GetName g)
+{
+    return "any";
 }
 
 unittest // 'any' unit test
@@ -336,6 +355,13 @@ template literal(string s)
     {
         return .literal!(s)(ParseTree("", false, [], input));
     }
+    
+    
+    string literal(GetName g)
+    {
+        return "literal!(\""~s~"\")";
+    }
+
 }
 
 unittest // 'literal' unit test
@@ -472,6 +498,11 @@ template charRange(char begin, char end) if (begin <= end)
     ParseTree charRange(string input)
     {
         return .charRange!(begin,end)(ParseTree("",false,[],input));
+    }
+    
+    string charRange(GetName g)
+    {
+        return "charRange!('"~begin~"','" ~ end ~ "')";
     }
 }
 
@@ -613,6 +644,11 @@ ParseTree eps(string input)
     return eps(ParseTree("",false,[], input));
 }
 
+string eps(GetName g)
+{
+    return "eps";
+}
+
 unittest // 'eps' unit test
 {
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
@@ -725,6 +761,16 @@ template and(rules...) if (rules.length > 0)
     ParseTree and(string input)
     {
         return .and!(rules)(ParseTree("",false,[],input));
+    }
+    
+    string and(GetName g)
+    {
+        string name = "and!(";
+        foreach(i,rule; rules)
+            name ~= getName!(rule)()
+                    ~ (i < rules.length -1 ? ", " : "");
+        name ~= ")"; 
+        return name;
     }
 }
 
@@ -876,6 +922,16 @@ template or(rules...) if (rules.length > 0)
     {
         return .or!(rules)(ParseTree("",false,[],input));
     }
+    
+    string or(GetName g)
+    {
+        string name = "or!(";
+        foreach(i,rule; rules)
+            name ~= getName!(rule)()
+                    ~ (i < rules.length -1 ? ", " : "");
+        name ~= ")"; 
+        return name;
+    }
 }
     
 unittest // 'or' unit test
@@ -962,6 +1018,15 @@ template keywords(kws...) if (kws.length > 0)
     {
         return .keywords!(kws)(ParseTree("",false,[],input));
     }
+    
+    string keywords(GetName g)
+    {
+        string name= "keywords!(";
+        foreach(i,kw; kws)
+            name ~= "\"" ~ kw ~ "\""~ (i < kws.length -1 ? ", " : "");
+        name ~= ")";
+        return name;
+    }
 }
 
 unittest
@@ -1047,19 +1112,32 @@ assert(result.successful); // succeed, even though all patterns failed.
 assert(result.children.length == 0);
 ----
 */
-ParseTree zeroOrMore(alias r)(ParseTree p)
+template zeroOrMore(alias r)
 {
-    auto result = ParseTree("zeroOrMore!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
-    auto temp = r(result);
-    while(temp.successful)
+    ParseTree zeroOrMore(ParseTree p)
     {
-        result.matches ~= temp.matches;
-        result.children ~= temp;
-        result.end = temp.end;
-        temp = r(result);
+        auto result = ParseTree("zeroOrMore!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
+        auto temp = r(result);
+        while(temp.successful)
+        {
+            result.matches ~= temp.matches;
+            result.children ~= temp;
+            result.end = temp.end;
+            temp = r(result);
+        }
+        result.successful = true;
+        return result;
     }
-    result.successful = true;
-    return result;
+
+    ParseTree zeroOrMore(string input)
+    {
+        return .zeroOrMore!(r)(ParseTree("",false,[],input));
+    }
+    
+    string zeroOrMore(GetName g)
+    {
+        return "zeroOrMore!(" ~ getName!(r)() ~ ")";
+    }
 }
 
 /**
@@ -1101,29 +1179,41 @@ result = rule(input);
 assert(!result.successful); // fails, since it failed on the first try.
 ----
 */
-ParseTree oneOrMore(alias r)(ParseTree p)
+template oneOrMore(alias r)
 {
-    auto result = ParseTree("oneOrMore!(" ~ getName!(r) ~ ")", false, [], p.input, p.end, p.end);
-    auto temp = r(result);
-    if (!temp.successful)
+    ParseTree oneOrMore(ParseTree p)
     {
-        result.matches = temp.matches;
-        result.end = temp.end;
-    }
-    else
-    {
-        while(temp.successful)
+        auto result = ParseTree("oneOrMore!(" ~ getName!(r) ~ ")", false, [], p.input, p.end, p.end);
+        auto temp = r(result);
+        if (!temp.successful)
         {
-            result.matches ~= temp.matches;
-            result.children ~= temp;
+            result.matches = temp.matches;
             result.end = temp.end;
-            temp = r(result);
         }
-        result.successful = true;
+        else
+        {
+            while(temp.successful)
+            {
+                result.matches ~= temp.matches;
+                result.children ~= temp;
+                result.end = temp.end;
+                temp = r(result);
+            }
+            result.successful = true;
+        }
+        return result;
     }
-    return result;
-}
 
+    ParseTree oneOrMore(string input)
+    {
+        return .oneOrMore!(r)(ParseTree("",false,[],input));
+    }
+    
+    string oneOrMore(GetName g)
+    {
+        return "oneOrMore!(" ~ getName!(r)() ~ ")";
+    }
+}
 /**
 Given a subrule 'r', represents the expression 'r?'. It tries to match 'r' and if this matches
 successfully, it returns this match. If 'r' failed, 'r?' is still a success, but without any child nor match.
@@ -1139,13 +1229,78 @@ assert(result.children.length == 1);
 assert(result.children[0] == literal!"abc"(input));
 ----
 */
-ParseTree option(alias r)(ParseTree p)
+template option(alias r)
 {
-    auto result = r(p);
-    if (result.successful)
-        return ParseTree("option!(" ~ getName!(r) ~ ")", true, result.matches, result.input, result.begin, result.end, [result]);
-    else
-        return ParseTree("option!(" ~ getName!(r)~ ")", true, [], p.input, p.end, p.end, null);
+    ParseTree option(ParseTree p)
+    {
+        auto result = r(p);
+        if (result.successful)
+            return ParseTree("option!(" ~ getName!(r) ~ ")", true, result.matches, result.input, result.begin, result.end, [result]);
+        else
+            return ParseTree("option!(" ~ getName!(r)~ ")", true, [], p.input, p.end, p.end, null);
+    }
+
+    ParseTree option(string input)
+    {
+        return .option!(r)(ParseTree("",false,[],input));
+    }
+    
+    string option(GetName g)
+    {
+        return "option!(" ~ getName!(r)() ~ ")";
+    }
+}
+/**
+Tries 'r' on the input. If it succeeds, the rule also succeeds, without consuming any input.
+If 'r' fails, then posLookahead!r also fails. Low-level implementation of '&r'.
+*/
+template posLookahead(alias r)
+{
+    ParseTree posLookahead(ParseTree p)
+    {
+        auto temp = r(p);
+        if (temp.successful)
+            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, [], p.input, p.end, p.end);
+        else
+            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, temp.matches, p.input, p.end, p.end);
+    }    
+    
+    ParseTree posLookahead(string input)
+    {
+        return .posLookahead!(r)(ParseTree("",false,[],input));
+    }
+    
+    string posLookahead(GetName g)
+    {
+        return "posLookahead!(" ~ getName!(r)() ~ ")";
+    }
+}
+
+
+/**
+Tries 'r' on the input. If it fails, the rule succeeds, without consuming any input.
+If 'r' succeeds, then negLookahead!r fails. Low-level implementation of '!r'.
+*/
+template negLookahead(alias r)
+{
+    ParseTree negLookahead(ParseTree p)
+    {
+        auto temp = r(p);
+        if (temp.successful)
+            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
+        else
+            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
+    }
+    
+    ParseTree negLookahead(string input)
+    {
+        return .negLookahead!(r)(ParseTree("",false,[],input));
+    }
+    
+    string negLookahead(GetName g)
+    {
+        return "negLookahead!(" ~ getName!(r)() ~ ")";
+    }
 }
 
 /**
@@ -1171,6 +1326,16 @@ template named(alias r, string name)
         result.name = name;
         return result;
     }
+    
+    ParseTree named(string input)
+    {
+        return .named!(r,name)(ParseTree("",false,[],input));
+    }
+    
+    string named(GetName g)
+    {
+        return name;
+    }
 }
 
 /**
@@ -1183,155 +1348,166 @@ template action(alias r, alias act)
     {
         return act(r(p));
     }
+    
+    ParseTree action(string input)
+    {
+        return .action!(r,act)(ParseTree("",false,[],input));
+    }
+    
+    string action(GetName g)
+    {
+        return "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
+    } 
 }
 
 /**
 Concatenates a ParseTree's matches as one match and discards its children. Equivalent to the expression '~r'.
 */
-ParseTree fuse(alias r)(ParseTree p)
+template fuse(alias r)
 {
-    p = r(p);
-    if(p.successful)
+    ParseTree fuse(ParseTree p)
     {
-        string fused;
-        foreach(match; p.matches)
-            fused ~= match;
-        p.matches = [fused];
-        p.children = null; // also discard children
+        p = r(p);
+        if(p.successful)
+        {
+            string fused;
+            foreach(match; p.matches)
+                fused ~= match;
+            p.matches = [fused];
+            p.children = null; // also discard children
+        }
+        return p;
     }
-    return p;
+
+    ParseTree fuse(string input)
+    {
+        return .fuse!(r)(ParseTree("",false,[],input));
+    }
+    
+    string fuse(GetName g)
+    {
+        return "fuse!(" ~ getName!(r)() ~ ")";
+    }
 }
 
 /**
 Calls 'r' on the input and then discards its children nodes.
 */
-ParseTree discardChildren(alias r)(ParseTree p)
+template discardChildren(alias r)
 {
-    p = r(p);
-    p.children = null;
-    return p;
+    ParseTree discardChildren(ParseTree p)
+    {
+        p = r(p);
+        p.children = null;
+        return p;
+    }
+
+    ParseTree discardChildren(string input)
+    {
+        return .discardChildren!(r)(ParseTree("",false,[],input));
+    }
+    
+    string discardChildren(GetName g)
+    {
+        return "discardChildren!(" ~ getName!(r)() ~ ")";
+    }
 }
 
 /**
 Calls 'r' on the input and then discards its matches.
 */
-ParseTree discardMatches(alias r)(ParseTree p)
+template discardMatches(alias r)
 {
-    p = r(p);
-    if (p.successful)
-        p.matches = null;
-    return p;
-}
-
-ParseTree leavesGetter(ParseTree p)
-{
-    ParseTree[] leaves(ParseTree pt)
+    ParseTree discardMatches(ParseTree p)
     {
-        ParseTree[] leavesList;
-        if (pt.children.length == 0)
-            return [pt];
-        else
-            foreach(child; pt.children)
-                leavesList ~= leaves(child);
-        return leavesList;
+        p = r(p);
+        if (p.successful)
+            p.matches = null;
+        return p;
+    }
+
+    ParseTree discardMatches(string input)
+    {
+        return .discardMatches!(r)(ParseTree("",false,[],input));
     }
     
-    p.children = leaves(p).dup;
-    return p;
-}
-
-template getLeaves(alias r)
-{
-    alias action!(r, leavesGetter) getLeaves;
-}
-
-ParseTree ruleFilter(string name)(ParseTree p)
-{
-    ParseTree[] filter(ParseTree pt)
+    string discardMatches(GetName g)
     {
-        ParseTree[] list;
-        if (pt.name == name)
-            return [pt];
-        else
-            foreach(child; pt.children)
-                list ~= filter(child);
-        return list;
+        return "discardMatches!(" ~ getName!(r)() ~ ")";
     }
-    
-    p.children = filter(p).dup;
-    return p;
-}
-
-template filterRule(alias r, string target)
-{
-    alias action!(r, ruleFilter!target) filterRule;
 }
 
 /**
 Calls 'r' on the input and then discard everything 'r' returned: no children, no match and index
 put at the end of the match. It's the low-level engine behind ':r'.
 */
-ParseTree discard(alias r)(ParseTree p)
+template discard(alias r)
 {
-    ParseTree result = r(p);
-    result.matches = null;
-    result.begin = result.end;
-    result.name = "discard";
-    return result;
+    ParseTree discard(ParseTree p)
+    {
+        ParseTree result = r(p);
+        result.matches = null;
+        result.begin = result.end;
+        result.name = "discard";
+        return result;
+    }
+
+    ParseTree discard(string input)
+    {
+        return .discard!(r)(ParseTree("",false,[],input));
+    }
+    
+    string discard(GetName g)
+    {
+        return "discard";
+    }
 }
 
 /**
 Calls 'r' on the input and then discards everything 'r' did, except its matches (so that
 they propagate upwards). Equivalent to ';r'.
 */
-ParseTree drop(alias r)(ParseTree p)
+template drop(alias r)
 {
-    ParseTree result = r(p);
-    result.name = "drop";
-    return result;    
-}
+    ParseTree drop(ParseTree p)
+    {
+        ParseTree result = r(p);
+        result.name = "drop";
+        return result;    
+    }
 
+    ParseTree discardChildren(string input)
+    {
+        return .drop!(r)(ParseTree("",false,[],input));
+    }
+    
+    string discardChildren(GetName g)
+    {
+        return "drop";
+    }
+}
 /**
 Makes 'r's result be kept when it would be discarded by the tree-decimation done by a grammar.
 Equivalent to '^r'.
 */
-ParseTree keep(alias r)(ParseTree p)
+template keep(alias r)
 {
-    auto result = r(p);
-    result.children = [result];
-    result.name = "keep";
-    return result;
-}
-
-/**
-Tries 'r' on the input. If it succeeds, the rule also succeeds, without consuming any input.
-If 'r' fails, then posLookahead!r also fails. Low-level implementation of '&r'.
-*/
-template posLookahead(alias r)
-{
-    ParseTree posLookahead(ParseTree p)
+    ParseTree keep(ParseTree p)
     {
-        auto temp = r(p);
-        if (temp.successful)
-            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, [], p.input, p.end, p.end);
-        else
-            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, temp.matches, p.input, p.end, p.end);
+        auto result = r(p);
+        result.children = [result];
+        result.name = "keep";
+        return result;
     }
-}
 
-/**
-Tries 'r' on the input. If it fails, the rule succeeds, without consuming any input.
-If 'r' succeeds, then negLookahead!r fails. Low-level implementation of '!r'.
-*/
-template negLookahead(alias r)
-{
-    ParseTree negLookahead(ParseTree p)
+    ParseTree keep(string input)
     {
-        auto temp = r(p);
-        if (temp.successful)
-            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
-        else
-            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
+        return .keep!(r)(ParseTree("",false,[],input));
+    }
+    
+    string keep(GetName g)
+    {
+        return "keep";
     }
 }
 
