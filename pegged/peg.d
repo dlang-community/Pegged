@@ -11,6 +11,7 @@ module pegged.peg;
 
 import std.conv;
 import std.range: equal;
+import std.string: strip;
 import std.typetuple;
 
 /**
@@ -36,13 +37,13 @@ struct ParseTree
         string result = name;
         
         string childrenString;
-        bool allChildSuccessful = true;
+        bool allChildrenSuccessful = true;
         
         foreach(i,child; children)
         {
             childrenString ~= tabs ~ " +-" ~ child.toString(tabs ~ ((i < children.length -1 ) ? " | " : "   "));
             if (!child.successful)
-                allChildSuccessful = false;
+                allChildrenSuccessful = false;
         }
         
         if (successful) 
@@ -51,7 +52,7 @@ struct ParseTree
         }
         else // some failure info is needed
         {
-            if (allChildSuccessful) // no one calculated the position yet
+            if (allChildrenSuccessful) // no one calculated the position yet
             {    
                 Position pos = position(this);
                 string left, right;
@@ -59,12 +60,14 @@ struct ParseTree
                 if (pos.index < 10)
                     left = input[0 .. pos.index];
                 else
-                    left = "..." ~ input[pos.index-10 .. pos.index];
+                    left = input[pos.index-10 .. pos.index];
+                left = strip(left);
                 
                 if (pos.index + 10 < input.length)
-                    right = input[pos.index .. pos.index + 10] ~ "...";
+                    right = input[pos.index .. pos.index + 10];
                 else
                     right = input[pos.index .. $];
+                right = strip(right);
                 
                 result ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
                        ~ (left.length > 0 ? "after \"" ~ left ~ "\" " : "")
