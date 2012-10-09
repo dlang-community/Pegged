@@ -20,7 +20,8 @@ void main()
             program <- decl* :eoi
             useDecl < "use" qualifiedIdentifier
             recDecl < "record" identifier "{" "}"
-            decl < useDecl/recDecl
+			classDecl < "class" identifier "{" "}"
+            decl < recDecl/useDecl/classDecl
     `));
 
     writeln(Test(`use foo.bar

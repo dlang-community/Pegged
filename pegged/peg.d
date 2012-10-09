@@ -891,10 +891,14 @@ template or(rules...) if (rules.length > 0)
         foreach(i,rule; rules)
             name ~= getName!(rule) ~ (i < rules.length -1 ? ", " : "");
         name ~= ")";
+		
+		// error-management
         ParseTree longestFail = ParseTree(name, false, [], p.input, p.end, 0);
         string[] errorStrings;
         string orErrorString;
-        foreach(i,r; rules)
+        
+		// Real 'or' loop
+		foreach(i,r; rules)
         {
             ParseTree temp = r(p);
             if (temp.successful)
@@ -906,18 +910,27 @@ template or(rules...) if (rules.length > 0)
             else
             {
                 if (temp.end >= longestFail.end)
-                    longestFail = temp;
-                
-                errorStrings ~= temp.matches;
+				{
+					if (temp.end == longestFail.end)
+						// Storing all errors when the parsed slices have the same size
+						errorStrings ~= temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"; 
+					else
+						// The new error went farther: flush all old error messages and keep the new one
+						errorStrings = [temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"];
+					longestFail = temp;
+				}
+				// Else, this error parsed less input than another one: we discard it.
             }
         }            
         
-        /* all subrules failed, we will take the longest match */
-        longestFail.children = [longestFail];
+        // All subrules failed, we will take the longest match as the result
+		// If more than one node failed at the same (farthest) position, we concatenate their error messages
         foreach(i,error; errorStrings)
             orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
-        longestFail.matches = [orErrorString];
+        longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
+		                    ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = name;
+		longestFail.begin = p.end;
         return longestFail;
     }
 
