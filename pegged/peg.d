@@ -1772,7 +1772,7 @@ template fuse(alias r)
             string fused;
             foreach(match; p.matches)
                 fused ~= match;
-            p.matches = [fused];
+            p.matches = (p.matches is null ? null : [fused]);
             p.children = null; // also discard children
         }
         return p;
@@ -1787,6 +1787,48 @@ template fuse(alias r)
     {
         return "fuse!(" ~ getName!(r)() ~ ")";
     }
+}
+
+unittest // 'fuse' unit test
+{
+    alias oneOrMore!(literal!("abc")) abcs;
+    
+    alias fuse!(abcs) f;
+    
+    assert(getName!(f) == `fuse!(oneOrMore!(literal!("abc")))`);
+    
+    ParseTree result = f("abcabcabc");
+    ParseTree reference = abcs("abcabcabc");
+    
+    assert(result.successful == reference.successful);
+    assert(result.successful);
+    assert(result.matches == ["abcabcabc"]);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children is null);
+    
+    // On failure
+    result = f("_abc");
+    reference = abcs("_abc");
+    
+    assert(result.successful == reference.successful);
+    assert(!result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    alias discard!(literal!("abc")) dabc;
+    alias fuse!(dabc) f2;
+    
+    result = f2("abcabc");
+    reference = dabc("abcabc");
+    
+    assert(result.successful);
+    assert(result.matches is null);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
 }
 
 /**
