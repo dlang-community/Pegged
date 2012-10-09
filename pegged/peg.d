@@ -1479,7 +1479,7 @@ template posLookahead(alias r)
         if (temp.successful)
             return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, [], p.input, p.end, p.end);
         else
-            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, temp.matches, p.input, p.end, p.end);
+            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, [temp.matches[$-1]], p.input, p.end, p.end);
     }    
     
     ParseTree posLookahead(string input)
@@ -1577,17 +1577,75 @@ template negLookahead(alias r)
     }
 }
 
+unittest // 'negLookahead' unit test
+{
+    alias literal!"a" a;
+    alias literal!"abc" abc;
+    
+    alias negLookahead!(a) a_;
+    alias negLookahead!(abc) abc_;
+    
+    assert(getName!(a_)() == `negLookahead!(literal!("a"))`);
+    assert(getName!(abc_)() == `negLookahead!(literal!("abc"))`);
+    
+    assert(a_("").successful);
+    assert(!a_("a").successful);
+    assert(!a_("aa").successful);
+    assert(a_("b").successful);
+    
+    ParseTree result = a_("a");
+    
+    assert(result.name == `negLookahead!(literal!("a"))`);
+    assert(!result.successful);
+    assert(result.matches == [`anything but "a"`]);
+    assert(result.begin == 0);
+    assert(result.end == 0);
+    assert(result.children.length == 0);
+    
+    result = a_("");
+    
+    assert(result.name == `negLookahead!(literal!("a"))`);
+    assert(result.successful);
+    assert(result.matches is null);
+    assert(result.begin == 0);
+    assert(result.end == 0);
+    assert(result.children.length == 0);
+    
+    assert(abc_("").successful);
+    assert(!abc_("abc").successful);
+    assert(!abc_("abcabc").successful);
+    assert(abc_("ab").successful);
+    
+    result = abc_("abcdef");
+    
+    assert(result.name == `negLookahead!(literal!("abc"))`);
+    assert(!result.successful);
+    assert(result.matches == [`anything but "abc"`]);
+    assert(result.begin == 0);
+    assert(result.end == 0);
+    assert(result.children.length == 0);
+    
+    result = abc_("def");
+    
+    assert(result.name == `negLookahead!(literal!("abc"))`);
+    assert(result.successful);
+    assert(result.matches is null);
+    assert(result.begin == 0);
+    assert(result.end == 0);
+    assert(result.children.length == 0);    
+}
+
 /**
 Internal helper template, to get a parse tree node with a name. For example, given:
 ----
-alias or!(literal!"abc", charRange!('0','9')) myRule;
+alias or!(literal!("abc"), charRange!('0','9')) myRule;
 ----
 
 myRule gives nodes named "or", since its the parent rule. If you want nodes to be named "myRule":
 
 ----
 alias named!(
-             or!(literal!"abc", charRange!('0','9')),
+             or!(literal!("abc"), charRange!('0','9')),
              "myRule"
             ) myRule;
 ----
@@ -1610,6 +1668,37 @@ template named(alias r, string name)
     {
         return name;
     }
+}
+
+unittest
+{
+    alias or!(literal!("abc"), charRange!('0','9')) rule;
+    alias named!(rule, "myRule") myRule;
+
+    assert(getName!(rule)() == `or!(literal!("abc"), charRange!('0','9'))`);
+    assert(getName!(myRule)() == "myRule");
+    
+    // Equality on success (except for the name)
+    ParseTree result = rule("abc0");
+    ParseTree myResult = myRule("abc0");
+    
+    assert(myResult.successful == result.successful);
+    assert(myResult.name == "myRule");
+    assert(myResult.matches == result.matches);
+    assert(myResult.begin == result.begin);
+    assert(myResult.end == result.end);
+    assert(myResult.children == result.children);
+    
+    // Equality on failure (except for the name)
+    result = rule("_abc");
+    myResult = myRule("_abc");
+    
+    assert(myResult.successful == result.successful);
+    assert(myResult.name == "myRule");
+    assert(myResult.matches == result.matches);
+    assert(myResult.begin == result.begin);
+    assert(myResult.end == result.end);
+    assert(myResult.children == result.children);
 }
 
 /**
