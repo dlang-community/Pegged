@@ -1302,6 +1302,73 @@ template oneOrMore(alias r)
         return "oneOrMore!(" ~ getName!(r)() ~ ")";
     }
 }
+
+unittest // 'oneOrMore' unit test
+{
+    alias literal!"a" a;
+    alias literal!"abc" abc;
+    alias charRange!('a','z') az;
+    
+    alias oneOrMore!(a) as;
+    alias oneOrMore!(abc) abcs;
+    alias oneOrMore!(az) azs;
+    
+    assert(getName!(as)() == `oneOrMore!(literal!("a"))`);
+    assert(getName!(abcs)() == `oneOrMore!(literal!("abc"))`);
+    assert(getName!(azs)() == `oneOrMore!(charRange!('a','z'))`);
+    
+    assert(!as("").successful);
+    assert(as("a").successful);
+    assert(as("aa").successful);
+    assert(as("aaa").successful);
+    assert(as("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").successful);
+    assert(!as("b").successful);
+    
+    ParseTree result = as("aaa");
+    
+    assert(result.name == `oneOrMore!(literal!("a"))`);
+    assert(result.successful);
+    assert(result.matches == ["a","a","a"]);
+    assert(result.begin == 0);
+    assert(result.end == 3);
+    assert(result.children.length == 3);
+    assert(result.children == [ a("aaa"), a(a("aaa")), a(a(a("aaa")))]);
+    
+    assert(!abcs("").successful);
+    assert(abcs("abc").successful);
+    assert(abcs("abcabc").successful);
+    assert(abcs("abcabcabc").successful);
+    assert(abcs("abcabcabcabcabcabcabcabcabcabcabcabcabcabcabc").successful);
+    assert(!abcs("ab").successful);
+    
+    result = abcs("abcabcabc");
+    
+    assert(result.name == `oneOrMore!(literal!("abc"))`);
+    assert(result.successful);
+    assert(result.matches == ["abc","abc","abc"]);
+    assert(result.begin == 0);
+    assert(result.end == 3*3);
+    assert(result.children.length == 3);
+    assert(result.children == [ abc("abcabcabc"), abc(abc("abcabcabc")), abc(abc(abc("abcabcabc")))]);
+    
+    assert(!azs("").successful);
+    assert(azs("a").successful);
+    assert(azs("abc").successful);
+    assert(azs("abcdefghijklmnoqrstuvwxyz").successful);
+    assert(azs("abcdefghijklmnoqrstuvwxyz   1234567890").successful);
+    assert(!azs(".").successful);
+    
+    result = azs("abc");
+    
+    assert(result.name == `oneOrMore!(charRange!('a','z'))`);
+    assert(result.successful);
+    assert(result.matches == ["a","b","c"]);
+    assert(result.begin == 0);
+    assert(result.end == 3);
+    assert(result.children.length == 3);
+    assert(result.children == [ az("abc"), az(az("abc")), az(az(az("abc")))]);
+}
+
 /**
 Given a subrule 'r', represents the expression 'r?'. It tries to match 'r' and if this matches
 successfully, it returns this match. If 'r' failed, 'r?' is still a success, but without any child nor match.
@@ -1338,6 +1405,8 @@ template option(alias r)
         return "option!(" ~ getName!(r)() ~ ")";
     }
 }
+
+
 /**
 Tries 'r' on the input. If it succeeds, the rule also succeeds, without consuming any input.
 If 'r' fails, then posLookahead!r also fails. Low-level implementation of '&r'.
