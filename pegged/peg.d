@@ -1406,6 +1406,69 @@ template option(alias r)
     }
 }
 
+unittest // 'option' unit test
+{
+    alias literal!"a" a;
+    alias literal!"abc" abc;
+    alias charRange!('a','z') az;
+    
+    alias option!(a) a_;
+    alias option!(abc) abc_;
+    alias option!(az) az_;
+    
+    assert(getName!(a_)() == `option!(literal!("a"))`);
+    assert(getName!(abc_)() == `option!(literal!("abc"))`);
+    assert(getName!(az_)() == `option!(charRange!('a','z'))`);
+    
+    assert(a_("").successful);
+    assert(a_("a").successful);
+    assert(a_("aa").successful);
+    assert(a_("b").successful);
+    
+    ParseTree result = a_("a");
+    
+    assert(result.name == `option!(literal!("a"))`);
+    assert(result.successful);
+    assert(result.matches == ["a"]);
+    assert(result.begin == 0);
+    assert(result.end == 1);
+    assert(result.children.length == 1);
+    assert(result.children == [ a("a")]);
+    
+    result = a_("");
+    
+    assert(result.name == `option!(literal!("a"))`);
+    assert(result.successful);
+    assert(result.matches is null);
+    assert(result.begin == 0);
+    assert(result.end == 0);
+    assert(result.children.length == 0);    
+    
+    
+    assert(abc_("").successful);
+    assert(abc_("abc").successful);
+    assert(abc_("abcabc").successful);
+    assert(abc_("ab").successful);
+    
+    result = abc_("abcdef");
+    
+    assert(result.name == `option!(literal!("abc"))`);
+    assert(result.successful);
+    assert(result.matches == ["abc"]);
+    assert(result.begin == 0);
+    assert(result.end == 3);
+    assert(result.children.length == 1);
+    assert(result.children == [ abc("abcdef")]);
+    
+    result = abc_("def");
+    
+    assert(result.name == `option!(literal!("abc"))`);
+    assert(result.successful);
+    assert(result.matches is null);
+    assert(result.begin == 0);
+    assert(result.end == 0);
+    assert(result.children.length == 0);
+}
 
 /**
 Tries 'r' on the input. If it succeeds, the rule also succeeds, without consuming any input.
