@@ -1670,7 +1670,7 @@ template named(alias r, string name)
     }
 }
 
-unittest
+unittest // 'named' unit test
 {
     alias or!(literal!("abc"), charRange!('0','9')) rule;
     alias named!(rule, "myRule") myRule;
@@ -1721,6 +1721,42 @@ template action(alias r, alias act)
     {
         return "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
     } 
+}
+
+unittest // 'action' unit test
+{
+    ParseTree foo(ParseTree p)
+    {
+        p.matches ~= p.matches; // doubling matches
+        return p;
+    }
+    
+    alias literal!("abc") abc;
+    
+    alias action!(abc, foo) abcfoo;
+    
+    assert(getName!(abcfoo) == `action!(literal!("abc"), foo)`);
+    
+    ParseTree result = abcfoo("abc");
+    ParseTree reference = abc("abc");
+    
+    assert(result.successful == reference.successful);
+    assert(result.successful);
+    assert(result.matches == reference.matches ~ reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    // On failure
+    result = abcfoo("_abc");
+    reference = abc("_abc");
+    
+    assert(result.successful == reference.successful);
+    assert(!result.successful);
+    assert(result.matches == reference.matches ~ reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
 }
 
 /**
