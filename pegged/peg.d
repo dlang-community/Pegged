@@ -788,11 +788,14 @@ unittest // 'and' unit test
     alias and!(abc,de,f) abcdef;
     alias and!(eps, abc, eps, de, eps, f, eps) withEps;
     
+    assert(getName!(abcAnd)() == `and!(literal!("abc"))`);
+    assert(getName!(abcde)()  == `and!(literal!("abc"), literal!("de"))`);
+    assert(getName!(abcdef)() == `and!(literal!("abc"), literal!("de"), literal!("f"))`);
+    
     ParseTree input = ParseTree("",false,[], "abcdefghi");
     
     ParseTree result = abcAnd(input);
     
-    //assert(result.name == `and!(literal!("abc"))`, "and name test.");
     assert(result.successful, "and!('abc') parses 'abcdefghi'");
     assert(result.matches == ["abc"], "and!('abc') matches 'abc' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+3, "and!('abc') advances the index by 'abc' size (3).");
@@ -800,7 +803,6 @@ unittest // 'and' unit test
     
     result = abcde(input);
 
-    //assert(result.name == `and!(literal!("abc"), literal!("de"))`, "and name test.");
     assert(result.successful, "and!('abc','de') parses 'abcdefghi'");
     assert(result.matches == ["abc","de"], "and!('abc','de') matches 'abc' and 'de' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+5, "and!('abc','de') advances the index by 3+2 positions.");
@@ -809,7 +811,6 @@ unittest // 'and' unit test
     
     result = abcdef(input);
 
-    //assert(result.name == `and!(literal!("abc"), literal!("de"), literal!("f"))`, "and name test.");
     assert(result.successful, "and!('abc','de','f') parses 'abcdefghi'");
     assert(result.matches == ["abc","de","f"], "and!('abc','de','f') matches 'abcdef' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+6, "and!('abc','de','f') advances the index by 3+2+1 positions.");
@@ -958,6 +959,9 @@ unittest // 'or' unit test
     alias or!(ab) abOr; 
     alias or!(ab,cd) abOrcd;
     
+    assert(getName!(ab)() == "charRange!('a','b')");
+    assert(getName!(cd)() == "charRange!('c','d')");
+    
     ParseTree input = ParseTree("",false,[], "abcdefghi");
     
     ParseTree result = abOr(input);
@@ -994,7 +998,8 @@ unittest // 'or' unit test
     
     assert(!result.successful, "or!([a-b],[c-d]) fails on '_abcdefghi'");
     assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
-    assert(result.matches == ["a char between 'a' and 'b' or a char between 'c' and 'd'"], "or!([a-b],[c-d]) error message.");
+    assert(result.matches == [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
+                             , "or!([a-b],[c-d]) error message.");
     
     input.input = "";
     
@@ -1002,8 +1007,8 @@ unittest // 'or' unit test
     
     assert(!result.successful, "or!([a-b],[c-d]) fails on and empty input");
     assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
-    assert(result.matches == ["a char between 'a' and 'b' or a char between 'c' and 'd'"], "or!([a-b],[c-d]) error message.");
-    
+    assert(result.matches == [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
+                             , "or!([a-b],[c-d]) error message.");
 }
 
 /**
@@ -1048,6 +1053,8 @@ template keywords(kws...) if (kws.length > 0)
 unittest
 {
     alias keywords!("abc","de","f") kw;
+    
+    assert(getName!(kw)() == `keywords!("abc", "de", "f")`);
     
     ParseTree input = ParseTree("",false,[],"abcd");
     
@@ -1154,6 +1161,71 @@ template zeroOrMore(alias r)
     {
         return "zeroOrMore!(" ~ getName!(r)() ~ ")";
     }
+}
+
+unittest // 'zeroOrMore' unit test
+{
+    alias literal!"a" a;
+    alias literal!"abc" abc;
+    alias charRange!('a','z') az;
+    
+    alias zeroOrMore!(a) as;
+    alias zeroOrMore!(abc) abcs;
+    alias zeroOrMore!(az) azs;
+    
+    assert(getName!(as)() == `zeroOrMore!(literal!("a"))`);
+    assert(getName!(abcs)() == `zeroOrMore!(literal!("abc"))`);
+    assert(getName!(azs)() == `zeroOrMore!(charRange!('a','z'))`);
+    
+    assert(as("").successful);
+    assert(as("a").successful);
+    assert(as("aa").successful);
+    assert(as("aaa").successful);
+    assert(as("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").successful);
+    assert(as("b").successful);
+    
+    ParseTree result = as("aaa");
+    
+    assert(result.name == `zeroOrMore!(literal!("a"))`);
+    assert(result.successful);
+    assert(result.matches == ["a","a","a"]);
+    assert(result.begin == 0);
+    assert(result.end == 3);
+    assert(result.children.length == 3);
+    assert(result.children == [ a("aaa"), a(a("aaa")), a(a(a("aaa")))]);
+    
+    assert(abcs("").successful);
+    assert(abcs("abc").successful);
+    assert(abcs("abcabc").successful);
+    assert(abcs("abcabcabc").successful);
+    assert(abcs("abcabcabcabcabcabcabcabcabcabcabcabcabcabcabc").successful);
+    assert(abcs("ab").successful);
+    
+    result = abcs("abcabcabc");
+    
+    assert(result.name == `zeroOrMore!(literal!("abc"))`);
+    assert(result.successful);
+    assert(result.matches == ["abc","abc","abc"]);
+    assert(result.begin == 0);
+    assert(result.end == 3*3);
+    assert(result.children.length == 3);
+    assert(result.children == [ abc("abcabcabc"), abc(abc("abcabcabc")), abc(abc(abc("abcabcabc")))]);
+    
+    assert(azs("").successful);
+    assert(azs("a").successful);
+    assert(azs("abc").successful);
+    assert(azs("abcdefghijklmnoqrstuvwxyz").successful);
+    assert(azs("abcdefghijklmnoqrstuvwxyz   1234567890").successful);
+    
+    result = azs("abc");
+    
+    assert(result.name == `zeroOrMore!(charRange!('a','z'))`);
+    assert(result.successful);
+    assert(result.matches == ["a","b","c"]);
+    assert(result.begin == 0);
+    assert(result.end == 3);
+    assert(result.children.length == 3);
+    assert(result.children == [ az("abc"), az(az("abc")), az(az(az("abc")))]);
 }
 
 /**
