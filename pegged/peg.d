@@ -2167,24 +2167,96 @@ with a space-consuming rule, given as the first template parameter.
 alias and!(literal!"abc", literal!"def") rule1; // "abc" "def", equivalent to "abcdef"
 alias spaceAnd!(spacing, literal!"abc", literal!"def") rule2; // "abc" "def", but with spaces in-between.
 
-auto input1 = ParseTree("",false,[], "abcdef");
-auto input2 = ParseTree("",false,[], "abc       
+string input1 = "abcdef";
+string input2 = "  abc       
 
-def"); // with spaces and end of line markers.
+def  "; // with spaces and end of line markers.
 
 assert(rule1(input1).successful); // OK
 assert(!rule1(input2).successful); // NOK, couldn't find "def" after "abc"
 
 assert(rule2(input1).successful); // OK
 assert(rule2(input2).successful); // Still OK
-assert(rule2(input2).matches == ["abc","def"]);
+assert(rule2(input2).matches == ["abc","def"]);// rule2 finds the literals among the spaces
 ----
 
 As you can see on the previous line, spaceAnd discards the matched spaces and returns matches only for the 'real' subrules.
+
+Note: by using a non-space rule as the first template argument, 
+you can use spaceAnd as a generic 'find these patterns, possibly separated by this pattern' rule.
+
+For example, using digits as separators:
+----
+alias spaceAnd!(digit, literal!"abc", litera!"def") rule3;
+
+ParseTree result = rule3("123abc45def67890");
+assert(rule3.successful);
+assert(rule3.matches == ["abc", "def"]);
+assert(rule3.children.length == 2);
+
+assert(rule3.begin == 0;)
+assert(rule3.end == "123abc45def67890".length);
+----
 */
 template spaceAnd(alias sp, rules...)
 {
     alias and!(discard!(zeroOrMore!sp), staticMap!(AddSpace!(zeroOrMore!sp), rules)) spaceAnd;
+}
+
+unittest // 'spaceAnd' unit test
+{
+    alias literal!"a" a;
+    alias literal!"b" b;
+        
+    //Basic use
+    alias and!(a,b) ab;
+    alias spaceAnd!(spacing, a, b) a_b;
+    
+    ParseTree reference = ab("ab");
+    ParseTree result = a_b("ab");
+    
+    assert(reference.successful);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    reference = ab("   a  b  ");
+    result = a_b(  "   a  b  ");
+    
+    assert(!reference.successful);
+    assert(result.successful);
+    assert(result.matches == ["a","b"]);
+    assert(result.begin == 0);
+    assert(result.end == "   a  b  ".length);
+    assert(result.children.length == 2);
+    
+    reference = ab("ac");
+    result = a_b("ac");
+    
+    assert(!reference.successful);
+    assert(!result.successful);
+    
+    reference = ab("   a  c   ");
+    result = a_b("   a  c   ");
+    
+    assert(!reference.successful);
+    assert(!result.successful);
+    
+    // With another separator than spaces
+    alias spaceAnd!(digit, a, b) a0b;
+    
+    assert(a0b("ab").successful);
+    assert(!a0b("  a b  ").successful);
+    
+    result = a0b("012a34b567");
+    
+    assert(result.successful);
+    assert(result.matches == ["a", "b"]);
+    assert(result.begin == 0);
+    assert(result.end == "012a34b567".length);
+    assert(result.children.length == 2);
 }
 
 /// Mixin to simplify a parse tree inside a grammar
