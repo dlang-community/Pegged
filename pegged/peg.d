@@ -1802,6 +1802,7 @@ unittest // 'fuse' unit test
     
     assert(result.successful == reference.successful);
     assert(result.successful);
+    assert(reference.matches == ["abc", "abc", "abc"]);
     assert(result.matches == ["abcabcabc"]);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
@@ -1926,7 +1927,7 @@ unittest // 'discard' unit test
     assert(result.children is null);
     
     reference = abcs("abcabcabc");
-    result =dabcs("abcabcabc");
+    result = dabcs("abcabcabc");
     
     assert(result.successful == reference.successful);
     assert(result.successful);
@@ -1938,7 +1939,7 @@ unittest // 'discard' unit test
     
     // On failure
     reference = abcs("");
-    result =dabcs("");
+    result = dabcs("");
     
     assert(result.successful == reference.successful);
     assert(!result.successful);
@@ -2006,7 +2007,7 @@ unittest // 'drop' unit test
     assert(result.children is null);
     
     reference = abcs("abcabcabc");
-    result =dabcs("abcabcabc");
+    result = dabcs("abcabcabc");
     
     assert(result.successful == reference.successful);
     assert(result.successful);
@@ -2018,7 +2019,7 @@ unittest // 'drop' unit test
     
     // On failure
     reference = abcs("");
-    result =dabcs("");
+    result = dabcs("");
     
     assert(result.successful == reference.successful);
     assert(!result.successful);
@@ -2066,6 +2067,48 @@ template keep(alias r)
     {
         return "keep";
     }
+}
+
+unittest // 'keep' unit test
+{
+    // Grammar mimicry
+    struct KeepTest
+    {
+        static bool isRule(string s)
+        {
+            if (s == "A" || s == "KA")
+                return true;
+            else
+                return false;
+        }
+        
+        mixin decimateTree;
+    
+        // Equivalent to A <- 'a' 'b'
+        static ParseTree A(string s)
+        {
+            return decimateTree(named!(and!(literal!"a", literal!"b"), "A")(s));
+        }
+        
+        // Here we use keep to protect 'b'
+        // Equivalent to KA <- 'a' ^'b'
+        static ParseTree KA(string s)
+        {
+            return decimateTree(named!(and!(literal!"a", keep!(literal!"b")), "KA")(s));
+        }
+    }
+    
+    ParseTree reference = KeepTest.A("abc");
+    ParseTree result = KeepTest.KA("abc");
+    
+    assert(result.successful == reference.successful);
+    assert(result.matches == reference.matches);
+    assert(result.matches == ["a","b"]);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(reference.children.length == 0);
+    assert(result.children.length == 1);
+    assert(result.children == [literal!("b")(literal!("a")("abc"))], "'b' node was kept.");
 }
 
 /* pre-defined rules */
