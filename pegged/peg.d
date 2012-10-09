@@ -1887,12 +1887,12 @@ template discard(alias r)
     ParseTree discard(ParseTree p)
     {
         ParseTree result = r(p);
+        result.name = "discard";
+        result.begin = result.end;
+        result.children = null;
         if (result.successful)
-        {
-            result.matches = null;
-            result.begin = result.end;
-            result.name = "discard";
-        }
+            result.matches = null;//to keep error messages, if any
+
         return result;
     }
 
@@ -1905,6 +1905,48 @@ template discard(alias r)
     {
         return "discard";
     }
+}
+
+unittest // 'discard' unit test
+{
+    alias literal!"abc" abc;
+    alias oneOrMore!abc abcs;
+    alias discard!(literal!("abc")) dabc;
+    alias discard!(oneOrMore!(literal!("abc")))dabcs;
+    
+    ParseTree reference = abc("abc");
+    ParseTree result =dabc("abc");
+    
+    assert(result.successful == reference.successful);
+    assert(result.successful);
+    assert(result.name =="discard");
+    assert(result.matches is null);
+    assert(result.begin == result.end);
+    assert(result.end == reference.end);
+    assert(result.children is null);
+    
+    reference = abcs("abcabcabc");
+    result =dabcs("abcabcabc");
+    
+    assert(result.successful == reference.successful);
+    assert(result.successful);
+    assert(result.name =="discard");
+    assert(result.matches is null);
+    assert(result.begin == result.end);
+    assert(result.end == reference.end);
+    assert(result.children is null);
+    
+    // On failure
+    reference = abcs("");
+    result =dabcs("");
+    
+    assert(result.successful == reference.successful);
+    assert(!result.successful);
+    assert(result.name == "discard");
+    assert(result.matches == [`"abc"`], "discard error message.");
+    assert(result.begin == result.end);
+    assert(result.end == reference.end);
+    assert(result.children is null);
 }
 
 /**
