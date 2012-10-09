@@ -1947,6 +1947,17 @@ unittest // 'discard' unit test
     assert(result.begin == result.end);
     assert(result.end == reference.end);
     assert(result.children is null);
+    
+    // Action on 'and'
+    alias and!(abc,dabc,abc) discardMiddle;
+    
+    result = discardMiddle("abcabcabc");
+    assert(result.successful);
+    assert(result.matches == ["abc", "abc"]);
+    assert(result.begin == 0);
+    assert(result.end == 3*3);
+    assert(result.children.length == 2);
+    assert(result.children == [abc("abcabcabc"), abc(abc(abc("abcabcabc")))]);
 }
 
 /**
@@ -1958,21 +1969,77 @@ template drop(alias r)
     ParseTree drop(ParseTree p)
     {
         ParseTree result = r(p);
+        result.begin = result.end;
+        result.children = null;
         if (result.successful)
             result.name = "drop";
         return result;    
     }
 
-    ParseTree discardChildren(string input)
+    ParseTree drop(string input)
     {
         return .drop!(r)(ParseTree("",false,[],input));
     }
     
-    string discardChildren(GetName g)
+    string drop(GetName g)
     {
         return "drop";
     }
 }
+
+unittest // 'drop' unit test
+{
+    alias literal!"abc" abc;
+    alias oneOrMore!abc abcs;
+    alias drop!(literal!("abc")) dabc;
+    alias drop!(oneOrMore!(literal!("abc")))dabcs;
+    
+    ParseTree reference = abc("abc");
+    ParseTree result =dabc("abc");
+    
+    assert(result.successful == reference.successful);
+    assert(result.successful);
+    assert(result.name == "drop");
+    assert(result.matches == reference.matches);
+    assert(result.begin == result.end);
+    assert(result.end == reference.end);
+    assert(result.children is null);
+    
+    reference = abcs("abcabcabc");
+    result =dabcs("abcabcabc");
+    
+    assert(result.successful == reference.successful);
+    assert(result.successful);
+    assert(result.name == "drop");
+    assert(result.matches == reference.matches);
+    assert(result.begin == result.end);
+    assert(result.end == reference.end);
+    assert(result.children is null);
+    
+    // On failure
+    reference = abcs("");
+    result =dabcs("");
+    
+    assert(result.successful == reference.successful);
+    assert(!result.successful);
+    assert(result.name == reference.name);
+    assert(result.matches == [`"abc"`], "'drop' error message.");
+    assert(result.begin == result.end);
+    assert(result.end == reference.end);
+    assert(result.children is null);
+
+    // Action on 'and'
+    alias and!(abc,dabc,abc) discardMiddle;
+    
+    result = discardMiddle("abcabcabc");
+    assert(result.successful);
+    assert(result.matches == ["abc", "abc", "abc"], "3 matches.");
+    assert(result.begin == 0);
+    assert(result.end == 3*3);
+    assert(result.children.length == 2, "but only 2 children.");
+    assert(result.children == [abc("abcabcabc"), abc(abc(abc("abcabcabc")))]);
+}
+
 /**
 Makes 'r's result be kept when it would be discarded by the tree-decimation done by a grammar.
 Equivalent to '^r'.
