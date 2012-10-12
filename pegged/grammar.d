@@ -474,6 +474,9 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
             case "Pegged.DROP":
                 result = "pegged.peg.drop!(";
                 break;
+            case "Pegged.PROPAGATE":
+                result = "pegged.peg.propagate!(";
+                break;
             case "Pegged.OPTION":
                 result = "pegged.peg.option!(";
                 break;

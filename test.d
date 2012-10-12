@@ -16,17 +16,15 @@ import pegged.grammar;
 void main()
 {
     mixin(grammar(`
-    Test:
-            program <- decl* :eoi
-            useDecl < "use" qualifiedIdentifier
-            recDecl < "record" identifier "{" "}"
-			classDecl < "class" identifier "{" "}"
-            decl < recDecl/useDecl/classDecl
+Test:
+    A <- B %C D
+    B <- 'b'
+    C <-  E F
+    D <- 'd'
+    E <- 'e'
+    F <- 'f'
     `));
-
-    writeln(Test(`use foo.bar
-
-                    rec foo {
-                    }`));
+    
+    writeln(Test("befd"));
 
 }

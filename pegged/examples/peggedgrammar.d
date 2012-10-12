@@ -11,7 +11,7 @@ Grammar      <- Spacing GrammarName Definition+ :eoi
 Definition   <- LhsName Arrow Expression
 Expression   <- Sequence (:OR Sequence)*
 Sequence     <- Prefix+
-Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP)* Suffix
+Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
 Primary      <- !(LhsName Arrow) 
                 ( RhsName 
@@ -65,6 +65,7 @@ FUSE         <- '~' Spacing
 DISCARD      <- ':' Spacing
 KEEP         <- '^' Spacing
 DROP         <- ';' Spacing
+PROPAGATE    <- '%' Spacing
 OPTION       <- '?' Spacing
 ZEROORMORE   <- '*' Spacing
 ONEORMORE    <- '+' Spacing
