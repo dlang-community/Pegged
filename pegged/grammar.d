@@ -74,7 +74,17 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
     ParseTree defAsParseTree = Pegged(definition);
     
     if (!defAsParseTree.successful)
-        return "static assert(false, `" ~ defAsParseTree.toString() ~ "`);";
+    {
+        ParseTree failedChild(ParseTree p)
+        {
+            foreach(child;p.children)
+                if (!child.successful)
+                    return failedChild(child);
+            return p;
+        }
+        string result = "static assert(false, `" ~ failedChild(defAsParseTree).toString("") ~ "`);";
+        return result;
+    }
     
 
     string generateCode(ParseTree p)
@@ -575,3 +585,38 @@ mixin template expected()
         }
     }
 }
+
+unittest // 'grammar' unit test: low-level functionalities
+{
+    mixin(grammar(`
+    Test1:
+        Rule1 <- 'a'
+        Rule2 <- 'b'
+    `));
+    
+    assert(is(Test1 == struct), "A struct name Test1 was created.");
+    assert(is(typeof(Test1("a"))), "Test1 is callable with a string arg");
+    assert(__traits(hasMember, Test1, "Rule1"), "Test1 has a member named Rule1.");
+    assert(__traits(hasMember, Test1, "Rule2"), "Test1 has a member named Rule2.");
+    assert(is(typeof(Test1.Rule1("a"))), "Test1.Rule1 is callable with a string arg");
+    assert(is(typeof(Test1.Rule2("a"))), "Test1.Rule2 is callable with a string arg");
+    
+    assert(__traits(hasMember, Test1, "decimateTree"), "Test1 has a member named decimateTree.");
+    assert(__traits(hasMember, Test1, "name"), "Test1 has a member named name.");
+    assert(__traits(hasMember, Test1, "isRule"), "Test1 has a member named isRule.");
+}
+
+unittest // 'grammar' unit test: PEG syntax
+{
+    mixin(grammar(`
+    Terminals:
+        Literal1 <- "abc"
+        Literal2 <- 'abc'
+        EmptyLiteral1 <- ""
+        EmptyLiteral2 <- ''
+    `));
+}
+
+
+// TODO: PEG extensions
+// TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
