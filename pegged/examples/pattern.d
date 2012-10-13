@@ -39,20 +39,27 @@ import pegged.grammar;
 
 mixin(grammar(`
 Pattern:
-    Choice     <  Sequence ('/' Sequence)* eoi
-    Sequence   <  Primary+
-    Primary    <  (Aggregate / Array / Identifier / Literal / REST / ANY) Name?
+    Global     <  Choice :eoi
+    Choice     <  Sequence (:'/' Sequence)*
+    Sequence   <  Primary (:',' Primary)*
+    Primary    <  (Aggregate / Range / Identifier / Literal / REST / ANY) Name?
+    
     Name       <  identifier
-    Aggregate  <  (Identifier / ANY) '{' (Primary (',' Primary)*)? '}'
-    Array      <  '[' (Primary (',' Primary)*)? ']'
+    Aggregate  <  (Identifier / ANY) (Tuple / Record)
+    Tuple      <  '{' (Choice (:',' Choice)*)? '}'
+    Record     <  '{' Field (','Field)* '}'
+    Field      <  Identifier :'=' Choice
+    Range      <  '[' (Choice (:',' Choice)*)? ']'
     Identifier <  identifier
-    Literal    <  Number / Char / String
+    Literal    <  Number / Char / String/ Bool
     Number     <~ Digit+ ('.' Digit*)?
     Digit      <  [0-9]
-    Char       <~ quote . quote
+    Char       <~ quote . quote # TODO: adding escape chars and Unicode chars
     String     <~ doublequote (!doublequote .)* doublequote
-    REST       <  "..." Spacing
-    ANY        <  "." Spacing
+    Bool       <  "true" / "false"
+
+    REST       <  "..."
+    ANY        <  "."
     Spacing    <: spacing
 `));
 
