@@ -1276,6 +1276,7 @@ template oneOrMore(alias r)
         if (!temp.successful)
         {
             result.matches = temp.matches;
+            result.children = [temp];
             result.end = temp.end;
         }
         else
@@ -2271,7 +2272,7 @@ mixin template decimateTree()
             ParseTree[] result;
             foreach(child; pt.children)
             {
-                if (isRule(child.name)) // keep nodes that belongs to the current grammar
+                if (isRule(child.name) || !child.successful) // keep nodes that belongs to the current grammar
                 {
                     child.children = filterChildren(child);
                     result ~= child;

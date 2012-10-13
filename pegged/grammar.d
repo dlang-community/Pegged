@@ -75,14 +75,8 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
     
     if (!defAsParseTree.successful)
     {
-        ParseTree failedChild(ParseTree p)
-        {
-            foreach(child;p.children)
-                if (!child.successful)
-                    return failedChild(child);
-            return p;
-        }
-        string result = "static assert(false, `" ~ failedChild(defAsParseTree).toString("") ~ "`);";
+        // To work around a strange bug with ParseTree printing at compile time
+        string result = "static assert(false, `" ~ defAsParseTree.toString("") ~ "`);";
         return result;
     }
     
@@ -614,7 +608,18 @@ unittest // 'grammar' unit test: PEG syntax
         Literal2 <- 'abc'
         EmptyLiteral1 <- ""
         EmptyLiteral2 <- ''
+        Any <- .
+        Eps <- eps
     `));
+    
+    assert(Terminals.Literal1("abc").successful, "Standard terminal test. Double quote syntax.");
+    assert(Terminals.Literal2("abc").successful, "Standard terminal test. Simple quote syntax.");
+    assert(Terminals.EmptyLiteral1("").successful , "Standard terminal test. Double quote syntax.");
+    assert(Terminals.EmptyLiteral2("").successful, "Standard terminal test. Simple quote syntax.");
+    assert(Terminals.Any("_").successful, "Any terminal ('.') test.");
+    assert(Terminals.Eps("abc").successful, "Eps test.");
+    
+   
 }
 
 
