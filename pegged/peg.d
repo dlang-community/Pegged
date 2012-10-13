@@ -87,7 +87,7 @@ struct ParseTree
     /**
     Comparing ParseTree's.
     */
-    bool opEquals(const ParseTree p) const
+    bool opEquals(const ref ParseTree p) const
     {
         return ( p.name       == name
               && p.successful == successful
