@@ -150,7 +150,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
 
                 result ~= "    mixin decimateTree;\n";
 
-                / Introspection information
+                // Introspection information
                 /+ Disabling it for now (2012/09/16), splicing definition into code causes problems.
                 result ~= "    import pegged.introspection;\n"
                         ~ "    static RuleInfo[string] info;\n"

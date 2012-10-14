@@ -2191,8 +2191,7 @@ alias and!(oneOrMore!(or!(alpha, Alpha, literal!("_"))), zeroOrMore!(or!(digit, 
 alias named!(fuse!(discardChildren!ident),
              "identifier")  identifier; /// [a-zA-Z_][a-zA-Z_0-9]*, the basic C-family identifier
 alias named!(fuse!(discardChildren!(and!(identifier, zeroOrMore!(and!(literal!".", identifier))))),
-             "qualifiedIdentifier") qualifiedIdentifier; /// qualified identifiers (identifers separated by dots:
-abd.def.g).
+             "qualifiedIdentifier") qualifiedIdentifier; /// qualified identifiers (ids separated by dots: abd.def.g).
 
 alias named!(literal!"/", "slash") slash; /// A parser recognizing '/'
 alias named!(literal!"\\", "backslash") backslash; /// A parser recognizing '\'
