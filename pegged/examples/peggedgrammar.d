@@ -52,7 +52,7 @@ Char         <~ backslash ( quote
                           / 'U' hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit
                           )
               / . # or anything else
-Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / SPACEARROW
+Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / SPACEARROW
 LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing

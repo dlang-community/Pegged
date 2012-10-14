@@ -51,7 +51,7 @@ Char         <~ backslash ( quote
                           / 'U' hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit
                           )
               / . # or anything else
-Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / SPACEARROW
+Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / SPACEARROW
 LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing
@@ -470,12 +470,12 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Arrow(TParseTree p)
     {
-        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, SPACEARROW), name ~ `.`~ `Arrow`)(p);
+        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, SPACEARROW), name ~ `.`~ `Arrow`)(p);
     }
 
     static TParseTree Arrow(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, SPACEARROW), name ~ `.`~ `Arrow`)(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, SPACEARROW), name ~ `.`~ `Arrow`)(TParseTree("", false,[], s));
     }
 
     static string Arrow(GetName g)

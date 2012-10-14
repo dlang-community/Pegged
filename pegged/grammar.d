@@ -814,23 +814,29 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
 {
     mixin(grammar(`
     Arrows:
-        Rule1 <- "abc" "def"  # Standard arrow
-        Rule2 <  "abc" "def"  # Space arrow
+        Rule1 <- ABC DEF # Standard arrow
+        Rule2 <  ABC DEF  # Space arrow
         
-        Rule3 <- "abc"*
-        Rule4 <~ "abc"*       # Fuse arrow
+        Rule3 <- ABC*
+        Rule4 <~ ABC*       # Fuse arrow
         
-        Rule5 <: "abc" "def"  # Discard arrow
-        Rule6 <^ "abc" "def"  # Keep arrow    
+        Rule5 <: ABC DEF  # Discard arrow
+        Rule6 <^ ABC DEF  # Keep arrow
+        Rule7 <; ABC DEF  # Drop arrow
+        
+        ABC <- "abc"
+        DEF <- "def"
     `));
     
-    // Comparing <- "abc" "def" and < "abc" "def"
+    // Comparing <- ABC DEF and < ABC DEF
     ParseTree result = Arrows.decimateTree(Arrows.Rule1("abcdef"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end ==6);
     assert(result.matches == ["abc", "def"]);
-    assert(result.children.length == 0);
+    assert(result.children.length == 2);
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.DEF");
     
     result = Arrows.decimateTree(Arrows.Rule1("abc  def"));
     assert(!result.successful);
@@ -840,47 +846,61 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     assert(result.begin == 0);
     assert(result.end == 6);
     assert(result.matches == ["abc", "def"]);
-    assert(result.children.length == 0);
+    assert(result.children.length == 2);
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.DEF");
     
     result = Arrows.decimateTree(Arrows.Rule2("abc  def  "));
     assert(result.successful, "space arrows consume spaces.");
     assert(result.begin == 0);
     assert(result.end == "abc  def  ".length, "The entire input was parsed.");
     assert(result.matches == ["abc", "def"]);
-    assert(result.children.length == 0);
+    assert(result.children.length == 2);
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.DEF");
     
-    //Comparing <- "abc"* and <~ "abc"*
+    //Comparing <- ABC* and <~ ABC*
     result = Arrows.decimateTree(Arrows.Rule3("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcabcabc".length, "The entire input was parsed.");
     assert(result.matches == ["abc", "abc", "abc"]);
-    assert(result.children.length == 0);
+    assert(result.children.length == 3, "With the * operator, all children are kept.");
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.ABC");
+    assert(result.children[2].name == "Arrows.ABC");
     
     result = Arrows.decimateTree(Arrows.Rule4("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcabcabc".length, "The entire input was parsed.");
-    assert(result.matches == ["abcabcabc"]);
-    assert(result.children.length == 0);
+    assert(result.matches == ["abcabcabc"], "Matches are fused.");
+    assert(result.children.length == 0, "The <~ arrow cuts children.");
     
-    // Comparing <- "abc" "def" and <: "abc" "def"
+    // Comparing <- ABC DEF and <: ABC DEF
     result = Arrows.decimateTree(Arrows.Rule5("abcdef"));
     assert(result.successful);
     assert(result.begin == "abcdef".length);
     assert(result.end == "abcdef".length, "The entire input was parsed.");
-    assert(result.matches is null);
-    assert(result.children.length == 0);
+    assert(result.matches is null, "No match with the discard arrow.");
+    assert(result.children.length == 0, "No children with the discard arrow.");
     
-    // Comparing <- "abc" "def" and <^ "abc" "def"
+    // Comparing <- ABC DEF and <^ ABC DEF
     //But <^ is not very useful anyways. It does not distribute ^ among the subrules.
     result = Arrows.decimateTree(Arrows.Rule6("abcdef"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input was parsed.");
     assert(result.matches == ["abc", "def"]);
-    assert(result.children.length == 0, "<^ does not distribute the 'keep' (^) operator among the subrules.");
+    assert(result.children.length == 2);
     
+    // Comparing <- ABC DEF and <; ABC DEF
+    result = Arrows.decimateTree(Arrows.Rule7("abcdef"));
+    assert(result.successful);
+    assert(result.begin == "abcdef".length);
+    assert(result.end == "abcdef".length, "The entire input was parsed.");
+    assert(result.matches == ["abc", "def"], "The drop arrow keeps the matches.");
+    assert(result.children.length == 0, "The drop arrow drops the children.");
 }
 
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
