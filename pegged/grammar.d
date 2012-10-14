@@ -125,7 +125,8 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 string paramRuleHandler(string target)
                 {
                     return "if (s.length >= "~to!string(shortGrammarName.length + target.length + 3)
-                          ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""~shortGrammarName ~ "." ~ target~"!(\") return true;";
+                          ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""
+                          ~shortGrammarName ~ "." ~ target~"!(\") return true;";
                 }
 
                 foreach(i,def; definitions)
@@ -149,16 +150,16 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
 
                 result ~= "    mixin decimateTree;\n";
 
-				// Introspection information
-				/+ Disabling it for now (2012/09/16), splicing definition into code causes problems.
+                / Introspection information
+                /+ Disabling it for now (2012/09/16), splicing definition into code causes problems.
                 result ~= "    import pegged.introspection;\n"
-				        ~ "    static RuleInfo[string] info;\n"
-						~ "    static string[] ruleNames;\n"
-						~ "    static this()\n"
-						~ "    {\n"
-						~ "         info = ruleInfo(q{" ~ definition ~"});\n"
-						~ "         ruleNames = info.keys;\n"
-						~ "    }\n";
+                        ~ "    static RuleInfo[string] info;\n"
+                        ~ "    static string[] ruleNames;\n"
+                        ~ "    static this()\n"
+                        ~ "    {\n"
+                        ~ "         info = ruleInfo(q{" ~ definition ~"});\n"
+                        ~ "         ruleNames = info.keys;\n"
+                        ~ "    }\n";
                 +/
                 // If the grammar provides a Spacing rule, then this will be used.
                 // else, the predefined 'spacing' rule is used.
@@ -196,7 +197,8 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 }
                 result ~= "    }\n" // end of grammar struct definition
                         ~ "}\n\n" // end of template definition
-                        ~ "alias Generic" ~ shortGrammarName ~ "!(ParseTree)." ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
+                        ~ "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
+                        ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
                 break;
             case "Pegged.Definition":
                 // children[0]: name
@@ -258,7 +260,8 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                             ~ "    {\n";
                     innerName ~= "`" ~ shortName ~ "!(` ~ ";
                     foreach(i,param; p.children[0].children[1].children)
-                        innerName ~= "getName!("~ param.children[0].matches[0] ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ `, ` ~ " : ")");
+                        innerName ~= "getName!("~ param.children[0].matches[0]
+                                    ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ `, ` ~ " : ")");
                     innerName ~= " ~ `)`";
                 }
                 else
@@ -373,12 +376,13 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 {
                     result = "pegged.peg.and!(";
                     foreach(seq; p.children)
-					{
+                    {
                         string elementCode = generateCode(seq);
-						if (elementCode.length > 6 && elementCode[0..5] == "pegged.peg.and!(") // flattening inner sequences
-							elementCode = elementCode[5..$-1]; // cutting 'and!(' and ')'
-						result ~= elementCode ~ ", ";
-					}
+                        // flattening inner sequences
+                        if (elementCode.length > 6 && elementCode[0..5] == "pegged.peg.and!(")
+                            elementCode = elementCode[5..$-1]; // cutting 'and!(' and ')'
+                        result ~= elementCode ~ ", ";
+                    }
                     result = result[0..$-2] ~ ")";
                 }
                 else // One child -> just a Suffix, no need for a and!( , )
@@ -454,7 +458,10 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
             case "Pegged.CharRange":
                 if (p.children.length > 1) // a-b range
                 {
-                    result = "pegged.peg.charRange!('" ~ generateCode(p.children[0]) ~ "', '" ~ generateCode(p.children[1]) ~ "')";
+                    result = "pegged.peg.charRange!('" ~ generateCode(p.children[0])
+                                                       ~ "', '"
+                                                       ~ generateCode(p.children[1])
+                                                       ~ "')";
                 }
                 else // lone char
                 {

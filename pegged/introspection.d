@@ -42,10 +42,10 @@ Struct holding the introspection info on a rule.
 */
 struct RuleInfo
 {
-	Recursive recursion; /// Is the rule recursive?
-	LeftRecursive leftRecursion; /// Is the rule left-recursive?
-	NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
-	InfiniteLoop infiniteLoop; /// Can the rule loop while indefinitely, while consuming nothing?
+    Recursive recursion; /// Is the rule recursive?
+    LeftRecursive leftRecursion; /// Is the rule left-recursive?
+    NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
+    InfiniteLoop infiniteLoop; /// Can the rule loop while indefinitely, while consuming nothing?
 }
 
 /**
@@ -60,316 +60,318 @@ This kind of potential problem can be detected statically and should be transmit
 */
 RuleInfo[string] ruleInfo(string grammar)
 {
-	RuleInfo[string] result;
-	ParseTree[string] rules;
+    RuleInfo[string] result;
+    ParseTree[string] rules;
 
-	/**
-	Returns the call graph of a grammar: the list of rules directly called by each rule of the grammar.
-	The graph is represented as a bool[string][string] associative array, the string holding
-	the rules names. graph["ruleName"] contains all rules called by ruleName, as a set (a bool[string] AA).
+    /**
+    Returns the call graph of a grammar: the list of rules directly called by each rule of the grammar.
+    The graph is represented as a bool[string][string] associative array, the string holding
+    the rules names. graph["ruleName"] contains all rules called by ruleName, as a set (a bool[string] AA).
 
-	graph.keys thus gives the grammar's rules names.
+    graph.keys thus gives the grammar's rules names.
 
-	If a rule calls itself, its own name will appear in the called set. If a rule calls an external rule, it will
-	also appear in the call graph when the rule has a name: hence, calls to predefined rules like 'identifier' or
-	'digit' will appear, but not a call to '[0-9]+', considered here as an anonymous rule.
-	*/
-	bool[string][string] callGraph(ParseTree p)
-	{
-		bool[string] findIdentifiers(ParseTree p)
-		{
-			bool[string] idList;
-			if (p.name == "Pegged.Identifier")
-				idList[p.matches[0]] = true;
-			else
-				foreach(child; p.children)
-					foreach(name; findIdentifiers(child).keys)
-						idList[name] = true;
+    If a rule calls itself, its own name will appear in the called set. If a rule calls an external rule, it will
+    also appear in the call graph when the rule has a name: hence, calls to predefined rules like 'identifier' or
+    'digit' will appear, but not a call to '[0-9]+', considered here as an anonymous rule.
+    */
+    bool[string][string] callGraph(ParseTree p)
+    {
+        bool[string] findIdentifiers(ParseTree p)
+        {
+            bool[string] idList;
+            if (p.name == "Pegged.Identifier")
+                idList[p.matches[0]] = true;
+            else
+                foreach(child; p.children)
+                    foreach(name; findIdentifiers(child).keys)
+                        idList[name] = true;
 
-			return idList;
-		}
+            return idList;
+        }
 
-		bool[string][string] graph;
+        bool[string][string] graph;
 
-		foreach(definition; p.children)
-			if (definition.name == "Pegged.Definition")
-			{
-				auto ids = findIdentifiers(definition.children[2]);
-				graph[definition.matches[0]] = ids;
-				foreach(id, _; ids) // getting possible external calls
-					if (id !in graph)
-						graph[id] = (bool[string]).init;
-			}
+        foreach(definition; p.children)
+            if (definition.name == "Pegged.Definition")
+            {
+                auto ids = findIdentifiers(definition.children[2]);
+                graph[definition.matches[0]] = ids;
+                foreach(id, _; ids) // getting possible external calls
+                    if (id !in graph)
+                        graph[id] = (bool[string]).init;
+            }
 
-		return graph;
-	}
+        return graph;
+    }
 
-	/**
-	The transitive closure of a call graph.
-	It will propagate the calls to find all rules called by a given rule,
-	directly (already in the call graph) or indirectly (through another rule).
-	*/
-	bool[string][string] closure(bool[string][string] graph)
-	{
-		bool[string][string] path;
-		foreach(rule, children; graph) // deep-dupping, to avoid children aliasing
-			path[rule] = children.dup;
+    /**
+    The transitive closure of a call graph.
+    It will propagate the calls to find all rules called by a given rule,
+    directly (already in the call graph) or indirectly (through another rule).
+    */
+    bool[string][string] closure(bool[string][string] graph)
+    {
+        bool[string][string] path;
+        foreach(rule, children; graph) // deep-dupping, to avoid children aliasing
+            path[rule] = children.dup;
 
-		bool changed = true;
+        bool changed = true;
 
-		while(changed)
-		{
-			changed = false;
-			foreach(rule1; graph.keys)
-				foreach(rule2; graph.keys)
-					if (rule2 in path[rule1])
-						foreach(rule3; graph.keys)
-							if (rule3 in path[rule2] && rule3 !in path[rule1])
-							{
-								path[rule1][rule3] = true;
-								changed = true;
-							}
-		}
+        while(changed)
+        {
+            changed = false;
+            foreach(rule1; graph.keys)
+                foreach(rule2; graph.keys)
+                    if (rule2 in path[rule1])
+                        foreach(rule3; graph.keys)
+                            if (rule3 in path[rule2] && rule3 !in path[rule1])
+                            {
+                                path[rule1][rule3] = true;
+                                changed = true;
+                            }
+        }
 
-		return path;
-	}
+        return path;
+    }
 
-	Recursive[string] recursions(bool[string][string] graph)
-	{
-		bool[string][string] path = closure(graph);
+    Recursive[string] recursions(bool[string][string] graph)
+    {
+        bool[string][string] path = closure(graph);
 
-		Recursive[string] result;
-		foreach(rule, children; path)
-		{
-			result[rule] = Recursive.no;
-			if (rule in children)
-			{
-				if (rule in graph[rule])
-					result[rule] = Recursive.direct;
-				else
-					result[rule] = Recursive.indirect;
-			}
-		}
+        Recursive[string] result;
+        foreach(rule, children; path)
+        {
+            result[rule] = Recursive.no;
+            if (rule in children)
+            {
+                if (rule in graph[rule])
+                    result[rule] = Recursive.direct;
+                else
+                    result[rule] = Recursive.indirect;
+            }
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	NullMatch nullMatching(ParseTree p)
-	{
-		switch (p.name)
-		{
-			case "Pegged.Expression": // choice expressions null-match whenever one of their components can null-match
-				foreach(seq; p.children)
-				{
-					auto nm = nullMatching(seq);
-					if (nm == NullMatch.yes)
-						return NullMatch.yes;
-					if (nm == NullMatch.indeterminate)
-						return NullMatch.indeterminate;
-				}
-				return NullMatch.no;
-			case "Pegged.Sequence": // sequence expressions can null-match when all their components can null-match
-				foreach(seq; p.children)
-				{
-					auto nm = nullMatching(seq);
-					if (nm == NullMatch.indeterminate)
-						return NullMatch.indeterminate;
-					if (nm == NullMatch.no)
-						return NullMatch.no;
-				}
-				return NullMatch.yes;
-			case "Pegged.Prefix":
-				foreach(pref; p.children[0..$-1])
-					if (pref.name == "Pegged.POS" || pref.name == "Pegged.NEG")
-						return NullMatch.yes;
-				return nullMatching(p.children[$-1]);
-			case "Pegged.Suffix":
-				foreach(pref; p.children[1..$])
-					if (pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.OPTION")
-						return NullMatch.yes;
-				return nullMatching(p.children[0]);
-			case "Pegged.Primary":
-				return nullMatching(p.children[0]);
-			case "Pegged.RhsName":
-				if (p.matches[0] in result)
-					return result[p.matches[0]].nullMatch;
-				else
-					return nullMatching(p.children[0]);
-			case "Pegged.Literal":
-				if (p.matches[0].length == 0) // Empty literal, '' or ""
-					return NullMatch.yes;
-				else
-					return NullMatch.no;
-			case "Pegged.CharClass":
-				return NullMatch.no;
-			case "Pegged.ANY":
-				return NullMatch.no;
-			case "eps":
-				return NullMatch.yes;
-			case "eoi":
-				return NullMatch.yes;
-			default:
-				return NullMatch.indeterminate;
-		}
-	}
+    NullMatch nullMatching(ParseTree p)
+    {
+        switch (p.name)
+        {
+            case "Pegged.Expression": // choice expressions null-match whenever one of their components can null-match
+                foreach(seq; p.children)
+                {
+                    auto nm = nullMatching(seq);
+                    if (nm == NullMatch.yes)
+                        return NullMatch.yes;
+                    if (nm == NullMatch.indeterminate)
+                        return NullMatch.indeterminate;
+                }
+                return NullMatch.no;
+            case "Pegged.Sequence": // sequence expressions can null-match when all their components can null-match
+                foreach(seq; p.children)
+                {
+                    auto nm = nullMatching(seq);
+                    if (nm == NullMatch.indeterminate)
+                        return NullMatch.indeterminate;
+                    if (nm == NullMatch.no)
+                        return NullMatch.no;
+                }
+                return NullMatch.yes;
+            case "Pegged.Prefix":
+                foreach(pref; p.children[0..$-1])
+                    if (pref.name == "Pegged.POS" || pref.name == "Pegged.NEG")
+                        return NullMatch.yes;
+                return nullMatching(p.children[$-1]);
+            case "Pegged.Suffix":
+                foreach(pref; p.children[1..$])
+                    if (pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.OPTION")
+                        return NullMatch.yes;
+                return nullMatching(p.children[0]);
+            case "Pegged.Primary":
+                return nullMatching(p.children[0]);
+            case "Pegged.RhsName":
+                if (p.matches[0] in result)
+                    return result[p.matches[0]].nullMatch;
+                else
+                    return nullMatching(p.children[0]);
+            case "Pegged.Literal":
+                if (p.matches[0].length == 0) // Empty literal, '' or ""
+                    return NullMatch.yes;
+                else
+                    return NullMatch.no;
+            case "Pegged.CharClass":
+                return NullMatch.no;
+            case "Pegged.ANY":
+                return NullMatch.no;
+            case "eps":
+                return NullMatch.yes;
+            case "eoi":
+                return NullMatch.yes;
+            default:
+                return NullMatch.indeterminate;
+        }
+    }
 
-	InfiniteLoop infiniteLooping(ParseTree p)
-	{
-		switch (p.name)
-		{
-			case "Pegged.Expression": // choice expressions loop whenever one of their components can loop
-				foreach(seq; p.children)
-				{
-					auto nm = infiniteLooping(seq);
-					if (nm == InfiniteLoop.yes)
-						return InfiniteLoop.yes;
-					if (nm == InfiniteLoop.indeterminate)
-						return InfiniteLoop.indeterminate;
-				}
-				return InfiniteLoop.no;
-			case "Pegged.Sequence": // sequence expressions can loop when one of their components can loop
-				foreach(seq; p.children)
-				{
-					auto nm = infiniteLooping(seq);
-					if (nm == InfiniteLoop.yes)
-						return InfiniteLoop.yes;
-					if (nm == InfiniteLoop.indeterminate)
-						return InfiniteLoop.indeterminate;
-				}
-				return InfiniteLoop.no;
-			case "Pegged.Prefix":
-				return infiniteLooping(p.children[$-1]);
-			case "Pegged.Suffix":
-				foreach(pref; p.children[1..$])
-					if ((  pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.ONEORMORE")
-					    && p.matches[0] in result
-						&& result[p.matches[0]].nullMatch == NullMatch.yes)
-						return InfiniteLoop.yes;
-				return infiniteLooping(p.children[0]);
-			case "Pegged.Primary":
-				return infiniteLooping(p.children[0]);
-			case "Pegged.RhsName":
-				if (p.matches[0] in result)
-					return result[p.matches[0]].infiniteLoop;
-				else
-					return infiniteLooping(p.children[0]);
-			case "Pegged.Literal":
-				return InfiniteLoop.no;
-			case "Pegged.CharClass":
-				return InfiniteLoop.no;
-			case "Pegged.ANY":
-				return InfiniteLoop.no;
-			case "eps":
-				return InfiniteLoop.no;
-			case "eoi":
-				return InfiniteLoop.no;
-			default:
-				return InfiniteLoop.indeterminate;
-		}
-	}
+    InfiniteLoop infiniteLooping(ParseTree p)
+    {
+        switch (p.name)
+        {
+            case "Pegged.Expression": // choice expressions loop whenever one of their components can loop
+                foreach(seq; p.children)
+                {
+                    auto nm = infiniteLooping(seq);
+                    if (nm == InfiniteLoop.yes)
+                        return InfiniteLoop.yes;
+                    if (nm == InfiniteLoop.indeterminate)
+                        return InfiniteLoop.indeterminate;
+                }
+                return InfiniteLoop.no;
+            case "Pegged.Sequence": // sequence expressions can loop when one of their components can loop
+                foreach(seq; p.children)
+                {
+                    auto nm = infiniteLooping(seq);
+                    if (nm == InfiniteLoop.yes)
+                        return InfiniteLoop.yes;
+                    if (nm == InfiniteLoop.indeterminate)
+                        return InfiniteLoop.indeterminate;
+                }
+                return InfiniteLoop.no;
+            case "Pegged.Prefix":
+                return infiniteLooping(p.children[$-1]);
+            case "Pegged.Suffix":
+                foreach(pref; p.children[1..$])
+                    if ((  pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.ONEORMORE")
+                        && p.matches[0] in result
+                        && result[p.matches[0]].nullMatch == NullMatch.yes)
+                        return InfiniteLoop.yes;
+                return infiniteLooping(p.children[0]);
+            case "Pegged.Primary":
+                return infiniteLooping(p.children[0]);
+            case "Pegged.RhsName":
+                if (p.matches[0] in result)
+                    return result[p.matches[0]].infiniteLoop;
+                else
+                    return infiniteLooping(p.children[0]);
+            case "Pegged.Literal":
+                return InfiniteLoop.no;
+            case "Pegged.CharClass":
+                return InfiniteLoop.no;
+            case "Pegged.ANY":
+                return InfiniteLoop.no;
+            case "eps":
+                return InfiniteLoop.no;
+            case "eoi":
+                return InfiniteLoop.no;
+            default:
+                return InfiniteLoop.indeterminate;
+        }
+    }
 
-	LeftRecursive leftRecursion(ParseTree p, string target)
-	{
-		switch (p.name)
-		{
-			case "Pegged.Expression": // Choices are left-recursive is any choice is left-recursive
-				foreach(seq; p.children)
-				{
-					auto lr = leftRecursion(seq, target);
-					if (lr != LeftRecursive.no)
-						return lr;
-				}
-				return LeftRecursive.no;
-			case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive or behind null-matching members
-				foreach(i, seq; p.children)
-				{
-					auto lr = leftRecursion(seq, target);
-					if (lr == LeftRecursive.direct)
-						return (i == 0 ? LeftRecursive.direct : LeftRecursive.hidden);
-					else if (lr == LeftRecursive.hidden || lr == LeftRecursive.indirect)
-						return lr;
-					else if (nullMatching(seq) == NullMatch.yes)
-						continue;
-					else
-						return LeftRecursive.no;
-				}
-				return LeftRecursive.no; // found only null-matching rules!
-			case "Pegged.Prefix":
-				return leftRecursion(p.children[$-1], target);
-			case "Pegged.Suffix":
-				return leftRecursion(p.children[0], target);
-			case "Pegged.Primary":
-				return leftRecursion(p.children[0], target);
-			case "Pegged.RhsName":
-				if (p.matches[0] == target) // ?? Or generateCode(p) ?
-					return LeftRecursive.direct;
-				else if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no))
+    LeftRecursive leftRecursion(ParseTree p, string target)
+    {
+        switch (p.name)
+        {
+            case "Pegged.Expression": // Choices are left-recursive is any choice is left-recursive
+                foreach(seq; p.children)
+                {
+                    auto lr = leftRecursion(seq, target);
+                    if (lr != LeftRecursive.no)
+                        return lr;
+                }
+                return LeftRecursive.no;
+            case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive
+                                    // or behind null-matching members
+                foreach(i, seq; p.children)
+                {
+                    auto lr = leftRecursion(seq, target);
+                    if (lr == LeftRecursive.direct)
+                        return (i == 0 ? LeftRecursive.direct : LeftRecursive.hidden);
+                    else if (lr == LeftRecursive.hidden || lr == LeftRecursive.indirect)
+                        return lr;
+                    else if (nullMatching(seq) == NullMatch.yes)
+                        continue;
+                    else
+                        return LeftRecursive.no;
+                }
+                return LeftRecursive.no; // found only null-matching rules!
+            case "Pegged.Prefix":
+                return leftRecursion(p.children[$-1], target);
+            case "Pegged.Suffix":
+                return leftRecursion(p.children[0], target);
+            case "Pegged.Primary":
+                return leftRecursion(p.children[0], target);
+            case "Pegged.RhsName":
+                if (p.matches[0] == target) // ?? Or generateCode(p) ?
+                    return LeftRecursive.direct;
+                else if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no))
                     return LeftRecursive.hidden;
                 else
                     return LeftRecursive.no;
-			case "Pegged.Literal":
-				return LeftRecursive.no;
-			case "Pegged.CharClass":
-				return LeftRecursive.no;
-			case "Pegged.ANY":
-				return LeftRecursive.no;
-			case "eps":
-				return LeftRecursive.no;
-			case "eoi":
-				return LeftRecursive.no;
-			default:
-				return LeftRecursive.no;
-		}
-	}
+            case "Pegged.Literal":
+                return LeftRecursive.no;
+            case "Pegged.CharClass":
+                return LeftRecursive.no;
+            case "Pegged.ANY":
+                return LeftRecursive.no;
+            case "eps":
+                return LeftRecursive.no;
+            case "eoi":
+                return LeftRecursive.no;
+            default:
+                return LeftRecursive.no;
+        }
+    }
 
-	ParseTree p = Pegged(grammar).children[0];
+    ParseTree p = Pegged(grammar).children[0];
     foreach(definition; p.children)
         if (definition.name == "Pegged.Definition")
-		{
+        {
             rules[definition.matches[0]] = definition.children[2];
-			result[definition.matches[0]] = RuleInfo(Recursive.no, LeftRecursive.no, NullMatch.indeterminate, InfiniteLoop.indeterminate);
-		}
+            result[definition.matches[0]] = RuleInfo(Recursive.no, LeftRecursive.no,
+                                                     NullMatch.indeterminate,InfiniteLoop.indeterminate);
+        }
 
-	auto rec = recursions(callGraph(p));
-	foreach(rule, recursionType; rec)
-		if (rule in result) // external rules are in rec, but not in result
-			result[rule].recursion = recursionType;
+    auto rec = recursions(callGraph(p));
+    foreach(rule, recursionType; rec)
+        if (rule in result) // external rules are in rec, but not in result
+            result[rule].recursion = recursionType;
 
-	foreach(name, tree; rules)
-	{
-		if (result[name].recursion != Recursive.no)
-		{
-			result[name].leftRecursion = leftRecursion(tree, name);
-		}
-	}
+    foreach(name, tree; rules)
+    {
+        if (result[name].recursion != Recursive.no)
+        {
+            result[name].leftRecursion = leftRecursion(tree, name);
+        }
+    }
 
-	bool changed = true;
+    bool changed = true;
 
-	while(changed) // while something new happened, the process is not over
-	{
-		changed = false;
-		foreach(name, tree; rules)
-			if (result[name].nullMatch == NullMatch.indeterminate) // not done yet
-			{
-				result [name].nullMatch = nullMatching(tree); // try to find if it's null-matching
-				if (result[name].nullMatch != NullMatch.indeterminate)
-					changed = true;
-			}
-	}
+    while(changed) // while something new happened, the process is not over
+    {
+        changed = false;
+        foreach(name, tree; rules)
+            if (result[name].nullMatch == NullMatch.indeterminate) // not done yet
+            {
+                result [name].nullMatch = nullMatching(tree); // try to find if it's null-matching
+                if (result[name].nullMatch != NullMatch.indeterminate)
+                    changed = true;
+            }
+    }
 
-	changed = true;
+    changed = true;
 
-	while(changed) // while something new happened, the process is not over
-	{
-		changed = false;
-		foreach(name, tree; rules)
-			if (result[name].infiniteLoop == InfiniteLoop.indeterminate) // not done yet
-			{
-				result [name].infiniteLoop = infiniteLooping(tree); // try to find if it's looping
-				if (result[name].infiniteLoop != InfiniteLoop.indeterminate)
-					changed = true;
-			}
-	}
+    while(changed) // while something new happened, the process is not over
+    {
+        changed = false;
+        foreach(name, tree; rules)
+            if (result[name].infiniteLoop == InfiniteLoop.indeterminate) // not done yet
+            {
+                result [name].infiniteLoop = infiniteLooping(tree); // try to find if it's looping
+                if (result[name].infiniteLoop != InfiniteLoop.indeterminate)
+                    changed = true;
+            }
+    }
 
     return result;
 }

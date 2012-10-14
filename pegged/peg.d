@@ -2,8 +2,9 @@
 This module contains the engine behind Pegged, the expression templates building blocks to create a top-down
 recursive-descent parser.
 
-The terminals and non-terminals described here are meant to be used inside a Pegged grammar. As such, they are a bit less
-user-friendly than what's output by pegged.grammar. For example they take a ParseTree as input, not a string.
+The terminals and non-terminals described here are meant to be used inside a Pegged grammar.
+As such, they are a bit less user-friendly than what's output by pegged.grammar.
+For example they take a ParseTree as input, not a string.
 
 See the /docs directory for the full documentation as markdown files.
 */
@@ -498,9 +499,11 @@ template charRange(char begin, char end) if (begin <= end)
     ParseTree charRange(ParseTree p)
     {
         if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
-            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
+            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", true,
+                             [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
         else
-            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", false, ["a char between '"~begin~"' and '"~end~"'"], p.input, p.end, p.end);
+            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", false,
+                             ["a char between '"~begin~"' and '"~end~"'"], p.input, p.end, p.end);
     }
 
     ParseTree charRange(string input)
@@ -688,7 +691,8 @@ will contain all its subrules matches, in order.
 
 ----
 alias and!(literal!"abc", charRange!('a','z')) rule; // abc followed by any letter between a and z.
-ParseTree input = ParseTree("",false,[],"abcd"); // low-level plumbing, the rules described here act on ParseTree's not strings.
+ParseTree input = ParseTree("",false,[],"abcd"); // low-level plumbing,
+                                                 // the rules described here act on ParseTree's not strings.
                                                  // It's equivalent to "abcd" as input
 auto result = rule(input);
 
@@ -813,15 +817,17 @@ unittest // 'and' unit test
     result = abcde(input);
 
     assert(result.successful, "and!('abc','de') parses 'abcdefghi'");
-    assert(result.matches == ["abc","de"], "and!('abc','de') matches 'abc' and 'de' at the beginning of 'abcdefghi'");
+    assert(result.matches == ["abc","de"],
+           "and!('abc','de') matches 'abc' and 'de' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+5, "and!('abc','de') advances the index by 3+2 positions.");
-    assert(result.children == [abc(input), de(abc(input))]
-            , "and!('abc','de') has two children, created by 'abc' and 'de'.");
+    assert(result.children == [abc(input), de(abc(input))],
+           "and!('abc','de') has two children, created by 'abc' and 'de'.");
 
     result = abcdef(input);
 
     assert(result.successful, "and!('abc','de','f') parses 'abcdefghi'");
-    assert(result.matches == ["abc","de","f"], "and!('abc','de','f') matches 'abcdef' at the beginning of 'abcdefghi'");
+    assert(result.matches == ["abc","de","f"],
+           "and!('abc','de','f') matches 'abcdef' at the beginning of 'abcdefghi'");
     assert(result.end == input.end+6, "and!('abc','de','f') advances the index by 3+2+1 positions.");
     assert(result.children == [abc(input), de(abc(input)), f(de(abc(input)))]
             , "and!('abc','de') has two children, created by 'abc' and 'de'.");
@@ -829,8 +835,10 @@ unittest // 'and' unit test
     result = withEps(input);
 
     assert(result.successful, "and!('','abc','','de','','f','') parses 'abcdefghi'");
-    assert(result.matches == ["","abc","","de","","f",""], "and!('','abc','','de','','f','') matches 'abcdef' at the beginning of 'abcdefghi'");
-    assert(result.end == input.end+6, "and!('','abc','','de','','f','') advances the index by 0+3+0+2+0+1+0 positions.");
+    assert(result.matches == ["","abc","","de","","f",""],
+           "and!('','abc','','de','','f','') matches 'abcdef' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+6,
+           "and!('','abc','','de','','f','') advances the index by 0+3+0+2+0+1+0 positions.");
 
     input.input = "bcdefghi";
 
@@ -875,7 +883,8 @@ input.input = "1abc";
 assert(!rule(input)).successful); // NOK, does not begin by abc nor by [a-z]
 ----
 
-If it fails, the last children will contain the failed node that matched furthest (longes match). That way, when printing, as sort of diagnostic is given:
+If it fails, the last children will contain the failed node that matched furthest (longes match).
+That way, when printing, as sort of diagnostic is given:
 
 ----
 alias or!(literal!"abc", and!(literal!"ab", charRange!('0','9'))) rule; // 'abc' or 'ab[0-9]'
@@ -920,25 +929,25 @@ template or(rules...) if (rules.length > 0)
             else
             {
                 if (temp.end >= longestFail.end)
-				{
-					if (temp.end == longestFail.end)
-						// Storing all errors when the parsed slices have the same size
-						errorStrings ~= temp.matches[$-1] ~ " (" ~ getName!(r)() ~")";
-					else
-						// The new error went farther: flush all old error messages and keep the new one
-						errorStrings = [temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"];
-					longestFail = temp;
-				}
-				// Else, this error parsed less input than another one: we discard it.
+                {
+                    if (temp.end == longestFail.end)
+                        // Storing all errors when the parsed slices have the same size
+                        errorStrings ~= temp.matches[$-1] ~ " (" ~ getName!(r)() ~")";
+                    else
+                        // The new error went farther: flush all old error messages and keep the new one
+                        errorStrings = [temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"];
+                    longestFail = temp;
+                }
+                // Else, this error parsed less input than another one: we discard it.
             }
         }
 
         // All subrules failed, we will take the longest match as the result
-		// If more than one node failed at the same (farthest) position, we concatenate their error messages
+        // If more than one node failed at the same (farthest) position, we concatenate their error messages
         foreach(i,error; errorStrings)
             orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
-		                    ~ [orErrorString];             // and replacing it by the new, concatenated one.
+                            ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = name;
 		longestFail.begin = p.end;
         return longestFail;
@@ -1007,7 +1016,8 @@ unittest // 'or' unit test
 
     assert(!result.successful, "or!([a-b],[c-d]) fails on '_abcdefghi'");
     assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
-    assert(result.matches == [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
+    assert(result.matches ==
+           [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
                              , "or!([a-b],[c-d]) error message.");
 
     input.input = "";
@@ -1016,7 +1026,8 @@ unittest // 'or' unit test
 
     assert(!result.successful, "or!([a-b],[c-d]) fails on and empty input");
     assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
-    assert(result.matches == [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
+    assert(result.matches ==
+    [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
                              , "or!([a-b],[c-d]) error message.");
 }
 
@@ -1036,7 +1047,10 @@ template keywords(kws...) if (kws.length > 0)
             string result;
             foreach(kw; keywords)
                 result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
-                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""~kw~"\") return ParseTree(`"~name~"`,true,[\""~kw~"\"],p.input,p.end,p.end+"~to!string(kw.length)~");\n";
+                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""
+                    ~kw~"\") return ParseTree(`"
+                    ~name~"`,true,[\""~kw~"\"],p.input,p.end,p.end+"
+                    ~to!string(kw.length)~");\n";
             result ~= "return ParseTree(`"~name~"`,false,[`one among ` ~ to!string([kws])],p.input,p.end,p.end);";
             return result;
         }
@@ -1400,9 +1414,11 @@ template option(alias r)
     {
         auto result = r(p);
         if (result.successful)
-            return ParseTree("option!(" ~ getName!(r) ~ ")", true, result.matches, result.input, result.begin, result.end, [result]);
+            return ParseTree("option!(" ~ getName!(r) ~ ")", true,
+                             result.matches, result.input, result.begin, result.end, [result]);
         else
-            return ParseTree("option!(" ~ getName!(r)~ ")", true, [], p.input, p.end, p.end, null);
+            return ParseTree("option!(" ~ getName!(r)~ ")", true,
+                             [], p.input, p.end, p.end, null);
     }
 
     ParseTree option(string input)
@@ -1487,9 +1503,11 @@ template posLookahead(alias r)
     {
         auto temp = r(p);
         if (temp.successful)
-            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, [], p.input, p.end, p.end);
+            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")",
+                             temp.successful, [], p.input, p.end, p.end);
         else
-            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")", temp.successful, [temp.matches[$-1]], p.input, p.end, p.end);
+            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")",
+                             temp.successful, [temp.matches[$-1]], p.input, p.end, p.end);
     }
 
     ParseTree posLookahead(string input)
@@ -1571,9 +1589,11 @@ template negLookahead(alias r)
     {
         auto temp = r(p);
         if (temp.successful)
-            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
+            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", false,
+                             ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
         else
-            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
+            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", true,
+                             [], p.input, p.end, p.end);
     }
 
     ParseTree negLookahead(string input)
@@ -2153,9 +2173,11 @@ alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOf
 alias endOfLine eol; /// helper alias.
 
 alias or!(literal!(" "), literal!("\t")) space; /// predefined space-recognizing parser (space or tabulation).
-alias named!(fuse!(discardChildren!(oneOrMore!space)), "spaces") spaces; /// aka '~space+'
+alias named!(fuse!(discardChildren!(oneOrMore!space)),
+             "spaces") spaces; /// aka '~space+'
 alias or!(space, endOfLine) blank; /// Any blank char (spaces or end of line).
-alias named!(fuse!(discardChildren!(oneOrMore!blank)), "spacing") spacing; /// The basic space-management parser: fuse one or more blank spaces.
+alias named!(fuse!(discardChildren!(oneOrMore!blank)),
+             "spacing") spacing; /// The basic space-management parser: fuse one or more blank spaces.
 
 alias charRange!('0', '9') digit; /// Decimal digit: [0-9]
 alias named!(fuse!(discardChildren!(oneOrMore!digit)), "digits") digits; /// [0-9]+
@@ -2166,8 +2188,11 @@ alias charRange!('a', 'z') alpha; /// [a-z]
 alias charRange!('A', 'Z') Alpha; /// [A-Z]
 
 alias and!(oneOrMore!(or!(alpha, Alpha, literal!("_"))), zeroOrMore!(or!(digit, alpha, Alpha, literal!("_")))) ident;
-alias named!(fuse!(discardChildren!ident), "identifier")  identifier; /// [a-zA-Z_][a-zA-Z_0-9]*, the basic C-family identifier
-alias named!(fuse!(discardChildren!(and!(identifier, zeroOrMore!(and!(literal!".", identifier))))), "qualifiedIdentifier") qualifiedIdentifier; /// qualified identifiers (identifers separated by dots: abd.def.g).
+alias named!(fuse!(discardChildren!ident),
+             "identifier")  identifier; /// [a-zA-Z_][a-zA-Z_0-9]*, the basic C-family identifier
+alias named!(fuse!(discardChildren!(and!(identifier, zeroOrMore!(and!(literal!".", identifier))))),
+             "qualifiedIdentifier") qualifiedIdentifier; /// qualified identifiers (identifers separated by dots:
+abd.def.g).
 
 alias named!(literal!"/", "slash") slash; /// A parser recognizing '/'
 alias named!(literal!"\\", "backslash") backslash; /// A parser recognizing '\'
@@ -2216,7 +2241,8 @@ assert(rule2(input2).successful); // Still OK
 assert(rule2(input2).matches == ["abc","def"]);// rule2 finds the literals among the spaces
 ----
 
-As you can see on the previous line, spaceAnd discards the matched spaces and returns matches only for the 'real' subrules.
+As you can see on the previous line, spaceAnd discards the matched spaces
+and returns matches only for the 'real' subrules.
 
 Note: by using a non-space rule as the first template argument,
 you can use spaceAnd as a generic 'find these patterns, possibly separated by this pattern' rule.
@@ -2312,7 +2338,8 @@ mixin template decimateTree()
                     child.children = filterChildren(child);
                     result ~= child;
                 }
-                else if (child.name == "keep") // 'keep' node are never discarded. They have only one child, the node to keep
+                else if (child.name == "keep") // 'keep' node are never discarded.
+                                               // They have only one child, the node to keep
                 {
                     result ~= child.children[0];
                 }
