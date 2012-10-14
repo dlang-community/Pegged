@@ -13,6 +13,11 @@ public import pegged.peg;
 public import pegged.introspection;
 import pegged.parser;
 
+version(unittest)
+{
+    import std.stdio;
+}
+
 /**
 Option enum to get internal memoization (parse results storing).
 */
@@ -602,6 +607,9 @@ unittest // 'grammar' unit test: low-level functionalities
 
 unittest // 'grammar' unit test: PEG syntax
 {
+    // Here we do not test pegged.peg.*, just the grammar transformations
+    // From a PEG to a Pegged expression template.
+    
     mixin(grammar(`
     Terminals:
         Literal1 <- "abc"
@@ -612,16 +620,81 @@ unittest // 'grammar' unit test: PEG syntax
         Eps <- eps
     `));
     
+    ParseTree result = Terminals("abc");
+    
+    assert(result.name == "Terminals", "Grammar name test.");
+    assert(result.children[0].name == "Terminals.Literal1", "First rule name test.");
+    assert(result.begin == 0);
+    assert(result.end == 3);
+    assert(result.matches == ["abc"]);
+    
+    ParseTree first = Terminals.decimateTree(Terminals.Literal1("abc"));
+    
+    assert(result.children[0] == first, "Invoking a grammar is like invoking its first rule.");
+    
     assert(Terminals.Literal1("abc").successful, "Standard terminal test. Double quote syntax.");
     assert(Terminals.Literal2("abc").successful, "Standard terminal test. Simple quote syntax.");
     assert(Terminals.EmptyLiteral1("").successful , "Standard terminal test. Double quote syntax.");
     assert(Terminals.EmptyLiteral2("").successful, "Standard terminal test. Simple quote syntax.");
-    assert(Terminals.Any("_").successful, "Any terminal ('.') test.");
+    assert(Terminals.Any("_").successful, "Any terminal ('.') test."); 
     assert(Terminals.Eps("abc").successful, "Eps test.");
     
-   
+    mixin(grammar(`
+    Structure:
+        Rule1 <- Rule2 / Rule3 / Rule4    # Or test
+        Rule2 <- Rule3 Rule4             # And test
+        Rule3 <- "abc"
+        Rule4 <- "def"
+    `));
+    
+    // Invoking Rule2 (and hence, Rule3 Rule4)
+    result = Structure("abcdef");
+    
+    assert(result.successful, "Calling Rule2.");
+    assert(result.name == "Structure", "Grammar name test.");
+    assert(result.children[0].name == "Structure.Rule1", "First rule name test");
+    assert(result.children[0].children.length == 1);
+    assert(result.children[0].children[0].name == "Structure.Rule2");
+    assert(result.children[0].children[0].children[0].name == "Structure.Rule3");
+    assert(result.children[0].children[0].children[1].name == "Structure.Rule4");
+    assert(result.matches == ["abc", "def"]);
+    assert(result.begin ==0);
+    assert(result.end == 6);
+    
+    // Invoking Rule3
+    result = Structure("abc");
+    
+    assert(result.successful, "Calling Rule3.");
+    assert(result.name == "Structure", "Grammar name test.");
+    assert(result.children[0].name == "Structure.Rule1", "First rule name test");
+    assert(result.children[0].children.length == 1);
+    assert(result.children[0].children[0].name == "Structure.Rule3");
+    assert(result.children[0].children[0].children.length == 0);
+    assert(result.matches == ["abc"]);
+    assert(result.begin ==0);
+    assert(result.end == 3);
+    
+    // Invoking Rule4
+    result = Structure("def");
+    
+    assert(result.successful, "Calling Rule2.");
+    assert(result.name == "Structure", "Grammar name test.");
+    assert(result.children[0].name == "Structure.Rule1", "First rule name test");
+    assert(result.children[0].children.length == 1);
+    assert(result.children[0].children[0].name == "Structure.Rule4");
+    assert(result.children[0].children[0].children.length == 0);
+    assert(result.matches == ["def"]);
+    assert(result.begin ==0);
+    assert(result.end == 3);
+    
+    // Failure
+    result =Structure("ab_def");
+    assert(!result.successful);
+    assert(result.name == "Structure", "Grammar name test.");
+    assert(result.begin == 0);
+    assert(result.end == 0);
 }
 
 
-// TODO: PEG extensions
+// TODO: PEG extensions (arrows, prefixes, suffixes, chars)
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
