@@ -650,10 +650,14 @@ unittest // 'grammar' unit test: PEG syntax
     
     mixin(grammar(`
     Structure:
-        Rule1 <- Rule2 / Rule3 / Rule4    # Or test
+        Rule1 <- Rule2 / Rule3 / Rule4   # Or test
         Rule2 <- Rule3 Rule4             # And test
         Rule3 <- "abc"
         Rule4 <- "def"
+        
+        Rule5 <- (Rule2 /  Rule4) Rule3  # parenthesis test
+        Rule6 <-  Rule2 /  Rule4  Rule3
+        Rule7 <-  Rule2 / (Rule4  Rule3)
     `));
     
     // Invoking Rule2 (and hence, Rule3 Rule4)
@@ -702,6 +706,45 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.name == "Structure", "Grammar name test.");
     assert(result.begin == 0);
     assert(result.end == 0);
+
+    // Parenthesis test
+    // Rule5 <- (Rule2 /  Rule4) Rule3
+    result = Structure.decimateTree(Structure.Rule5("abcdefabc"));
+    assert(result.successful);
+    assert(result.children.length == 2, "Two children: (Rule2 / Rule4), followed by Rule3.");
+    assert(result.children[0].name == "Structure.Rule2");
+    assert(result.children[1].name == "Structure.Rule3");
+
+    result = Structure.decimateTree(Structure.Rule5("defabc"));
+    assert(result.successful);
+    assert(result.children.length == 2, "Two children: (Rule2 / Rule4), followed by Rule3.");
+    assert(result.children[0].name == "Structure.Rule4");
+    assert(result.children[1].name == "Structure.Rule3");
+
+    // Rule6 <-  Rule2 /  Rule4  Rule3
+    result = Structure.decimateTree(Structure.Rule6("abcdef"));
+    assert(result.successful);
+    assert(result.children.length == 1, "One child: Rule2.");
+    assert(result.children[0].name == "Structure.Rule2");
+
+    result = Structure.decimateTree(Structure.Rule6("defabc"));
+    assert(result.successful);
+    assert(result.children.length == 2, "Two children: Rule4, followed by Rule3.");
+    assert(result.children[0].name == "Structure.Rule4");
+    assert(result.children[1].name == "Structure.Rule3");
+
+    // Rule7 <-  Rule2 / (Rule4  Rule3)
+    // That is, like Rule6
+    result = Structure.decimateTree(Structure.Rule7("abcdef"));
+    assert(result.successful);
+    assert(result.children.length == 1, "One child: Rule2.");
+    assert(result.children[0].name == "Structure.Rule2");
+
+    result = Structure.decimateTree(Structure.Rule7("defabc"));
+    assert(result.successful);
+    assert(result.children.length == 2, "Two children: Rule4, followed by Rule3.");
+    assert(result.children[0].name == "Structure.Rule4");
+    assert(result.children[1].name == "Structure.Rule3");
     
     // Prefixes and Suffixes
     mixin(grammar(`
@@ -816,7 +859,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.children == reference.children);
 }
 
-unittest // PEG extensions (arrows, prefixes, suffixes, chars)
+unittest // PEG extensions (arrows, prefixes, suffixes)
 {
     mixin(grammar(`
     Arrows:
@@ -1128,7 +1171,6 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     assert(result.children[1].name == "PrefixSuffix.ABC");
     assert(result.children[2].name == "PrefixSuffix.DEF");
     assert(result.children[2].name == "PrefixSuffix.DEF");
-    
 }
 
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
