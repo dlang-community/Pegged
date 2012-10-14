@@ -9,7 +9,7 @@ struct ParseTree
     string name;
     bool successful;
     string[] matches;
-    
+
     string input;
     size_t begin, end;
     ParseTree[] children;
@@ -39,7 +39,7 @@ Identifiers:
 "));
 
 auto input = "This is a sentence.";
-auto words = Ids(input); // 
+auto words = Ids(input); //
 
 assert(words.matches == ["This", "is", "a", "sentence"]);
 ```

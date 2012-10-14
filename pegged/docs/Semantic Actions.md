@@ -14,7 +14,7 @@ Rule3 <{ActionB} Expr2 / Expr3 (!Expr1 Expr2)*
 Rule4 <- (Expr1 {ActionA} Expr2 {ActionB}) {ActionC}
 ```
 
-The previous example demonstrates some ways an action can be declared: 
+The previous example demonstrates some ways an action can be declared:
 
 * for `Rule1`, `ActionA` is called once `Expr2` finish parsing and then `ActionB` for `Expr3`.
 
@@ -35,7 +35,7 @@ PT cutChildren(PT)(PT p)
 {
     p.children == null;
     return p;
-} 
+}
 ```
 
 `cutChildren` is a parse-tree-pruning action: it just nullifies the `children` array in the parse tree. Put it after expressions where you don't care for children expressions and just want to keep the captures.
@@ -60,7 +60,7 @@ Now, let's use actions to validate some XML nodes. First, a grammar:
 mixin(grammar(`
 XML:
     Node       <- OpeningTag (Node / Text)* ClosingTag
-    OpeningTag <- "<"  identifier ">" 
+    OpeningTag <- "<"  identifier ">"
     Closingtag <- "</" identifier ">"
     Text       <~ (!OpeningTag !ClosingTag .)*  # Any char, as long as it's not a tag
 `));
@@ -94,7 +94,7 @@ And, adding actions to the XML grammar:
 mixin(grammar(`
 XML:
     Node       <- OpeningTag{opening} (Node / Text)* ClosingTag{closing}
-    OpeningTag <- "<"  identifier ">" 
+    OpeningTag <- "<"  identifier ">"
     Closingtag <- "</" identifier ">"
     Text       <~ (!OpeningTag !ClosingTag .)*  # Any char, as long as it's not a tag
 `));
@@ -120,7 +120,7 @@ There is no real difference between
 Rule1 <- Expr1 {Action}
 ```
 
-and 
+and
 
 ```
 Rule1 <{Action} Expr1

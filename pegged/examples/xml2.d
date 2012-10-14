@@ -9,17 +9,17 @@ Document <- prolog element Misc*
 
 Char <- .
 
-# RestrictedChar <- [\u0001-\uD7FF\uE000-\uFFFD] 
+# RestrictedChar <- [\u0001-\uD7FF\uE000-\uFFFD]
 #\U00010000-\U0010FFFF]
 
 S <: ~('\x20' / '\x09' / '\x0D' / '\x0A')+
 
 NameStartChar <- ":" / [A-Z] / "_" / [a-z] / [\xC0-\xD6\xD8-\xF6]
 
-# \xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD] 
+# \xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]
 # \U00010000-\U000EFFFF]
 
-NameChar <- NameStartChar / "-" / "." / [0-9] / '\xB7' 
+NameChar <- NameStartChar / "-" / "." / [0-9] / '\xB7'
 # / [\u0300-\u036F] / [\x203F-\x2040]
 
 Name <~ NameStartChar (NameChar)*
@@ -36,12 +36,12 @@ EntityValue <- doublequote (!('%' / '&' / doublequote) Char / PEReference / Refe
 AttValue <- doublequote (!('%' / '&' / doublequote) Char / Reference)* doublequote
              / quote  (!('%' / '&' / quote) Char / Reference)* quote
 
-SystemLiteral <~ doublequote (!doublequote Char)* doublequote 
+SystemLiteral <~ doublequote (!doublequote Char)* doublequote
                / quote (!quote Char)* quote
-               
+
 PubidLiteral <~ doublequote PubidChar* doublequote
               / quote (!quote PubidChar)* quote
-              
+
 PubidChar <- [\x20\x0D\x0A] / [a-zA-Z0-9] / [-'()+,./:=?;!*#@$_%]
 
 CharData <~ (!('<' / '&' / "]]>" ) Char)*
@@ -86,7 +86,7 @@ extSubsetDecl <- (markupdecl / conditionalSect / DeclSep)*
 
 SDDecl <- S 'standalone' Eq ( doublequote ("yes"/"no") doublequote
                             / quote       ("yes"/"no") quote)
-                            
+
 element <- EmptyElemTag / STag content ETag
 
 STag <- "<" Name (S Attribute)* S? ">"
@@ -108,16 +108,16 @@ seq <-    '(' S? cp ( S? ',' S? cp )* S? ')'
 
 Mixed <- '(' S? "#PCDATA" (S? '|' S? Name)* S? ")*"
        / '(' S? "#PCDATA" S? ")"
-       
+
 AttlistDecl <- "<!ATTLIST" S Name AttDef* S? ">"
 AttDef <- S Name S AttType S DefaultDecl
 
 AttType <- StringType / TokenizedType / EnumeratedType
 StringType <- "CDATA"
-TokenizedType <- "IDREFS" / "IDREF" / "ID" 
+TokenizedType <- "IDREFS" / "IDREF" / "ID"
                / "ENTITIES" / "ENTITY"
                / "NMTOKENS" / "NMTOKEN"
-               
+
 EnumeratedType <- NotationType / Enumeration
 NotationType <- "NOTATION" S "(" S? Name (S? '|' S? Name)* S? ')'
 
@@ -125,7 +125,7 @@ Enumeration <- '(' S? Nmtoken (S? '|' S? Nmtoken)* S? ')'
 
 DefaultDecl <- "#REQUIRED" / "#IMPLIED"
              / (("#FIXED" S)? AttValue)
-             
+
 conditionalSect <- includeSect / ignoreSect
 
 includeSect <- "<![" S? "INCLUDE" S? "[" extSubsetDecl "]]>"
@@ -138,7 +138,7 @@ Ignore <- (!("<![" / "]]>") Char)*
 
 CharRef <- "&#"  [0-9]+       ";"
          / "&#x" [0-9a-fA-F]+ ";"
-         
+
 Reference <- EntityRef / CharRef
 
 EntityRef <- '&' Name ';'
@@ -166,7 +166,7 @@ extParsedEnt <- (TextDecl? content)
 EncodingDecl <- S "encoding" Eq ( doublequote EncName doublequote
                                 / quote EncName quote)
 EncName <~ [A-Za-z] ([A-Za-z0-9._] / '-')*
-                                
+
 NotationDecl <- "<!NOTATION" S Name S (ExternalID / PublicID) S? ">"
 PublicID <- "PUBLIC" S PubidLiteral
 
@@ -174,7 +174,7 @@ PublicID <- "PUBLIC" S PubidLiteral
 
 mixin(grammar(XMLgrammar));
 
-enum example1 = 
+enum example1 =
 `<?xml version="1.1" encoding="ISO-8859-1"?>
 <!-- Edited by XMLSpy® -->
 <CATALOG>
@@ -398,7 +398,7 @@ enum example2 =
       <genre>Computer</genre>
       <price>44.95</price>
       <publish_date>2000-10-01</publish_date>
-      <description>An in-depth look at creating applications 
+      <description>An in-depth look at creating applications
       with XML.</description>
    </book>
    <book id="bk102">
@@ -407,8 +407,8 @@ enum example2 =
       <genre>Fantasy</genre>
       <price>5.95</price>
       <publish_date>2000-12-16</publish_date>
-      <description>A former architect battles corporate zombies, 
-      an evil sorceress, and her own childhood to become queen 
+      <description>A former architect battles corporate zombies,
+      an evil sorceress, and her own childhood to become queen
       of the world.</description>
    </book>
    <book id="bk103">
@@ -417,8 +417,8 @@ enum example2 =
       <genre>Fantasy</genre>
       <price>5.95</price>
       <publish_date>2000-11-17</publish_date>
-      <description>After the collapse of a nanotechnology 
-      society in England, the young survivors lay the 
+      <description>After the collapse of a nanotechnology
+      society in England, the young survivors lay the
       foundation for a new society.</description>
    </book>
    <book id="bk104">
@@ -427,9 +427,9 @@ enum example2 =
       <genre>Fantasy</genre>
       <price>5.95</price>
       <publish_date>2001-03-10</publish_date>
-      <description>In post-apocalypse England, the mysterious 
-      agent known only as Oberon helps to create a new life 
-      for the inhabitants of London. Sequel to Maeve 
+      <description>In post-apocalypse England, the mysterious
+      agent known only as Oberon helps to create a new life
+      for the inhabitants of London. Sequel to Maeve
       Ascendant.</description>
    </book>
    <book id="bk105">
@@ -438,8 +438,8 @@ enum example2 =
       <genre>Fantasy</genre>
       <price>5.95</price>
       <publish_date>2001-09-10</publish_date>
-      <description>The two daughters of Maeve, half-sisters, 
-      battle one another for control of England. Sequel to 
+      <description>The two daughters of Maeve, half-sisters,
+      battle one another for control of England. Sequel to
       Oberon's Legacy.</description>
    </book>
    <book id="bk106">
@@ -448,7 +448,7 @@ enum example2 =
       <genre>Romance</genre>
       <price>4.95</price>
       <publish_date>2000-09-02</publish_date>
-      <description>When Carla meets Paul at an ornithology 
+      <description>When Carla meets Paul at an ornithology
       conference, tempers fly as feathers get ruffled.</description>
    </book>
    <book id="bk107">
@@ -457,7 +457,7 @@ enum example2 =
       <genre>Romance</genre>
       <price>4.95</price>
       <publish_date>2000-11-02</publish_date>
-      <description>A deep sea diver finds true love twenty 
+      <description>A deep sea diver finds true love twenty
       thousand leagues beneath the sea.</description>
    </book>
    <book id="bk108">
@@ -476,7 +476,7 @@ enum example2 =
       <price>6.95</price>
       <publish_date>2000-11-02</publish_date>
       <description>After an inadvertant trip through a Heisenberg
-      Uncertainty Device, James Salway discovers the problems 
+      Uncertainty Device, James Salway discovers the problems
       of being quantum.</description>
    </book>
    <book id="bk110">
@@ -485,7 +485,7 @@ enum example2 =
       <genre>Computer</genre>
       <price>36.95</price>
       <publish_date>2000-12-09</publish_date>
-      <description>Microsoft's .NET initiative is explored in 
+      <description>Microsoft's .NET initiative is explored in
       detail in this deep programmer's reference.</description>
    </book>
    <book id="bk111">
@@ -494,8 +494,8 @@ enum example2 =
       <genre>Computer</genre>
       <price>36.95</price>
       <publish_date>2000-12-01</publish_date>
-      <description>The Microsoft MSXML3 parser is covered in 
-      detail, with attention to XML DOM interfaces, XSLT processing, 
+      <description>The Microsoft MSXML3 parser is covered in
+      detail, with attention to XML DOM interfaces, XSLT processing,
       SAX and more.</description>
    </book>
    <book id="bk112">
@@ -505,8 +505,8 @@ enum example2 =
       <price>49.95</price>
       <publish_date>2001-04-16</publish_date>
       <description>Microsoft Visual Studio 7 is explored in depth,
-      looking at how Visual Basic, Visual C++, C#, and ASP+ are 
-      integrated into a comprehensive development 
+      looking at how Visual Basic, Visual C++, C#, and ASP+ are
+      integrated into a comprehensive development
       environment.</description>
    </book>
 </catalog>

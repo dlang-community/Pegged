@@ -45,7 +45,7 @@ For your information, here is a table to associate the PEG syntax and the D buil
 |---------------------------------------------------|
 ```
 
-For example, given rules `a`, `b` and `c`, a sequence `a b c` in a grammar is converted by **Pegged** into `and!(a, b, c)`. In the same way, `"abc" / d*` becomes `or!(literal!"abc", zeroOrMore!d)`, with `d` being another rule. By the way, you *can* assemble **Pegged** parsers in this way, if you want to. Just import `pegged.peg` (where they are defined) and play, no need for the `pegged.grammar` module. This is what most C++ PEG libraries do: they give you a collection of parsers which you can link together to construct complicated expressions. Just for fun, I did the same for types once, see [this module](http://svn.dsource.org/projects/dranges/trunk/dranges/docs/typepattern.html)). 
+For example, given rules `a`, `b` and `c`, a sequence `a b c` in a grammar is converted by **Pegged** into `and!(a, b, c)`. In the same way, `"abc" / d*` becomes `or!(literal!"abc", zeroOrMore!d)`, with `d` being another rule. By the way, you *can* assemble **Pegged** parsers in this way, if you want to. Just import `pegged.peg` (where they are defined) and play, no need for the `pegged.grammar` module. This is what most C++ PEG libraries do: they give you a collection of parsers which you can link together to construct complicated expressions. Just for fun, I did the same for types once, see [this module](http://svn.dsource.org/projects/dranges/trunk/dranges/docs/typepattern.html)).
 
 The power is the same as for **Pegged**, but expressions rapidly become unreadable:
 
@@ -59,7 +59,7 @@ compared to:
 oneOrMore!( or!( and!(a,b,c), and!(d, negLookAhead!(e), f)))
 ```
 
-And still, due to D nice template syntax and tuple template parameters, I can assure you it's *far* nicer than the equivalent C++ code. But you can understand how it may be difficult for someone else to 'parse' (pun intended) your code afterwards. Have a look at `pegged.peg`, where pre-defined combinations are. 
+And still, due to D nice template syntax and tuple template parameters, I can assure you it's *far* nicer than the equivalent C++ code. But you can understand how it may be difficult for someone else to 'parse' (pun intended) your code afterwards. Have a look at `pegged.peg`, where pre-defined combinations are.
 
 Anyway, back to **Pegged** proper.
 

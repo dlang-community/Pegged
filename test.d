@@ -25,8 +25,8 @@ void main()
         E <- 'e'
         F <- 'f'
     `));
-    
+
     writeln(Test("befd"));
-    
+
 }
 
