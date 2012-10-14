@@ -1086,6 +1086,49 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     assert(result.end == "abcabcabc".length);
     assert(result.matches == ["abcabcabc"], "All matches are there.");
     assert(result.children.length == 0, "Children are discarded by '~'.");
+    
+    // Testing the keep (^) operator
+    
+    result  = PrefixSuffix.decimateTree(PrefixSuffix.Rule15("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcdef".length);
+    assert(result.matches == ["abc", "def"], "All matches are there.");
+    assert(result.children.length == 2, "Both children are kept by '^'.");
+    assert(result.children[0].name == `literal!("abc")`, 
+           `literal!("abc") is kept even though it's not part of the grammar rules.`);
+    assert(result.children[1].name == `literal!("def")`, 
+           `literal!("def") is kept even though it's not part of the grammar rules.`);
+    
+    // Comparing standard and propagated (%) rules.
+    result  = PrefixSuffix.decimateTree(PrefixSuffix.Rule16("abcabcdefdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcdefdef".length);
+    assert(result.matches == ["abc", "abc", "def", "def"], "All matches are there.");
+    assert(result.children.length == 3, "Standard rule: three children.");
+    assert(result.children[0].name == "PrefixSuffix.ABC");
+    assert(result.children[1].name == "PrefixSuffix.Rule1");
+    assert(result.children[1].children.length == 2, "Rule1 creates two children.");
+    assert(result.children[1].children[0].name, "PrefixSuffix.ABC");
+    assert(result.children[1].children[1].name, "PrefixSuffix.DEF");
+    assert(result.children[2].name == "PrefixSuffix.DEF");
+    
+    result  = PrefixSuffix.decimateTree(PrefixSuffix.Rule17("abcabcdefdef"));
+    
+    // From (ABC, Rule1(ABC,DEF), DEF) to (ABC,ABC,DEF,DEF)
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcdefdef".length);
+    assert(result.matches == ["abc", "abc", "def", "def"], "All matches are there.");
+    assert(result.children.length == 4, "%-affected rule: four children.");
+    assert(result.children[0].name == "PrefixSuffix.ABC");
+    assert(result.children[1].name == "PrefixSuffix.ABC");
+    assert(result.children[2].name == "PrefixSuffix.DEF");
+    assert(result.children[2].name == "PrefixSuffix.DEF");
+    
 }
 
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
