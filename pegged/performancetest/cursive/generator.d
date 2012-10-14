@@ -6,8 +6,8 @@ void main()
 {
     asModule("pegged.performancetest.cursive.parser2",
              "parser2",
-             
-            
+
+
              "Cursive:
               Program <- Spacing Module Spacing (Declaration Spacing)* Spacing eoi
               LineComment <- :(slash slash (&(endOfLine / eoi) (endOfLine / eoi) / .*))

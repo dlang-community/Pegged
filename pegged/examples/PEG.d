@@ -9,13 +9,13 @@ Definition  <- Name Arrow Expression S
 Expression  <- Sequence (OR Sequence)*
 Sequence    <- Prefix+
 Prefix      <- (LOOKAHEAD / NOT)? Suffix
-Suffix      <- Primary ( OPTION 
-                       / ONEORMORE 
+Suffix      <- Primary ( OPTION
+                       / ONEORMORE
                        / ZEROORMORE )? S
 Primary     <- Name !Arrow
              / GroupExpr
-             / Literal 
-             / Class 
+             / Literal
+             / Class
              / ANY
 Name        <- Identifier S
 GroupExpr   <- OPEN Expression :CLOSE S
@@ -26,13 +26,13 @@ CharRange   <- Char '-' Char / Char
 Char        <- BackSlash ( Quote
                          / DoubleQuote
                          / BackQuote
-                         / BackSlash 
+                         / BackSlash
                          / [nrt]
                          / [0-2][0-7][0-7]
                          / [0-7][0-7]?)
              / !BackSlash .
 # Terminals
-Arrow       <- "<-" S  
+Arrow       <- "<-" S
 OR          <- '/' S
 LOOKAHEAD   <- '&' S
 NOT         <- '!' S
@@ -42,7 +42,7 @@ ONEORMORE   <- '+' S
 OPEN        <- '(' S
 CLOSE       <- ')' S
 ANY         <- '.' S
-# Blanks    
+# Blanks
 EOL         <- '\r\n' / '\n' / '\r'
 Comment     <- "#" (!EOL .)* (EOL/EOI)
 S           <- (' ' / '\t' / EOL / Comment)*

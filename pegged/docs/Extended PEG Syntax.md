@@ -13,7 +13,7 @@ Given a parsing expression `e`, `:e` will discard `e`'s parse result. The mother
 ```d
 mixin(grammar("
     Rule1 <- Rule2 :Spaces Rule3
-    
+
     # Rest of grammar ...
 "));
 ```
@@ -27,7 +27,7 @@ JSON:
     JSONObject <  '{' (Pair (',' Pair)*)? '}'
     Pair       <  String ':' Value
     Array      <  '[' (Value (',' Value)* )? ']'
-    
+
     # Rest of JSON grammar...
 ```
 
@@ -44,7 +44,7 @@ JSON(
 			Number (...))))
 ```
 
-And no '{' nor ':' will be in the final output.  
+And no '{' nor ':' will be in the final output.
 
 Dropping Nodes
 --------------
@@ -57,12 +57,12 @@ Keeping Nodes
 If you want to keep literals (or any other parsing expression), the standard way is to make it a rule, as it's done in the JSON grammar:
 
 ```
-    Value  <  String 
-            / Number 
-            / JSONObject 
-            / Array 
-            / True 
-            / False 
+    Value  <  String
+            / Number
+            / JSONObject
+            / Array
+            / True
+            / False
             / Null
     True   <- "true"
     False  <- "false"
@@ -122,13 +122,13 @@ ReturnStatement ["return", "i"]
 Note the subtile difference between
 
 ```
-AddExpr  < ^('+'/'-') Factor 
+AddExpr  < ^('+'/'-') Factor
 ```
 
 and
 
 ```
-AddExpr  <  (^'+'/^'-') Factor 
+AddExpr  <  (^'+'/^'-') Factor
 ```
 
 In the former case the entire choice node (`pegged.peg.or` behind the scenes) is kept in the parse tree. In the latter case, the `or` node will be discarded and only the literal will be kept.
@@ -186,7 +186,7 @@ Range of Chars Extension
 
 The characters `-` (dash), `[` (opening square brackets) and `]` (closing square bracket) have special meaning in char ranges (the `[a-z]` syntax). In **Pegged** they can be escaped with `\` to represent themselves. As usual, `\` is thus `\\`. Use them like this:
 
-* `[-+]` `-` in first position is OK. Already possible in PEG. 
+* `[-+]` `-` in first position is OK. Already possible in PEG.
 
 * `[+\-]` Matches `+` and `-`
 

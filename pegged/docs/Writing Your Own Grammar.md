@@ -5,13 +5,13 @@ Writing Your Own Grammar
 
 My first advice would be to structure your grammar into big chunks and see how they play with one another. You can then refine each of these chunks and break it into smaller parts. If a small part seems useful enough, make it its own grammar. That way, it can be used again in other grammars (see [[Grammar Composition]]).
 
-For example, a standard question is 'How is operator precedence defined in grammar like these, there is no operator precedence table anywhere in sight!'. The trick is to begin with the weaker operators and then go down with the stronger binders. For example, let's consider arithmetic expressions that contain +(unary and binary),- (unary and binary),/,*,%, pow (^) and parenthesis. The standard mathematic precedence is (from weaker to stronger): 
+For example, a standard question is 'How is operator precedence defined in grammar like these, there is no operator precedence table anywhere in sight!'. The trick is to begin with the weaker operators and then go down with the stronger binders. For example, let's consider arithmetic expressions that contain +(unary and binary),- (unary and binary),/,*,%, pow (^) and parenthesis. The standard mathematic precedence is (from weaker to stronger):
 
-* Additive operators: + (binary), - (binary), 
+* Additive operators: + (binary), - (binary),
 
 * Multiplicative operators: %, *, /,
 
-* Power: ^, 
+* Power: ^,
 
 * unary operators: -, +,
 
@@ -45,7 +45,7 @@ Boolean <- OrExpr
 OrExpr  <- AndExpr ("||" AndExpr)*
 AndExpr <- NotExpr ("&&" NotExpr)*
 NotExpr <- "!"? Primary
-Primary <- '(' Boolean ')' 
+Primary <- '(' Boolean ')'
          / Atom
 Atom <- ...
 ```

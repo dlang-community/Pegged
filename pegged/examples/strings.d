@@ -7,10 +7,10 @@ String:
 # Example of a rule for double-quoted strings
 
     String <~ doublequote (!doublequote Char)* doublequote
-    
+
     Char   <~ backslash ( doublequote  # '\' Escapes
                         / quote
-                        / backslash 
+                        / backslash
                         / [bfnrt]
                         / [0-2][0-7][0-7]
                         / [0-7][0-7]?
@@ -19,15 +19,15 @@ String:
                         / 'U' Hex Hex Hex Hex Hex Hex Hex Hex
                         )
              / . # Or any char, really
-    
+
     Hex     <- [0-9a-fA-F]
 `));
 
 unittest
 {
     assert(String(`"Hello, World!"`).successful);
-    assert(String(`"Hello, 
-                        
+    assert(String(`"Hello,
+
                         World!"`).successful);
     assert(String(`""`).successful);
     assert(String(`"\'\""`).successful);

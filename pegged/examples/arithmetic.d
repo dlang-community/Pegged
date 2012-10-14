@@ -22,12 +22,12 @@ Arithmetic:
 float interpreter(string expr)
 {
     auto p = Arithmetic(expr);
-    
+
     //writeln(p);
-    
+
     float value(ParseTree p)
     {
-        switch (p.name) 
+        switch (p.name)
         {
             case "Arithmetic":
                 return value(p.children[0]);
@@ -59,7 +59,7 @@ float interpreter(string expr)
                 return float.nan;
         }
     }
-    
+
     return value(p);
 }
 
@@ -69,23 +69,23 @@ unittest
     assert(interpreter("-1") == -1.0);
     assert(interpreter("1+1") == 2.0);
     assert(interpreter("1-1") == 0.0);
-    
+
     assert(interpreter("1+1+1") == 3.0);
     assert(interpreter("1-1-1") == -1.0);
     assert(interpreter("1+1-1") == 1.0);
     assert(interpreter("1-1+1") == 1.0);
     assert(interpreter("-1+1+1") == 1.0);
-    
+
     assert(interpreter("(-1+1)+1") == 1.0);
     assert(interpreter("-1+(1+1)") == 1.0);
     assert(interpreter("(-1+1+1)") == 1.0);
     assert(interpreter("1-(1-1)") == 1.0);
-    
+
     assert(interpreter("1*1") == 1.0);
     assert(interpreter("1/1") == 1.0);
     assert(interpreter("-1*1") == -1.0);
     assert(interpreter("-1/1") == -1.0);
-    
+
     assert(interpreter("1+2*3") == 7.0);
     assert(interpreter("1-2*3") == -5.0);
     assert(interpreter("-1-2*-3") == 5.0);

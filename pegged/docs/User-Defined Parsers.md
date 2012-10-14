@@ -9,7 +9,7 @@ A **Pegged** parser is just a callable accepting and returning a `ParseTree`. Yo
 ParseTree mine(ParseTree p)
 {
     (...)
-	
+
 }
 
 ParseTree mine(string s)
@@ -90,9 +90,9 @@ struct Group(T...)
 template Dispatch(size_t i, alias First, Rest)
 {
     static if (i < Rest.Types.length)
-        alias TypeTuple!(Group!(Rest.Types[0..i], First, Rest.Types[i..$]), Dispatch!(i+1, First, Rest)) Dispatch; 
+        alias TypeTuple!(Group!(Rest.Types[0..i], First, Rest.Types[i..$]), Dispatch!(i+1, First, Rest)) Dispatch;
     else
-        alias TypeTuple!(Group!(Rest.Types[0..i], First)                                               ) Dispatch; 
+        alias TypeTuple!(Group!(Rest.Types[0..i], First)                                               ) Dispatch;
 }
 
 template PutEverywhere(alias First)

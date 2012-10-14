@@ -5,12 +5,12 @@ module pegged.examples.oberon2;
 
 
 /*
- * 
- * PEG Grammar for Oberon-2 
+ *
+ * PEG Grammar for Oberon-2
  * A detailed language report is available at
  * http://www-vs.informatik.uni-ulm.de:81/projekte/Oberon-2.Report/index.html
  */
- 
+
 /*
 The remarkable short syntax of Oberon-2 in --- Wirth EBNF ---
 
@@ -69,7 +69,7 @@ IdentDef   =   ident [" * " | "-"].
 FOUR SIMPLE EBNF TO PEGGED TRANFORMATION RULES
 Pegged				Wirth EBNF
 
-Sequence  
+Sequence
 A <- B C			A = B C.
 
 B or C
@@ -79,7 +79,7 @@ Zero or one B
 A <- B?				A = [B].
 
 Zero or more Bs
-A <- B*				A = {B}. 
+A <- B*				A = {B}.
 
 List of comma (or otherwise) separated Bs
 A <- List(B, ',')   A = B {"," B}.
@@ -91,9 +91,9 @@ enum string Oberon2Grammar =  `
 Oberon2:
 
 Module 			<- "MODULE" Identifier ";" ImportList? DeclSeq ("BEGIN" StatementSeq)? "END" Identifier "."
-	
+
 ImportList 		<- "IMPORT" (Identifier ":=")? Identifier ("," (Identifier ":=")? Identifier)* ";"
-		
+
 DeclSeq 		<- "CONST" (ConstDecl ";")*
                  / "TYPE" (TypeDecl ";")*
                  / "VAR" (VarDecl ";")* (ProcDecl ";" / ForwardDecl ";")*
@@ -112,22 +112,22 @@ Type   			<-  Qualident
                  / "RECORD" ("("Qualident")")? FieldList (";" FieldList)* "END"
                  / "POINTER" "TO" Type
                  / "PROCEDURE" (FormalPars)?
-	
+
 FieldList   	<-  (IdentList ":" Type)?
 
-# 
-StatementSeq  	<-  Statement (";" Statement)* # List( Statement, ';')   
-			
+#
+StatementSeq  	<-  Statement (";" Statement)* # List( Statement, ';')
+
 Statement   	<-  ( Designator ":=" Expr
   					/ Designator ("(" (ExprList)? ")")
-  					/ IfStatement 
-  					/ CaseStatement 
+  					/ IfStatement
+  					/ CaseStatement
   					/ WhileStatement
-  					/ RepeatStatement 
-  					/ ForStatement 
-  					/ LoopStatement 
-  					/ WithStatement 
-  					/ ExitStatement 
+  					/ RepeatStatement
+  					/ ForStatement
+  					/ LoopStatement
+  					/ WithStatement
+  					/ ExitStatement
   					/ ReturnStatement
   					)?
 
@@ -140,7 +140,7 @@ LoopStatement	<-	"LOOP" StatementSeq "END"
 WithStatement	<-  "WITH" Guard "DO" StatementSeq ("|" Guard "DO" StatementSeq)* ("ELSE" StatementSeq)? "END"
 ExitStatement	<- 	"EXIT"
 ReturnStatement <-  "RETURN" Expr?
-			
+
 Case  			<-  (CaseLabels ("," CaseLabels)* ":" StatementSeq)?
 CaseLabels   	<-  ConstExpr (".." ConstExpr)?
 Guard  			<-  Qualident ":" Qualident
@@ -149,24 +149,24 @@ Expr   			<-  SimpleExpr (Relation SimpleExpr)?
 SimpleExpr  	<-  ("+" / "-")? Term (AddOp Term)*
 Term   			<-  Factor (MulOp Factor)*
 Factor   		<- 	Designator ("(" ExprList? ")")?
-				 	/ Number 
-					/ Character 
-					/ String 
-					/ "NIL" 
-					/ Set 
+				 	/ Number
+					/ Character
+					/ String
+					/ "NIL"
+					/ Set
 					/ "(" Expr ")"
 					/ " ~ " Factor
 
 Set  			<-  "{" (Element ("," Element)*)? "}"
 Element   		<-   Expr (".." Expr)?
 
-Relation   		<-  "IN" / "IS" / "<=" / ">=" / "=" / "#" / "<" / ">" 
+Relation   		<-  "IN" / "IS" / "<=" / ">=" / "=" / "#" / "<" / ">"
 AddOp   		<-  "OR" / "+" / "-"
 MulOp   		<-  "DIV" / "MOD" / "*" / "/" / "&"
 Designator   	<-  Qualident ("." Identifier / "[" ExprList "]" / " ^ " / "(" Qualident ")")*
 List(E,S)       <-  E (S E)*
-ExprList   		<-  Expr (',' Expr)* 			
-IdentList   	<-  IdentDef (',' IdentDef)* 		
+ExprList   		<-  Expr (',' Expr)*
+IdentList   	<-  IdentDef (',' IdentDef)*
 Qualident   	<-  (Identifier ".")? Identifier
 IdentDef   		<-  Identifier (" * " / "-")?
 
@@ -175,26 +175,26 @@ Number			<- Integer / Real
 Integer			<- Digit Digit* / Digit HexDigit* "H"
 Real			<- Digit Digit* "." Digit* ScaleFactor?
 ScaleFactor		<- ("E" / "D") / ("+" / "-")? Digit Digit*
-HexDigit		<- [0-9A-F]  
-Digit			<- [0-9] 			
+HexDigit		<- [0-9A-F]
+Digit			<- [0-9]
 
 #Number Examples
 # 1991			INTEGER		1991
 # 0DH			SHORTINT	13
 # 12.3			REAL		12.3
 # 4.567E8		REAL		456700000
-# 0.57712566D-6	LONGREAL	0.00000057712566 
+# 0.57712566D-6	LONGREAL	0.00000057712566
 
 String              <- DoubleQuotedString / SingleQuotedString
 DoubleQuotedString  <- doublequote DQChar* doublequote
 SingleQuotedString  <- quote SQChar* quote
 
-DQChar          <- EscapeSequence 
+DQChar          <- EscapeSequence
                 / !doublequote .
 
-SQChar          <- EscapeSequence 
+SQChar          <- EscapeSequence
                 / !quote .
-        
+
 EscapeSequence  <- backslash ( quote
                             / doublequote
                             / backslash
@@ -206,21 +206,21 @@ EscapeSequence  <- backslash ( quote
 
 Character       <- quote (!quote (EscapeSequence / .)) quote
 
-#Oberon-2 comments look like (* Some Text *)	
-Comment <- '(*' (!'*)' .)* '*)'		
+#Oberon-2 comments look like (* Some Text *)
+Comment <- '(*' (!'*)' .)* '*)'
 
-# I had to add it. Otherwise, keywords are recognized as identifiers. Note that Oberon does not allow '_'				
+# I had to add it. Otherwise, keywords are recognized as identifiers. Note that Oberon does not allow '_'
 Identifier 		<~ !Keyword [a-zA-Z] [a-zA-Z0-9]*
-		
-Keyword 		<- "ARRAY" / "ABS"/ "ASH" / "BOOLEAN" / "BEGIN" / "BY" 
-				/  "CASE" / "CHAR" / "CONST" / "COPY" / "CAP"/ "CHR"  
-				/  "DEC" / "DIV" / "DO" / "ELSIF" / "ELSE" / "ENTIER" / "EXCL" / "EXIT" / "END"  
-				/  "FALSE" / "FOR" / "HALT" / "INTEGER" / "IMPORT" / "INCL" / "INC" / "IF" / "IN" /"IS" 
-				/  "LONGREAL" / "LONGINT" / "LONG" / "LOOP" / "LEN" 
+
+Keyword 		<- "ARRAY" / "ABS"/ "ASH" / "BOOLEAN" / "BEGIN" / "BY"
+				/  "CASE" / "CHAR" / "CONST" / "COPY" / "CAP"/ "CHR"
+				/  "DEC" / "DIV" / "DO" / "ELSIF" / "ELSE" / "ENTIER" / "EXCL" / "EXIT" / "END"
+				/  "FALSE" / "FOR" / "HALT" / "INTEGER" / "IMPORT" / "INCL" / "INC" / "IF" / "IN" /"IS"
+				/  "LONGREAL" / "LONGINT" / "LONG" / "LOOP" / "LEN"
 				/  "MODULE" / "MOD" / "MIN" / "MAX"/ "NIL" /"NEW"
 				/  "ODD" / "ORD" / "OF" / "OR" / "PROCEDURE" / "REAL"
 				/  "SET" / "SHORTINT" / "SHORT" / "SIZE" / "TRUE"
-				/  "POINTER" / "RECORD" / "REPEAT" / "RETURN" / "THEN" / "TYPE" / "TO" / "UNTIL" / "VAR" 
+				/  "POINTER" / "RECORD" / "REPEAT" / "RETURN" / "THEN" / "TYPE" / "TO" / "UNTIL" / "VAR"
 				/  "WHILE" / "WITH"
 
 `;

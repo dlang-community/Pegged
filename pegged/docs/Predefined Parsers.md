@@ -18,9 +18,9 @@ endOfInput  <- !.   # alias: eoi
 
 # whitespace
 endofLine   <- '\r\n' / '\n' / '\r'  # alias: eol
-space       <- ' ' / '\t' 
+space       <- ' ' / '\t'
 blank       <- space / endOfLine
-spacing     <~ blank+ 
+spacing     <~ blank+
 
 # Special chars
 quote       <- "'"
@@ -39,7 +39,7 @@ In `pegged.examples.numbers`, `pegged.examples.strings`, some other useful rules
 Public Imports
 --------------
 
-`pegged.grammar` imports `pegged.peg` publicly, to allow the user to mix grammars in her own code. This means the predefined rules are directly visible in your own modules. The good news is, you can invoke them directly in your grammars. 
+`pegged.grammar` imports `pegged.peg` publicly, to allow the user to mix grammars in her own code. This means the predefined rules are directly visible in your own modules. The good news is, you can invoke them directly in your grammars.
 
 ```
 MyRule <- identifier backslash digit digit

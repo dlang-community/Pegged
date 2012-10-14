@@ -84,7 +84,7 @@ List(Elem, Sep = ',')  <  Elem (:Sep Elem)*
 The default value is internally converted into a standard **Pegged** parser, and then the D engine for template default parameters does the rest of the job.
 
 Note that the standard D disimbiguation rules apply. Given the two following rules:
- 
+
 ```
 Lists:
     List(Elem) < Elem (:' '* Elem)*          # Space-separated list
@@ -262,7 +262,7 @@ void main()
 {
     alias literal!"b" b;
     alias literal!"c" c;
-    
+
     writeln(A!(b)("bbb")); // calls Rule1, matches all b's
     writeln(A!(b).Rule2!(c)("bc"); // matches b and then c.
 }
@@ -280,7 +280,7 @@ void main()
 {
     alias literal!"b" b;
     alias literal!"c" c;
-    
+
     writeln(A!(b)("bbb")); // error! C is not defined.
     writeln(A!(b).Rule1!(c)("bc"); // matches b and then c.
 }
@@ -289,7 +289,7 @@ void main()
 Other Examples
 --------------
 
-There is a module presenting different parameterized rules: [here](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/parameterized.d).  
+There is a module presenting different parameterized rules: [here](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/parameterized.d).
 
 As it contains *only* parameterized rules, do not use it 'raw'.
 
