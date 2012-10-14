@@ -10,7 +10,7 @@ Terminals:
 
 Using the PEG formalism, the terminals (parsing expressions that do not depend on other expressions) are:
 
-- `'xxxx'` or `"xxxx"`, that matches literals. For example, `'('` matches one opening parenthesis (no more, no less, no other character). `"abc"` matches the string "abc", `" "` matches one space, and so on. If the input characters are not those waited for, the expression fails and does not consume any input. You can use `'xxxx'` or `"xxxx"` interchangeably for any character or string, though it's more common to use ' with lone characters and " for strings. 
+- `'xxxx'` or `"xxxx"`, that matches literals. For example, `'('` matches one opening parenthesis (no more, no less, no other character). `"abc"` matches the string "abc", `" "` matches one space, and so on. If the input characters are not those waited for, the expression fails and does not consume any input. You can use `'xxxx'` or `"xxxx"` interchangeably for any character or string, though it's more common to use ' with lone characters and " for strings.
 
 
 - `eps` (short for 'epsilon') is an expression matching 'the empty char': it always succeeds and does not consume anything. You can also use the empty literals: `''` or `""`.
@@ -30,7 +30,7 @@ Given the expressions `a`, `b`, `c`, ..., you can combine them using operators:
 
 Of course, sequences can have as many elements as you wish: `a b c b a a` is a perfectly valid sequence.
 
-- `a / b` is an 'ordered choice' expression: it tries to match `a`. If `a` matches, it succeeds and consumes the elements needed by `a`. If `a` fails, it tries `b`. In any case (success or failure), it returns `b`'s parsing result. It's 'ordered' in that it always tests sub-expressions in the order they were given. So `a / b / c` will _always_ test first for `a`, then `b` and lastly `c` if the previous rules failed. That also means that in `a / b / a`, the second `a` is useless: it will be tested with exactly the same input as the first and will fail as well. This ordering makes PEGs non-ambiguous. A PEG _never_ gives rise to an ambiguous grammar, unlike some other formalisms. That's why the '/' character was chosen to denote choice, instead of the more usual '|' (pipe) char. (Pipe is not used by PEGs). 
+- `a / b` is an 'ordered choice' expression: it tries to match `a`. If `a` matches, it succeeds and consumes the elements needed by `a`. If `a` fails, it tries `b`. In any case (success or failure), it returns `b`'s parsing result. It's 'ordered' in that it always tests sub-expressions in the order they were given. So `a / b / c` will _always_ test first for `a`, then `b` and lastly `c` if the previous rules failed. That also means that in `a / b / a`, the second `a` is useless: it will be tested with exactly the same input as the first and will fail as well. This ordering makes PEGs non-ambiguous. A PEG _never_ gives rise to an ambiguous grammar, unlike some other formalisms. That's why the '/' character was chosen to denote choice, instead of the more usual '|' (pipe) char. (Pipe is not used by PEGs).
 
 This means that `'<' / '<='` will never match the second choice: if the input does not begin with '<', the choice will fail. And if it begins with '<', the second, longer, member will not be tested since the first choice already matched. As a consequence, choices should be ordered from the longer ones to the shorter ones if you want them to all have a chance to match: `"<<<=" / "<<<" / "<<" / ">>" / "<=" / ">=" / "<" / ">" / "="`, for example.
 
@@ -64,7 +64,7 @@ identifier <- (lowerCase / upperCase / underscore) (lowerCase / upperCase / unde
 
 This defines five rules, the last one using the first four rules in its definition.
 
-Rule can call themselves, recursively: 
+Rule can call themselves, recursively:
 
 ```
 Parens <- '(' Parens ')' / identifier
@@ -74,7 +74,7 @@ is a rule matching any identifier, optionally enclosed inside matching parenthes
 
 By the way, if you want to force a parsing expression to match the entire input, just put the previously seen `endOfInput` at the end of its definition. `Parens <- ('(' Parens ')' / Identifier) endOfInput` will fail on "(abc))".
 
-And yes, for those of you knowing grammar formalism, that means PEGs are prey to infinite recursion for left-recursive rules: `A <- A 'a'` really means 'to parse an `A`, first parse an `A`, and then...', which is nonsensical as far as PEGs are concerned. 
+And yes, for those of you knowing grammar formalism, that means PEGs are prey to infinite recursion for left-recursive rules: `A <- A 'a'` really means 'to parse an `A`, first parse an `A`, and then...', which is nonsensical as far as PEGs are concerned.
 
 An Example Grammar
 ------------------
@@ -87,9 +87,9 @@ Arithmetic:
     AddExpr  <- ('+'/'-') Factor
     Factor   <- Primary MulExpr*
     MulExpr  <- ('*'/'/') Primary
-    Primary  <- '(' Expr ')' 
-              / Number 
-              / Variable 
+    Primary  <- '(' Expr ')'
+              / Number
+              / Variable
               / '-' Primary
 
     Number   <- [0-9]+

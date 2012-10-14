@@ -143,7 +143,7 @@ Cursive:
 
                BlockStatement <- '{' Spacing '}'
 
-               
+
 
 */
 module pegged.performancetest.cursive.parser;
@@ -156,36 +156,36 @@ struct Cursive
     static bool[string] names;
     static this()
     {
-        names = [`Program`:true, `LineComment`:true, `BlockComment`:true, `Boolean`:true, 
-                 `Null`:true, `IntegerSuffix`:true, `RealSuffix`:true, `Sign`:true, 
-                 `Decimal`:true, `Binary`:true, `Octal`:true, `Hexadecimal`:true, 
-                 `Size`:true, `Integer`:true, `Real`:true, `EscapeSequence`:true, 
-                 `UnicodeSequence`:true, `Character`:true, `String`:true, `Literal`:true, 
-                 `Qualifiedidentifier`:true, `FixedIntegralType`:true, `IntegralType`:true, `FloatingPointType`:true, 
-                 `CoreType`:true, `TypeReference`:true, `TypeSpecification`:true, `GenericParameters`:true, 
-                 `FunctionType`:true, `ParameterTypes`:true, `PointerType`:true, `ArrayType`:true, 
-                 `VectorType`:true, `NullableType`:true, `TupleType`:true, `TypeModifiers`:true, 
-                 `Type`:true, `InferredType`:true, `ReturnType`:true, `CallingConvention`:true, 
-                 `Module`:true, `Import`:true, `Declaration`:true, `Visibility`:true, 
-                 `InheritanceList`:true, `Class`:true, `ClassModifiers`:true, `ClassMember`:true, 
-                 `Interface`:true, `InterfaceMember`:true, `Struct`:true, `StructModifiers`:true, 
-                 `StructMember`:true, `Enum`:true, `EnumBase`:true, `EnumMember`:true, 
-                 `Data`:true, `DataSemantics`:true, `DataMember`:true, `DataField`:true, 
-                 `DataCase`:true, `StaticConstructorModifiers`:true, `StaticConstructorBody`:true, `ModuleConstructor`:true, 
-                 `ModuleFinalizer`:true, `ClassConstructor`:true, `ClassFinalizer`:true, `StructConstructor`:true, 
-                 `StructFinalizer`:true, `Field`:true, `FieldModifiers`:true, `ModuleFunction`:true, 
-                 `RawFunction`:true, `RawFunctionBody`:true, `ExternFunction`:true, `ExternFunctionLocation`:true, 
-                 `Function`:true, `FunctionModifiers`:true, `FunctionBody`:true, `EmptyParameterList`:true, 
-                 `ParameterList`:true, `Parameter`:true, `ParameterModifiers`:true, `Operator`:true, 
-                 `CustomOperator`:true, `OperatorBody`:true, `Property`:true, `PropertyModifiers`:true, 
-                 `PropertyBody`:true, `PropertyGetter`:true, `PropertySetter`:true, `AccessorModifiers`:true, 
-                 `AccessorBody`:true, `Method`:true, `MethodModifiers`:true, `MethodBody`:true, 
+        names = [`Program`:true, `LineComment`:true, `BlockComment`:true, `Boolean`:true,
+                 `Null`:true, `IntegerSuffix`:true, `RealSuffix`:true, `Sign`:true,
+                 `Decimal`:true, `Binary`:true, `Octal`:true, `Hexadecimal`:true,
+                 `Size`:true, `Integer`:true, `Real`:true, `EscapeSequence`:true,
+                 `UnicodeSequence`:true, `Character`:true, `String`:true, `Literal`:true,
+                 `Qualifiedidentifier`:true, `FixedIntegralType`:true, `IntegralType`:true, `FloatingPointType`:true,
+                 `CoreType`:true, `TypeReference`:true, `TypeSpecification`:true, `GenericParameters`:true,
+                 `FunctionType`:true, `ParameterTypes`:true, `PointerType`:true, `ArrayType`:true,
+                 `VectorType`:true, `NullableType`:true, `TupleType`:true, `TypeModifiers`:true,
+                 `Type`:true, `InferredType`:true, `ReturnType`:true, `CallingConvention`:true,
+                 `Module`:true, `Import`:true, `Declaration`:true, `Visibility`:true,
+                 `InheritanceList`:true, `Class`:true, `ClassModifiers`:true, `ClassMember`:true,
+                 `Interface`:true, `InterfaceMember`:true, `Struct`:true, `StructModifiers`:true,
+                 `StructMember`:true, `Enum`:true, `EnumBase`:true, `EnumMember`:true,
+                 `Data`:true, `DataSemantics`:true, `DataMember`:true, `DataField`:true,
+                 `DataCase`:true, `StaticConstructorModifiers`:true, `StaticConstructorBody`:true, `ModuleConstructor`:true,
+                 `ModuleFinalizer`:true, `ClassConstructor`:true, `ClassFinalizer`:true, `StructConstructor`:true,
+                 `StructFinalizer`:true, `Field`:true, `FieldModifiers`:true, `ModuleFunction`:true,
+                 `RawFunction`:true, `RawFunctionBody`:true, `ExternFunction`:true, `ExternFunctionLocation`:true,
+                 `Function`:true, `FunctionModifiers`:true, `FunctionBody`:true, `EmptyParameterList`:true,
+                 `ParameterList`:true, `Parameter`:true, `ParameterModifiers`:true, `Operator`:true,
+                 `CustomOperator`:true, `OperatorBody`:true, `Property`:true, `PropertyModifiers`:true,
+                 `PropertyBody`:true, `PropertyGetter`:true, `PropertySetter`:true, `AccessorModifiers`:true,
+                 `AccessorBody`:true, `Method`:true, `MethodModifiers`:true, `MethodBody`:true,
                  `Constructor`:true, `Finalizer`:true, `BlockStatement`:true];
     }
     static ParseTree decimateTree(ParseTree p)
     {
         if(p.children.length == 0) return p;
-        
+
         ParseTree[] filterChildren(ParseTree pt)
         {
             ParseTree[] result;

@@ -1,12 +1,12 @@
 PEGGED
 ======
 
-**Pegged** is a parsing expression grammar (PEG) generator implemented in the D programming language. 
+**Pegged** is a parsing expression grammar (PEG) generator implemented in the D programming language.
 
 PEGGED
 ======
 
-**Pegged** is a parsing expression grammar (PEG) generator implemented in the D programming language. 
+**Pegged** is a parsing expression grammar (PEG) generator implemented in the D programming language.
 
 The idea is to give the generator a [PEG](en.wikipedia.org/wiki/Parsing_expression_grammar), with the syntax presented in [the reference article ](http://bford.info/pub/lang/peg). From this grammar definition a set of related parsers will be created, to be used at runtime or compile time.
 
@@ -36,7 +36,7 @@ Arithmetic:
     Variable <- identifier
 `));
 ```
-        
+
 This creates the `Arithmetic` grammar, with the `Expr`, `Add`, `Factor` (and so on) rules for basic arithmetic expressions with operator precedence ('*' and '/' bind stronger than '+' or '-'). `identifier` is a pre-defined parser recognizing your basic C-style identifier (first a letter or underscore, then digits, letters or underscores). In the rest of this document, I'll call 'rule' a `Parser <- Parsing Expression` expression and I'll use 'grammar' to designate the entire group of rules given to `grammar`.
 
 To use a grammar, call it with a string. It will return a parse tree containing the calls to the different rules:
@@ -92,7 +92,7 @@ Limitations
 * Error reporting is the same as for any in-my-own-free-time / just-one-guy parsing project (read: perfectible).
 * I recently dropped named captures and the `=` and `@` operators.
 
-Future features (aka, my todo list) 
+Future features (aka, my todo list)
 -----------------------------------
 
 See [todo](https://github.com/PhilippeSigaud/Pegged/wiki/TODO)

@@ -10,7 +10,7 @@ Parameterized:
 
 # Standard list: skip spaces, drop the separator
 # Minimum one Elem
-List(Elem, Sep) < Elem (:Sep Elem)* 
+List(Elem, Sep) < Elem (:Sep Elem)*
 
 # A list accepting 0 element as a valid input
 List0(Elem, Sep) < List(Elem, Sep)?
@@ -52,7 +52,7 @@ unittest
     ParamTest1:
         A <- Parameterized.List(identifier, ',')
     "));
-    
+
     assert(ParamTest1("abc, def, ghi").successful);
     assert(ParamTest1("abc, def, ghi").matches == ["abc", "def", "ghi"]);
     assert(ParamTest1("abc, def, ").successful);
@@ -67,12 +67,12 @@ unittest
     // not lists:
     assert(!ParamTest1("").successful);
     assert(!ParamTest1(",abc, def, ghi").successful);
-    
+
     mixin(grammar("
     ParamTest2:
         A <- Parameterized.List(identifier, ' ')
     "));
-    
+
     assert(ParamTest2("abc def ghi").successful);
     assert(ParamTest2("abc def ").successful);
     assert(ParamTest2("abc      def ghi").successful);
@@ -81,12 +81,12 @@ unittest
     // not lists:
     assert(!ParamTest2("").successful);
     assert(!ParamTest2("  ").successful);
-    
+
     mixin(grammar("
     ParamTest3:
         A <- Parameterized.Array( ~[0-9]+ )
     "));
-    
+
     assert(ParamTest3("[1, 2, 3]").successful);
     assert(ParamTest3("[1, 2, 3]").matches == ["1", "2", "3"]);
     assert(ParamTest3("[1]").successful);
@@ -98,20 +98,20 @@ unittest
     assert(!ParamTest3("[1,2,3").successful);
     assert(!ParamTest3("1,2,3]").successful);
     assert(!ParamTest3("[,]").successful);
-    
+
     mixin(grammar("
     ParamTest4:
         A <- Parameterized.String
     "));
-    
+
     assert(ParamTest4(`"abc"`).successful);
     assert(ParamTest4(`""`).successful);
-    
+
     mixin(grammar("
     ParamTest5:
         A <- Parameterized.LineComment
     "));
-    
+
     ParseTree p5 = ParamTest5("// This is a comment!
     This is not a comment.
     End.");

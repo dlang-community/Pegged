@@ -28,13 +28,13 @@ Gram.A
   |    +--Gram.C
   |
   +--identifier
-  |    
+  |
   +--oneOrMore(Gram.D)
        |
        +--Gram.D
        |
        +--Gram.D
-```               
+```
 
 After decimation, the `Gram.B` branch is kept, the `identifier` node is discarded. When **Pegged** discards `oneOrMore(Gram.D)`, it links the two `Gram.D` nodes to `oneOrMore(Gram.D)`'s parent: `Gram.A`. Which gives us:
 

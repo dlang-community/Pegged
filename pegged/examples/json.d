@@ -7,25 +7,25 @@ JSON:
     JSONObject <  :'{' (Pair (:',' Pair)*)? :'}'
     Pair       <  String :':' Value
     Array      <  :'[' (Value (:',' Value)* )? :']'
-    
-    Value  <  String 
-            / Number 
-            / JSONObject 
-            / Array 
-            / True 
-            / False 
+
+    Value  <  String
+            / Number
+            / JSONObject
+            / Array
+            / True
+            / False
             / Null
     True   <- "true"
     False  <- "false"
     Null   <- "null"
-    
+
     String <~ :doublequote Char* :doublequote
-    Char   <~ backslash doublequote 
-            / backslash backslash 
-            / backslash [bfnrt] 
+    Char   <~ backslash doublequote
+            / backslash backslash
+            / backslash [bfnrt]
             / backslash 'u' Hex Hex Hex Hex
             / (!doublequote .)
-    
+
     Number <~ '0'
             / [1-9] Digit* ('.' Digit*)?
     Digit  <- [0-9]
@@ -33,7 +33,7 @@ JSON:
 `));
 enum example2 = `
 {
-    "Number": 42, 
+    "Number": 42,
     "Decimal": 123.456,
     "String": "abc",
     "NullString": "",
@@ -70,10 +70,10 @@ enum example3 =
             }
         }
     }`;
-    
+
 enum example4 =
     `{"web-app": {
-    "servlet": [   
+    "servlet": [
         {
         "servlet-name": "cofaxCDS",
         "servlet-class": "org.cofax.cds.CDSServlet",
@@ -129,7 +129,7 @@ enum example4 =
         {
         "servlet-name": "cofaxAdmin",
         "servlet-class": "org.cofax.cds.AdminServlet"},
-    
+
         {
         "servlet-name": "fileServlet",
         "servlet-class": "org.cofax.cds.FileServlet"},
@@ -156,7 +156,7 @@ enum example4 =
         "cofaxAdmin": "/admin/*",
         "fileServlet": "/static/*",
         "cofaxTools": "/tools/*"},
-    
+
     "taglib": {
         "taglib-uri": "cofax.tld",
         "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
