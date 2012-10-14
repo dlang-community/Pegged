@@ -1171,6 +1171,100 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children[1].name == "PrefixSuffix.ABC");
     assert(result.children[2].name == "PrefixSuffix.DEF");
     assert(result.children[2].name == "PrefixSuffix.DEF");
+
+    // More than one prefix, more than one suffixes
+    mixin(grammar(`
+    MoreThanOne:
+        Rule1 <- ~:("abc"*)   # Two prefixes (nothing left for ~, after :)
+        Rule2 <- :~("abc"*)   # Two prefixes (: will discard everything ~ did)
+        Rule3 <- ;:~"abc"     # Many prefixes
+        Rule4 <- ~~~("abc"*)  # Many fuses (no global effect)
+
+        Rule5 <- "abc"+*      # Many suffixes
+        Rule6 <- "abc"+?      # Many suffixes
+
+        Rule7 <- !!"abc"      # Double negation, equivalent to '&'
+        Rule8 <-  &"abc"
+    
+        Rule9 <- ^^"abc"+*   # Many suffixes and prefixes
+    `));
+
+    assert(is(MoreThanOne), "This compiles all right.");
+
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule1("abcabcabc"));
+    assert(result.successful);
+    assert(result.begin == "abcabcabc".length);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches is null);
+    assert(result.children is null);
+
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule2("abcabcabc"));
+    assert(result.successful);
+    assert(result.begin == "abcabcabc".length);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches is null);
+    assert(result.children is null);
+
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule3("abcabcabc"));
+    assert(result.successful);
+    assert(result.begin == "abc".length);
+    assert(result.end == "abc".length);
+    assert(result.matches is null);
+    assert(result.children is null);
+
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule4("abcabcabc"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches == ["abcabcabc"]);
+    assert(result.children is null);
+
+    // +* and +?
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule5("abcabcabc"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches == ["abc", "abc", "abc"]);
+    assert(result.children.length == 0);
+
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule6("abcabcabc"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches == ["abc", "abc", "abc"]);
+    assert(result.children.length == 0);
+
+    // !! is equivalent to &
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule7("abc"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 0);
+    assert(result.matches is null);
+    assert(result.children is null);
+
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule8("abc"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 0);
+    assert(result.matches is null);
+    assert(result.children is null);
+
+    // ^^"abc"+*
+    result = MoreThanOne.decimateTree(MoreThanOne.Rule9("abcabcabc"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 9);
+    assert(result.matches == ["abc", "abc", "abc"]);
+    assert(result.children.length == 1);
+    assert(result.children[0].name == `zeroOrMore!(oneOrMore!(literal!("abc")))`);
+    assert(result.children[0].children.length == 1);
+    assert(result.children[0].children[0].name == `oneOrMore!(literal!("abc"))`);
+    assert(result.children[0].children[0].children.length == 3);
+    assert(result.children[0].children[0].children[0].name == `literal!("abc")`);
+    assert(result.children[0].children[0].children[1].name == `literal!("abc")`);
+    assert(result.children[0].children[0].children[2].name == `literal!("abc")`);
 }
 
+// TODO: extended chars tests
+// TODO: parameterized rules, parameterized grammars
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
