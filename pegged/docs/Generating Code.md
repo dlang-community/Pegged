@@ -1,7 +1,7 @@
 Generating Code
 ===============
 
-Once a grammar is defined and a parse tree was generated, how can it be used? We already saw how to use the parse tree in [[Using the Parse Tree]], at runtime or compile-time. But since **Pegged** can parse at compile-time, the information can also be used to generate during compilation a string containing D code, which can in turn be mixed in. 
+Once a grammar is defined and a parse tree was generated, how can it be used? We already saw how to use the parse tree in [[Using the Parse Tree]], at runtime or compile-time. But since **Pegged** can parse at compile-time, the information can also be used to generate during compilation a string containing D code, which can in turn be mixed in.
 
 So, what's the difference with what we saw in lesson [[Using the Parse Tree]]? None whatsoever, except be sure to do everything at compile-time, since you cannot mix runtime strings.
 
@@ -31,10 +31,10 @@ Is implemented in D code as:
 
 ```d
 ParseTree A (ParseTree p)
-{ 
+{
     return  and!(B, C, oneOrMore!(D), option!(E))(p);
 }
-``` 
+```
 
 So really, to create such a code from a parse tree we have to
 

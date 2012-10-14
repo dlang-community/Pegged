@@ -42,7 +42,7 @@ And so on... First, let's define a small grammar for such a wiki syntax:
 ```d
 Wiki:
     Document <  Element*
-    Element  <  Section 
+    Element  <  Section
             / Subsection
             / Emph
             / List
@@ -142,15 +142,15 @@ string toLaTeX(ParseTree p)
             case "Wiki.Element":
                 return parseToCode(p.children[0]); // one child only
             case "Wiki.Section":
-                return "\n\\section{" 
+                return "\n\\section{"
                        ~ p.matches[0] // the first match contains the title
                        ~ "}\n";
             case "Wiki.Subsection":
-                return "\n\\subsection{" 
+                return "\n\\subsection{"
                        ~ p.matches[0] // the first match contains the title
-                       ~ "}\n"; 
+                       ~ "}\n";
             case "Wiki.Emph":
-                return " \\emph{" 
+                return " \\emph{"
                        ~ p.matches[0] // the first match contains the text to emphasize
                        ~ "} ";
             case "Wiki.List":
@@ -210,7 +210,7 @@ In fact, I keep finding myself writing this kind of code. I might be seeing a pa
 More Than Just Pushing Strings
 ------------------------------
 
-Of course, the tree-walking function can do much more than concatenating strings. It could for example increment a counter each time a certain kind of node is found, transform the tree on-the-fly, make some verifications and comparison between nodes... If [[Semantic Actions]] are examples of *internal* actions (from `ParseTree` to `ParseTree`, used internally during the parsing process), the functions presented here are *external* actions. You can use them to construct any D value from the parse tree. 
+Of course, the tree-walking function can do much more than concatenating strings. It could for example increment a counter each time a certain kind of node is found, transform the tree on-the-fly, make some verifications and comparison between nodes... If [[Semantic Actions]] are examples of *internal* actions (from `ParseTree` to `ParseTree`, used internally during the parsing process), the functions presented here are *external* actions. You can use them to construct any D value from the parse tree.
 
 At Compile-Time?
 ----------------

@@ -14,7 +14,7 @@ These grammars have about a dozen rules (say, from 5 to 20 rules):
 
 * [strings.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/strings.d). Parses double-quoted strings. An example of how to do escaping and looking for an end marker.
 
-* [parameterized.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/parameterized.d). Examples of parameterized rules, as described on the [[Parametrized Rules]] page.  
+* [parameterized.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/parameterized.d). Examples of parameterized rules, as described on the [[Parametrized Rules]] page.
 
 * [csv.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/csv.d). Comma-separated values, in files.
 
@@ -35,7 +35,7 @@ These are intermediate-size grammars. They have about 20 - 100 rules.
 
 * [oberon2.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/oberon2.d). The Oberon-2 programming language grammar. This grammar was written by Bjoern Lietz-Spendig. You can find the Oberon-2 description [here](http://www-vs.informatik.uni-ulm.de:81/projekte/Oberon-2.Report/index.html).
 
-* [xml.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/xml.d). OK, I'm cheating, it's a 5-rules long XML grammar,  but it show how to use semantic actions to validate an input. See [[Semantic Actions]]. 
+* [xml.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/xml.d). OK, I'm cheating, it's a 5-rules long XML grammar,  but it show how to use semantic actions to validate an input. See [[Semantic Actions]].
 
 * [xml2.d](https://github.com/PhilippeSigaud/Pegged/blob/master/pegged/examples/xml2.d) The entire XML grammar is described [here](http://www.w3.org/TR/xml11/) by the W3C. An 80-rules long grammar. No semantic action to validate nodes yet. I plan to fuse the two ASAP.
 

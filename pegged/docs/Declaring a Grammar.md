@@ -1,7 +1,7 @@
 Declaring a Grammar
 ==================
 
-Defining a grammar is quite easy in **Pegged**: just write it in a string, beginning with its name followed by a colon and then the rules (minimum one rule). 
+Defining a grammar is quite easy in **Pegged**: just write it in a string, beginning with its name followed by a colon and then the rules (minimum one rule).
 
 **Note:** previous versions of **Pegged** allowed anonymous grammars. This feature is disabled for now. You *must* give a name to your grammars. I might re-enable this once some bugs concerning parameterized rules and grammars are resolved.
 
@@ -31,9 +31,9 @@ Arithmetic:
     AddExpr  <- ('+'/'-') Factor
     Factor   <- Primary MulExpr*
     MulExpr  <- ('*'/'/') Primary
-    Primary  <- '(' Expr ')' 
-              / Number 
-              / Variable 
+    Primary  <- '(' Expr ')'
+              / Number
+              / Variable
               / '-' Primary
 
     Number   <- [0-9]+
@@ -53,9 +53,9 @@ mixin(grammar("
 Input:
     line <- col1 col2 col3 colOpt? colOpt? colOpt? colOpt?
 
-# The first three columns contain 
-#  - a date in a DD-MM-YYYY format, 
-#  - a sample name (an identifier) and 
+# The first three columns contain
+#  - a date in a DD-MM-YYYY format,
+#  - a sample name (an identifier) and
 #  - a batch number (an integer).
 # 'identifier' is a pre-defined Pegged parser
 
@@ -69,7 +69,7 @@ Input:
     nucleotide <- 'A' / 'C' / 'G' / 'T'
     colOpt     <- nucleotide+
 "));
-``` 
+```
 
 Rule Names
 ----------

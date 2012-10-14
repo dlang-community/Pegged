@@ -1,4 +1,4 @@
-Pegged Tutorial 
+Pegged Tutorial
 ===============
 
 The following pages will show you how to use **Pegged** to create grammars and parse inputs with them.

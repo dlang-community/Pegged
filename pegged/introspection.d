@@ -9,7 +9,7 @@ import pegged.grammar;
 import pegged.parser;
 
 /**
-The different kinds of recursion for a rule. 
+The different kinds of recursion for a rule.
 'direct' means the rule name appears in its own definition. 'indirect' means the rule calls itself through another rule (the call chain can be long).
 */
 enum Recursive { no, direct, indirect }
@@ -53,7 +53,7 @@ Returns for all grammar rule:
 
 - the recursion type (no recursion, direct or indirect recursion).
 - the left-recursion type (no left-recursion, direct left-recursion, hidden, or indirect)
-- the null-match for a grammar's rules: whether the rule can succeed while consuming nothing. 
+- the null-match for a grammar's rules: whether the rule can succeed while consuming nothing.
 - the possibility of an infinite loop (if 'e' can null-match, then 'e*' can enter an infinite loop).
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
@@ -62,7 +62,7 @@ RuleInfo[string] ruleInfo(string grammar)
 {
 	RuleInfo[string] result;
 	ParseTree[string] rules;
-    
+
 	/**
 	Returns the call graph of a grammar: the list of rules directly called by each rule of the grammar.
 	The graph is represented as a bool[string][string] associative array, the string holding
@@ -90,7 +90,7 @@ RuleInfo[string] ruleInfo(string grammar)
 		}
 
 		bool[string][string] graph;
-		
+
 		foreach(definition; p.children)
 			if (definition.name == "Pegged.Definition")
 			{
@@ -104,9 +104,9 @@ RuleInfo[string] ruleInfo(string grammar)
 		return graph;
 	}
 
-	/** 
-	The transitive closure of a call graph. 
-	It will propagate the calls to find all rules called by a given rule, 
+	/**
+	The transitive closure of a call graph.
+	It will propagate the calls to find all rules called by a given rule,
 	directly (already in the call graph) or indirectly (through another rule).
 	*/
 	bool[string][string] closure(bool[string][string] graph)
@@ -114,9 +114,9 @@ RuleInfo[string] ruleInfo(string grammar)
 		bool[string][string] path;
 		foreach(rule, children; graph) // deep-dupping, to avoid children aliasing
 			path[rule] = children.dup;
-		
+
 		bool changed = true;
-		
+
 		while(changed)
 		{
 			changed = false;
@@ -130,14 +130,14 @@ RuleInfo[string] ruleInfo(string grammar)
 								changed = true;
 							}
 		}
-		
+
 		return path;
 	}
 
 	Recursive[string] recursions(bool[string][string] graph)
 	{
 		bool[string][string] path = closure(graph);
-		
+
 		Recursive[string] result;
 		foreach(rule, children; path)
 		{
@@ -150,10 +150,10 @@ RuleInfo[string] ruleInfo(string grammar)
 					result[rule] = Recursive.indirect;
 			}
 		}
-					
+
 		return result;
 	}
-	
+
 	NullMatch nullMatching(ParseTree p)
 	{
 		switch (p.name)
@@ -177,7 +177,7 @@ RuleInfo[string] ruleInfo(string grammar)
 					if (nm == NullMatch.no)
 						return NullMatch.no;
 				}
-				return NullMatch.yes;			
+				return NullMatch.yes;
 			case "Pegged.Prefix":
 				foreach(pref; p.children[0..$-1])
 					if (pref.name == "Pegged.POS" || pref.name == "Pegged.NEG")
@@ -187,7 +187,7 @@ RuleInfo[string] ruleInfo(string grammar)
 				foreach(pref; p.children[1..$])
 					if (pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.OPTION")
 						return NullMatch.yes;
-				return nullMatching(p.children[0]);				
+				return nullMatching(p.children[0]);
 			case "Pegged.Primary":
 				return nullMatching(p.children[0]);
 			case "Pegged.RhsName":
@@ -212,7 +212,7 @@ RuleInfo[string] ruleInfo(string grammar)
 				return NullMatch.indeterminate;
 		}
 	}
-	
+
 	InfiniteLoop infiniteLooping(ParseTree p)
 	{
 		switch (p.name)
@@ -241,11 +241,11 @@ RuleInfo[string] ruleInfo(string grammar)
 				return infiniteLooping(p.children[$-1]);
 			case "Pegged.Suffix":
 				foreach(pref; p.children[1..$])
-					if ((  pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.ONEORMORE") 
-					    && p.matches[0] in result 
+					if ((  pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.ONEORMORE")
+					    && p.matches[0] in result
 						&& result[p.matches[0]].nullMatch == NullMatch.yes)
 						return InfiniteLoop.yes;
-				return infiniteLooping(p.children[0]);				
+				return infiniteLooping(p.children[0]);
 			case "Pegged.Primary":
 				return infiniteLooping(p.children[0]);
 			case "Pegged.RhsName":
@@ -293,11 +293,11 @@ RuleInfo[string] ruleInfo(string grammar)
 					else
 						return LeftRecursive.no;
 				}
-				return LeftRecursive.no; // found only null-matching rules!			
+				return LeftRecursive.no; // found only null-matching rules!
 			case "Pegged.Prefix":
 				return leftRecursion(p.children[$-1], target);
 			case "Pegged.Suffix":
-				return leftRecursion(p.children[0], target);				
+				return leftRecursion(p.children[0], target);
 			case "Pegged.Primary":
 				return leftRecursion(p.children[0], target);
 			case "Pegged.RhsName":
@@ -329,12 +329,12 @@ RuleInfo[string] ruleInfo(string grammar)
             rules[definition.matches[0]] = definition.children[2];
 			result[definition.matches[0]] = RuleInfo(Recursive.no, LeftRecursive.no, NullMatch.indeterminate, InfiniteLoop.indeterminate);
 		}
-		
+
 	auto rec = recursions(callGraph(p));
 	foreach(rule, recursionType; rec)
 		if (rule in result) // external rules are in rec, but not in result
 			result[rule].recursion = recursionType;
-	
+
 	foreach(name, tree; rules)
 	{
 		if (result[name].recursion != Recursive.no)
@@ -342,9 +342,9 @@ RuleInfo[string] ruleInfo(string grammar)
 			result[name].leftRecursion = leftRecursion(tree, name);
 		}
 	}
-	
+
 	bool changed = true;
-	
+
 	while(changed) // while something new happened, the process is not over
 	{
 		changed = false;
@@ -358,7 +358,7 @@ RuleInfo[string] ruleInfo(string grammar)
 	}
 
 	changed = true;
-	
+
 	while(changed) // while something new happened, the process is not over
 	{
 		changed = false;
@@ -370,7 +370,7 @@ RuleInfo[string] ruleInfo(string grammar)
 					changed = true;
 			}
 	}
-	
+
     return result;
 }
 
@@ -382,7 +382,7 @@ ParseTree replaceInto(ParseTree parent, ParseTree child)
 {
     if (parent.name == "Pegged.RhsName" && parent.matches[0] == child.matches[0])
         return ParseTree("Pegged.Named", true, child.matches[0..1], "",0,0,
-                       [child.children[2], 
+                       [child.children[2],
                         ParseTree("Pegged.Identifier", true, child.matches[0..1])]);
     else
         foreach(ref branch; parent.children)

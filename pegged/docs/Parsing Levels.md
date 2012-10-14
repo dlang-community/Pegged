@@ -5,12 +5,12 @@ The **Pegged** docs mainly refer to the `.parse` static method, implemented in a
 
 For this need **Pegged** defines five different levels of parsing, members of the `ParseLevel` enum. This enum is silently passed as a template parameter for `parse` and any rule or combinator transmits the parse level to its child rules.
 
-* `ParseLevel.validating`: discards any parse tree and match results (the captures). Only `success` is processed by the child rule and produced by the parser. In the end, as a user, the only info you get is whether or not the input was successfully parsed or not. Use it like this: 
+* `ParseLevel.validating`: discards any parse tree and match results (the captures). Only `success` is processed by the child rule and produced by the parser. In the end, as a user, the only info you get is whether or not the input was successfully parsed or not. Use it like this:
 
 ```d
 if (XML.parse!(ParseLevel.validating)(input).success)
-{ 
-    /*...*/ 
+{
+    /*...*/
 }
 ```
 
@@ -32,7 +32,7 @@ Aliases
 
 Since typing `Grammar.parse!(ParseLevel.validating)(myInput)` can be a bit tedious, **Pegged** defines four different aliases to help you. These are all static methods in the grammars and rules, and can all accept `Input`s or any kind of strings.
 
-* `validate`: equivalent to `parse!(ParseLevel.validating)`. 
+* `validate`: equivalent to `parse!(ParseLevel.validating)`.
 
 * `match`: equivalent to `parse!(ParseLevel.matching)`.
 

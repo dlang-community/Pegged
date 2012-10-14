@@ -4,20 +4,20 @@ import pegged.grammar;
 
 struct C
 {
-    enum names = [`TranslationUnit`:true, `ExternalDeclaration`:true, `FunctionDefinition`:true, `PrimaryExpression`:true, 
-    `PostfixExpression`:true, `ArgumentExpressionList`:true, `UnaryExpression`:true, `IncrementExpression`:true, `PlusPlus`:true, 
-    `DecrementExpression`:true, `UnaryOperator`:true, `CastExpression`:true, `MultiplicativeExpression`:true, `AdditiveExpression`:true, 
+    enum names = [`TranslationUnit`:true, `ExternalDeclaration`:true, `FunctionDefinition`:true, `PrimaryExpression`:true,
+    `PostfixExpression`:true, `ArgumentExpressionList`:true, `UnaryExpression`:true, `IncrementExpression`:true, `PlusPlus`:true,
+    `DecrementExpression`:true, `UnaryOperator`:true, `CastExpression`:true, `MultiplicativeExpression`:true, `AdditiveExpression`:true,
     `ShiftExpression`:true, `RelationalExpression`:true, `EqualityExpression`:true, `ANDExpression`:true, `ExclusiveORExpression`:true,
     `InclusiveORExpression`:true, `LogicalANDExpression`:true, `LogicalORExpression`:true, `ConditionalExpression`:true, `AssignmentExpression`:true,
     `AssignmentOperator`:true, `Expression`:true, `ConstantExpression`:true, `Declaration`:true, `DeclarationSpecifiers`:true, `InitDeclaratorList`:true,
     `InitDeclarator`:true, `StorageClassSpecifier`:true, `TypeSpecifier`:true, `StructOrUnionSpecifier`:true, `StructDeclarationList`:true,
-    `StructDeclaration`:true, `SpecifierQualifierList`:true, `StructDeclaratorList`:true, `StructDeclarator`:true, `EnumSpecifier`:true, 
-    `EnumeratorList`:true, `Enumerator`:true, `EnumerationConstant`:true, `TypeQualifier`:true, `Declarator`:true, `DirectDeclarator`:true, 
-    `Pointer`:true, `TypeQualifierList`:true, `ParameterTypeList`:true, `ParameterList`:true, `ParameterDeclaration`:true, `IdentifierList`:true, 
-    `TypeName`:true, `AbstractDeclarator`:true, `DirectAbstractDeclarator`:true, `TypedefName`:true, `Initializer`:true, `InitializerList`:true, 
+    `StructDeclaration`:true, `SpecifierQualifierList`:true, `StructDeclaratorList`:true, `StructDeclarator`:true, `EnumSpecifier`:true,
+    `EnumeratorList`:true, `Enumerator`:true, `EnumerationConstant`:true, `TypeQualifier`:true, `Declarator`:true, `DirectDeclarator`:true,
+    `Pointer`:true, `TypeQualifierList`:true, `ParameterTypeList`:true, `ParameterList`:true, `ParameterDeclaration`:true, `IdentifierList`:true,
+    `TypeName`:true, `AbstractDeclarator`:true, `DirectAbstractDeclarator`:true, `TypedefName`:true, `Initializer`:true, `InitializerList`:true,
     `Statement`:true, `LabeledStatement`:true, `CompoundStatement`:true, `DeclarationList`:true, `StatementList`:true, `ExpressionStatement`:true,
     `IfStatement`:true, `SwitchStatement`:true, `IterationStatement`:true, `WhileStatement`:true, `DoStatement`:true, `ForStatement`:true,
-    `GotoStatement`:true, `ContinueStatement`:true, `BreakStatement`:true, `ReturnStatement`:true, `Return`:true, `Identifier`:true, 
+    `GotoStatement`:true, `ContinueStatement`:true, `BreakStatement`:true, `ReturnStatement`:true, `Return`:true, `Identifier`:true,
     `Keyword`:true, `Spacing`:true, `Comment`:true, `StringLiteral`:true, `DQChar`:true, `EscapeSequence`:true, `CharLiteral`:true, `IntegerLiteral`:true,
     `Integer`:true, `IntegerSuffix`:true, `FloatLiteral`:true, `Sign`:true];
 
