@@ -13,20 +13,8 @@ import std.typetuple;
 import pegged.grammar;
 
 
+
 void main()
 {
-    mixin(grammar(`
-    Test:
-            program <- decl* :eoi
-            useDecl < "use" qualifiedIdentifier
-            recDecl < "record" identifier "{" "}"
-			classDecl < "class" identifier "{" "}"
-            decl < recDecl/useDecl/classDecl
-    `));
-
-    writeln(Test(`use foo.bar
-
-                    rec foo {
-                    }`));
 
 }
