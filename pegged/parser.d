@@ -56,6 +56,7 @@ LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing
 KEEPARROW    <- '<^' Spacing
+DROPARROW    <- '<;' Spacing
 SPACEARROW   <- '< ' Spacing
 OR           <- '/' Spacing
 POS          <- '&' Spacing
@@ -121,6 +122,7 @@ struct GenericPegged(TParseTree)
             case "Pegged.FUSEARROW":
             case "Pegged.DISCARDARROW":
             case "Pegged.KEEPARROW":
+            case "Pegged.DROPARROW":
             case "Pegged.SPACEARROW":
             case "Pegged.OR":
             case "Pegged.POS":
@@ -539,6 +541,21 @@ struct GenericPegged(TParseTree)
     static string KEEPARROW(GetName g)
     {
         return name ~ `.`~ `KEEPARROW`;
+    }
+
+    static TParseTree DROPARROW(TParseTree p)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<;"), Spacing), name ~ `.`~ `DROPARROW`)(p);
+    }
+
+    static TParseTree DROPARROW(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<;"), Spacing), name ~ `.`~ `DROPARROW`)(TParseTree("", false,[], s));
+    }
+
+    static string DROPARROW(GetName g)
+    {
+        return name ~ `.`~ `DROPARROW`;
     }
 
     static TParseTree SPACEARROW(TParseTree p)
