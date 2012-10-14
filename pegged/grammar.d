@@ -627,6 +627,11 @@ unittest // 'grammar' unit test: PEG syntax
         EmptyLiteral2 <- ''
         Any <- .
         Eps <- eps
+        Letter <- [a-z]
+        Digit  <- [0-9]
+        ABC    <- [abc]
+        Alpha1  <- [a-zA-Z_]
+        Alpha2  <- [_a-zA-Z]
     `));
     
     ParseTree result = Terminals("abc");
@@ -645,8 +650,50 @@ unittest // 'grammar' unit test: PEG syntax
     assert(Terminals.Literal2("abc").successful, "Standard terminal test. Simple quote syntax.");
     assert(Terminals.EmptyLiteral1("").successful , "Standard terminal test. Double quote syntax.");
     assert(Terminals.EmptyLiteral2("").successful, "Standard terminal test. Simple quote syntax.");
-    assert(Terminals.Any("_").successful, "Any terminal ('.') test."); 
+
+    foreach(char c; char.min .. char.max)
+        assert(Terminals.Any(""~c).successful, "Any terminal ('.') test.");
+    
+    assert(Terminals.Eps("").successful, "Eps test.");
     assert(Terminals.Eps("abc").successful, "Eps test.");
+
+    string lower  = "abcdefghijklmnopqrstuvwxyz";
+    string upper  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    string under  = "_";
+    string digits = "0123456789";
+    string others = "?./,;:!*&()[]<>";
+    
+    foreach(dchar dc; lower)
+        assert(Terminals.Letter(to!string(dc)).successful);
+    foreach(dchar dc; upper)
+        assert(!Terminals.Letter(to!string(dc)).successful);
+    foreach(dchar dc; digits)
+        assert(!Terminals.Letter(to!string(dc)).successful);
+    foreach(dchar dc; others)
+        assert(!Terminals.Letter(to!string(dc)).successful);
+    
+    foreach(dchar dc; lower)
+        assert(!Terminals.Digit(to!string(dc)).successful);
+    foreach(dchar dc; upper)
+        assert(!Terminals.Digit(to!string(dc)).successful);
+    foreach(dchar dc; digits)
+        assert(Terminals.Digit(to!string(dc)).successful);
+    foreach(dchar dc; others)
+        assert(!Terminals.Letter(to!string(dc)).successful);
+
+    foreach(dchar dc; lower ~ upper ~ under)
+        assert(Terminals.Alpha1(to!string(dc)).successful);
+    foreach(dchar dc; digits ~ others)
+        assert(!Terminals.Alpha1(to!string(dc)).successful);
+
+    foreach(dchar dc; lower ~ upper ~ under)
+        assert(Terminals.Alpha2(to!string(dc)).successful);
+    foreach(dchar dc; digits ~ others)
+        assert(!Terminals.Alpha2(to!string(dc)).successful);
+
+    foreach(size_t index, dchar dc; lower ~ upper ~ under)
+        assert( (index < 3  && Terminals.ABC(to!string(dc)).successful)
+             || (index >= 3 && !Terminals.ABC(to!string(dc)).successful));
     
     mixin(grammar(`
     Structure:
