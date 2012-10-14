@@ -602,7 +602,7 @@ unittest // 'grammar' unit test: low-level functionalities
         Rule2 <- 'b'
     `));
     
-    assert(is(Test1 == struct), "A struct name Test1 was created.");
+    assert(is(Test1 == struct), "A struct name Test1 is created.");
     assert(is(typeof(Test1("a"))), "Test1 is callable with a string arg");
     assert(__traits(hasMember, Test1, "Rule1"), "Test1 has a member named Rule1.");
     assert(__traits(hasMember, Test1, "Rule2"), "Test1 has a member named Rule2.");
@@ -829,6 +829,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
         Rule5 <: ABC DEF  # Discard arrow
         Rule6 <^ ABC DEF  # Keep arrow
         Rule7 <; ABC DEF  # Drop arrow
+        Rule8 <% ABC Rule1 DEF  # Propagate arrow
         
         ABC <- "abc"
         DEF <- "def"
@@ -859,7 +860,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     result = Arrows.decimateTree(Arrows.Rule2("abc  def  "));
     assert(result.successful, "space arrows consume spaces.");
     assert(result.begin == 0);
-    assert(result.end == "abc  def  ".length, "The entire input was parsed.");
+    assert(result.end == "abc  def  ".length, "The entire input is parsed.");
     assert(result.matches == ["abc", "def"]);
     assert(result.children.length == 2);
     assert(result.children[0].name == "Arrows.ABC");
@@ -869,7 +870,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     result = Arrows.decimateTree(Arrows.Rule3("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
-    assert(result.end == "abcabcabc".length, "The entire input was parsed.");
+    assert(result.end == "abcabcabc".length, "The entire input is parsed.");
     assert(result.matches == ["abc", "abc", "abc"]);
     assert(result.children.length == 3, "With the * operator, all children are kept.");
     assert(result.children[0].name == "Arrows.ABC");
@@ -879,7 +880,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     result = Arrows.decimateTree(Arrows.Rule4("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
-    assert(result.end == "abcabcabc".length, "The entire input was parsed.");
+    assert(result.end == "abcabcabc".length, "The entire input is parsed.");
     assert(result.matches == ["abcabcabc"], "Matches are fused.");
     assert(result.children.length == 0, "The <~ arrow cuts children.");
     
@@ -887,7 +888,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     result = Arrows.decimateTree(Arrows.Rule5("abcdef"));
     assert(result.successful);
     assert(result.begin == "abcdef".length);
-    assert(result.end == "abcdef".length, "The entire input was parsed.");
+    assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches is null, "No match with the discard arrow.");
     assert(result.children.length == 0, "No children with the discard arrow.");
     
@@ -896,7 +897,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     result = Arrows.decimateTree(Arrows.Rule6("abcdef"));
     assert(result.successful);
     assert(result.begin == 0);
-    assert(result.end == "abcdef".length, "The entire input was parsed.");
+    assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches == ["abc", "def"]);
     assert(result.children.length == 2);
     
@@ -904,9 +905,187 @@ unittest // PEG extensions (arrows, prefixes, suffixes, chars)
     result = Arrows.decimateTree(Arrows.Rule7("abcdef"));
     assert(result.successful);
     assert(result.begin == "abcdef".length);
-    assert(result.end == "abcdef".length, "The entire input was parsed.");
+    assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches == ["abc", "def"], "The drop arrow keeps the matches.");
     assert(result.children.length == 0, "The drop arrow drops the children.");
+    
+    // Comparing <- ABC DEF and <% ABC Rule1 DEF
+    //But <% is not very useful anyways. It does not distribute % among the subrules.
+    result = Arrows.decimateTree(Arrows.Rule8("abcabcdefdef"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcdefdef".length, "The entire input is parsed.");
+    assert(result.matches == ["abc", "abc", "def", "def"]);
+    assert(result.children.length == 3);
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.Rule1", "No rule replacement by its own children. See % for that.");
+    assert(result.children[2].name == "Arrows.DEF");
+    
+    mixin(grammar(`
+    PrefixSuffix:
+        # Reference
+        Rule1 <-  ABC   DEF
+        Rule2 <- "abc" "def"
+        Rule3 <-    ABC*
+        Rule4 <-   "abc"*
+        
+        # Discard operator
+        Rule5 <-  :ABC    DEF     
+        Rule6 <-   ABC   :DEF
+        Rule7 <- :"abc"  "def"
+        Rule8 <-  "abc" :"def"
+        
+        # Drop operator
+        Rule9  <-  ;ABC    DEF
+        Rule10 <-   ABC   ;DEF
+        Rule11 <- ;"abc"  "def"
+        Rule12 <-  "abc" ;"def"
+        
+        # Fuse operator
+
+        Rule13 <- ~( ABC* )
+        Rule14 <- ~("abc"*)
+    
+        # Keep operator
+        Rule15 <- ^"abc" ^"def"
+        
+        # Propagate operator
+        Rule16 <- ABC  Rule1 DEF
+        Rule17 <- ABC %Rule1 DEF
+        
+        
+        ABC <- "abc"
+        DEF <- "def"
+    `));
+    
+    
+    // Comparing standard and discarded rules
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule1("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["abc", "def"]);
+    assert(result.children.length == 2);
+    assert(result.children[0].name == "PrefixSuffix.ABC");
+    assert(result.children[1].name == "PrefixSuffix.DEF");
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule5("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["def"]);
+    assert(result.children.length == 1, "The first child is discarded.");
+    assert(result.children[0].name == "PrefixSuffix.DEF");
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule6("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["abc"]);
+    assert(result.children.length == 1, "The second child is discarded.");
+    assert(result.children[0].name == "PrefixSuffix.ABC");
+    
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule2("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["abc", "def"]);
+    assert(result.children.length == 0, "Literals do not create children.");
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule7("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["def"]);
+    assert(result.children.length == 0);
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule8("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["abc"]);
+    assert(result.children.length == 0);
+    
+    // Comparing standard and dropped rules
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule9("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["abc", "def"], "All matches are there.");
+    assert(result.children.length == 1, "The first child is discarded.");
+    assert(result.children[0].name == "PrefixSuffix.DEF");
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule10("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["abc", "def"], "All matches are there.");
+    assert(result.children.length == 1, "The second child is discarded.");
+    assert(result.children[0].name == "PrefixSuffix.ABC");
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule11("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["abc", "def"], "All matches are there.");
+    assert(result.children.length == 0);
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule12("abcdef"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 6);
+    assert(result.matches == ["abc", "def"], "All matches are there.");
+    assert(result.children.length == 0);
+    
+    
+    // Comparing standard and fused rules
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule3("abcabcabc"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches == ["abc", "abc", "abc"]);
+    assert(result.children.length == 3, "Standard '*': 3 children.");
+    assert(result.children[0].name == "PrefixSuffix.ABC");
+    assert(result.children[1].name == "PrefixSuffix.ABC");
+    assert(result.children[2].name == "PrefixSuffix.ABC");
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule4("abcabcabc"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches == ["abc", "abc", "abc"]);
+    assert(result.children.length == 0, "All literals are discarded by the tree decimation.");
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule13("abcabcabc"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches == ["abcabcabc"], "All matches are fused.");
+    assert(result.children.length == 0, "Children are discarded by '~'.");
+    
+    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule14("abcabcabc"));
+    
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcabc".length);
+    assert(result.matches == ["abcabcabc"], "All matches are there.");
+    assert(result.children.length == 0, "Children are discarded by '~'.");
 }
 
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
