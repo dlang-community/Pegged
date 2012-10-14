@@ -628,9 +628,9 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.end == 3);
     assert(result.matches == ["abc"]);
     
-    ParseTree first = Terminals.decimateTree(Terminals.Literal1("abc"));
+    ParseTree reference = Terminals.decimateTree(Terminals.Literal1("abc"));
     
-    assert(result.children[0] == first, "Invoking a grammar is like invoking its first rule.");
+    assert(result.children[0] == reference, "Invoking a grammar is like invoking its first rule.");
     
     assert(Terminals.Literal1("abc").successful, "Standard terminal test. Double quote syntax.");
     assert(Terminals.Literal2("abc").successful, "Standard terminal test. Simple quote syntax.");
@@ -693,6 +693,118 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.name == "Structure", "Grammar name test.");
     assert(result.begin == 0);
     assert(result.end == 0);
+    
+    // Prefixes and Suffixes
+    mixin(grammar(`
+    PrefixSuffix:
+        Rule1 <- &"abc"
+        Rule2 <- !"abc"
+        Rule3 <- "abc"?
+        Rule4 <- "abc"*
+        Rule5 <- "abc"+
+    `));
+    
+    // Verifying &"abc" creates a positive look-ahead construct
+    result = PrefixSuffix.Rule1("abc");
+    reference = posLookahead!(literal!"abc")("abc");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    result = PrefixSuffix.Rule1("def");
+    reference = posLookahead!(literal!"abc")("def");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    
+    // Verifying !"abc" creates a negative look-ahead construct
+    result = PrefixSuffix.Rule2("abc");
+    reference = negLookahead!(literal!"abc")("abc");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    result = PrefixSuffix.Rule2("def");
+    reference = negLookahead!(literal!"abc")("def");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    // Verifying "abc"? creates an optional construct
+    result = PrefixSuffix.Rule3("abc");
+    reference = option!(literal!"abc")("abc");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    result = PrefixSuffix.Rule3("def");
+    reference = option!(literal!"abc")("def");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    // Verifying "abc"* creates a zero or more construct
+    result = PrefixSuffix.Rule4("");
+    reference = zeroOrMore!(literal!"abc")("");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    result = PrefixSuffix.Rule4("abc");
+    reference = zeroOrMore!(literal!"abc")("abc");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    result = PrefixSuffix.Rule4("abcabc");
+    reference = zeroOrMore!(literal!"abc")("abcabc");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    // Verifying "abc"+ creates a one or more construct
+    result = PrefixSuffix.Rule5("");
+    reference = oneOrMore!(literal!"abc")("");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    result = PrefixSuffix.Rule5("abc");
+    reference = oneOrMore!(literal!"abc")("abc");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
+    
+    result = PrefixSuffix.Rule5("abcabc");
+    reference = oneOrMore!(literal!"abc")("abcabc");
+    
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
 }
 
 
