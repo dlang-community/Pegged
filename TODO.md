@@ -25,7 +25,7 @@ TODO: import expressions in grammars?
 TODO: rules parameterized on numbers
 TODO: external rules, introduced by < name > or automatically recognized.
 TODO: direct D code, with {{ }} ? Or use < > for actions and { } for D code
-TODO: [ ] after rule names and grammars, for options. 
+TODO: [ ] after rule names and grammars, for options.
 TODO: memoization as a parse-time option and not a generation-time option
 TODO: adding [ ] after a grammar name for importing other grammars.
 TODO: another option for grammars, coupled to external rules: creating inner variables.

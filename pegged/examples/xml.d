@@ -16,10 +16,10 @@ O opening(O)(O o)
     return o;
 }
 
-/** 
+/**
  * Semantic action to pop the name stack and compare a tag name
  * The parsing fails if the tags do not nest correctly (See docs, the Semantic Actions wiki page)
- */ 
+ */
 O closing(O)(O o)
 {
     if (o.matches.empty || nameStack.back != o.matches[0])
@@ -32,7 +32,7 @@ O closing(O)(O o)
 mixin(grammar(`
 XML:
     Node       <- OpeningTag{opening} (Node / Text)* ClosingTag{closing}
-    OpeningTag <- :"<" identifier :">" 
+    OpeningTag <- :"<" identifier :">"
     ClosingTag <- :"</" identifier :">"
     Text       <~ (!OpeningTag !ClosingTag .)+
 `));
@@ -43,7 +43,7 @@ unittest
     assert(p1.successful);
     assert(p1.matches == ["a", "a"]);
     assert(p1.children[0].children.length == 2);
-    
+
     assert(p1.children[0].name == "Node");
     assert(p1.children[0].children[0].name == "OpeningTag");
     assert(p1.children[0].children[1].name == "ClosingTag");
@@ -52,10 +52,10 @@ unittest
     assert(!XML("<a></b>").successful); // unmatched tag
     assert( XML("<a><b></b></a>").successful); // OK
     assert(!XML("<a><b></a></b>").successful); // badly enclosed tags
-    
+
     auto p2 = XML("<text>Hello World! This is an <emph>important</emph> announcement!</text>");
     assert(p2.successful);
-    
+
     assert(p2.matches == ["text", "Hello World! This is an ", "emph", "important", "emph", " announcement!", "text"]);
     assert(p2.children[0].children[0].matches == ["text"]);
     assert(p2.children[0].children[1].matches == ["Hello World! This is an "]);

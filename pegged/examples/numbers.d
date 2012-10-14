@@ -9,7 +9,7 @@ Numbers:
     Floating   <~ Integer ('.' Unsigned )?
     Unsigned   <~ [0-9]+
     Integer    <~ Sign? Unsigned
-    Hexa       <~ [0-9a-fA-F]+ 
+    Hexa       <~ [0-9a-fA-F]+
     Sign       <- '-' / '+'
 `));
 
@@ -28,7 +28,7 @@ unittest
     assert(Numbers.Hexa(ParseTree("",false,null,"DEADBEEF")).successful);
     assert(Numbers.Hexa(ParseTree("",false,null,"0123BEEF")).successful);
     assert(Numbers.Hexa(ParseTree("",false,null,"DEAD0123")).successful);
-    
+
     assert(!Numbers("").successful);
     assert(!Numbers("abc").successful);
 }

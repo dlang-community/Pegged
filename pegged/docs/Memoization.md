@@ -12,7 +12,7 @@ using memoization and *never* showed a speed decrease (as could be feared from t
 associative array). No test was carried out on huge inputs (10.000 lines-of-text files, for example).
 
 There is a catch, though: testing different memoization implementations, the most efficient one was found to be D's built-in
-associative arrays, which is what is used by **Pegged** right now. But AAs do not work at compile-time. 
+associative arrays, which is what is used by **Pegged** right now. But AAs do not work at compile-time.
 So right now, memoization is disabled by default to allow **Pegged** parsers to function at compile-time.
 
 If you are sure the generated parser will be used only at runtime, use the `Memoization.yes` option while generating the grammar:

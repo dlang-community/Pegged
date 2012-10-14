@@ -22,7 +22,7 @@ assert(m4.t = tuple("abc",0); // only the global pattern is named, and hence cap
 assert(p2(tuple("abc")) == matchFailure); // only one member -> failure
 assert(p2(tuple("abc",0,1)) == matchFailure); // three members -> failure (the pattern has no trailing ...
 
-Pattern!" . { int, double, double }" p3; // match any aggregate (struct, class) 
+Pattern!" . { int, double, double }" p3; // match any aggregate (struct, class)
                                          // with three members being int,double and double, in that order.
 ----
 
@@ -43,7 +43,7 @@ Pattern:
     Choice     <  Sequence (:'/' Sequence)*
     Sequence   <  Primary (:',' Primary)*
     Primary    <  (Aggregate / Range / Identifier / Literal / REST / ANY) Name?
-    
+
     Name       <  identifier
     Aggregate  <  (Identifier / ANY) (Tuple / Record)
     Tuple      <  '{' (Choice (:',' Choice)*)? '}'
@@ -329,7 +329,7 @@ struct TypeNegLookAhead(alias Pattern)
 			enum end = 0;
 			alias T Rest;
 		}
-	}		
+	}
 }
 
 struct isRange
@@ -380,7 +380,7 @@ struct Success(M...)
 	M match;
 	size_t begin;
 	size_t end;
-				
+
 	auto rest(R...)(R rest)
 	{
 		return MatchResult!(M.length, M, R)(true, match, begin, end, rest);
@@ -459,23 +459,23 @@ template onRange(RangePatterns...)
 	auto onRange(R)(R r) if (isInputRange!(R))
 	{
 		alias RangePatternResult!R GetType;
-		
+
 		staticMap!(GetType, RangePatterns) _temp;
-		
+
 		static if (RangePatterns.length > 0)
 		{
 			_temp[0] = RangePatterns[0](r);
 			foreach(i,pat; RangePatterns[1..$])
 				_temp[i+1] = RangePatterns[i+1](_temp[i][1]);
 		}
-		
+
 		struct MatchResult
 		{
 			GetType!(RangePatterns[0]).Types[0] a;
 			GetType!(RangePatterns[1]).Types[0] b;
 			GetType!(RangePatterns[2]).Types[0] c;
 		}
-		
+
 		return MatchResult(_temp[0][0],_temp[1][0],_temp[2][0]);
 	}
 }

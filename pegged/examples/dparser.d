@@ -30,12 +30,12 @@ DeclDef < AttributeSpecifier
         / TemplateMixinDeclaration
         / TemplateMixin
         / MixinDeclaration
-         
+
 ModuleDeclaration < "module" qualifiedIdentifier ";"
 
 ImportDeclaration < "import" ImportList ";"
                    / "static" "import"  ImportList ";"
-                   
+
 ImportList < ImportBindings
             / Import ("," ImportList)?
 
@@ -45,7 +45,7 @@ Import < qualifiedIdentifier "=" qualifiedIdentifier
 ###### Also a space-sep list is needed ##
 List(Elem) < Elem (',' Elem)*
 
-ImportBindings < Import ":" List(ImportBind) 
+ImportBindings < Import ":" List(ImportBind)
 
 ImportBind < Identifier ("=" Identifier)?
 
@@ -79,7 +79,7 @@ BasicType < BasicTypeX
            / "const(" Type ")"
            / "immutable(" Type ")"
            / "shared(" Type ")"
-           / "inout(" Type ")" 
+           / "inout(" Type ")"
 
 BasicTypeX < "bool"
             / "byte" / "ubyte"
@@ -87,7 +87,7 @@ BasicTypeX < "bool"
             / "int" / "uint"
             / "long" / "ulong"
             / "char" / "wchar" / "dchar"
-            / "float" / "double" / "real"   
+            / "float" / "double" / "real"
             / "void"
 
 BasicType2 < "*"
@@ -103,7 +103,7 @@ Declarator < BasicType2* "(" Declarator ")" DeclaratorSuffixes?
             / BasicType2*     Identifier     DeclaratorSuffixes?
 
 DeclaratorSuffixes < DeclaratorSuffix+
-            
+
 DeclaratorSuffix < "[" "]"
                   / "[" AssignExpression "]"
                   / "[" Type "]"
@@ -112,7 +112,7 @@ DeclaratorSuffix < "[" "]"
 ## Could be written otherwise? #
 IdentifierList <  TemplateInstance ("." IdentifierList)?
                 / Identifier ("." IdentifierList)?
-               
+
 StorageClasses < StorageClass+
 
 StorageClass < "abstract"
@@ -171,7 +171,7 @@ FunctionAttributes < FunctionAttribute+
 FunctionAttribute < "nothrow"
                    / "pure"
                    / Property
-                   
+
 MemberFunctionAttributes < MemberFunctionAttribute+
 
 MemberFunctionAttribute < "const"
@@ -207,7 +207,7 @@ StructMemberInitializers < StructMemberInitializer ("," StructMemberInitializer?
 
 StructMemberInitializer < NonVoidInitializer
                          / Identifier : NonVoidInitializer
-                         
+
 AutoDeclaration < StorageClasses AutoDeclarationX ";"
 
 AutoDeclarationX < List(Identifier "=" Initializer)
@@ -222,7 +222,7 @@ VoidInitializer < "void"
 Statement < ";"
            / NonEmptyStatement
            / ScopeBlockStatement
-           
+
 NoScopeNonEmptyStatement < NonEmptyStatement
                           / BlockStatement
 
@@ -232,13 +232,13 @@ NoScopeStatement < ";"
 
 NonEmptyOrScopeBlockStatement < NonEmptyStatement
                                / ScopeBlockStatement
-                               
+
 NonEmptyStatement < NonEmptyStatementNoCaseNoDefault
                    / CaseStatement
                    / CaseRangeStatement
                    / DefaultStatement
-                   
-NonEmptyStatementNoCaseNoDefault < 
+
+NonEmptyStatementNoCaseNoDefault <
     LabeledStatement
   / ExpressionStatement
   / DeclarationStatement
@@ -274,7 +274,7 @@ ScopeBlockStatement < ScopeStatement
 LabeledStatement < Identifier ":" NoScopeStatement
 
 BlockStatement < "{" StatementList? "}"
-                          
+
 StatementList < Statement+
 
 ExpressionStatement < Expression ";"
@@ -286,30 +286,30 @@ IfStatement < "if" "(" IfCondition ")" ThenStatement "else" ElseStatement
 IfCondition < Expression
              / "auto" Identifier "=" Expression
              / BasicType Declarator "=" Expression
-             
+
 ThenStatement < ScopeStatement
- 
+
 ElseStatement < ScopeStatement
- 
+
 WhileStatement < "while" "(" Expression ")" ScopeStatement
- 
+
 DoStatement < "do" ScopeStatement "while" "(" Expression ")" ";"
- 
+
 ForStatement < "for" "(" Initialize Test? ";" Increment? ")" ScopeStatement
- 
+
 Initialize < ";" / NoScopeNonEmptyStatement
- 
+
 Test < Expression
- 
+
 Increment < Expression
- 
+
 ForeachStatement < ("foreach" / "foreach_reverse")
                     "(" List(ForeachType) ";" Aggregate ")"
                      NoScopeNonEmptyStatement
-                     
+
 ForeachType < "ref"? BasicType Declarator
              / "ref"? Identifier
-             
+
 Aggregate < Expression
 
 ForeachRangeStatement < "(" ForeachType ";" Expression ".." Expression ")"
@@ -318,24 +318,24 @@ SwitchStatement < "switch" "(" Expression ")" ScopeStatement
 
 CaseStatement < "case" ArgumentList ":" ScopeStatementList
 
-CaseRangeStatement < "case" AssignExpression ":" 
-                      ".." 
+CaseRangeStatement < "case" AssignExpression ":"
+                      ".."
                       "case" AssignExpression ":"
                       ScopeStatementList
-                      
+
 DefaultStatement < "default" ":" ScopeStatementList
 
 ScopeStatementList < StatementListNoCaseNoDefault
 
 StatementListNoCaseNoDefault < StatementNoCaseNoDefault+
 
-StatementNoCaseNoDefault < ";" 
+StatementNoCaseNoDefault < ";"
                           / NonEmptyStatementNoCaseNoDefault
                           / ScopeBlockStatement
-                          
+
 FinalSwitchStatement < "final" "switch" "(" Expression ")"
                         ScopeStatement
-                        
+
 ContinueStatement < "continue" Identifier? ";"
 
 BreakStatement < "break" Identifier? ";"
@@ -346,12 +346,12 @@ GotoStatement < "goto" ( "default" ";"
                         / "case" ";"
                         / "case" Expression ";"
                         / Identifier ";")
-               
-WithStatement < "with" 
-                 "(" ( Expression / Symbol / TemplateInstance) ")" 
+
+WithStatement < "with"
+                 "(" ( Expression / Symbol / TemplateInstance) ")"
                  ScopeStatement
 
-SynchronizedStatement < "synchronized" 
+SynchronizedStatement < "synchronized"
                         ( "(" Expression ")" )?
                         ScopeStatement
 
@@ -367,10 +367,10 @@ CatchParameter < BasicType Identifier
 
 FinallyStatement < "finally" NoScopeNonEmptyStatement
 
-ThrowStatement < "throw" Expression ";"  
+ThrowStatement < "throw" Expression ";"
 
-ScopeGuardStatement < ( "scope(exit)" 
-                       / "scope(success)" 
+ScopeGuardStatement < ( "scope(exit)"
+                       / "scope(success)"
                        / "scope(failure)")
                        NonEmptyOrScopeBlockStatement
 
@@ -388,18 +388,18 @@ Expression < AssignExpression
 
 AssignExpression < ConditionalExpression (Op AssignExpression)?
 
-Op < ">>>=" 
+Op < ">>>="
     / "^^=" / ">>=" / "<<="
     / "~=" / "+=" / "-=" / "*=" / "^=" / "|=" / "&=" / "/="
     / "="
 
-ConditionalExpression < OrOrExpression 
+ConditionalExpression < OrOrExpression
                         ("?" Expression ":" ConditionalExpression)?
 
 OrOrExpression < AndAndExpression ("||" OrOrExpression)?
 
 AndAndExpression < (CmpExpression / OrExpression) ("&&" AndAndExpression)?
-                    
+
 OrExpression < XorExpression ("|" OrExpression)?
 
 XorExpression < AndExpression ("^" XorExpression)?
@@ -411,7 +411,7 @@ CmpExpression <  EqualExpression
                / RelExpression
                / InExpression
                / ShiftExpression
-               
+
 EqualExpression < ShiftExpression ("==" / "!=") ShiftExpression
 
 IdentityExpression < ShiftExpression ("!is" / "is") ShiftExpression
@@ -429,12 +429,12 @@ ShiftExpression < AddExpression ((">>>" / ">>" / "<<") AddExpression)?
 
 AddExpression < (MulExpression / CatExpression)
                  (("+" / "-") MulExpression)?
-                 
+
 CatExpression < MulExpression ("~" AddExpression)?
 
 MulExpression < UnaryExpression
                  (("*" / "/" / "%") UnaryExpression)?
-                 
+
 UnaryExpression < UnaryOp UnaryExpression
                  / ComplementExpression
                  / "(" Type ")" "." Identifier
@@ -442,13 +442,13 @@ UnaryExpression < UnaryOp UnaryExpression
                  / DeleteExpression
                  / CastExpression
                  / PowExpression
-                 
+
 UnaryOp < "++" / "--"
          / "+" / "-" / "&" / "*" / "/" / "!"
-         
+
 ComplementExpression < "~" UnaryExpression
 
-NewExpression < ("new" AllocatorArguments? Type 
+NewExpression < ("new" AllocatorArguments? Type
                   ("[" AssignExpression "]" / "(" ArgumentList ")" )?)
                / NewAnonClassExpression
 
@@ -468,7 +468,7 @@ CastEqual < "const" "shared"
            / "inout"
            / "immutable"
            / "shared"
-           
+
 PowExpression < PostfixExpression ("^^" UnaryExpression)?
 
 # Changed
@@ -480,14 +480,14 @@ PostfixExpression < PrimaryExpression (IndexExpression / SliceExpression)*
                     / "--"
                     / "(" ArgumentList? ")"
                     )?
-                                    
+
 # Changed
 IndexExpression < "[" ArgumentList "]"
 
 # Changed
 SliceExpression < "[" "]"
                   "[" AssignExpression ".." AssignExpression "]"
-                                     
+
 PrimaryExpression < "this"
                    / "super"
                    / "null"
@@ -547,7 +547,7 @@ IsExpression < "is" "(" Type
                   / Identifier ( ":" TypeSpecialization ("," TemplateParameterList)?
                                / "==" TypeSpecialization ("," TemplateParameterList)?
                                )?
-                  
+
                   )?
                 ")"
 
@@ -589,10 +589,10 @@ Attribute < LinkageAttribute
            / "immutable"
            / "inout"
            / "@disable"
-           
+
 DeclarationBlock < DeclDef
                   / "{" DeclDefs "}"
-                    
+
 LinkageAttribute < "extern" "(" LinkageType ")"
 
 LinkageType < "C++" / "C" / "D" / "Windows" / "Pascal" / "System"
@@ -607,7 +607,7 @@ ProtectionAttribute < "private"
 
 ### class.html
 
-ClassDeclaration < "class" Identifier BaseClassList? ClassBody 
+ClassDeclaration < "class" Identifier BaseClassList? ClassBody
                  / ClassTemplateDeclaration
 
 ### I don't why the grammar distinguish SuperClass and Interface
@@ -622,10 +622,10 @@ ClassBodyDeclaration < DeclDef
                       / Invariant
                       / ClassAllocator
                       / ClassDeallocator
-                      
+
 Constructor < "this" Parameters FunctionBody
              / TemplatedConstructor
-             
+
 Destructor < "~" "this" "(" ")" FunctionBody
 
 StaticConstructor < "static" "this" "(" ")" FunctionBody
@@ -644,7 +644,7 @@ ClassDeallocator < "delete" Parameters FunctionBody
 
 AliasThis < "alias" Identifier "this" ";"
 
-NewAnonClassExpression < "new" AllocatorArguments? "class" ClassArguments? Identifier List(Identifier)? ClassBody 
+NewAnonClassExpression < "new" AllocatorArguments? "class" ClassArguments? Identifier List(Identifier)? ClassBody
 
 ClassArguments < "(" ArgumentList? ")"
 
@@ -660,7 +660,7 @@ EnumBody < ";" / "{" List(EnumMember) "}"
 
 EnumMember < Type "=" AssignExpression
             / Identifier ("=" AssignExpression)?
-            
+
 ### function.html
 
 FunctionBody < BlockStatement
@@ -669,7 +669,7 @@ FunctionBody < BlockStatement
               / OutStatement BodyStatement
               / InStatement OutStatement BodyStatement
               / OutStatement InStatement BodyStatement
-              
+
 InStatement < "in" BlockStatement
 
 OutStatement < "out" ("(" Identifier ")" )? BlockStatement
@@ -685,7 +685,7 @@ AsmInstruction < "align" IntegerExpression
                 / Identifier ":" AsmInstruction
                 / OpCode
                 / OpCode List(Operand)
-                
+
 IntegerExpression < IntegerLiteral / Identifier
 
 Operand < AsmExp
@@ -718,14 +718,14 @@ AsmUnaExp < AsmTypePrefix AsmExp
            / ("offsetof" / "seg") AsmExp
            / ("+" / "-" / "!" / "~") AsmUnaExp
            / AsmPrimaryExp
-           
+
 AsmPrimaryExp < FloatLiteral
               / IntegerLiteral
               / "__LOCAL_SIZE"
               / "$"
               / Register
               / DotIdentifier
-               
+
 DotIdentifier < Identifier ("." DotIdentifier)?
 
 AsmTypePrefix < ( "near"
@@ -742,13 +742,13 @@ AsmTypePrefix < ( "near"
 
 ### Argh. I cheat. Not complete. ST(0) not there
 Register < Identifier
-OpCode < Identifier                 
-                 
+OpCode < Identifier
+
 ### interface.html
 
 InterfaceDeclaration < "interface" Identifier BaseInterfaceList? InterfaceBody
                       / InterfaceTemplateDeclaration
-                      
+
 BaseInterfaceList < ":" List(Identifier)
 
 InterfaceBody < "{" DeclDefs? "}"
@@ -762,17 +762,17 @@ Pragma < "pragma" "(" Identifier ("," ArgumentList)? ")"
 AggregateDeclaration < ("struct" / "union") Identifier (StructBody / ";")
                       / StructTemplateDeclaration
                       / UnionTemplateDeclaration
-                      
+
 StructBody < "{" StructBodyDeclarations? "}"
 
 StructBodyDeclarations < StructBodyDeclaration StructBodyDeclarations?
 
 StructBodyDeclaration < DeclDef
-                       / StructAllocator 
+                       / StructAllocator
                        / StructDeallocator
                        / StructPostblit
                        / AliasThis
-                       
+
 StructAllocator < ClassAllocator
 
 StructDeallocator < ClassDeallocator
@@ -792,19 +792,19 @@ TemplateParameter < TemplateTypeParameter
                    / TemplateAliasParameter
                    / TemplateTupleParameter
                    / TemplateThisParameter
-                   
+
 TemplateInstance < TemplateIdentifier ( "!(" List(TemplateArgument) ")"
                                        / "!" TemplateSingleArgument)
-                                       
+
 TemplateArgument < Type
                   / AssignExpression
                   / Symbol
-                  
+
 Symbol < "."? SymbolTail
 
 SymbolTail < TemplateInstance ("." SymbolTail)?
-            / Identifier ("." SymbolTail)? 
-            
+            / Identifier ("." SymbolTail)?
+
 TemplateSingleArgument < BasicTypeX
                         / CharacterLiteral
                         / StringLiteral
@@ -816,7 +816,7 @@ TemplateSingleArgument < BasicTypeX
                         / "__LINE__"
                         / "__FILE__"
                         / Identifier
-                        
+
 TemplateTypeParameter < Identifier TTPSpecialization? TTPDefault?
 
 TTPSpecialization < ":" Type
@@ -895,7 +895,7 @@ TraitsKeyword < "isAbstractClass"
 
 TraitsArgument < AssignExpression
                 / Type
-              
+
 ### unittest.html
 
 UnitTest < "unittest" FunctionBody
@@ -904,10 +904,10 @@ UnitTest < "unittest" FunctionBody
 
 ConditionalDeclaration < Condition ":" Declarations
                         / Condition CCDeclarationBlock ("else" CCDeclarationBlock)?
-                        
+
 CCDeclarationBlock < Declaration
                     / "{" Declaration? "}"
-                    
+
 Declarations < Declaration+
 
 ConditionalStatement < Condition NoScopeNonEmptyStatement ("else" NoScopeNonEmptyStatement)?
@@ -915,7 +915,7 @@ ConditionalStatement < Condition NoScopeNonEmptyStatement ("else" NoScopeNonEmpt
 Condition < VersionCondition
            / DebugCondition
            / StaticIfCondition
-           
+
 VersionCondition < "version" "(" (IntegerLiteral / "unittest" / Identifier) ")"
 
 VersionSpecification < "version" "=" (Identifier/IntegerLiteral) ";"
@@ -926,26 +926,26 @@ DebugSpecification < "debug" "=" (Identifier / IntegerLiteral) ";"
 
 StaticIfCondition < "static" "if" "(" AssignExpression ")"
 
-StaticAssert < "static" "assert" "(" AssignExpression 
-                                     ("," AssignExpression)? 
+StaticAssert < "static" "assert" "(" AssignExpression
+                                     ("," AssignExpression)?
                                    ")" ";"
-                                   
+
 # I had to add it. Otherwise, keywords are recognized as identifiers
-                                   
+
 Identifier <~ !Keyword [a-zA-Z_] [a-zA-Z0-9_]*
 
-Keyword < "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / "bool" / "break" / "byte" 
-         / "case" / "cast" / "catch" / "cdouble" / "cent" / "cfloat" / "char" / "class" / "const" / "continue" / "creal" / "dchar" 
-         / "debug" / "default" / "delegate" / "delete" / "deprecated" / "double" / "do" / "else" / "enum" / "export" / "extern" 
-         / "false" / "finally" / "final" / "float" / "foreach_reverse" / "foreach" / "for" / "function" / "goto" / "idouble" / "if" 
-         / "ifloat" / "immutable" / "import" / "inout" / "interface" / "invariant" / "int" / "in" / "ireal" / "is" / "lazy" 
-         / "long" / "macro" / "mixin" / "module" / "new" / "nothrow" / "null" / "out" / "override" / "package" / "pragma" 
-         / "private" / "protected" / "public" / "pure" / "real" / "ref" / "return" / "scope" / "shared" / "short" / "static" 
-         / "struct" / "super" / "switch" / "synchronized" / "template" / "this" / "throw" / "true" / "try" / "typedef" / "typeid" 
-         / "typeof" / "ubyte" / "ucent" / "uint" / "ulong" / "union" / "unittest" / "ushort" / "version" / "void" / "volatile" 
+Keyword < "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / "bool" / "break" / "byte"
+         / "case" / "cast" / "catch" / "cdouble" / "cent" / "cfloat" / "char" / "class" / "const" / "continue" / "creal" / "dchar"
+         / "debug" / "default" / "delegate" / "delete" / "deprecated" / "double" / "do" / "else" / "enum" / "export" / "extern"
+         / "false" / "finally" / "final" / "float" / "foreach_reverse" / "foreach" / "for" / "function" / "goto" / "idouble" / "if"
+         / "ifloat" / "immutable" / "import" / "inout" / "interface" / "invariant" / "int" / "in" / "ireal" / "is" / "lazy"
+         / "long" / "macro" / "mixin" / "module" / "new" / "nothrow" / "null" / "out" / "override" / "package" / "pragma"
+         / "private" / "protected" / "public" / "pure" / "real" / "ref" / "return" / "scope" / "shared" / "short" / "static"
+         / "struct" / "super" / "switch" / "synchronized" / "template" / "this" / "throw" / "true" / "try" / "typedef" / "typeid"
+         / "typeof" / "ubyte" / "ucent" / "uint" / "ulong" / "union" / "unittest" / "ushort" / "version" / "void" / "volatile"
          / "wchar" / "while" / "with" / "__FILE__" / "__LINE__" / "__gshared" / "__thread" / "__traits"
 
-                    
+
 ## file lex.html
 
 Comment < BlockComment
@@ -973,9 +973,9 @@ AlternateWysiwygString <- backquote (!backquote .)* backquote StringPostfix?
 
 doublequotedString <- doublequote (DQChar)* doublequote StringPostfix?
 
-DQChar <- EscapeSequence 
+DQChar <- EscapeSequence
         / !doublequote .
-        
+
 EscapeSequence <- backslash ( quote
                             / doublequote
                             / backslash
@@ -996,14 +996,14 @@ CharacterLiteral <- quote (!quote (EscapeSequence / .)) quote
 IntegerLiteral <- DecimalInteger
                 / BinaryInteger
                 / HexadecimalInteger
-                
+
 DecimalInteger <- Integer IntegerSuffix?
 
 Integer <- digit (digit/"_")*
 
 IntegerSuffix <- "Lu" / "LU" / "uL" / "UL"
                / "L" / "u" / "U"
-               
+
 BinaryInteger <- ("0b" / "0B") [01] ([01] / "_")*
 
 HexadecimalInteger <- ("0x"/"0X") HexDigit (HexDigit / "_")*
@@ -1033,22 +1033,22 @@ struct D
     `StatementList`:true, `ExpressionStatement`:true, `DeclarationStatement`:true, `IfStatement`:true, `IfCondition`:true, `ThenStatement`:true,
     `ElseStatement`:true, `WhileStatement`:true, `DoStatement`:true, `ForStatement`:true, `Initialize`:true, `Test`:true, `Increment`:true,
     `ForeachStatement`:true, `ForeachType`:true, `Aggregate`:true, `ForeachRangeStatement`:true, `SwitchStatement`:true, `CaseStatement`:true,
-    `CaseRangeStatement`:true, `DefaultStatement`:true, `ScopeStatementList`:true, `StatementListNoCaseNoDefault`:true, 
-    `StatementNoCaseNoDefault`:true, `FinalSwitchStatement`:true, `ContinueStatement`:true, `BreakStatement`:true, `ReturnStatement`:true, 
+    `CaseRangeStatement`:true, `DefaultStatement`:true, `ScopeStatementList`:true, `StatementListNoCaseNoDefault`:true,
+    `StatementNoCaseNoDefault`:true, `FinalSwitchStatement`:true, `ContinueStatement`:true, `BreakStatement`:true, `ReturnStatement`:true,
     `GotoStatement`:true, `WithStatement`:true, `SynchronizedStatement`:true, `TryStatement`:true, `Catches`:true, `LastCatch`:true, `Catch`:true,
     `CatchParameter`:true, `FinallyStatement`:true, `ThrowStatement`:true, `ScopeGuardStatement`:true, `AsmStatement`:true, `AsmInstructionList`:true,
     `PragmaStatement`:true, `MixinStatement`:true, `Expression`:true, `AssignExpression`:true, `Op`:true, `ConditionalExpression`:true, `OrOrExpression`:true,
     `AndAndExpression`:true, `OrExpression`:true, `XorExpression`:true, `AndExpression`:true, `CmpExpression`:true, `EqualExpression`:true,
     `IdentityExpression`:true, `RelExpression`:true, `RelOp`:true, `InExpression`:true, `ShiftExpression`:true, `AddExpression`:true, `CatExpression`:true,
     `MulExpression`:true, `UnaryExpression`:true, `UnaryOp`:true, `ComplementExpression`:true, `NewExpression`:true, `AllocatorArguments`:true,
-    `ArgumentList`:true, `DeleteExpression`:true, `CastExpression`:true, `CastEqual`:true, `PowExpression`:true, `PostfixExpression`:true, 
+    `ArgumentList`:true, `DeleteExpression`:true, `CastExpression`:true, `CastEqual`:true, `PowExpression`:true, `PostfixExpression`:true,
     `IndexExpression`:true, `SliceExpression`:true, `PrimaryExpression`:true, `StringLiterals`:true, `ArrayLiteral`:true, `AssocArrayLiteral`:true,
     `KeyValuePair`:true, `Lambda`:true, `FunctionLiteral`:true, `ParameterAttributes`:true, `AssertExpression`:true, `MixinExpression`:true,
     `ImportExpression`:true, `TypeidExpression`:true, `IsExpression`:true, `TypeSpecialization`:true, `AttributeSpecifier`:true, `Attribute`:true,
     `DeclarationBlock`:true, `LinkageAttribute`:true, `LinkageType`:true, `AlignAttribute`:true, `ProtectionAttribute`:true, `ClassDeclaration`:true,
     `BaseClassList`:true, `ClassBody`:true, `ClassBodyDeclarations`:true, `ClassBodyDeclaration`:true, `Constructor`:true, `Destructor`:true,
     `StaticConstructor`:true, `StaticDestructor`:true, `SharedStaticConstructor`:true, `SharedStaticDestructor`:true, `Invariant`:true, `ClassAllocator`:true,
-    `ClassDeallocator`:true, `AliasThis`:true, `NewAnonClassExpression`:true, `ClassArguments`:true, `EnumDeclaration`:true, `EnumTag`:true, 
+    `ClassDeallocator`:true, `AliasThis`:true, `NewAnonClassExpression`:true, `ClassArguments`:true, `EnumDeclaration`:true, `EnumTag`:true,
     `EnumBaseType`:true, `EnumBody`:true, `EnumMember`:true, `FunctionBody`:true, `InStatement`:true, `OutStatement`:true, `BodyStatement`:true,
     `AsmInstruction`:true, `IntegerExpression`:true, `Operand`:true, `AsmExp`:true, `AsmLogOrExp`:true, `AsmLogAndExp`:true, `AsmOrExp`:true, `AsmXorExp`:true,
     `AsmAndExp`:true, `AsmEqualExp`:true, `AsmRelExp`:true, `AsmShiftExp`:true, `AsmAddExp`:true, `AsmMulExp`:true, `AsmBrExp`:true, `AsmUnaExp`:true,
@@ -1359,7 +1359,7 @@ struct D
 
     static ParseTree NonEmptyStatementNoCaseNoDefault(ParseTree p)
     {
-        return named!(or!(spaceAnd!(Spacing, LabeledStatement), spaceAnd!(Spacing, ExpressionStatement), spaceAnd!(Spacing, DeclarationStatement), spaceAnd!(Spacing, IfStatement), spaceAnd!(Spacing, WhileStatement), spaceAnd!(Spacing, DoStatement), spaceAnd!(Spacing, ForStatement), spaceAnd!(Spacing, ForeachStatement), spaceAnd!(Spacing, SwitchStatement), spaceAnd!(Spacing, FinalSwitchStatement), spaceAnd!(Spacing, ContinueStatement), spaceAnd!(Spacing, BreakStatement), spaceAnd!(Spacing, ReturnStatement), spaceAnd!(Spacing, GotoStatement), spaceAnd!(Spacing, WithStatement), spaceAnd!(Spacing, SynchronizedStatement), spaceAnd!(Spacing, TryStatement), spaceAnd!(Spacing, ScopeGuardStatement), spaceAnd!(Spacing, ThrowStatement), spaceAnd!(Spacing, AsmStatement), spaceAnd!(Spacing, PragmaStatement), spaceAnd!(Spacing, MixinStatement), spaceAnd!(Spacing, ForeachRangeStatement), spaceAnd!(Spacing, ConditionalStatement), spaceAnd!(Spacing, StaticAssert), spaceAnd!(Spacing, TemplateMixin), spaceAnd!(Spacing, 
+        return named!(or!(spaceAnd!(Spacing, LabeledStatement), spaceAnd!(Spacing, ExpressionStatement), spaceAnd!(Spacing, DeclarationStatement), spaceAnd!(Spacing, IfStatement), spaceAnd!(Spacing, WhileStatement), spaceAnd!(Spacing, DoStatement), spaceAnd!(Spacing, ForStatement), spaceAnd!(Spacing, ForeachStatement), spaceAnd!(Spacing, SwitchStatement), spaceAnd!(Spacing, FinalSwitchStatement), spaceAnd!(Spacing, ContinueStatement), spaceAnd!(Spacing, BreakStatement), spaceAnd!(Spacing, ReturnStatement), spaceAnd!(Spacing, GotoStatement), spaceAnd!(Spacing, WithStatement), spaceAnd!(Spacing, SynchronizedStatement), spaceAnd!(Spacing, TryStatement), spaceAnd!(Spacing, ScopeGuardStatement), spaceAnd!(Spacing, ThrowStatement), spaceAnd!(Spacing, AsmStatement), spaceAnd!(Spacing, PragmaStatement), spaceAnd!(Spacing, MixinStatement), spaceAnd!(Spacing, ForeachRangeStatement), spaceAnd!(Spacing, ConditionalStatement), spaceAnd!(Spacing, StaticAssert), spaceAnd!(Spacing, TemplateMixin), spaceAnd!(Spacing,
 ImportDeclaration)), "NonEmptyStatementNoCaseNoDefault")(p);
     }
 
@@ -2384,7 +2384,7 @@ getVirtualFunctions")), spaceAnd!(Spacing, literal!("getVirtualMethods")), space
     {
         return named!(or!(spaceAnd!(Spacing, literal!("abstract")), spaceAnd!(Spacing, literal!("alias")), spaceAnd!(Spacing, literal!("align")), spaceAnd!(Spacing, literal!("asm")), spaceAnd!(Spacing, literal!("assert")), spaceAnd!(Spacing, literal!("auto")), spaceAnd!(Spacing, literal!("body")), spaceAnd!(Spacing, literal!("bool")), spaceAnd!(Spacing, literal!("break")), spaceAnd!(Spacing, literal!("byte")), spaceAnd!(Spacing, literal!("case")), spaceAnd!(Spacing, literal!("cast")), spaceAnd!(Spacing, literal!("catch")), spaceAnd!(Spacing, literal!("cdouble")), spaceAnd!(Spacing, literal!("cent")), spaceAnd!(Spacing, literal!("cfloat")), spaceAnd!(Spacing, literal!("char")), spaceAnd!(Spacing, literal!("class")), spaceAnd!(Spacing, literal!("const")), spaceAnd!(Spacing, literal!("continue")), spaceAnd!(Spacing, literal!("creal")), spaceAnd!(Spacing, literal!("dchar")), spaceAnd!(Spacing, literal!("debug")), spaceAnd!(Spacing, literal!("default")), spaceAnd!(Spacing, literal!("delegate")), spaceAnd!(Spacing,
  literal!("delete")), spaceAnd!(Spacing, literal!("deprecated")), spaceAnd!(Spacing, literal!("double")), spaceAnd!(Spacing, literal!("do")), spaceAnd!(Spacing, literal!("else")), spaceAnd!(Spacing, literal!("enum")), spaceAnd!(Spacing, literal!("export")), spaceAnd!(Spacing, literal!("extern")), spaceAnd!(Spacing, literal!("false")), spaceAnd!(Spacing, literal!("finally")), spaceAnd!(Spacing, literal!("final")), spaceAnd!(Spacing, literal!("float")), spaceAnd!(Spacing, literal!("foreach_reverse")), spaceAnd!(Spacing, literal!("foreach")), spaceAnd!(Spacing, literal!("for")), spaceAnd!(Spacing, literal!("function")), spaceAnd!(Spacing, literal!("goto")), spaceAnd!(Spacing, literal!("idouble")), spaceAnd!(Spacing, literal!("if")), spaceAnd!(Spacing, literal!("ifloat")), spaceAnd!(Spacing, literal!("immutable")), spaceAnd!(Spacing, literal!("import")), spaceAnd!(Spacing, literal!("inout")), spaceAnd!(Spacing, literal!("interface")), spaceAnd!(Spacing, literal!("invariant")), spaceAnd!(Spacing, literal!("int")),
- spaceAnd!(Spacing, literal!("in")), spaceAnd!(Spacing, literal!("ireal")), spaceAnd!(Spacing, literal!("is")), spaceAnd!(Spacing, literal!("lazy")), spaceAnd!(Spacing, literal!("long")), spaceAnd!(Spacing, literal!("macro")), spaceAnd!(Spacing, literal!("mixin")), spaceAnd!(Spacing, literal!("module")), spaceAnd!(Spacing, literal!("new")), spaceAnd!(Spacing, literal!("nothrow")), spaceAnd!(Spacing, literal!("null")), spaceAnd!(Spacing, literal!("out")), spaceAnd!(Spacing, literal!("override")), spaceAnd!(Spacing, literal!("package")), spaceAnd!(Spacing, literal!("pragma")), spaceAnd!(Spacing, literal!("private")), spaceAnd!(Spacing, literal!("protected")), spaceAnd!(Spacing, literal!("public")), spaceAnd!(Spacing, literal!("pure")), spaceAnd!(Spacing, literal!("real")), spaceAnd!(Spacing, literal!("ref")), spaceAnd!(Spacing, literal!("return")), spaceAnd!(Spacing, literal!("scope")), spaceAnd!(Spacing, literal!("shared")), spaceAnd!(Spacing, literal!("short")), spaceAnd!(Spacing, literal!("static")), 
+ spaceAnd!(Spacing, literal!("in")), spaceAnd!(Spacing, literal!("ireal")), spaceAnd!(Spacing, literal!("is")), spaceAnd!(Spacing, literal!("lazy")), spaceAnd!(Spacing, literal!("long")), spaceAnd!(Spacing, literal!("macro")), spaceAnd!(Spacing, literal!("mixin")), spaceAnd!(Spacing, literal!("module")), spaceAnd!(Spacing, literal!("new")), spaceAnd!(Spacing, literal!("nothrow")), spaceAnd!(Spacing, literal!("null")), spaceAnd!(Spacing, literal!("out")), spaceAnd!(Spacing, literal!("override")), spaceAnd!(Spacing, literal!("package")), spaceAnd!(Spacing, literal!("pragma")), spaceAnd!(Spacing, literal!("private")), spaceAnd!(Spacing, literal!("protected")), spaceAnd!(Spacing, literal!("public")), spaceAnd!(Spacing, literal!("pure")), spaceAnd!(Spacing, literal!("real")), spaceAnd!(Spacing, literal!("ref")), spaceAnd!(Spacing, literal!("return")), spaceAnd!(Spacing, literal!("scope")), spaceAnd!(Spacing, literal!("shared")), spaceAnd!(Spacing, literal!("short")), spaceAnd!(Spacing, literal!("static")),
 spaceAnd!(Spacing, literal!("struct")), spaceAnd!(Spacing, literal!("super")), spaceAnd!(Spacing, literal!("switch")), spaceAnd!(Spacing, literal!("synchronized")), spaceAnd!(Spacing, literal!("template")), spaceAnd!(Spacing, literal!("this")), spaceAnd!(Spacing, literal!("throw")), spaceAnd!(Spacing, literal!("true")), spaceAnd!(Spacing, literal!("try")), spaceAnd!(Spacing, literal!("typedef")), spaceAnd!(Spacing, literal!("typeid")), spaceAnd!(Spacing, literal!("typeof")), spaceAnd!(Spacing, literal!("ubyte")), spaceAnd!(Spacing, literal!("ucent")), spaceAnd!(Spacing, literal!("uint")), spaceAnd!(Spacing, literal!("ulong")), spaceAnd!(Spacing, literal!("union")), spaceAnd!(Spacing, literal!("unittest")), spaceAnd!(Spacing, literal!("ushort")), spaceAnd!(Spacing, literal!("version")), spaceAnd!(Spacing, literal!("void")), spaceAnd!(Spacing, literal!("volatile")), spaceAnd!(Spacing, literal!("wchar")), spaceAnd!(Spacing, literal!("while")), spaceAnd!(Spacing, literal!("with")), spaceAnd!(Spacing, literal!("__
 FILE__")), spaceAnd!(Spacing, literal!("__LINE__")), spaceAnd!(Spacing, literal!("__gshared")), spaceAnd!(Spacing, literal!("__thread")), spaceAnd!(Spacing, literal!("__traits"))), "Keyword")(p);
     }

@@ -2,7 +2,7 @@
  * This module was used to parse template constraints
  * and instantiate the various constituent,
  * to find which one is blocking a template to be instantiated.
- * 
+ *
  * I have to code this again, using the D parser.
  */
 module pegged.examples.constraints;
@@ -83,12 +83,12 @@ string argListAlias(ParseResult p)
         if (arg.children[0].name != "TupleParameter")
         {
             aliases ~= "alias Args["~to!string(i)~"] " ~ arg.matches[0] ~ ";\n";
-            associations ~= "`" ~ arg.matches[0] ~ ": ` ~ Args["~to!string(i)~"].stringof ~ `, ` ~ "; 
+            associations ~= "`" ~ arg.matches[0] ~ ": ` ~ Args["~to!string(i)~"].stringof ~ `, ` ~ ";
         }
         else
         {
             aliases ~= "alias Args["~to!string(i)~"..$] " ~ arg.matches[0] ~ ";\n";
-            associations ~= "`" ~ arg.matches[0] ~ ": ` ~ Args["~to!string(i)~"..$].stringof ~ `, `"; 
+            associations ~= "`" ~ arg.matches[0] ~ ": ` ~ Args["~to!string(i)~"..$].stringof ~ `, `";
         }
     return aliases ~ associations[0..$-6]~" ~ `)`;\n";
 }
@@ -109,7 +109,7 @@ string generateAllTests(string assoc, string[] constraints)
     foreach(i,constr; constraints) // to iterate at CT on the right number of mockups
     {
         string si = to!string(i);
-        result ~= 
+        result ~=
 "static if (__traits(compiles, Mock"~si~"!(Args)))
     pragma(msg, constraints["~si~"], ` with " ~ assoc ~ ": true`);
 else
