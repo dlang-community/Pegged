@@ -10,7 +10,7 @@ Grammar      <- Spacing GrammarName Definition+ :eoi
 Definition   <- LhsName Arrow Expression
 Expression   <- Sequence (:OR Sequence)*
 Sequence     <- Prefix+
-Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP)* Suffix
+Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
 Primary      <- !(LhsName Arrow) 
                 ( RhsName 
@@ -51,20 +51,26 @@ Char         <~ backslash ( quote
                           / 'U' hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit
                           )
               / . # or anything else
-Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / SPACEARROW
+
+Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / PROPAGATEARROW / SPACEARROW
 LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing
 KEEPARROW    <- '<^' Spacing
 DROPARROW    <- '<;' Spacing
+PROPAGATEARROW <- '<%' Spacing
 SPACEARROW   <- '< ' Spacing
+
 OR           <- '/' Spacing
+
 POS          <- '&' Spacing
 NEG          <- '!' Spacing
 FUSE         <- '~' Spacing
 DISCARD      <- ':' Spacing
 KEEP         <- '^' Spacing
 DROP         <- ';' Spacing
+PROPAGATE    <- '%' Spacing
+
 OPTION       <- '?' Spacing
 ZEROORMORE   <- '*' Spacing
 ONEORMORE    <- '+' Spacing
@@ -123,6 +129,7 @@ struct GenericPegged(TParseTree)
             case "Pegged.DISCARDARROW":
             case "Pegged.KEEPARROW":
             case "Pegged.DROPARROW":
+            case "Pegged.PROPAGATEARROW":
             case "Pegged.SPACEARROW":
             case "Pegged.OR":
             case "Pegged.POS":
@@ -131,6 +138,7 @@ struct GenericPegged(TParseTree)
             case "Pegged.DISCARD":
             case "Pegged.KEEP":
             case "Pegged.DROP":
+            case "Pegged.PROPAGATE":
             case "Pegged.OPTION":
             case "Pegged.ZEROORMORE":
             case "Pegged.ONEORMORE":
@@ -215,12 +223,12 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Prefix(TParseTree p)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.zeroOrMore!(pegged.peg.or!(POS, NEG, FUSE, DISCARD, KEEP, DROP)), Suffix), name ~ `.`~ `Prefix`)(p);
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.zeroOrMore!(pegged.peg.or!(POS, NEG, FUSE, DISCARD, KEEP, DROP, PROPAGATE)), Suffix), name ~ `.`~ `Prefix`)(p);
     }
 
     static TParseTree Prefix(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.zeroOrMore!(pegged.peg.or!(POS, NEG, FUSE, DISCARD, KEEP, DROP)), Suffix), name ~ `.`~ `Prefix`)(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.zeroOrMore!(pegged.peg.or!(POS, NEG, FUSE, DISCARD, KEEP, DROP, PROPAGATE)), Suffix), name ~ `.`~ `Prefix`)(TParseTree("", false,[], s));
     }
 
     static string Prefix(GetName g)
@@ -470,12 +478,12 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Arrow(TParseTree p)
     {
-        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, SPACEARROW), name ~ `.`~ `Arrow`)(p);
+        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, PROPAGATEARROW, SPACEARROW), name ~ `.`~ `Arrow`)(p);
     }
 
     static TParseTree Arrow(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, SPACEARROW), name ~ `.`~ `Arrow`)(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, PROPAGATEARROW, SPACEARROW), name ~ `.`~ `Arrow`)(TParseTree("", false,[], s));
     }
 
     static string Arrow(GetName g)
@@ -556,6 +564,21 @@ struct GenericPegged(TParseTree)
     static string DROPARROW(GetName g)
     {
         return name ~ `.`~ `DROPARROW`;
+    }
+
+    static TParseTree PROPAGATEARROW(TParseTree p)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<%"), Spacing), name ~ `.`~ `PROPAGATEARROW`)(p);
+    }
+
+    static TParseTree PROPAGATEARROW(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<%"), Spacing), name ~ `.`~ `PROPAGATEARROW`)(TParseTree("", false,[], s));
+    }
+
+    static string PROPAGATEARROW(GetName g)
+    {
+        return name ~ `.`~ `PROPAGATEARROW`;
     }
 
     static TParseTree SPACEARROW(TParseTree p)
@@ -676,6 +699,21 @@ struct GenericPegged(TParseTree)
     static string DROP(GetName g)
     {
         return name ~ `.`~ `DROP`;
+    }
+
+    static TParseTree PROPAGATE(TParseTree p)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("%"), Spacing), name ~ `.`~ `PROPAGATE`)(p);
+    }
+
+    static TParseTree PROPAGATE(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("%"), Spacing), name ~ `.`~ `PROPAGATE`)(TParseTree("", false,[], s));
+    }
+
+    static string PROPAGATE(GetName g)
+    {
+        return name ~ `.`~ `PROPAGATE`;
     }
 
     static TParseTree OPTION(TParseTree p)

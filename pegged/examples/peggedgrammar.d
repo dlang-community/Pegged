@@ -11,7 +11,7 @@ Grammar      <- Spacing GrammarName Definition+ :eoi
 Definition   <- LhsName Arrow Expression
 Expression   <- Sequence (:OR Sequence)*
 Sequence     <- Prefix+
-Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP)* Suffix
+Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
 Primary      <- !(LhsName Arrow) 
                 ( RhsName 
@@ -52,20 +52,26 @@ Char         <~ backslash ( quote
                           / 'U' hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit
                           )
               / . # or anything else
-Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / SPACEARROW
+
+Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / PROPAGATEARROW / SPACEARROW
 LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing
 KEEPARROW    <- '<^' Spacing
 DROPARROW    <- '<;' Spacing
+PROPAGATEARROW <- '<%' Spacing
 SPACEARROW   <- '< ' Spacing
+
 OR           <- '/' Spacing
+
 POS          <- '&' Spacing
 NEG          <- '!' Spacing
 FUSE         <- '~' Spacing
 DISCARD      <- ':' Spacing
 KEEP         <- '^' Spacing
 DROP         <- ';' Spacing
+PROPAGATE    <- '%' Spacing
+
 OPTION       <- '?' Spacing
 ZEROORMORE   <- '*' Spacing
 ONEORMORE    <- '+' Spacing

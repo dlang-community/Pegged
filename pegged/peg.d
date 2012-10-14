@@ -745,7 +745,11 @@ template and(rules...) if (rules.length > 0)
                 if (!isNullNode(temp)) // discard empty nodes
                 {
                     result.matches ~= temp.matches;
-                    if (temp.name != "drop")
+                    if (temp.name == "drop")
+                    {}
+                    else if (temp.name == "propagate")
+                        result.children ~= temp.children;
+                    else
                         result.children ~= temp;
                 }
             }
@@ -2040,6 +2044,32 @@ unittest // 'drop' unit test
     assert(result.end == 3*3);
     assert(result.children.length == 2, "but only 2 children.");
     assert(result.children == [abc("abcabcabc"), abc(abc(abc("abcabcabc")))]);
+}
+
+/**
+Makes r disappear in a sequence, letting its children take its place. It's equivalent 
+to the '%' operator. Given A <- B %C D and C <- E F, a successful parse for A will
+generate a three with four children: B, E, F and D parse trees.
+*/
+template propagate(alias r)
+{
+    ParseTree propagate(ParseTree p)
+    {
+        ParseTree result = r(p);
+        if (result.successful)
+            result.name = "propagate";
+        return result;    
+    }
+
+    ParseTree propagate(string input)
+    {
+        return .propagate!(r)(ParseTree("",false,[],input));
+    }
+    
+    string propagate(GetName g)
+    {
+        return "propagate";
+    }
 }
 
 /**

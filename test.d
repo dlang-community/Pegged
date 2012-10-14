@@ -16,5 +16,17 @@ import pegged.grammar;
 
 void main()
 {
-
+    mixin(grammar(`
+    Test:
+        A <- B %C D
+        B <- 'b'
+        C <- E F
+        D <- 'd'
+        E <- 'e'
+        F <- 'f'
+    `));
+    
+    writeln(Test("befd"));
+    
 }
+
