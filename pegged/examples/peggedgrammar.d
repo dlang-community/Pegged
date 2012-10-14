@@ -57,7 +57,7 @@ LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing
 KEEPARROW    <- '<^' Spacing
-SPACEARROW   <- '<' Spacing
+SPACEARROW   <- '< ' Spacing
 OR           <- '/' Spacing
 POS          <- '&' Spacing
 NEG          <- '!' Spacing
