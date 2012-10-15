@@ -440,7 +440,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 result = ".";
                 break;
             case "Pegged.Literal":
-                result = "pegged.peg.literal!(\"" ~ p.matches[0] ~ "\")";
+                result = "pegged.peg.literal!(`" ~ p.matches[0] ~ "`)";
                 break;
             case "Pegged.CharClass":
                 if (p.children.length > 1)

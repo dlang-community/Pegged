@@ -12,21 +12,37 @@ import std.typetuple;
 
 import pegged.grammar;
 
+import pegged.grammar;
+import pegged.peg;
+enum mp=`
+MarkupParser:
+Markup <- Spacing (Tag / Text)* :eoi
+
+Text <~ (! '<' .)*
+
+Tag <- StartTag / EndTag
+
+StartTag <- '<' Name Attr* '>'
+
+EndTag < "</" Name '>'
+
+Attr < Name ('=' Value)?
+
+Name <- (alpha / Alpha) (alpha / Alpha / digit / '-' / '_' / ':' / '.')*
+
+Value <- SQValue / DQValue / CharValue
+
+SQValue <~ :"'" (! "'" .)* :"'"
+
+DQValue <~ :'"' (! '"' .)* :'"'
+
+CharValue <~ (!(Spacing / '>') .)*
+`;
 
 
-void main()
-{
-    mixin(grammar(`
-    Test:
-        A <- B %C D
-        B <- 'b'
-        C <- E F
-        D <- 'd'
-        E <- 'e'
-        F <- 'f'
-    `));
 
-    writeln(Test("befd"));
+void main() {
+
+mixin(grammar(mp));
 
 }
-
