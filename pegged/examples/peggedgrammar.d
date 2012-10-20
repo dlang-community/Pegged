@@ -60,7 +60,7 @@ DISCARDARROW <- '<:' Spacing
 KEEPARROW    <- '<^' Spacing
 DROPARROW    <- '<;' Spacing
 PROPAGATEARROW <- '<%' Spacing
-SPACEARROW   <- '< ' Spacing
+SPACEARROW   <- '<' Spacing
 
 OR           <- '/' Spacing
 
@@ -84,8 +84,6 @@ OPEN         <- '(' Spacing
 CLOSE        <- ')' Spacing
 ANY          <- '.' Spacing
 Spacing      <: (Space / Comment)*
-Comment      <- '#' (!EndOfLine .)* EndOfLine
-Space        <- ' ' / '\t' / EndOfLine
-EndOfLine    <- '\r\n' / '\n' / '\r'
-EndOfInput   <- !.
+Comment      <- '#' (!eol .)* :eol
+Space        <- spacing / "\\t" / "\\n" / "\\r"
 `;
