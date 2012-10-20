@@ -1164,7 +1164,8 @@ template zeroOrMore(alias r)
     {
         auto result = ParseTree("zeroOrMore!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
         auto temp = r(result);
-        while(temp.successful)
+        while(temp.successful
+            && temp.begin < temp.end)  // To avoid infinite loops on epsilon-matching rules
         {
             result.matches ~= temp.matches;
             result.children ~= temp;
@@ -1304,7 +1305,8 @@ template oneOrMore(alias r)
         }
         else
         {
-            while(temp.successful)
+            while(temp.successful
+                && temp.begin < temp.end) // To avoid infinite loops on epsilon-matching rules
             {
                 result.matches ~= temp.matches;
                 result.children ~= temp;
