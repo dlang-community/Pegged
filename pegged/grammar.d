@@ -601,6 +601,7 @@ mixin template expected()
     }
 }
 
+/+
 unittest // 'grammar' unit test: low-level functionalities
 {
     mixin(grammar(`
@@ -1380,7 +1381,53 @@ mixin(grammar("
     assert(Chars.decimateTree(Chars.Japanese("今日は'")).successful);
     assert(Chars.decimateTree(Chars.Spanish("¡Hola!")).successful);
 }
++/
 
-// TODO: extended chars tests
+unittest // Extended char range tests
+{
+    import std.conv;
+    
+    mixin(grammar(`
+    CharRanges:
+        Rule1 <- [a-z]
+        Rule2 <- [\141-\172]             # a-z in octal
+        Rule3 <- [\x61-\x7A]             # a-z in hexadecimal
+        Rule4 <- [\u0061-\u007A]         # a-z in UTF16
+        Rule5 <- [\U00000061-\U0000007A] # a-z in UTF32
+
+        Rule6 <- [\-\[\]\\\'\"\n\r\t]
+    `));
+
+    string lower = "abcdefghijklmnopqrstuvwxyz";
+    string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    string digits = "0123456789";
+    string others = "?./,;:!*&()[]<>";
+    string escapes = "-[]\\\'\"\n\r\t";
+
+    foreach(dchar c; lower)
+    {
+        assert(CharRanges.Rule1(to!string(c)).successful);
+        assert(CharRanges.Rule2(to!string(c)).successful);
+        assert(CharRanges.Rule3(to!string(c)).successful);
+        assert(CharRanges.Rule4(to!string(c)).successful);
+        assert(CharRanges.Rule5(to!string(c)).successful);
+    }
+
+    foreach(dchar c; upper ~ digits ~ others)
+    {
+        assert(!CharRanges.Rule1(to!string(c)).successful);
+        assert(!CharRanges.Rule2(to!string(c)).successful);
+        assert(!CharRanges.Rule3(to!string(c)).successful);
+        assert(!CharRanges.Rule4(to!string(c)).successful);
+        assert(!CharRanges.Rule5(to!string(c)).successful);
+    }
+
+    foreach(dchar c; escapes)
+    {
+        assert(CharRanges.Rule6(to!string(c)).successful);
+    }
+}
+
+
 // TODO: parameterized rules, parameterized grammars
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
