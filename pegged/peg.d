@@ -2175,6 +2175,7 @@ alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOf
 alias endOfLine eol; /// helper alias.
 
 alias or!(literal!(" "), literal!("\t")) space; /// predefined space-recognizing parser (space or tabulation).
+alias named!(literal!"\t", "tab") tab; /// A parser recognizing \t (tabulation)
 alias named!(fuse!(discardChildren!(oneOrMore!space)),
              "spaces") spaces; /// aka '~space+'
 alias or!(space, endOfLine) blank; /// Any blank char (spaces or end of line).

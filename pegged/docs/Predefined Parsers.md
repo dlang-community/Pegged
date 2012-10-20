@@ -19,6 +19,7 @@ endOfInput  <- !.   # alias: eoi
 # whitespace
 endofLine   <- '\r\n' / '\n' / '\r'  # alias: eol
 space       <- ' ' / '\t'
+tab         <- '\t'
 blank       <- space / endOfLine
 spacing     <~ blank+
 
@@ -28,6 +29,7 @@ doublequote <- '"'
 backquote   <- "`"
 slash       <- "/"
 backslash   <- '\\'
+
 
 # Identifiers
 identifier  <~ [a-zA-Z_] [a-zA-Z_0-9]*
