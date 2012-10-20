@@ -1319,6 +1319,68 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children[0].children[0].children[2].name == `literal!("abc")`);
 }
 
+unittest // Extended chars tests
+{
+mixin(grammar("
+    Chars:
+        # Lone chars
+        Rule1 <- '\t' '0' 'A' '~'
+        Rule2 <- '\11' '\60' '\101' '\176'           # \t 0 A ~ in octal
+        Rule3 <- '\011' '\060' '\101' '\176'         # \t 0 A ~ in octal (prefix 0)
+        Rule4 <- '\x09' '\x30' '\x41' '\x7E'         # \t 0 A ~ in hexadecimal
+        Rule5 <- '\u0009' '\u0030' '\u0041' '\u007E' # \t 0 A ~ in unicode
+        Rule6 <- '\U00000009' '\U00000030' '\U00000041' '\U0000007E' # \t 0 A ~ in unicode
+
+        # Strings literals
+        Rule7 <- '\t0A~'
+        Rule8 <- '\11\60\101\176'            # \t 0 A ~ in octal
+        Rule9 <- '\011\060\101\176'          # \t 0 A ~ in octal (prefix 0)
+        Rule10 <- '\x09\x30\x41\x7E'         # \t 0 A ~ in hexadecimal
+        Rule11 <- '\u0009\u0030\u0041\u007E' # \t 0 A ~ in unicode
+        Rule12 <- '\U00000009\U00000030\U00000041' '\U0000007E' # \t 0 A ~ in unicode
+
+        # Outside Latin
+        Rule13 <- '\u03B1\u03B9\u03C6\u03B1' # alpha in greek
+        Rule14 <- 'αιφα'
+
+        # Hello's
+        English <- 'Hello'
+        Russian <- 'Здравствуйте'
+        Arabic <- 'السلام عليك'
+        Chinese <- '你好'
+        Japanese <- '今日は'
+        Spanish <- '¡Hola!'
+    "));
+
+
+    assert(Chars.decimateTree(Chars.Rule1("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule2("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule3("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule4("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule5("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule6("\t0A~")).successful);
+
+    assert(Chars.decimateTree(Chars.Rule7("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule8("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule9("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule10("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule11("\t0A~")).successful);
+    assert(Chars.decimateTree(Chars.Rule12("\t0A~")).successful);
+
+    assert(Chars.decimateTree(Chars.Rule13("\u03B1\u03B9\u03C6\u03B1")).successful);
+    assert(Chars.decimateTree(Chars.Rule13("αιφα")).successful);
+
+    assert(Chars.decimateTree(Chars.Rule14("\u03B1\u03B9\u03C6\u03B1")).successful);
+    assert(Chars.decimateTree(Chars.Rule14("αιφα")).successful);
+
+    assert(Chars.decimateTree(Chars.English("Hello")).successful);
+    assert(Chars.decimateTree(Chars.Russian("Здравствуйте")).successful);
+    assert(Chars.decimateTree(Chars.Arabic("السلام عليك")).successful);
+    assert(Chars.decimateTree(Chars.Chinese("你好")).successful);
+    assert(Chars.decimateTree(Chars.Japanese("今日は'")).successful);
+    assert(Chars.decimateTree(Chars.Spanish("¡Hola!")).successful);
+}
+
 // TODO: extended chars tests
 // TODO: parameterized rules, parameterized grammars
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
