@@ -302,7 +302,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                         ~ "        return name ~ `.`~ " ~ innerName ~ ";\n    }\n\n";
 
                 if (parameterizedRule)
-                    result ~= "     }\n";
+                    result ~= "    }\n";
 
                 break;
             case "Pegged.GrammarName":
@@ -601,7 +601,6 @@ mixin template expected()
     }
 }
 
-/+
 unittest // 'grammar' unit test: low-level functionalities
 {
     mixin(grammar(`
@@ -1426,7 +1425,6 @@ unittest // Extended char range tests
         assert(CharRanges.Rule6(to!string(c)).successful);
     }
 }
-+/
 
 unittest // qualified names for rules
 {
@@ -1477,6 +1475,208 @@ unittest // qualified names for rules
     assert(result.matches == ["foo", "bar", "baz"]);
 }
 
+unittest // Parameterized rules
+{
+    mixin(grammar(`
+    Parameterized:
+        # Different arities
+        Rule1(A)     <- A+
+        Rule1(A,B)   <- (A B)+
+        Rule1(A,B,C) <- (A B C)+
 
-// TODO: parameterized rules, parameterized grammars
+        # Inner call
+        Call1    <- Rule1('a')
+        Call2    <- Rule1('a','b')
+        Call3    <- Rule1('a','b','c')
+        Call4(A) <- Rule1(A, A, A)
+        Call5(A) <- Rule1('a', A, 'c')
+
+        # Default values
+        Rule2(A = 'a', B = 'b') <- (A B)+
+
+        # Re-using the parameters
+        Rule3(A,B) <- A B B A  # Money money money!
+
+        # The standard parameterized rule
+        List(Elem, Sep) < Elem (:Sep Elem)*
+
+        # Another common PEG pattern
+        AllUntil(End) <~ (!End .)* :End
+    `));
+
+    alias Parameterized.Rule1!(literal!"a") R1;
+    alias oneOrMore!(literal!"a") Ref1;
+
+    ParseTree reference = Ref1("aaaa");
+    ParseTree result = R1("aaaa");
+
+    assert(result.name == `Parameterized.Rule1!(literal!("a"))`);
+    assert(reference.successful);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    result = Parameterized.Call1("aaaa");
+
+    assert(result.name == `Parameterized.Call1`);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    alias Parameterized.Rule1!(literal!"abc") R1long;
+    alias oneOrMore!(literal!"abc") Ref1long;
+
+    reference = Ref1long("abcabcabcabc");
+    result = R1long("abcabcabcabc");
+
+    assert(result.name == `Parameterized.Rule1!(literal!("abc"))`);
+    assert(reference.successful);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    alias Parameterized.Rule1!(literal!"a", literal!"b") R2;
+    alias oneOrMore!(and!(literal!"a", literal!"b")) Ref2;
+
+    reference = Ref2("abababab");
+    result = R2("abababab");
+
+    assert(result.name == `Parameterized.Rule1!(literal!("a"), literal!("b"))`);
+    assert(reference.successful);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    result = Parameterized.Call2("abababab");
+
+    assert(result.name == `Parameterized.Call2`);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    alias Parameterized.Rule1!(literal!"a", literal!"b", literal!"c") R3;
+    alias oneOrMore!(and!(literal!"a", literal!"b", literal!"c")) Ref3;
+
+    reference = Ref3("abcabcabcabc");
+    result = R3("abcabcabcabc");
+
+    assert(result.name == `Parameterized.Rule1!(literal!("a"), literal!("b"), literal!("c"))`);
+    assert(reference.successful);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    result = Parameterized.Call3("abcabcabcabc");
+
+    assert(result.name == `Parameterized.Call3`);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    result = Parameterized.Call4!(literal!"A")("AAAAAA");
+
+    assert(result.name == `Parameterized.Call4!(literal!("A"))`);
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "AAAAAA".length);
+    assert(result.matches == ["A","A","A","A","A","A"]);
+
+    result = Parameterized.Call5!(literal!"A")("aAcaAc");
+
+    assert(result.name == `Parameterized.Call5!(literal!("A"))`);
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "aAcaAc".length);
+    assert(result.matches == ["a","A","c","a","A","c"]);
+
+    // Default parameters
+    alias Parameterized.Rule2!() R2_1;
+    alias Parameterized.Rule2!(literal!"a") R2_2;
+    alias Parameterized.Rule2!(literal!"a", literal!"b") R2_3;
+
+    assert(R2_1("ababab").successful);
+    assert(R2_2("ababab").successful);
+    assert(R2_3("ababab").successful);
+
+    // Re-using a parameter (A B B A)
+    result = Parameterized.Rule3!(literal!"A", literal!"B")("ABBA");
+
+    assert(result.name == `Parameterized.Rule3!(literal!("A"), literal!("B"))`);
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "ABBA".length);
+    assert(result.matches == ["A", "B", "B", "A"]);
+
+    alias Parameterized.List!(identifier, literal!",") IdList; // Identifiers separated by ','
+    alias Parameterized.List!(IdList, literal!";") IdList2; // IdList's separated by ';'
+
+    result = IdList("foo, bar, baz");
+
+    assert(result.name == `Parameterized.List!(identifier, literal!(","))`);
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "foo, bar, baz".length);
+    assert(result.matches == ["foo", "bar", "baz"]);
+
+    result = Parameterized.decimateTree(IdList2("foo,bar,baz; abc, def,   ghi"));
+
+    assert(result.name == `Parameterized.List!(Parameterized.List!(identifier, literal!(",")), literal!(";"))`);
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "foo,bar,baz; abc, def,   ghi".length);
+    assert(result.matches == ["foo", "bar", "baz", "abc", "def", "ghi"]);
+
+    assert(result.children.length == 2);
+
+    assert(result.children[0].name == `Parameterized.List!(identifier, literal!(","))`);
+    assert(result.children[0].matches == ["foo", "bar", "baz"]);
+
+    assert(result.children[1].name == `Parameterized.List!(identifier, literal!(","))`);
+    assert(result.children[1].matches == ["abc", "def", "ghi"]);
+
+    alias Parameterized.AllUntil!(or!(endOfLine)) Line;
+    alias zeroOrMore!(Line) Lines;
+
+    string input =
+"This is an input text.
+Here is another line.
+
+    And the last one.
+";
+
+    result = Lines(input);
+    assert(result.successful);
+    assert(result.children.length == 4);
+    assert(result.children[0].matches == ["This is an input text."]);
+    assert(result.children[1].matches == ["Here is another line."]);
+    assert(result.children[2].matches is null);
+    assert(result.children[3].matches == ["    And the last one."]);
+
+
+    // Parameterized grammar test
+    mixin(grammar(`
+    Arithmetic(Atom) :
+        Expr     <  Factor  (('+'/'-') Factor)*
+        Factor   <  Primary (('*'/'/') Primary)*
+        Primary  <  '(' Expr ')' / '-' Expr / Atom
+    `));
+
+    alias Arithmetic!(identifier) Arith1;
+    alias Arithmetic!(or!(identifier, digits)) Arith2;
+
+    assert(Arith1("x + y*z/foo").successful);
+    assert(Arith2("x + y*z/foo").successful);
+
+    assert(!Arith1("1 + 2*3/456").successful);
+    assert(Arith2("1 + 2*3/456").successful);
+    assert(Arith2("1 + 2*3/z").successful);
+}
+
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
