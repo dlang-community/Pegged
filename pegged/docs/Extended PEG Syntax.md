@@ -259,6 +259,31 @@ C <- 'c'
 
 You can select what pattern is considered as blank: define a rule called `Spacing` in your grammar. This is the rule that will be called by **Pegged** for this grammar to consume space when the `< `arrow is used. If no user-defined `Spacing` is provided, **Pegged** use the predefined `spacing` rule that parse blank chars (whitespace, tabulation, etc).
 
+Use `Spacing` to represent a 'unit' space: one unit of space, like `' '` or `'\t'`. The space arrow will take care of applying it as much as necessary (that is: zero or more times). Oh, and do *not* use the space arrow in `Spacing` definition itself.
+
+By using a different `Spacing` rule, you can represent different syntaxes:
+
+```
+Number1 <- digit digit digit
+Number2 <  digit digit digit
+
+Spacing <- spacing / '_'
+```
+
+The previous `Number2` will match "123", but also "1_23" or "12   __3__".
+
+`< ` does not apply the spacing inside `e*`or `e+`. This is to avoid nasty bugs for a user caught unaware by space-consuming. If you need space-consumption
+inside a zero-or-more or one-or-more construct, put `Spacing` explicitly inside the block:
+
+```
+Number1 <- digit+
+Number2 <  (digit Spacing)+
+
+Spacing <- spacing / '_'
+```
+
+`Number1` will match "123" but not "1 23" or "10_000". `Number2` is nearer to what a D lexer would accept: "10_000" is OK.
+
 If you're using **Pegged** to parse a programming language with comments, a nice trick is to put a call to both whitechars and comments rules in `Spacing` (see **Pegged** own grammar for an example). That way, you can put comments anywhere a space can be and they will be recognized and discarded while parsing.
 
 Parameterized Rules
