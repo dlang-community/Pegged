@@ -1381,7 +1381,6 @@ mixin(grammar("
     assert(Chars.decimateTree(Chars.Japanese("今日は'")).successful);
     assert(Chars.decimateTree(Chars.Spanish("¡Hola!")).successful);
 }
-+/
 
 unittest // Extended char range tests
 {
@@ -1426,6 +1425,56 @@ unittest // Extended char range tests
     {
         assert(CharRanges.Rule6(to!string(c)).successful);
     }
+}
++/
+
+unittest // qualified names for rules
+{
+    mixin(grammar(`
+    First:
+        Rule1 <- "abc"
+        Rule2 <- "def"
+    `));
+
+    mixin(grammar(`
+    Second:
+        Rule1 <- First.Rule1
+        Rule2 <- First.Rule2
+        Rule3 <- pegged.peg.list(pegged.peg.identifier, ',')
+    `));
+
+    // Equal on success
+    ParseTree reference = First("abc");
+    ParseTree result = Second("abc");
+    assert(reference.successful);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    // Equal on failure
+    reference = First("def");
+    result = Second("def");
+    assert(!reference.successful);
+    assert(!result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    // Second rule test
+    reference = First.Rule2("def");
+    result = Second.Rule2("def");
+    assert(reference.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+
+    // External (predefined) rule call:
+    result = Second.Rule3("foo,bar,baz");
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "foo,bar,baz".length);
+    assert(result.matches == ["foo", "bar", "baz"]);
 }
 
 
