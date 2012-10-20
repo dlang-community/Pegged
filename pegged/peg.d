@@ -2202,13 +2202,13 @@ alias named!(literal!"`", "backquote") backquote; /// A parser recognizing ` (ba
 /// A list of elem's separated by sep's. One element minimum.
 template list(alias elem, alias sep)
 {
-    alias named!(spaceAnd!(elem, (zeroOrMore!(spaceAnd!(discardMatches!(sep), elem)))), "list") list;
+    alias named!(spaceAnd!(spacing, and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem)))), "list") list;
 }
 
 /// A list of elem's separated by sep's. The empty list (no elem, no sep) is OK.
 template list0(alias elem, alias sep)
 {
-    alias named!(option!(spaceAnd!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem)))), "list0") list0;
+    alias named!(spaceAnd!(spacing, option!(and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem))))), "list0") list0;
 }
 
 template AddSpace(alias sp)
