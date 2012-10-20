@@ -913,6 +913,37 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.children == reference.children);
 }
 
+unittest // Multilines rules
+{
+    mixin(grammar(`
+Indentation:
+Rule1 <
+'a'
+    'b'
+'c'
+    Rule2
+<-
+ 'd'
+Rule3
+<
+'e'
+Rule4 <- 'f' Rule5   # Rule4 ends with 'f', then it's Rule5
+<- 'g'
+
+
+
+
+    'h'
+`));
+
+
+    assert(Indentation("abc").successful);
+    assert(Indentation.Rule2("d").successful);
+    assert(Indentation.Rule3("e").successful);
+    assert(Indentation.Rule4("f").successful);
+    assert(Indentation.Rule5("gh").successful);
+}
+
 unittest // PEG extensions (arrows, prefixes, suffixes)
 {
     mixin(grammar(`
