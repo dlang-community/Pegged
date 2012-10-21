@@ -76,6 +76,31 @@ ParseTree p = Gram("abcbccbcd");
 */
 string grammar(Memoization withMemo = Memoization.no)(string definition)
 {
+    // Helper to insert ':Spacing*' before and after Primarys
+    ParseTree spaceArrow(ParseTree input)
+    {
+        ParseTree wrapInSpaces(ParseTree p)
+        {
+            ParseTree spacer =
+            ParseTree("Pegged.Prefix", true, null, null, 0,0, [
+                ParseTree("Pegged.DISCARD", true),
+                ParseTree("Pegged.Suffix", true, null, null, 0, 0, [
+                    ParseTree("Pegged.Primary", true, null, null, 0, 0, [
+                        ParseTree("Pegged.RhsName", true, null, null, 0,0, [
+                            ParseTree("Pegged.Identifier", true, ["Spacing"])
+                        ])
+                    ]),
+                    ParseTree("Pegged.ZEROORMORE", true)
+                ])
+            ]);
+            ParseTree result = ParseTree("Pegged.Sequence", true, p.matches, p.input, p.begin, p.end, p.children);
+            result.children = spacer ~ result.children ~ spacer;
+            return result;
+        }
+        return modify!( p => p.name == "Pegged.Primary",
+                        wrapInSpaces)(input);
+    }
+
     ParseTree defAsParseTree = Pegged(definition);
 
     if (!defAsParseTree.successful)
@@ -228,22 +253,8 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                         code ~= "pegged.peg.propagate!("~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.SPACEARROW":
-                        string temp = generateCode(p.children[2]);
-                        size_t i = 0;
-                        while(i < temp.length-4) // a while loop to make it work at compile-time.
-                        {
-                            if (temp[i..i+5] == "and!(")
-                            {
-                                code ~= "spaceAnd!(Spacing, ";
-                                i = i + 5;
-                            }
-                            else
-                            {
-                                code ~= temp[i];
-                                i = i + 1; // ++i doesn't work at CT?
-                            }
-                        }
-                        code ~= temp[$-4..$];
+                        ParseTree modified = spaceArrow(p.children[2]);
+                        code ~= generateCode(modified);
                         break;
                     default:
                         break;
@@ -948,16 +959,18 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
 {
     mixin(grammar(`
     Arrows:
-        Rule1 <- ABC DEF # Standard arrow
+        Rule1 <- ABC DEF  # Standard arrow
         Rule2 <  ABC DEF  # Space arrow
+        Rule3 <  ABC DEF* # Space arrow
+        Rule4 <  ABC+ DEF # Space arrow
 
-        Rule3 <- ABC*
-        Rule4 <~ ABC*       # Fuse arrow
+        Rule5 <- ABC*
+        Rule6 <~ ABC*     # Fuse arrow
 
-        Rule5 <: ABC DEF  # Discard arrow
-        Rule6 <^ ABC DEF  # Keep arrow
-        Rule7 <; ABC DEF  # Drop arrow
-        Rule8 <% ABC Rule1 DEF  # Propagate arrow
+        Rule7 <: ABC DEF  # Discard arrow
+        Rule8 <^ ABC DEF  # Keep arrow
+        Rule9 <; ABC DEF  # Drop arrow
+        Rule10 <% ABC Rule1 DEF  # Propagate arrow
 
         ABC <- "abc"
         DEF <- "def"
@@ -994,8 +1007,50 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children[0].name == "Arrows.ABC");
     assert(result.children[1].name == "Arrows.DEF");
 
+    result = Arrows.decimateTree(Arrows.Rule3("abcdefdef"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcdefdef".length);
+    assert(result.matches == ["abc", "def", "def"]);
+    assert(result.children.length == 3);
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.DEF");
+    assert(result.children[2].name == "Arrows.DEF");
+
+    result = Arrows.decimateTree(Arrows.Rule3("abc  def  defdef"));
+    assert(result.successful, "space arrows consume spaces.");
+    assert(result.begin == 0);
+    assert(result.end == "abc  def  defdef".length, "The entire input is parsed.");
+    assert(result.matches == ["abc", "def", "def", "def"]);
+    assert(result.children.length == 4);
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.DEF");
+    assert(result.children[2].name == "Arrows.DEF");
+    assert(result.children[3].name == "Arrows.DEF");
+
+    result = Arrows.decimateTree(Arrows.Rule4("abcabcdef"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcabcdef".length);
+    assert(result.matches == ["abc", "abc", "def"]);
+    assert(result.children.length == 3);
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.ABC");
+    assert(result.children[2].name == "Arrows.DEF");
+
+    result = Arrows.decimateTree(Arrows.Rule4("   abc abcabc  def  "));
+    assert(result.successful, "space arrows consume spaces.");
+    assert(result.begin == 0);
+    assert(result.end == "   abc abcabc  def  ".length, "The entire input is parsed.");
+    assert(result.matches == ["abc", "abc", "abc", "def"]);
+    assert(result.children.length == 4);
+    assert(result.children[0].name == "Arrows.ABC");
+    assert(result.children[1].name == "Arrows.ABC");
+    assert(result.children[2].name == "Arrows.ABC");
+    assert(result.children[3].name == "Arrows.DEF");
+
     //Comparing <- ABC* and <~ ABC*
-    result = Arrows.decimateTree(Arrows.Rule3("abcabcabc"));
+    result = Arrows.decimateTree(Arrows.Rule5("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcabcabc".length, "The entire input is parsed.");
@@ -1005,7 +1060,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children[1].name == "Arrows.ABC");
     assert(result.children[2].name == "Arrows.ABC");
 
-    result = Arrows.decimateTree(Arrows.Rule4("abcabcabc"));
+    result = Arrows.decimateTree(Arrows.Rule6("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcabcabc".length, "The entire input is parsed.");
@@ -1013,7 +1068,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children.length == 0, "The <~ arrow cuts children.");
 
     // Comparing <- ABC DEF and <: ABC DEF
-    result = Arrows.decimateTree(Arrows.Rule5("abcdef"));
+    result = Arrows.decimateTree(Arrows.Rule7("abcdef"));
     assert(result.successful);
     assert(result.begin == "abcdef".length);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
@@ -1022,7 +1077,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
 
     // Comparing <- ABC DEF and <^ ABC DEF
     //But <^ is not very useful anyways. It does not distribute ^ among the subrules.
-    result = Arrows.decimateTree(Arrows.Rule6("abcdef"));
+    result = Arrows.decimateTree(Arrows.Rule8("abcdef"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
@@ -1030,7 +1085,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children.length == 2);
 
     // Comparing <- ABC DEF and <; ABC DEF
-    result = Arrows.decimateTree(Arrows.Rule7("abcdef"));
+    result = Arrows.decimateTree(Arrows.Rule9("abcdef"));
     assert(result.successful);
     assert(result.begin == "abcdef".length);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
@@ -1039,7 +1094,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
 
     // Comparing <- ABC DEF and <% ABC Rule1 DEF
     //But <% is not very useful anyways. It does not distribute % among the subrules.
-    result = Arrows.decimateTree(Arrows.Rule8("abcabcdefdef"));
+    result = Arrows.decimateTree(Arrows.Rule10("abcabcdefdef"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcabcdefdef".length, "The entire input is parsed.");
@@ -1048,7 +1103,45 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children[0].name == "Arrows.ABC");
     assert(result.children[1].name == "Arrows.Rule1", "No rule replacement by its own children. See % for that.");
     assert(result.children[2].name == "Arrows.DEF");
+}
 
+unittest //More space arrow tests
+{
+    mixin(grammar(`
+    Spaces:
+        Rule1 < A (B C)+
+        A <- 'a'
+        B <- 'b'
+        C <- 'c'
+    `));
+
+    ParseTree result = Spaces.decimateTree(Spaces.Rule1("abcbc"));
+
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "abcbc".length);
+    assert(result.children.length == 5);
+    assert(result.children[0].name == "Spaces.A");
+    assert(result.children[1].name == "Spaces.B");
+    assert(result.children[2].name == "Spaces.C");
+    assert(result.children[3].name == "Spaces.B");
+    assert(result.children[4].name == "Spaces.C");
+
+    result = Spaces.decimateTree(Spaces.Rule1(" a bc  b  c "));
+
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == " a bc  b  c ".length);
+    assert(result.children.length == 5);
+    assert(result.children[0].name == "Spaces.A");
+    assert(result.children[1].name == "Spaces.B");
+    assert(result.children[2].name == "Spaces.C");
+    assert(result.children[3].name == "Spaces.B");
+    assert(result.children[4].name == "Spaces.C");
+}
+
+unittest // Prefix and suffix tests
+{
     mixin(grammar(`
     PrefixSuffix:
         # Reference
@@ -1348,11 +1441,13 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children[0].children[0].children[0].name == `literal!("abc")`);
     assert(result.children[0].children[0].children[1].name == `literal!("abc")`);
     assert(result.children[0].children[0].children[2].name == `literal!("abc")`);
+}
 
-    // Leading alternation
+unittest // Leading alternation
+{
     mixin(grammar(`
     LeadingAlternation:
-		Rule1 <- / 'a'
+        Rule1 <- / 'a'
         Rule2 <- / 'a' / 'b'
         Rule3 <- (/ 'a' / 'b')
     `));
@@ -1374,7 +1469,6 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.begin == 0);
     assert(result.end == 1);
     assert(result.matches == ["b"]);
-
 }
 
 unittest // Extended chars tests

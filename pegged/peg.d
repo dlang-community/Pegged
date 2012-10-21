@@ -2223,8 +2223,9 @@ template AddSpace(alias sp)
 }
 
 /**
-The engine behind the '< ' Pegged rule: all sequence subelements of a rule are interspersed
-with a space-consuming rule, given as the first template parameter.
+The engine formerly behind the '< ' Pegged rule: all sequence subelements of a rule are interspersed
+with a space-consuming rule, given as the first template parameter. It's not used by Pegged anymore
+but can be useful for low-level code. It might become deprecated, but it's not there yet.
 
 ----
 alias and!(literal!"abc", literal!"def") rule1; // "abc" "def", equivalent to "abcdef"
@@ -2382,4 +2383,23 @@ size_t size(ParseTree p)
         foreach(child; p.children)
                 result += size(child);
         return result;
+}
+
+/**
+Generic ParseTree modifier:
+predicate must be callable with a ParseTree and return a boolean.
+modifier must be callable with a ParseTree and return a ParseTree.
+
+If predicate is true on input, modify calls modifier on input and return the result.
+If not, it continues with the children.
+*/
+ParseTree modify(alias predicate, alias modifier)(ParseTree input)
+{
+    foreach(ref child; input.children)
+        child = modify!(predicate, modifier)(child);
+
+    if (predicate(input))
+        input = modifier(input);
+
+    return input;
 }
