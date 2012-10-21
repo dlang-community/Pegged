@@ -9,7 +9,7 @@ Pegged:
 # Syntactic rules:
 Grammar      <- Spacing GrammarName Definition+ :eoi
 Definition   <- LhsName Arrow Expression
-Expression   <- Sequence (:OR Sequence)*
+Expression   <- :OR? Sequence (:OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*

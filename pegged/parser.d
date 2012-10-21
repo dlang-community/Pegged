@@ -8,7 +8,7 @@ Pegged:
 # Syntactic rules:
 Grammar      <- Spacing GrammarName Definition+ :eoi
 Definition   <- LhsName Arrow Expression
-Expression   <- Sequence (:OR Sequence)*
+Expression   <- :OR? Sequence (:OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
@@ -189,12 +189,12 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Expression(TParseTree p)
     {
-        return pegged.peg.named!(pegged.peg.and!(Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), name ~ `.`~ `Expression`)(p);
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), name ~ `.`~ `Expression`)(p);
     }
 
     static TParseTree Expression(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), name ~ `.`~ `Expression`)(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), name ~ `.`~ `Expression`)(TParseTree("", false,[], s));
     }
 
     static string Expression(GetName g)
