@@ -289,7 +289,7 @@ If you're using **Pegged** to parse a programming language with comments, a nice
 Leading Alternation Branch That Never Matches
 ---------------------------------------------
 
-It is possible to provide an extra '/' at the beginning of alternation expressions:
+It is possible to provide an extra `/` at the beginning of alternation expressions:
 
 ```
 Rule1 <- / 'a'
