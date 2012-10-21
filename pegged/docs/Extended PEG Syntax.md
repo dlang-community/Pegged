@@ -286,6 +286,32 @@ Spacing <- spacing / '_'
 
 If you're using **Pegged** to parse a programming language with comments, a nice trick is to put a call to both whitechars and comments rules in `Spacing` (see **Pegged** own grammar for an example). That way, you can put comments anywhere a space can be and they will be recognized and discarded while parsing.
 
+Leading Alternation Branch That Never Matches
+---------------------------------------------
+
+It is possible to provide an extra `/` at the beginning of alternation expressions:
+
+```
+Rule1 <- / 'a'
+Rule2 <- / 'a' / 'b'
+Rule3 <- (/ 'a' / 'b')
+```
+
+The lack of terminals or symbols at the beginning of the alternation will never match anything.  In other words: `Rule1` in the above example is actually equivalent to this:
+
+```
+Rule1 <- 'a'
+```
+
+This is provided for the syntactic convenience of being able to place an entire alternation expression in its own indentation level:
+
+```
+MultiLineAlternation <-
+	/ 'a'
+	/ 'b'
+	/ 'c'
+```
+
 Parameterized Rules
 -------------------
 
