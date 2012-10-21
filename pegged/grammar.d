@@ -1348,6 +1348,33 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children[0].children[0].children[0].name == `literal!("abc")`);
     assert(result.children[0].children[0].children[1].name == `literal!("abc")`);
     assert(result.children[0].children[0].children[2].name == `literal!("abc")`);
+
+    // Leading alternation
+    mixin(grammar(`
+    LeadingAlternation:
+		Rule1 <- / 'a'
+        Rule2 <- / 'a' / 'b'
+        Rule3 <- (/ 'a' / 'b')
+    `));
+
+    result = LeadingAlternation.decimateTree(LeadingAlternation.Rule1("a"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 1);
+    assert(result.matches == ["a"]);
+
+    result = LeadingAlternation.decimateTree(LeadingAlternation.Rule2("b"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 1);
+    assert(result.matches == ["b"]);
+
+    result = LeadingAlternation.decimateTree(LeadingAlternation.Rule3("b"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == 1);
+    assert(result.matches == ["b"]);
+
 }
 
 unittest // Extended chars tests
