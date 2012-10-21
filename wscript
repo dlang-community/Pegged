@@ -82,8 +82,7 @@ def configure(conf):
 def build(bld):
     bld.stlib(source = bld.path.ant_glob(os.path.join('pegged', '*.d')),
               target = 'pegged',
-              includes = [TOP],
-              install_path = '${PREFIX}/lib')
+              includes = [TOP])
 
 def dist(dst):
     '''makes a tarball for redistributing the sources'''
