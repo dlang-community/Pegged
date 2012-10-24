@@ -1181,7 +1181,7 @@ unittest // Prefix and suffix tests
 
 
     // Comparing standard and discarded rules
-    result = PrefixSuffix.decimateTree(PrefixSuffix.Rule1("abcdef"));
+    auto result = PrefixSuffix.decimateTree(PrefixSuffix.Rule1("abcdef"));
 
     assert(result.successful);
     assert(result.begin == 0);
@@ -1452,7 +1452,7 @@ unittest // Leading alternation
         Rule3 <- (/ 'a' / 'b')
     `));
 
-    result = LeadingAlternation.decimateTree(LeadingAlternation.Rule1("a"));
+    auto result = LeadingAlternation.decimateTree(LeadingAlternation.Rule1("a"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == 1);
