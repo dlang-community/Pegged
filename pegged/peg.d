@@ -860,6 +860,40 @@ unittest // 'and' unit test
     , "'abc' 'de' 'f' has two child on 'abc_efghi', the one from 'abc' (success) and the one from 'de' (failure).");
 }
 
+template wrapAround(alias before, alias target, alias after)
+{
+
+    ParseTree wrapAround(ParseTree p)
+    {
+        string name = "wrapAround!(" ~ getName!(before)() ~ ", " ~ getName!(target)() ~ ", " ~ getName!(after)() ~ ")";
+
+        ParseTree temp = before(p);
+        if (!temp.successful)
+            return temp;
+
+        ParseTree result = target(temp);
+        if (!result.successful)
+            return result;
+
+        temp = after(result);
+        if (!temp.successful)
+            return temp;
+
+        return result;
+    }
+
+    ParseTree wrapAround(string input)
+    {
+        return .wrapAround!(before, target, after)(ParseTree("",false,[],input));
+    }
+
+    string wrapAround(GetName g)
+    {
+        return "wrapAround!(" ~ getName!(before)() ~ ", " ~ getName!(target)() ~ ", " ~ getName!(after)() ~ ")";
+    }
+}
+
+
 /**
 Basic operator: it matches if one of its subrules (stored in the rules template parameter tuple) match
 the input. The subrules are tested in order, from rules[0] to rules[$-1].
@@ -2336,7 +2370,7 @@ mixin template decimateTree()
             ParseTree[] result;
             foreach(child; pt.children)
             {
-                if (isRule(child.name) || !child.successful) // keep nodes that belongs to the current grammar
+                if (isRule(child.name) || !child.successful && child.children.length == 0) // keep nodes that belongs to the current grammar
                 {
                     child.children = filterChildren(child);
                     result ~= child;
