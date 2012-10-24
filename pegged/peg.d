@@ -874,11 +874,13 @@ template wrapAround(alias before, alias target, alias after)
         ParseTree result = target(temp);
         if (!result.successful)
             return result;
+        result.begin = temp.begin;
 
         temp = after(result);
         if (!temp.successful)
             return temp;
 
+        result.end = temp.end;
         return result;
     }
 

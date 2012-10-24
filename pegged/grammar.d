@@ -1355,6 +1355,101 @@ unittest // Prefix and suffix tests
     assert(result.children[2].name == "PrefixSuffix.DEF");
     assert(result.children[2].name == "PrefixSuffix.DEF");
 
+    // Testing % and < together
+    mixin(grammar(`
+    PropTest:
+        Rule1 < B C+
+        Rule2 <- B (%C)+
+        Rule3 <  B (%C)+
+        Rule4 <  B %(D E)+
+
+        B <- 'b'
+        C <- D E
+        D <- 'd'
+        E <- 'e'
+    `));
+
+    result = PropTest.decimateTree(PropTest.Rule1("bdedede"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "bdedede".length);
+    assert(result.matches == ["b", "d", "e", "d", "e", "d", "e"]);
+    assert(result.children.length == 4, "b and de, de, de");
+    assert(result.children[0].name == "PropTest.B");
+    assert(result.children[1].name == "PropTest.C");
+    assert(result.children[2].name == "PropTest.C");
+    assert(result.children[3].name == "PropTest.C");
+
+    result = PropTest.decimateTree(PropTest.Rule2("bdedede"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "bdedede".length);
+    assert(result.matches == ["b", "d", "e", "d", "e", "d", "e"]);
+    assert(result.children.length == 7, "b and (d and e), thrice.");
+    assert(result.children[0].name == "PropTest.B");
+    assert(result.children[1].name == "PropTest.D");
+    assert(result.children[2].name == "PropTest.E");
+    assert(result.children[3].name == "PropTest.D");
+    assert(result.children[4].name == "PropTest.E");
+    assert(result.children[5].name == "PropTest.D");
+    assert(result.children[6].name == "PropTest.E");
+
+    result = PropTest.decimateTree(PropTest.Rule3("bdedede"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "bdedede".length);
+    assert(result.matches == ["b", "d", "e", "d", "e", "d", "e"]);
+    assert(result.children.length == 7, "b and (d and e), thrice.");
+    assert(result.children[0].name == "PropTest.B");
+    assert(result.children[1].name == "PropTest.D");
+    assert(result.children[2].name == "PropTest.E");
+    assert(result.children[3].name == "PropTest.D");
+    assert(result.children[4].name == "PropTest.E");
+    assert(result.children[5].name == "PropTest.D");
+    assert(result.children[6].name == "PropTest.E");
+
+    result = PropTest.decimateTree(PropTest.Rule3("  b  de de  de "));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "  b  de de  de ".length);
+    assert(result.matches == ["b", "d", "e", "d", "e", "d", "e"]);
+    assert(result.children.length == 7, "b and (d and e), thrice.");
+    assert(result.children[0].name == "PropTest.B");
+    assert(result.children[1].name == "PropTest.D");
+    assert(result.children[2].name == "PropTest.E");
+    assert(result.children[3].name == "PropTest.D");
+    assert(result.children[4].name == "PropTest.E");
+    assert(result.children[5].name == "PropTest.D");
+    assert(result.children[6].name == "PropTest.E");
+
+    result = PropTest.decimateTree(PropTest.Rule4("bdedede"));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "bdedede".length);
+    assert(result.matches == ["b", "d", "e", "d", "e", "d", "e"]);
+    assert(result.children.length == 7, "b and (d and e), thrice.");
+    assert(result.children[0].name == "PropTest.B");
+    assert(result.children[1].name == "PropTest.D");
+    assert(result.children[2].name == "PropTest.E");
+    assert(result.children[3].name == "PropTest.D");
+    assert(result.children[4].name == "PropTest.E");
+    assert(result.children[5].name == "PropTest.D");
+    assert(result.children[6].name == "PropTest.E");
+
+    result = PropTest.decimateTree(PropTest.Rule4("  b  de de  de "));
+    assert(result.successful);
+    assert(result.begin == 0);
+    assert(result.end == "  b  de de  de ".length);
+    assert(result.matches == ["b", "d", "e", "d", "e", "d", "e"]);
+    assert(result.children.length == 7, "b and (d and e), thrice.");
+    assert(result.children[0].name == "PropTest.B");
+    assert(result.children[1].name == "PropTest.D");
+    assert(result.children[2].name == "PropTest.E");
+    assert(result.children[3].name == "PropTest.D");
+    assert(result.children[4].name == "PropTest.E");
+    assert(result.children[5].name == "PropTest.D");
+    assert(result.children[6].name == "PropTest.E");
+
     // More than one prefix, more than one suffixes
     mixin(grammar(`
     MoreThanOne:
