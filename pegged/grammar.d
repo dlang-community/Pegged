@@ -76,7 +76,7 @@ ParseTree p = Gram("abcbccbcd");
 */
 string grammar(Memoization withMemo = Memoization.no)(string definition)
 {
-    // Helper to insert ':Spacing*' before and after Primarys
+    // Helper to insert ':Spacing*' before and after Primaries
     ParseTree spaceArrow(ParseTree input)
     {
         ParseTree wrapInSpaces(ParseTree p)
@@ -93,7 +93,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                     ParseTree("Pegged.ZEROORMORE", true)
                 ])
             ]);
-            ParseTree result = ParseTree("Pegged.Sequence", true, p.matches, p.input, p.begin, p.end, p.children);
+            ParseTree result = ParseTree("Pegged.WrapAround", true, p.matches, p.input, p.begin, p.end, p.children);
             result.children = spacer ~ result.children ~ spacer;
             return result;
         }
@@ -526,6 +526,11 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 break;
             case "Pegged.ANY":
                 result = "pegged.peg.any";
+                break;
+            case "Pegged.WrapAround":
+                result = "pegged.peg.wrapAround!(" ~ generateCode(p.children[0]) ~ ", "
+                                                   ~ generateCode(p.children[1]) ~ ", "
+                                                   ~ generateCode(p.children[2]) ~ ")";
                 break;
             default:
                 result = "Bad tree: " ~ p.toString();
