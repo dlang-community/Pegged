@@ -2,43 +2,95 @@ module pegged.grammartester;
 
 import std.stdio;
 import std.array;
+import std.ascii : whitespace;
+import std.range : retro;
+import std.algorithm : max, splitter;
+import std.string : xformat, stripRight, removechars, squeeze;
 
 import pegged.testerparser;
 import pegged.grammar;
 
-struct GrammarTester(grammar, string startSymbol)
+class GrammarTester(grammar, string startSymbol)
 {
 	bool soft = false;
-	bool verbose = false;
 	
-	bool assertSimilar( string textToParse, string desiredTreeRepresentation )
+	private Appender!string errorTextStream;
+	private int numberTests;
+	private int numberErrors;
+	private string latestDiff;
+	
+	@property int testCount()  { return numberTests; }
+	@property int errorCount() { return numberErrors; }
+	@property string errorText() { return errorTextStream.data; }
+	@property string latestDiffText() { return latestDiff; }
+	
+	this()
+	{
+		reset();
+	}
+	
+	void reset()
+	{
+		errorTextStream = appender!string();
+		numberTests = 0;
+		numberErrors = 0;
+	}
+	
+	private void consumeResults(string file, size_t lineNo, bool pass, string diffText )
+	{
+		numberTests++;
+
+		if ( !pass )
+		{
+			if ( !soft )
+			{
+				assert(pass, diffText);
+			}
+			else
+			{
+				numberErrors++;
+				errorTextStream.put("\n");
+				errorTextStream.put(        "---------------------------\n");
+				errorTextStream.put(xformat("Assertion failed at %s(%s):\n",file,lineNo));
+				errorTextStream.put(diffText);
+			}
+		}
+	}
+	
+	private bool runTest(string file, size_t lineNo,
+		string textToParse, string desiredTreeRepresentation, bool invert )
 	{
 		auto treeGot = grammar.decimateTree(mixin("grammar."~startSymbol~"(textToParse)"));
 		auto treeChecker = TesterGrammar.decimateTree(TesterGrammar.Root(desiredTreeRepresentation));
 		
-		writefln("%s",treeGot);
+		/+writefln("%s",treeGot);
 		writefln("");
 		writefln("%s",treeChecker);
-		writefln("");
+		writefln("");+/
 		
 		auto ctx = getDifferencer(treeGot, treeChecker);
-		ctx.diff();
-		ctx.doPrinting = true;
-		ctx.diff();
+		latestDiff = ctx.diff();
 		
-		if ( !soft )
-			assert(true);
-
-		return true;
+		bool pass;
+		if ( invert )
+			pass = (ctx.differences != 0);
+		else
+			pass = (ctx.differences == 0);
+		
+		consumeResults(file, lineNo, pass, latestDiff);
+		return pass;
 	}
 	
-	bool assertDifferent( string textToParse, string desiredTreeRepresentation )
+	bool assertSimilar(string file = __FILE__, size_t lineNo = __LINE__)
+		( string textToParse, string desiredTreeRepresentation )
 	{
-		assert(0,"Not implemented yet!");
+		return runTest(file, lineNo, textToParse, desiredTreeRepresentation, false);
 	}
 	
-	void dumpAnyErrors()
+	bool assertDifferent(string file = __FILE__, size_t lineNo = __LINE__)
+		( string textToParse, string desiredTreeRepresentation )
 	{
+		return runTest(file, lineNo, textToParse, desiredTreeRepresentation, true);
 	}
 	
 	static auto getDifferencer(T,P)( auto ref T treeRoot, auto ref P patternRoot )
@@ -48,298 +100,351 @@ struct GrammarTester(grammar, string startSymbol)
 		t.patternRoot = &patternRoot;
 		return t;
 	}
+}
 	
-	private struct Differencer(T,P)
+private struct Differencer(T,P)
+{
+	int level = 0;
+	int differences = 0;
+	const(T)* treeRoot;
+	const(P)* patternRoot;
+	int max1stColumnWidth = 0;
+	Appender!(string[]) leftColumn;
+	Appender!(char[])   centerLine;
+	Appender!(string[]) rightColumn;
+	
+	alias T TParseTree;
+	alias P PParseTree;
+
+	private string diff()
 	{
-		int level = 0;
-		int differences = 0;
-		const(T)* treeRoot;
-		const(P)* patternRoot;
-		int max1stColumnWidth = 0;
-		Appender!(string[]) leftColumn;
-		Appender!(char[])   centerLine;
-		Appender!(string[]) rightColumn;
-		bool doPrinting = false;
+		level = 0;
+		differences = 0;
+		max1stColumnWidth = 0;
 		
-		alias T TParseTree;
-		alias P PParseTree;
-	
-		private void diff()
-		{
-			level = 0;
-			differences = 0;
-			
-			leftColumn  = appender!(string[])();
-			centerLine  = appender!(char[])();
-			rightColumn = appender!(string[])();
-			
-			if ( doPrinting )
-			{
-				writefln("");
-				printColumns("  Nodes Found",'|',"  Nodes Expected");
-				printColumns("",             '|',"");
-			}
-			else
-				max1stColumnWidth = "  Nodes Found".length;
-			
-			diffNode(treeRoot,patternRoot);
-			
-			if ( doPrinting )
-				writefln("");
-		}
-
-		private void diffNode( const(T*) node, const(P*) pattern )
-		{
-			assert(pattern);
-			switch ( pattern.name )
-			{
-				case "TesterGrammar.Root":
-					diffNode(node, &pattern.children[0]);
-					break;
-
-				case "TesterGrammar.Node":
-
-					lineDiff(node,pattern);
-
-					// These will track which node children we have visited.
-					int cursor = 0;
-					bool[] visited = [];
-					if ( node ) visited = new bool[node.children.length];
-					foreach ( ref flag; visited ) flag = false;
-
-					// This will handle nodes that we expect to find as
-					//   children of this one.  If these nodes don't exist,
-					//   then we throw out angry diff lines about them.
-					string uniformBranchType = null;
-					foreach ( branch; pattern.children )
-					{
-						// Enforce uniform branch types.
-						if ( uniformBranchType == null )
-							uniformBranchType = branch.name;
-						else
-						{
-							auto branchType = branch.name;
-							if ( branchType != uniformBranchType )
-								throw new Exception(
-									"It is forbidden to have both unordered and "~
-									"ordered branches from the same node.");
-						}
-						
-						// Note that we don't dereference the node's children:
-						//   the pattern child will be a Branch statement and
-						//   it will do the dereference for us.
-						diffBranch(node, &branch, visited, cursor);
-					}
-
-					// This will handle nodes that the pattern doesn't expect
-					//   to find, but that we find anyways.  Anything here
-					//   deserves a nice angry diff line about the extra node.
-					level++;
-					if ( node ) foreach( i, childNode; node.children )
-					{
-						// TODO: rescanning the visit array this is probably slow.
-						if ( visited[i] )
-							continue;
-						
-						traverseUnexpected(&node.children[i]);
-						visited[i] = true;
-					}
-					level--;
-
-					break;
-
-				default: assert(0, "Unexpected element in pattern: "~pattern.name);
-			}
-		}
+		leftColumn  = appender!(string[])();
+		centerLine  = appender!(char[])();
+		rightColumn = appender!(string[])();
 		
-		private void traverseUnexpected( const(T*) node )
+		printColumns("  Nodes Found",'|',"  Nodes Expected");
+		printColumns("",             '|',"");
+		
+		diffNode(treeRoot,patternRoot);
+		
+		string[] lcolumn = leftColumn.data;
+		char[]   center  = centerLine.data;
+		string[] rcolumn = rightColumn.data;
+		auto diffText = appender!string();
+		for ( size_t i = 0; i < lcolumn.length; i++ )
+			diffText.put(xformat("\n%-*s  %c  %s", max1stColumnWidth,
+				lcolumn[i], center[i], rcolumn[i]).stripRight);
+		diffText.put("\n");
+		
+		return diffText.data;
+	}
+
+	private void diffNode( const(T*) node, const(P*) pattern )
+	{
+		assert(pattern);
+		switch ( pattern.name )
 		{
-			assert(node);
-			lineDiff(node, null);
+		case "TesterGrammar.Root":
+			diffNode(node, &pattern.children[0]);
+			break;
+
+		case "TesterGrammar.Node":
+
+			lineDiff(node,pattern);
+
+			// These will track which node children we have visited.
+			int cursor = 0;
+			bool[] visited = [];
+			if ( node ) visited = new bool[node.children.length];
+			foreach ( ref flag; visited ) flag = false;
+
+			// This will handle nodes that we expect to find as
+			//   children of this one.  If these nodes don't exist,
+			//   then we throw out angry diff lines about them.
+			string uniformBranchType = null;
+			foreach ( branch; pattern.children )
+			{
+				// Enforce uniform branch types.
+				if ( uniformBranchType == null )
+					uniformBranchType = branch.name;
+				else if ( branch.name != uniformBranchType )
+					throw new Exception(
+						"It is forbidden to have both unordered and "~
+						"ordered branches from the same node.");
+				
+				// Note that we don't dereference the node's children:
+				//   the pattern child will be a Branch statement and
+				//   it will do the dereference for us.
+				diffBranch(node, &branch, visited, cursor);
+			}
+
+			// This will handle nodes that the pattern doesn't expect
+			//   to find, but that we find anyways.  Anything here
+			//   deserves a nice angry diff line about the extra node.
 			level++;
-			foreach( child; node.children )
-				traverseUnexpected(&child);
-			level--;
-		}
-		
-		private void diffBranch( const(T*) node, const(P*) pattern, bool[] visited, ref int cursor )
-		{
-			assert(pattern);
-			switch ( pattern.name )
+			if ( node ) foreach( i, childNode; node.children )
 			{
+				// TODO: rescanning the visit array this is probably slow.
+				if ( visited[i] )
+					continue;
 				
-				case "TesterGrammar.OrderedBranch":
-				
-					level++;
-					if ( node ) foreach ( patternChild; pattern.children )
-					{
-						if ( cursor >= node.children.length )
-						{
-							diffNode(null, &patternChild);
-						}
-						else
-						{
-							diffNode(&node.children[cursor], &patternChild);
-							visited[cursor] = true;
-							cursor++;
-						}
-					}
-					level--;
-					
-					break;
-
-				case "TesterGrammar.UnorderedBranch":
-
-					level++;
-					if ( node ) foreach ( i, patternChild; pattern.children )
-					{
-						int foundIndex = -1;
-						
-						// Cheap hack for now: 0(n^2) scan-in-scan.
-						//
-						// Ideally the parser will generate hints for locating
-						//   submatches:
-						//     GrammarName.childLocationHint(
-						//       GrammarName.ruleId!(RuleName),
-						//       GrammarName.ruleId!(ChildRuleName));
-						// Think about it... it should be possible to compile 
-						//   this into integer table lookups, thus allowing us
-						//   to do what a compiler does with an AST: vtable
-						//   lookups followed by offset indexing to typed
-						//   fields which are sometimes (typed) arrays.
-						// At that point things stay nice and dynamic while
-						//   being just as performant as oldschool methods.
-						//
-						foreach ( j, nodeChild; node.children )
-						{
-							// TODO: rescanning the visit array this is probably slow.
-							if ( visited[j] )
-								continue;
-
-							if ( checkIdentifierMatch( &nodeChild, &patternChild ) )
-							{
-								foundIndex = j;
-								break;
-							}
-						}
-					
-						if ( foundIndex < 0 )
-							diffNode(null, &patternChild);
-						else
-						{
-							diffNode(&node.children[foundIndex], &patternChild);
-							visited[foundIndex] = true;
-						}
-					}
-					level--;
-					
-					break;
-				
-				default: assert(0, "Unexpected element in pattern: "~pattern.name);
+				traverseUnexpected(&node.children[i]);
+				visited[i] = true;
 			}
+			level--;
+
+			break;
+
+		default: assert(0, "Unexpected element in pattern: "~pattern.name);
 		}
-		
-		private bool checkIdentifierMatch(const(T*) node, const(P*) pattern)
+	}
+	
+	private void traverseUnexpected( const(T*) node )
+	{
+		assert(node);
+		lineDiff(node, null);
+		level++;
+		foreach( child; node.children )
+			traverseUnexpected(&child);
+		level--;
+	}
+	
+	private void diffBranch( const(T*) node, const(P*) pattern, bool[] visited, ref int cursor )
+	{
+		assert(pattern);
+		switch ( pattern.name )
 		{
-			if ( !node || !pattern )
+			
+		case "TesterGrammar.OrderedBranch":
+		
+			level++;
+			if ( node ) foreach ( patternChild; pattern.children )
+			{
+				if ( cursor >= node.children.length )
+				{
+					diffNode(null, &patternChild);
+				}
+				else
+				{
+					diffNode(&node.children[cursor], &patternChild);
+					visited[cursor] = true;
+					cursor++;
+				}
+			}
+			level--;
+			
+			break;
+
+		case "TesterGrammar.UnorderedBranch":
+
+			level++;
+			if ( node ) foreach ( i, patternChild; pattern.children )
+			{
+				int foundIndex = -1;
+				
+				// Cheap hack for now: 0(n^2) scan-in-scan.
+				//
+				// Ideally the parser will generate hints for locating
+				//   submatches:
+				//     GrammarName.childLocationHint(
+				//       GrammarName.ruleId!(RuleName),
+				//       GrammarName.ruleId!(ChildRuleName));
+				// Think about it... it should be possible to compile 
+				//   this into integer table lookups, thus allowing us
+				//   to do what a compiler does with an AST: vtable
+				//   lookups followed by offset indexing to typed
+				//   fields which are sometimes (typed) arrays.
+				// At that point things stay nice and dynamic while
+				//   being just as performant as oldschool methods.
+				//
+				foreach ( j, nodeChild; node.children )
+				{
+					// TODO: rescanning the visit array this is probably slow.
+					if ( visited[j] )
+						continue;
+
+					if ( checkIdentifierMatch( &nodeChild, &patternChild ) )
+					{
+						foundIndex = j;
+						break;
+					}
+				}
+			
+				if ( foundIndex < 0 )
+					diffNode(null, &patternChild);
+				else
+				{
+					diffNode(&node.children[foundIndex], &patternChild);
+					visited[foundIndex] = true;
+				}
+			}
+			level--;
+			
+			break;
+		
+		default: assert(0, "Unexpected element in pattern: "~pattern.name);
+		}
+	}
+	
+	private bool checkIdentifierMatch(const(T*) node, const(P*) pattern)
+	{
+		if ( !node || !pattern )
+			return false;
+
+		auto splitNode    = retro(splitter(node.name,'.'));
+		auto splitPattern = retro(splitter(pattern.matches[0],'.'));
+		
+		while ( true )
+		{
+			auto nodePathElem = splitNode.front;
+			auto patternPathElem = splitPattern.front;
+			splitNode.popFront();
+			splitPattern.popFront();
+			
+			if ( nodePathElem != patternPathElem )
 				return false;
 
-			auto splitNode    = std.range.retro(std.algorithm.splitter(node.name,'.'));
-			auto splitPattern = std.range.retro(std.algorithm.splitter(pattern.matches[0],'.'));
-			
-			while ( true )
-			{
-				auto nodePathElem = splitNode.front;
-				auto patternPathElem = splitPattern.front;
-				splitNode.popFront();
-				splitPattern.popFront();
-				
-				if ( nodePathElem != patternPathElem )
-					return false;
+			if ( splitNode.empty || splitPattern.empty )
+				break;
+		}
+		
+		return true;
+	}
+	
+	private void lineDiff(const(T*) node, const(P*) expected)
+	{
+		if ( !checkIdentifierMatch( node, expected ) )
+		{
+			differences++;
+			printNodes(node, expected, true);
+		}
+		else
+			printNodes(node, expected, false);
+	}
+	
+	private string getNodeTxt(const(T*) node)
+	{
+		string nodeTxt = "";
+		if ( node )
+			nodeTxt = node.name;
+		return replicate("  ",level) ~ nodeTxt;
+	}
+	
+	private string getPatternTxt(const(P*) pattern)
+	{
 
-				if ( splitNode.empty || splitPattern.empty )
-					break;
-			}
-			
-			return true;
-		}
-		
-		private void lineDiff(const(T*) node, const(P*) expected)
-		{
-			if ( !checkIdentifierMatch( node, expected ) )
-			{
-				differences++;
-				doNodeAction(node, expected, true);
-			}
-			else
-				doNodeAction(node, expected, false);
-		}
-		
-		private void doNodeAction(const(T*) node, const(P*) expected, bool different)
-		{
-			// Part of me wants it to be more reusable and less stateful
-			//   than this... but this is a simple way to do it for now. --Chad
-			if ( doPrinting )
-				printNodes(node, expected, different);
-			else
-				accumulateColumnWidth(node, expected, different);
-		}
-		
-		private string getNodeTxt(const(T*) node)
-		{
-			string nodeTxt = "";
-			if ( node )
-				nodeTxt = node.name;
-			return std.array.replicate("  ",level) ~ nodeTxt;
-		}
-		
-		private string getPatternTxt(const(P*) pattern)
-		{
+		string patternTxt = "";
+		if ( pattern )
+			patternTxt = pattern.matches[0];
+		return replicate("  ",level) ~ patternTxt;
+	}
 
-			string patternTxt = "";
-			if ( pattern )
-				patternTxt = pattern.matches[0];
-			return std.array.replicate("  ",level) ~ patternTxt;
-		}
+	private void printNodes(const(T*) node, const(P*) pattern, bool different)
+	{
+		auto nodeTxt    = getNodeTxt(node);
+		auto patternTxt = getPatternTxt(pattern);
 
-		private void printNodes(const(T*) node, const(P*) pattern, bool different)
-		{
-			auto nodeTxt    = getNodeTxt(node);
-			auto patternTxt = getPatternTxt(node);
-
-			char diffLine = '=';
-			if ( !node && pattern )
-				diffLine = '>';
-			else if ( node && !pattern )
-				diffLine = '<';
-			else if ( different )
-				diffLine = '|';
-			
-			printColumns( nodeTxt, diffLine, patternTxt );
-		}
-
-		private void printColumns( string ltext, char center, string rtext )
-		{
-			auto columnOneWidth = max1stColumnWidth;
-			if ( columnOneWidth == 0 )
-				columnOneWidth = 38;
+		char diffLine = '=';
+		if ( !node && pattern )
+			diffLine = '>';
+		else if ( node && !pattern )
+			diffLine = '<';
+		else if ( different )
+			diffLine = '|';
 		
-			writefln("%-*s  %c  %s", columnOneWidth, ltext, center, rtext);
-		}
-		
-		private void accumulateColumnWidth(const(T*) node, const(P*) pattern, bool different)
-		{
-			auto nodeTxt = getNodeTxt(node);
-			max1stColumnWidth = std.algorithm.max(max1stColumnWidth, nodeTxt.length);
-		}
+		printColumns( nodeTxt, diffLine, patternTxt );
+	}
+
+	private void printColumns( string ltext, char center, string rtext )
+	{
+		max1stColumnWidth = max(max1stColumnWidth, ltext.length);
+		leftColumn.put(ltext);
+		centerLine.put(center);
+		rightColumn.put(rtext);
 	}
 }
 
 unittest
 {
-	GrammarTester!(TesterGrammar, "Root") tester;
+	string normalizeStr(string str)
+	{
+		return removechars(str," \t").replace("\r","\n").squeeze("\n");
+	}
+
+	auto tester = new GrammarTester!(TesterGrammar, "Root");
 	tester.soft = true;
-	tester.verbose = true;
+	
+	tester.assertSimilar(`foo`, `Root->Node`);
+	tester.assertDifferent(`foo`, `Root`);
+	
+	tester.assertSimilar(`foo->bar`, `Root->Node->OrderedBranch->Node`);
+	tester.assertDifferent(`foo->bar`, `Root->Node`);
+	
+	assert(normalizeStr(tester.latestDiff) ==
+normalizeStr(`
+  Nodes Found                    |    Nodes Expected
+                                 |
+TesterGrammar.Root               =  Root
+  TesterGrammar.Node             =    Node
+    TesterGrammar.OrderedBranch  <
+      TesterGrammar.Node         <
+`));
+	
+	tester.assertSimilar(`foo[bar]`, `Root->Node->OrderedBranch->Node`);
+	tester.assertDifferent(`foo[bar]`, `Root->Node->UnorderedBranch->Node`);
+	
+	tester.assertSimilar(`foo{bar}`, `Root->Node->UnorderedBranch->Node`);
+	
+	tester.assertSimilar(`foo~>bar`, `Root->Node->UnorderedBranch->Node`);
+
+	tester.assertSimilar(`foo->bar->baz`,
+		`Root->Node
+			->OrderedBranch->Node
+				->OrderedBranch->Node
+		`);
+
+	tester.assertSimilar(`foo~>bar~>baz`,
+		`Root->Node
+			->UnorderedBranch->Node
+				->UnorderedBranch->Node
+		`);
+
+	tester.assertSimilar(`foo->/bar->baz`,
+		`Root->Node
+		[
+			OrderedBranch->Node
+			OrderedBranch->Node
+		]
+		`);
+		
+	tester.assertSimilar(`foo[/bar]->baz`,
+		`Root->Node
+		[
+			OrderedBranch->Node
+			OrderedBranch->Node
+		]
+		`);
+
+	tester.assertSimilar(`foo~>/bar~>baz`,
+		`Root->Node
+		[
+			UnorderedBranch->Node
+			UnorderedBranch->Node
+		]
+		`);
+		
+	tester.assertSimilar(`foo{/bar}~>baz`,
+		`Root->Node
+		[
+			UnorderedBranch->Node
+			UnorderedBranch->Node
+		]
+		`);
+	
 	tester.assertSimilar(`
 		FOO
 		{
@@ -362,7 +467,7 @@ unittest
 		`,`
 		/* FOO */   Root->Node
 		/*     */       ->UnorderedBranch
-		/*     */       {
+		/*     */       [
 		/* x   */           Node
 		/*     */           {
 		/*  y  */               OrderedBranch->Node
@@ -372,8 +477,58 @@ unittest
 		/* v   */           Node
 		/* Bar */           Node->OrderedBranch
 		/* baz */               ->Node
-		/*     */       }
+		/*     */       ]
 		`);
+	
+	tester.assertDifferent(`
+		FOO
+		{
+			x->/y->/z
+			u
+			v
+			Bar->baz
+		}
+		`,`
+		/* FOO */   Root->Node
+		/*     */       ->UnorderedBranch
+		/*     */       [
+		/* x   */           Node->OrderedBranch
+		/*     */           { // There should actually be two ordered branches.
+		/*   y */               Node
+		/*bug:z*/               Node
+		/*bug:z*/               Node
+		/*     */           }
+		/*     */       ]
+		`);
+	
+	assert(normalizeStr(tester.latestDiff) ==
+normalizeStr(`
+  Nodes Found                        |    Nodes Expected
+                                     |
+TesterGrammar.Root                   =  Root
+  TesterGrammar.Node                 =    Node
+    TesterGrammar.UnorderedBranch    =      UnorderedBranch
+      TesterGrammar.Node             =        Node
+        TesterGrammar.OrderedBranch  =          OrderedBranch
+          TesterGrammar.Node         =            Node
+                                     >            Node
+                                     >            Node
+        TesterGrammar.OrderedBranch  <
+          TesterGrammar.Node         <
+      TesterGrammar.Node             <
+      TesterGrammar.Node             <
+      TesterGrammar.Node             <
+        TesterGrammar.OrderedBranch  <
+          TesterGrammar.Node         <
+`));
+
+	assert(tester.testCount > 0);
+	assert(tester.errorCount == 0);
+	assert(tester.errorText == "");
+	
+
+	tester = new GrammarTester!(TesterGrammar, "Root");
+	tester.soft = true;
 	
 	tester.assertSimilar(`
 		FOO
@@ -390,11 +545,13 @@ unittest
 		/* x   */           Node->OrderedBranch
 		/*     */           { // There should actually be two ordered branches.
 		/*   y */               Node
-		/*bug:z*/               Node
-		/*bug:z*/               Node
+		/*not z*/               Node
+		/*not z*/               Node
 		/*     */           }
 		/*     */       }
 		`);
 	
-	tester.dumpAnyErrors();
+	assert(tester.testCount == 1);
+	assert(tester.errorCount == 1);
+	assert(tester.errorText.length > 0);
 }
