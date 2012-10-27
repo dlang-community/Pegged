@@ -1,4 +1,4 @@
-/**
+/++
 This module was automatically generated from the following grammar:
 
 
@@ -87,7 +87,7 @@ Comment      <- '#' (!eol .)* :eol
 Space        <- spacing / "\\t" / "\\n" / "\\r"
 
 
-*/
++/
 module pegged.parser;
 
 public import pegged.peg;
