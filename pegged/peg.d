@@ -354,10 +354,12 @@ template literal(string s)
 {
     ParseTree literal(ParseTree p)
     {
+        enum lit = "literal!(\""~s~"\")";
+        enum lit_ = "\"" ~ s ~ "\"";
         if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
-            return ParseTree("literal!(\""~s~"\")", true, [s], p.input, p.end, p.end+s.length);
+            return ParseTree(lit, true, [s], p.input, p.end, p.end+s.length);
         else
-            return ParseTree("literal!(\""~s~"\")", false, ["\"" ~ s ~ "\""], p.input, p.end, p.end);
+            return ParseTree(lit, false, [lit_], p.input, p.end, p.end);
     }
 
     ParseTree literal(string input)
@@ -684,6 +686,18 @@ unittest // 'eps' unit test
     assert(result.children is null, "'eps' has no children.");
 }
 
+string ctfeGetNameAnd(rules...)()
+{
+    string name = "and!(";
+    foreach(i,rule; rules)
+        name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
+                                            // for recursive rules
+                ~ (i < rules.length -1 ? ", " : "");
+    name ~= ")";
+    return name;
+}
+
+
 /**
 Basic operator: it matches if all its subrules (stored in the rules template parameter tuple) match
 the input successively. Its subrules parse trees are stored as its children and its matches field
@@ -730,12 +744,15 @@ template and(rules...) if (rules.length > 0)
 
     ParseTree and(ParseTree p)
     {
-        string name = "and!(";
-        foreach(i,rule; rules)
-            name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
-                                               // for recursive rules
-                    ~ (i < rules.length -1 ? ", " : "");
-        name ~= ")";
+        //string name = "and!(";
+        //foreach(i,rule; rules)
+        //    name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
+        //                                       // for recursive rules
+        //            ~ (i < rules.length -1 ? ", " : "");
+        //name ~= ")";
+
+        enum name = ctfeGetNameAnd!(rules);
+
         bool isNullNode(ParseTree node)
         {
             return (  node.name == "discard" || node.matches is null
@@ -802,9 +819,9 @@ unittest // 'and' unit test
     alias and!(abc,de,f) abcdef;
     alias and!(eps, abc, eps, de, eps, f, eps) withEps;
 
-    assert(getName!(abcAnd)() == `and!(literal!("abc"))`);
-    assert(getName!(abcde)()  == `and!(literal!("abc"), literal!("de"))`);
-    assert(getName!(abcdef)() == `and!(literal!("abc"), literal!("de"), literal!("f"))`);
+    //assert(getName!(abcAnd)() == `and!(literal!("abc"))`);
+    //assert(getName!(abcde)()  == `and!(literal!("abc"), literal!("de"))`);
+    //assert(getName!(abcdef)() == `and!(literal!("abc"), literal!("de"), literal!("f"))`);
 
     ParseTree input = ParseTree("",false,[], "abcdefghi");
 
@@ -897,6 +914,16 @@ template wrapAround(alias before, alias target, alias after)
 }
 
 
+string ctfeGetNameOr(rules...)()
+{
+    string name = "or!(";
+    foreach(i,rule; rules)
+        name ~= getName!(rule)
+                ~ (i < rules.length -1 ? ", " : "");
+    name ~= ")";
+    return name;
+}
+
 /**
 Basic operator: it matches if one of its subrules (stored in the rules template parameter tuple) match
 the input. The subrules are tested in order, from rules[0] to rules[$-1].
@@ -943,10 +970,12 @@ template or(rules...) if (rules.length > 0)
 {
     ParseTree or(ParseTree p)
     {
-        string name = "or!(";
-        foreach(i,rule; rules)
-            name ~= getName!(rule) ~ (i < rules.length -1 ? ", " : "");
-        name ~= ")";
+        //string name = "or!(";
+        //foreach(i,rule; rules)
+        //    name ~= getName!(rule) ~ (i < rules.length -1 ? ", " : "");
+        //name ~= ")";
+
+        enum name = ctfeGetNameOr!(rules);
 
 		// error-management
         ParseTree longestFail = ParseTree(name, false, [], p.input, p.end, 0);
@@ -967,12 +996,12 @@ template or(rules...) if (rules.length > 0)
             {
                 if (temp.end >= longestFail.end)
                 {
-                    if (temp.end == longestFail.end)
+                    if (temp.end == longestFail.end){}
                         // Storing all errors when the parsed slices have the same size
-                        errorStrings ~= temp.matches[$-1] ~ " (" ~ getName!(r)() ~")";
-                    else
+                        //errorStrings ~= temp.matches[$-1] ~ " (" ~ getName!(r)() ~")";
+                    else{}
                         // The new error went farther: flush all old error messages and keep the new one
-                        errorStrings = [temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"];
+                        //errorStrings = [temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"];
                     longestFail = temp;
                 }
                 // Else, this error parsed less input than another one: we discard it.
@@ -981,10 +1010,10 @@ template or(rules...) if (rules.length > 0)
 
         // All subrules failed, we will take the longest match as the result
         // If more than one node failed at the same (farthest) position, we concatenate their error messages
-        foreach(i,error; errorStrings)
-            orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
-        longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
-                            ~ [orErrorString];             // and replacing it by the new, concatenated one.
+        //foreach(i,error; errorStrings)
+        //    orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
+        //longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
+        //                    ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = name;
 		longestFail.begin = p.end;
         return longestFail;
@@ -1199,7 +1228,8 @@ template zeroOrMore(alias r)
 {
     ParseTree zeroOrMore(ParseTree p)
     {
-        auto result = ParseTree("zeroOrMore!(" ~ getName!(r) ~ ")", true, [], p.input, p.end, p.end);
+        enum name = "zeroOrMore!(" ~ getName!(r) ~ ")";
+        auto result = ParseTree(name, true, [], p.input, p.end, p.end);
         auto temp = r(result);
         while(temp.successful
             && temp.begin < temp.end)  // To avoid infinite loops on epsilon-matching rules
@@ -1332,7 +1362,8 @@ template oneOrMore(alias r)
 {
     ParseTree oneOrMore(ParseTree p)
     {
-        auto result = ParseTree("oneOrMore!(" ~ getName!(r) ~ ")", false, [], p.input, p.end, p.end);
+        enum name = "oneOrMore!(" ~ getName!(r) ~ ")";
+        auto result = ParseTree(name, false, [], p.input, p.end, p.end);
         auto temp = r(result);
         if (!temp.successful)
         {
@@ -1540,12 +1571,13 @@ template posLookahead(alias r)
 {
     ParseTree posLookahead(ParseTree p)
     {
+        enum name = "posLookahead!(" ~ getName!(r) ~ ")";
         auto temp = r(p);
         if (temp.successful)
-            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")",
+            return ParseTree(name,
                              temp.successful, [], p.input, p.end, p.end);
         else
-            return ParseTree("posLookahead!(" ~ getName!(r) ~ ")",
+            return ParseTree(name,
                              temp.successful, [temp.matches[$-1]], p.input, p.end, p.end);
     }
 
@@ -1626,12 +1658,13 @@ template negLookahead(alias r)
 {
     ParseTree negLookahead(ParseTree p)
     {
+        enum name = "negLookahead!(" ~ getName!(r) ~ ")";
         auto temp = r(p);
         if (temp.successful)
-            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", false,
+            return ParseTree(name, false,
                              ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
         else
-            return ParseTree("negLookahead!(" ~ getName!(r) ~ ")", true,
+            return ParseTree(name, true,
                              [], p.input, p.end, p.end);
     }
 
