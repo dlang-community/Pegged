@@ -996,15 +996,23 @@ template or(rules...) if (rules.length > 0)
             }
             else
             {
+                enum errName = " (" ~ getName!(r)() ~")";
                 if (temp.end >= longestFail.end)
                 {
                     if (temp.end == longestFail.end)
+                    {
                         // Storing all errors when the parsed slices have the same size
-                        errorStrings ~= temp.matches[$-1] ~ " (" ~ getName!(r)() ~")";
+                        errorStrings ~= temp.matches[$-1] ~ errName;
+                        longestFail = temp;
+                    }
                     else
+                    {
                         // The new error went farther: flush all old error messages and keep the new one
-                        errorStrings = [temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"];
-                    longestFail = temp;
+                        errorStrings = [temp.matches[$-1] ~ errName];
+                        longestFail = temp;
+                    }
+
+
                 }
                 // Else, this error parsed less input than another one: we discard it.
             }
@@ -1012,8 +1020,8 @@ template or(rules...) if (rules.length > 0)
 
         // All subrules failed, we will take the longest match as the result
         // If more than one node failed at the same (farthest) position, we concatenate their error messages
-        foreach(i,error; errorStrings)
-            orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
+        //foreach(i,error; errorStrings)
+        //    orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = name;
@@ -1187,6 +1195,7 @@ unittest
 }
 
 import std.stdio;
+import std.array;
 
 /**
 Tries to match subrule 'r' zero or more times. It always succeeds, since if 'r' fails
@@ -1369,6 +1378,8 @@ template oneOrMore(alias r)
         enum name = "oneOrMore!(" ~ getName!(r) ~ ")";
         auto result = ParseTree(name, false, [], p.input, p.end, p.end);
         auto temp = r(result);
+
+
         if (!temp.successful)
         {
             result.matches = temp.matches;
@@ -1486,12 +1497,13 @@ template option(alias r)
 {
     ParseTree option(ParseTree p)
     {
+        enum name = "option!(" ~ getName!(r) ~ ")";
         auto result = r(p);
         if (result.successful)
-            return ParseTree("option!(" ~ getName!(r) ~ ")", true,
+            return ParseTree(name, true,
                              result.matches, result.input, result.begin, result.end, [result]);
         else
-            return ParseTree("option!(" ~ getName!(r)~ ")", true,
+            return ParseTree(name, true,
                              [], p.input, p.end, p.end, null);
     }
 
