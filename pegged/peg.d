@@ -500,12 +500,14 @@ template charRange(char begin, char end) if (begin <= end)
 {
     ParseTree charRange(ParseTree p)
     {
+        enum name = "charRange!('"~begin~"','" ~ end ~ "')";
+        enum longname = "a char between '"~begin~"' and '"~end~"'";
         if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
-            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", true,
+            return ParseTree(name, true,
                              [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
         else
-            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", false,
-                             ["a char between '"~begin~"' and '"~end~"'"], p.input, p.end, p.end);
+            return ParseTree(name, false,
+                             [longname], p.input, p.end, p.end);
     }
 
     ParseTree charRange(string input)
@@ -883,7 +885,7 @@ template wrapAround(alias before, alias target, alias after)
 
     ParseTree wrapAround(ParseTree p)
     {
-        string name = "wrapAround!(" ~ getName!(before)() ~ ", " ~ getName!(target)() ~ ", " ~ getName!(after)() ~ ")";
+        enum name = "wrapAround!(" ~ getName!(before)() ~ ", " ~ getName!(target)() ~ ", " ~ getName!(after)() ~ ")";
 
         ParseTree temp = before(p);
         if (!temp.successful)
@@ -996,12 +998,12 @@ template or(rules...) if (rules.length > 0)
             {
                 if (temp.end >= longestFail.end)
                 {
-                    if (temp.end == longestFail.end){}
+                    if (temp.end == longestFail.end)
                         // Storing all errors when the parsed slices have the same size
-                        //errorStrings ~= temp.matches[$-1] ~ " (" ~ getName!(r)() ~")";
-                    else{}
+                        errorStrings ~= temp.matches[$-1] ~ " (" ~ getName!(r)() ~")";
+                    else
                         // The new error went farther: flush all old error messages and keep the new one
-                        //errorStrings = [temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"];
+                        errorStrings = [temp.matches[$-1] ~ " (" ~ getName!(r)() ~")"];
                     longestFail = temp;
                 }
                 // Else, this error parsed less input than another one: we discard it.
@@ -1010,10 +1012,10 @@ template or(rules...) if (rules.length > 0)
 
         // All subrules failed, we will take the longest match as the result
         // If more than one node failed at the same (farthest) position, we concatenate their error messages
-        //foreach(i,error; errorStrings)
-        //    orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
-        //longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
-        //                    ~ [orErrorString];             // and replacing it by the new, concatenated one.
+        foreach(i,error; errorStrings)
+            orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
+        longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
+                            ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = name;
 		longestFail.begin = p.end;
         return longestFail;
@@ -1183,6 +1185,8 @@ unittest
     assert(result.end == input.end, "keywords does not advance the index.");
     assert(result.children is null, "No children for `keywords`.");
 }
+
+import std.stdio;
 
 /**
 Tries to match subrule 'r' zero or more times. It always succeeds, since if 'r' fails
