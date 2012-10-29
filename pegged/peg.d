@@ -1011,8 +1011,6 @@ template or(rules...) if (rules.length > 0)
                         errorStrings = [temp.matches[$-1] ~ errName];
                         longestFail = temp;
                     }
-
-
                 }
                 // Else, this error parsed less input than another one: we discard it.
             }
@@ -1020,8 +1018,8 @@ template or(rules...) if (rules.length > 0)
 
         // All subrules failed, we will take the longest match as the result
         // If more than one node failed at the same (farthest) position, we concatenate their error messages
-        //foreach(i,error; errorStrings)
-        //    orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
+        foreach(i,error; errorStrings)
+            orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = name;
