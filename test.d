@@ -13,13 +13,22 @@ import std.typetuple;
 import pegged.grammar;
 import pegged.parser;
 
-mixin(grammar(`
-R:
-    ArgList <- '(' List(identifier, ',') ')'
-    List(Elem, Sep) <  Elem (Sep Elem)*
+mixin(grammar!(Memoization.yes)(`
+Test:
+    Rule1 <- 'a' Rule2
+    Rule2 <- 'b'
 `));
 
 void main()
 {
-    writeln(R("(abc,def,g,h)"));
+    writeln(Test("ab"));
+    enum Success = Test("ab");
+    writeln("enum:\n",Success);
+    pragma(msg, "Pragma:\n" ~ to!string(Success));
+
+    writeln(Test("ac"));
+    enum Fail = Test("ac");
+    writeln("enum:\n",Fail);
+    pragma(msg, "Pragma:\n" ~ to!string(Fail));
+
 }

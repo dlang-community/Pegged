@@ -129,15 +129,10 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 result =  "struct Generic" ~ shortGrammarName ~ "(TParseTree)\n"
                         ~ "{\n"
                         ~ "    struct " ~ grammarName ~ "\n    {\n"
-                        ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n";
-
-                static if (withMemo == Memoization.yes)
-                {
-                    result ~= "    import std.typecons:Tuple, tuple;\n";
-                    result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n";
-                }
-
-                result ~= "    static bool isRule(string s)\n"
+                        ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n"
+                        ~ "    import std.typecons:Tuple, tuple;\n"
+                        ~ "    static TParseTree[Tuple!(string, size_t)] memo;\n"
+                        ~ "    static bool isRule(string s)\n"
                         ~ "    {\n"
                         ~ "        switch(s)\n"
                         ~ "        {\n";
@@ -175,17 +170,6 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
 
                 result ~= "    mixin decimateTree;\n";
 
-                // Introspection information
-                /+ Disabling it for now (2012/09/16), splicing definition into code causes problems.
-                result ~= "    import pegged.introspection;\n"
-                        ~ "    static RuleInfo[string] info;\n"
-                        ~ "    static string[] ruleNames;\n"
-                        ~ "    static this()\n"
-                        ~ "    {\n"
-                        ~ "         info = ruleInfo(q{" ~ definition ~"});\n"
-                        ~ "         ruleNames = info.keys;\n"
-                        ~ "    }\n";
-                +/
                 // If the grammar provides a Spacing rule, then this will be used.
                 // else, the predefined 'spacing' rule is used.
                 result ~= userDefinedSpacing ? "" : "    alias spacing Spacing;\n\n";
@@ -208,11 +192,16 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                            ~  "        return result;\n"
                            ~  "    }\n\n"
                            ~  "    static TParseTree opCall(string input)\n"
-                           ~  "    {\n";
-                    static if (withMemo == Memoization.yes)
-                        result ~= "        memo = null;\n";
-
-                    result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                           ~  "    {\n"
+                           ~  "        if(__ctfe)\n"
+                           ~  "        {\n"
+                           ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                           ~  "        }\n"
+                           ~  "        else\n"
+                           ~  "        {\n"
+                           ~  "            memo = null;\n"
+                           ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                           ~  "        }\n"
                            ~  "    }\n";
 
                     result ~= "    static string opCall(GetName g)\n"
@@ -282,35 +271,40 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
 
                 code ~= ", name ~ `.`~ " ~ innerName ~ ")";
 
-                result ~=  "    static TParseTree " ~ shortName ~ "(TParseTree p)\n    {\n";
-                        //~  "        " ~ innerName;
-
-                static if (withMemo == Memoization.yes)
-                    result ~= "        if(auto m = tuple("~innerName~",p.end) in memo)\n"
-                            ~ "            return *m;\n"
-                            ~ "        else\n"
-                            ~ "        {\n"
-                            ~ "            TParseTree result = ";
-                else
-                    result ~= "        return ";
-
-                result ~= code ~ "(p);\n";
-
-                static if (withMemo == Memoization.yes)
-                    result ~= "            memo[tuple("~innerName~",p.end)] = result;\n"
-                           ~  "            return result;\n"
-                           ~  "        }\n";
-
-                result ~= "    }\n\n";
-                result ~= "    static TParseTree " ~ shortName ~ "(string s)\n    {\n";
-
-                static if (withMemo == Memoization.yes)
-                    result ~=  "        memo = null;\n";
-
-                result ~= "        return " ~ code ~ "(TParseTree(\"\", false,[], s));\n    }\n\n";
-
-                result ~= "    static string " ~ shortName ~ "(GetName g)\n    {\n"
-                        ~ "        return name ~ `.`~ " ~ innerName ~ ";\n    }\n\n";
+                result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
+                       ~  "    {\n"
+                       ~  "        if(__ctfe)\n"
+                       ~  "        {\n"
+                       ~  "            return " ~ code ~ "(p);\n"
+                       ~  "        }\n"
+                       ~  "        else\n"
+                       ~  "        {\n"
+                       ~  "            if(auto m = tuple("~innerName~",p.end) in memo)\n"
+                       ~  "                return *m;\n"
+                       ~  "            else\n"
+                       ~  "            {\n"
+                       ~  "                TParseTree result = " ~ code ~ "(p);\n"
+                       ~  "                memo[tuple("~innerName~",p.end)] = result;\n"
+                       ~  "                return result;\n"
+                       ~  "            }\n"
+                       ~  "        }\n"
+                       ~  "    }\n\n"
+                       ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
+                       ~  "    {\n"
+                       ~  "        if(__ctfe)\n"
+                       ~  "        {\n"
+                       ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                       ~  "        }\n"
+                       ~  "        else\n"
+                       ~  "        {\n"
+                       ~  "            memo = null;\n"
+                       ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                       ~  "        }\n"
+                       ~  "    }\n"
+                       ~  "    static string " ~ shortName ~ "(GetName g)\n"
+                       ~  "    {\n"
+                       ~  "        return name ~ `.`~ " ~ innerName ~ ";\n"
+                       ~  "    }\n\n";
 
                 if (parameterizedRule)
                     result ~= "    }\n";
