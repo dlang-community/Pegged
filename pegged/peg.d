@@ -1142,10 +1142,10 @@ template keywords(kws...) if (kws.length > 0)
                     ~kw~"\") return ParseTree(`"
                     ~name~"`,true,[\""~kw~"\"],p.input,p.end,p.end+"
                     ~to!string(kw.length)~");\n";
-            result ~= "return ParseTree(`"~name~"`,false,[`one among ` ~ to!string([kws])],p.input,p.end,p.end);";
+            result ~= "return ParseTree(`"~name~"`,false,[`one among ` ],p.input,p.end,p.end);";
             return result;
         }
-
+        //~ to!string([kws])
         mixin(keywordCode([kws]));
     }
 
