@@ -1074,8 +1074,8 @@ template or(rules...) if (rules.length > 0)
                 start += len + names[i].length + 4;
             }
         }
-        errString[$-4..$-2] = [':',' '];
-        orErrorString = cast(string)(errString[0..$-2]);
+        //errString[$-4..$-2] = [':',' '];
+        orErrorString = cast(string)(errString[0..$-4]);
 
         //errorStrings =
 
@@ -1170,7 +1170,7 @@ unittest // 'or' unit test
     assert(result.end == input.end+0, "or!([a-b],[c-d]) does not advance the index.");
     assert(result.matches ==
            [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
-                             , "or!([a-b],[c-d]) error message.");
+                             , "or!([a-b],[c-d]) error message. |" ~ result.matches[0]~ "|");
 
     input.input = "";
 
@@ -1186,16 +1186,17 @@ unittest // 'or' unit test
 /**
 or special case for literal list ("abstract"/"alias"/...)
 */
-string concat(args...)()
+
+string concat(string[] kws)
 {
-    string s = "`[";
-    foreach(i, arg; args)
+    string s = "[";
+    foreach(i, k; kws)
     {
-        s ~= arg;
-        if (i < args.length - 1)
+        s ~= `"` ~ k ~ `"`;
+        if (i < kws.length - 1)
             s ~= ", ";
     }
-    return s ~= "]`";
+    return s ~= "]";
 }
 
 
@@ -1257,7 +1258,7 @@ string printCaseStatements(V)(TrieNode!(V) node, string indentString)
 			if (node.children[k].value.length != 0)
                 caseStatement ~= "\t\treturn ParseTree(name, true, [`" ~ node.children[k].value ~ "`], temp.input, p.end, temp.end)";
             else
-                caseStatement ~= "\t\treturn ParseTree(name, false, [`one among `], p.input, p.end, p.end)";
+                caseStatement ~= "\t\treturn ParseTree(name, false, [`one among ` ~ nameList], p.input, p.end, p.end)";
 			caseStatement ~= ";\n";
 			caseStatement ~= indentString;
 			caseStatement ~= "\t}\n";
@@ -1271,7 +1272,7 @@ string printCaseStatements(V)(TrieNode!(V) node, string indentString)
 			if (v.value.length != 0)
                 caseStatement ~= "\treturn ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)";
             else
-                caseStatement ~= "\treturn ParseTree(name, false, [`one among `], p.input, p.end, p.end)";
+                caseStatement ~= "\treturn ParseTree(name, false, [`one among ` ~ nameList], p.input, p.end, p.end)";
 			caseStatement ~= ";\n";
 			caseStatement ~= indentString;
 			caseStatement ~= "\t}\n";
@@ -1282,7 +1283,7 @@ string printCaseStatements(V)(TrieNode!(V) node, string indentString)
 			if (v.value.length != 0)
                 caseStatement ~= "\treturn ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)";
             else
-                caseStatement ~= "\treturn ParseTree(name, false, [`one among `], p.input, p.end, p.end)";
+                caseStatement ~= "\treturn ParseTree(name, false, [`one among ` ~ nameList], p.input, p.end, p.end)";
 			caseStatement ~= ";\n";
 			caseStatement ~= indentString;
 		}
@@ -1331,6 +1332,7 @@ template keywords(kws...) if (kws.length > 0)
         }
         //mixin(keywordCode([kws]));
 
+        enum nameList = concat([kws]);
 
         enum name = keywordCode([kws]);
 
@@ -1341,12 +1343,12 @@ template keywords(kws...) if (kws.length > 0)
             switch(p.input[p.end])
             {
                 mixin(generateCaseTrie([kws]));
-                mixin("default: return ParseTree(`"~name~"`,false,[`one among `" ~ concat!(kws) ~ "],p.input,p.end,p.end);");
+                mixin("default: return ParseTree(`"~name~"`,false,[`one among ` ~ `" ~ nameList ~ "`],p.input,p.end,p.end);");
             }
         }
         else
         {
-            mixin("return ParseTree(`"~name~"`,false,[`one among `" ~ concat!(kws) ~ "],p.input,p.end,p.end);");
+            mixin("return ParseTree(`"~name~"`,false,[`one among ` ~ `" ~ nameList ~ "`],p.input,p.end,p.end);");
         }
 
         //pragma(msg, generateCaseTrie([kws]));
@@ -1402,7 +1404,7 @@ unittest
     result = kw(input);
 
     assert(!result.successful, "keywords fails on `ab_def`.");
-    assert(result.matches == [`one among ["abc", "de", "f"]`], "keywords error message.");
+    assert(result.matches == [`one among ["abc", "de", "f"]`], "keywords error message." ~ result.matches[0]);
     assert(result.end == input.end, "keywords does not advance the index.");
     assert(result.children is null, "No children for `keywords`.");
 
