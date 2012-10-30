@@ -982,6 +982,7 @@ template or(rules...) if (rules.length > 0)
 		// error-management
         ParseTree longestFail = ParseTree(name, false, [], p.input, p.end, 0);
         string[] errorStrings;
+        uint errorStringChars;
         string orErrorString;
 
 		// Real 'or' loop
@@ -1003,12 +1004,14 @@ template or(rules...) if (rules.length > 0)
                     {
                         // Storing all errors when the parsed slices have the same size
                         errorStrings ~= temp.matches[$-1] ~ errName;
+                        errorStringChars += errorStrings[$-1].length + 4;
                         longestFail = temp;
                     }
                     else
                     {
                         // The new error went farther: flush all old error messages and keep the new one
                         errorStrings = [temp.matches[$-1] ~ errName];
+                        errorStringChars = errorStrings[0].length;
                         longestFail = temp;
                     }
                 }
@@ -1018,8 +1021,22 @@ template or(rules...) if (rules.length > 0)
 
         // All subrules failed, we will take the longest match as the result
         // If more than one node failed at the same (farthest) position, we concatenate their error messages
+
+        char[] buf;
+        buf.length = errorStringChars;
+        uint start = 0;
         foreach(i,error; errorStrings)
-            orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
+        {
+            buf[start..start+error.length] = error;
+            if (i < errorStrings.length -1) buf[start+error.length..start+error.length+4] = " or ";
+            start += error.length + 4;
+        }
+        orErrorString = cast(string)buf;
+
+
+        //foreach(i,error; errorStrings)
+        //    orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
+
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = name;
@@ -1194,6 +1211,7 @@ unittest
 
 import std.stdio;
 import std.array;
+import std.conv;
 
 /**
 Tries to match subrule 'r' zero or more times. It always succeeds, since if 'r' fails
