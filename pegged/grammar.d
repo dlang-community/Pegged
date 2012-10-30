@@ -958,12 +958,13 @@ unittest // Parsing at compile-time
 {
     mixin(grammar(`
     Test:
-        Rule1 <- 'a' Rule2
-        Rule2 <- 'b'
+        Rule1 <- 'a' Rule2('b')
+        Rule2(B) <- B
     `));
 
     // Equality on success
     ParseTree result = Test("ab");
+
     enum CTsuccess = Test("ab");
 
     assert(CTsuccess == result, "Compile-time parsing is equal to runtime parsing on success.");
