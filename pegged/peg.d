@@ -926,6 +926,9 @@ string ctfeGetNameOr(rules...)()
     return name;
 }
 
+
+import std.container;
+
 /**
 Basic operator: it matches if one of its subrules (stored in the rules template parameter tuple) match
 the input. The subrules are tested in order, from rules[0] to rules[$-1].
@@ -985,6 +988,14 @@ template or(rules...) if (rules.length > 0)
         uint errorStringChars;
         string orErrorString;
 
+        auto errAppender = appender(errorStrings);
+
+        ParseTree[rules.length] results;
+        string[rules.length] names;
+        int[rules.length] failedLength;
+        int maxFailedLength;
+        auto pCopy = p;
+
 		// Real 'or' loop
 		foreach(i,r; rules)
         {
@@ -998,40 +1009,90 @@ template or(rules...) if (rules.length > 0)
             else
             {
                 enum errName = " (" ~ getName!(r)() ~")";
+                failedLength[i] = temp.end;
+                if (temp.end >= longestFail.end)
+                {
+                    maxFailedLength = temp.end;
+                    longestFail = temp;
+                    names[i] = errName;
+                    results[i] = temp;
+
+                    if (temp.end == longestFail.end)
+                        errorStringChars += temp.matches[$-1].length + errName.length + 4;
+                    else
+                        errorStringChars = temp.matches[$-1].length + errName.length + 4;
+                }
+
+
+                /++
+                enum errName = " (" ~ getName!(r)() ~")";
                 if (temp.end >= longestFail.end)
                 {
                     if (temp.end == longestFail.end)
                     {
                         // Storing all errors when the parsed slices have the same size
-                        errorStrings ~= temp.matches[$-1] ~ errName;
-                        errorStringChars += errorStrings[$-1].length + 4;
+                        //errorStrings ~= temp.matches[$-1] ~ errName;
+                        //errAppender.put(temp.matches[$-1] ~ errName);
+                        //errorStringChars += errorStrings[$-1].length + 4;
+                        //errorStringChars += errAppender.data[$-1].length + 4;
                         longestFail = temp;
                     }
                     else
                     {
                         // The new error went farther: flush all old error messages and keep the new one
-                        errorStrings = [temp.matches[$-1] ~ errName];
-                        errorStringChars = errorStrings[0].length;
+                        //errAppender.clear();
+                        //errAppender.put(temp.matches[$-1] ~ errName);
+                        //errorStrings = [temp.matches[$-1] ~ errName];
+                        //errorStringChars = errorStrings[$-1].length;
+                        //errorStringChars += errAppender.data[$-1].length;
                         longestFail = temp;
                     }
                 }
+                ++/
                 // Else, this error parsed less input than another one: we discard it.
             }
         }
 
+
         // All subrules failed, we will take the longest match as the result
         // If more than one node failed at the same (farthest) position, we concatenate their error messages
 
+
+        char[] errString;// = new char[](errorStringChars);
+        errString.length = errorStringChars;
+        uint start = 0;
+        foreach(i; 0..rules.length)
+        {
+            if (failedLength[i] == maxFailedLength)
+            {
+                auto temp = results[i];
+                auto len = temp.matches[$-1].length;
+                auto nlen = names[i].length;
+                errString[start .. start+len] = temp.matches[$-1];
+                errString[start+len .. start+len+names[i].length] = names[i];
+                errString[start+len+nlen .. start+len+nlen+4] = " or ";
+                start += len + names[i].length + 4;
+            }
+        }
+        errString[$-4..$-2] = [':',' '];
+        orErrorString = cast(string)(errString[0..$-2]);
+
+        //errorStrings =
+
+        /++
         char[] buf;
         buf.length = errorStringChars;
-        uint start = 0;
-        foreach(i,error; errorStrings)
+        uint start, i;
+        foreach(error; errorStrings)
         {
             buf[start..start+error.length] = error;
-            if (i < errorStrings.length -1) buf[start+error.length..start+error.length+4] = " or ";
+            if (i < errorStrings.length - 1)
+                buf[start+error.length..start+error.length+4] = " or ";
             start += error.length + 4;
+            i++;
         }
         orErrorString = cast(string)buf;
+        ++/
 
 
         //foreach(i,error; errorStrings)
