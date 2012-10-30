@@ -1265,9 +1265,12 @@ template keywords(kws...) if (kws.length > 0)
                     ~to!string(kw.length)~");\n";
             result ~= "return ParseTree(`"~name~"`,false,[`one among `" ~ concat!(kws) ~ "],p.input,p.end,p.end);";
             ++/
+
             return name;
         }
         //mixin(keywordCode([kws]));
+
+
         enum name = keywordCode([kws]);
 
         auto temp = p;
@@ -1288,6 +1291,7 @@ template keywords(kws...) if (kws.length > 0)
         //pragma(msg, generateCaseTrie([kws]));
 
         //return p;
+
 
     }
 
