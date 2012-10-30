@@ -954,6 +954,27 @@ Rule4 <- 'f' Rule5   # Rule4 ends with 'f', then it's Rule5
     assert(Indentation.Rule5("gh").successful);
 }
 
+unittest // Parsing at compile-time
+{
+    mixin(grammar(`
+    Test:
+        Rule1 <- 'a' Rule2
+        Rule2 <- 'b'
+    `));
+
+    // Equality on success
+    ParseTree result = Test("ab");
+    enum CTsuccess = Test("ab");
+
+    assert(CTsuccess == result, "Compile-time parsing is equal to runtime parsing on success.");
+
+    // Equality on failure
+    result = Test("ac");
+    enum CTfailure = Test("ac");
+
+    assert(CTfailure == result, "Compile-time parsing is equal to runtime parsing on failure.");
+}
+
 unittest // PEG extensions (arrows, prefixes, suffixes)
 {
     mixin(grammar(`

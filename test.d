@@ -11,24 +11,24 @@ import std.typecons;
 import std.typetuple;
 
 import pegged.grammar;
-import pegged.parser;
-
-mixin(grammar!(Memoization.yes)(`
-Test:
-    Rule1 <- 'a' Rule2
-    Rule2 <- 'b'
-`));
 
 void main()
 {
-    writeln(Test("ab"));
-    enum Success = Test("ab");
-    writeln("enum:\n",Success);
-    pragma(msg, "Pragma:\n" ~ to!string(Success));
+    mixin(grammar(`
+    Test:
+        Rule1 <- 'a' Rule2
+        Rule2 <- 'b'
+    `));
 
-    writeln(Test("ac"));
-    enum Fail = Test("ac");
-    writeln("enum:\n",Fail);
-    pragma(msg, "Pragma:\n" ~ to!string(Fail));
+    // Equality on success
+    ParseTree result = Test("ab");
+    enum CTsuccess = Test("ab");
 
+    assert(CTsuccess == result, "Compile-time parsing is equal to runtime parsing on success.");
+
+    // Equality on failure
+    result = Test("ac");
+    enum CTfailure = Test("ac");
+
+    assert(CTfailure = result, "Compile-time parsing is equal to runtime parsing on failure.");
 }
