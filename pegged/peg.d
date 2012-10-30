@@ -1125,6 +1125,125 @@ unittest // 'or' unit test
 /**
 or special case for literal list ("abstract"/"alias"/...)
 */
+string concat(args...)()
+{
+    string s = "`[";
+    foreach(i, arg; args)
+    {
+        s ~= arg;
+        if (i < args.length - 1)
+            s ~= ", ";
+    }
+    return s ~= "]`";
+}
+
+
+
+class Trie(V) : TrieNode!(V)
+{
+	/**
+	 * Adds the given value to the trie with the given key
+	 */
+	void add(string key, V value) pure
+	{
+		TrieNode!(V) current = this;
+		foreach(dchar keyPart; key)
+		{
+			if ((keyPart in current.children) is null)
+			{
+				auto node = new TrieNode!(V);
+				current.children[keyPart] = node;
+				current = node;
+			}
+			else
+				current = current.children[keyPart];
+		}
+		current.value = value;
+	}
+}
+
+class TrieNode(V) //if (isInputRange!K)
+{
+	V value;
+	TrieNode!(V)[dchar] children;
+}
+
+string printCaseStatements(V)(TrieNode!(V) node, string indentString)
+{
+	string caseStatement = "";
+	foreach(dchar k, TrieNode!(V) v; node.children)
+	{
+		caseStatement ~= indentString;
+		caseStatement ~= "case '";
+		if (k == '\n')
+            caseStatement ~= "\\n";
+		else if (k == '\t')
+            caseStatement ~= "\\t";
+        else if (cast(uint)k == 92)
+            caseStatement ~= "\\";
+        else
+            caseStatement ~= k;
+		caseStatement ~= "':\n";
+		caseStatement ~= indentString;
+		caseStatement ~= "\ttemp.end++;\n";
+		if (v.children.length > 0)
+		{
+			caseStatement ~= indentString;
+			caseStatement ~= "\tif (temp.end >= temp.input.length)\n";
+			caseStatement ~= indentString;
+			caseStatement ~= "\t{\n";
+			caseStatement ~= indentString;
+			if (node.children[k].value.length != 0)
+                caseStatement ~= "\t\treturn ParseTree(name, true, [`" ~ node.children[k].value ~ "`], temp.input, p.end, temp.end)";
+            else
+                caseStatement ~= "\t\treturn ParseTree(name, false, [`one among `], p.input, p.end, p.end)";
+			caseStatement ~= ";\n";
+			caseStatement ~= indentString;
+			caseStatement ~= "\t}\n";
+			caseStatement ~= indentString;
+			caseStatement ~= "\tswitch (temp.input[temp.end])\n";
+			caseStatement ~= indentString;
+			caseStatement ~= "\t{\n";
+			caseStatement ~= printCaseStatements(v, indentString ~ "\t");
+			caseStatement ~= "default:\n";
+			caseStatement ~= indentString;
+			if (v.value.length != 0)
+                caseStatement ~= "\treturn ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)";
+            else
+                caseStatement ~= "\treturn ParseTree(name, false, [`one among `], p.input, p.end, p.end)";
+			caseStatement ~= ";\n";
+			caseStatement ~= indentString;
+			caseStatement ~= "\t}\n";
+		}
+		else
+		{
+			caseStatement ~= indentString;
+			if (v.value.length != 0)
+                caseStatement ~= "\treturn ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)";
+            else
+                caseStatement ~= "\treturn ParseTree(name, false, [`one among `], p.input, p.end, p.end)";
+			caseStatement ~= ";\n";
+			caseStatement ~= indentString;
+		}
+	}
+	return caseStatement;
+}
+
+string generateCaseTrie(string[] args ...)
+{
+	auto t = new Trie!(string);
+	foreach(arg; args)
+	{
+		t.add(arg, arg);
+	}
+	return printCaseStatements(t, "");
+}
+
+
+
+pragma(msg, generateCaseTrie(["\n", "abstract"]));
+
+
 template keywords(kws...) if (kws.length > 0)
 {
     ParseTree keywords(ParseTree p)
@@ -1135,6 +1254,8 @@ template keywords(kws...) if (kws.length > 0)
             foreach(i,kw;keywords)
                 name ~= "\"" ~ kw ~ "\""~ (i < keywords.length -1 ? ", " : "");
             name ~= ")";
+
+            /++
             string result;
             foreach(kw; keywords)
                 result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
@@ -1142,11 +1263,32 @@ template keywords(kws...) if (kws.length > 0)
                     ~kw~"\") return ParseTree(`"
                     ~name~"`,true,[\""~kw~"\"],p.input,p.end,p.end+"
                     ~to!string(kw.length)~");\n";
-            result ~= "return ParseTree(`"~name~"`,false,[`one among ` ],p.input,p.end,p.end);";
-            return result;
+            result ~= "return ParseTree(`"~name~"`,false,[`one among `" ~ concat!(kws) ~ "],p.input,p.end,p.end);";
+            ++/
+            return name;
         }
-        //~ to!string([kws])
-        mixin(keywordCode([kws]));
+        //mixin(keywordCode([kws]));
+        enum name = keywordCode([kws]);
+
+        auto temp = p;
+
+        if (p.end < p.input.length)
+        {
+            switch(p.input[p.end])
+            {
+                mixin(generateCaseTrie([kws]));
+                mixin("default: return ParseTree(`"~name~"`,false,[`one among `" ~ concat!(kws) ~ "],p.input,p.end,p.end);");
+            }
+        }
+        else
+        {
+            mixin("return ParseTree(`"~name~"`,false,[`one among `" ~ concat!(kws) ~ "],p.input,p.end,p.end);");
+        }
+
+        //pragma(msg, generateCaseTrie([kws]));
+
+        //return p;
+
     }
 
     ParseTree keywords(string input)
