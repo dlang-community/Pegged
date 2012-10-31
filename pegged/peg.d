@@ -732,7 +732,7 @@ template and(rules...) if (rules.length > 0)
     {
         string name = "and!(";
         foreach(i,rule; rules)
-            name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
+            name ~= getName!(rule) //__traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
                                                // for recursive rules
                     ~ (i < rules.length -1 ? ", " : "");
         name ~= ")";
@@ -783,7 +783,7 @@ template and(rules...) if (rules.length > 0)
     {
         string name = "and!(";
         foreach(i,rule; rules)
-            name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
+            name ~= getName!(rule) //__traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
                                                // for recursive rules
                     ~ (i < rules.length -1 ? ", " : "");
         name ~= ")";
