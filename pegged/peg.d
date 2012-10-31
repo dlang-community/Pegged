@@ -352,14 +352,15 @@ It succeeds if a prefix of the input is equal to its template parameter and fail
 */
 template literal(string s)
 {
+    enum name = "literal!(\""~s~"\")";
+
     ParseTree literal(ParseTree p)
     {
-        enum lit = "literal!(\""~s~"\")";
-        enum lit_ = "\"" ~ s ~ "\"";
+        enum lit = "\"" ~ s ~ "\"";
         if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
-            return ParseTree(lit, true, [s], p.input, p.end, p.end+s.length);
+            return ParseTree(name, true, [s], p.input, p.end, p.end+s.length);
         else
-            return ParseTree(lit, false, [lit_], p.input, p.end, p.end);
+            return ParseTree(name, false, [lit], p.input, p.end, p.end);
     }
 
     ParseTree literal(string input)
@@ -370,7 +371,7 @@ template literal(string s)
 
     string literal(GetName g)
     {
-        return "literal!(\""~s~"\")";
+        return name;
     }
 
 }
@@ -498,16 +499,15 @@ begin > end is non-legal.
 */
 template charRange(char begin, char end) if (begin <= end)
 {
+    enum name = "charRange!('"~begin~"','" ~ end ~ "')";
+
     ParseTree charRange(ParseTree p)
     {
-        enum name = "charRange!('"~begin~"','" ~ end ~ "')";
         enum longname = "a char between '"~begin~"' and '"~end~"'";
         if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
-            return ParseTree(name, true,
-                             [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
+            return ParseTree(name, true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
         else
-            return ParseTree(name, false,
-                             [longname], p.input, p.end, p.end);
+            return ParseTree(name, false, [longname], p.input, p.end, p.end);
     }
 
     ParseTree charRange(string input)
@@ -517,7 +517,7 @@ template charRange(char begin, char end) if (begin <= end)
 
     string charRange(GetName g)
     {
-        return "charRange!('"~begin~"','" ~ end ~ "')";
+        return name;
     }
 }
 
@@ -688,17 +688,6 @@ unittest // 'eps' unit test
     assert(result.children is null, "'eps' has no children.");
 }
 
-string ctfeGetNameAnd(rules...)()
-{
-    string name = "and!(";
-    foreach(i,rule; rules)
-        name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
-                                            // for recursive rules
-                ~ (i < rules.length -1 ? ", " : "");
-    name ~= ")";
-    return name;
-}
-
 
 /**
 Basic operator: it matches if all its subrules (stored in the rules template parameter tuple) match
@@ -744,17 +733,21 @@ and that the second subrule ('[a-z]') failed at position 3 (so, on '1').
 template and(rules...) if (rules.length > 0)
 {
 
+    string ctfeGetNameAnd(rules...)()
+    {
+        string name = "and!(";
+        foreach(i,rule; rules)
+            name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
+                                                // for recursive rules
+                    ~ (i < rules.length -1 ? ", " : "");
+        name ~= ")";
+        return name;
+    }
+
+    enum name = ctfeGetNameAnd!(rules);
+
     ParseTree and(ParseTree p)
     {
-        //string name = "and!(";
-        //foreach(i,rule; rules)
-        //    name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
-        //                                       // for recursive rules
-        //            ~ (i < rules.length -1 ? ", " : "");
-        //name ~= ")";
-
-        enum name = ctfeGetNameAnd!(rules);
-
         bool isNullNode(ParseTree node)
         {
             return (  node.name == "discard" || node.matches is null
@@ -800,12 +793,6 @@ template and(rules...) if (rules.length > 0)
 
     string and(GetName g)
     {
-        string name = "and!(";
-        foreach(i,rule; rules)
-            name ~= __traits(identifier, rule) // because using getName!(rule) causes an infinite loop during compilation
-                                               // for recursive rules
-                    ~ (i < rules.length -1 ? ", " : "");
-        name ~= ")";
         return name;
     }
 }
@@ -882,11 +869,12 @@ unittest // 'and' unit test
 
 template wrapAround(alias before, alias target, alias after)
 {
+    enum name = "wrapAround!(" ~ getName!(before)() ~
+                ", " ~ getName!(target)() ~
+                ", " ~ getName!(after)() ~ ")";
 
     ParseTree wrapAround(ParseTree p)
     {
-        enum name = "wrapAround!(" ~ getName!(before)() ~ ", " ~ getName!(target)() ~ ", " ~ getName!(after)() ~ ")";
-
         ParseTree temp = before(p);
         if (!temp.successful)
             return temp;
@@ -911,23 +899,9 @@ template wrapAround(alias before, alias target, alias after)
 
     string wrapAround(GetName g)
     {
-        return "wrapAround!(" ~ getName!(before)() ~ ", " ~ getName!(target)() ~ ", " ~ getName!(after)() ~ ")";
+        return name;
     }
 }
-
-
-string ctfeGetNameOr(rules...)()
-{
-    string name = "or!(";
-    foreach(i,rule; rules)
-        name ~= getName!(rule)
-                ~ (i < rules.length -1 ? ", " : "");
-    name ~= ")";
-    return name;
-}
-
-
-import std.container;
 
 /**
 Basic operator: it matches if one of its subrules (stored in the rules template parameter tuple) match
@@ -973,28 +947,30 @@ So we know 'or' failed, that the 'and' sub-rule had the longest match, matching 
 */
 template or(rules...) if (rules.length > 0)
 {
+    string ctfeGetNameOr()
+    {
+        string name = "or!(";
+        foreach(i,rule; rules)
+            name ~= getName!(rule)
+                    ~ (i < rules.length -1 ? ", " : "");
+        name ~= ")";
+        return name;
+    }
+
+    enum name = ctfeGetNameOr();
+
     ParseTree or(ParseTree p)
     {
-        //string name = "or!(";
-        //foreach(i,rule; rules)
-        //    name ~= getName!(rule) ~ (i < rules.length -1 ? ", " : "");
-        //name ~= ")";
-
-        enum name = ctfeGetNameOr!(rules);
-
-		// error-management
+        // error-management
         ParseTree longestFail = ParseTree(name, false, [], p.input, p.end, 0);
         string[] errorStrings;
         uint errorStringChars;
         string orErrorString;
 
-        auto errAppender = appender(errorStrings);
-
         ParseTree[rules.length] results;
         string[rules.length] names;
         int[rules.length] failedLength;
         int maxFailedLength;
-        auto pCopy = p;
 
 		// Real 'or' loop
 		foreach(i,r; rules)
@@ -1022,33 +998,6 @@ template or(rules...) if (rules.length > 0)
                     else
                         errorStringChars = temp.matches[$-1].length + errName.length + 4;
                 }
-
-
-                /++
-                enum errName = " (" ~ getName!(r)() ~")";
-                if (temp.end >= longestFail.end)
-                {
-                    if (temp.end == longestFail.end)
-                    {
-                        // Storing all errors when the parsed slices have the same size
-                        //errorStrings ~= temp.matches[$-1] ~ errName;
-                        //errAppender.put(temp.matches[$-1] ~ errName);
-                        //errorStringChars += errorStrings[$-1].length + 4;
-                        //errorStringChars += errAppender.data[$-1].length + 4;
-                        longestFail = temp;
-                    }
-                    else
-                    {
-                        // The new error went farther: flush all old error messages and keep the new one
-                        //errAppender.clear();
-                        //errAppender.put(temp.matches[$-1] ~ errName);
-                        //errorStrings = [temp.matches[$-1] ~ errName];
-                        //errorStringChars = errorStrings[$-1].length;
-                        //errorStringChars += errAppender.data[$-1].length;
-                        longestFail = temp;
-                    }
-                }
-                ++/
                 // Else, this error parsed less input than another one: we discard it.
             }
         }
@@ -1074,29 +1023,7 @@ template or(rules...) if (rules.length > 0)
                 start += len + names[i].length + 4;
             }
         }
-        //errString[$-4..$-2] = [':',' '];
         orErrorString = cast(string)(errString[0..$-4]);
-
-        //errorStrings =
-
-        /++
-        char[] buf;
-        buf.length = errorStringChars;
-        uint start, i;
-        foreach(error; errorStrings)
-        {
-            buf[start..start+error.length] = error;
-            if (i < errorStrings.length - 1)
-                buf[start+error.length..start+error.length+4] = " or ";
-            start += error.length + 4;
-            i++;
-        }
-        orErrorString = cast(string)buf;
-        ++/
-
-
-        //foreach(i,error; errorStrings)
-        //    orErrorString ~= error ~ (i < errorStrings.length -1 ? " or ": "");
 
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
@@ -1112,11 +1039,6 @@ template or(rules...) if (rules.length > 0)
 
     string or(GetName g)
     {
-        string name = "or!(";
-        foreach(i,rule; rules)
-            name ~= getName!(rule)()
-                    ~ (i < rules.length -1 ? ", " : "");
-        name ~= ")";
         return name;
     }
 }
@@ -1198,8 +1120,6 @@ string concat(string[] kws)
     }
     return s ~= "]";
 }
-
-
 
 class Trie(V) : TrieNode!(V)
 {
@@ -1301,22 +1221,23 @@ string generateCaseTrie(string[] args ...)
 	return printCaseStatements(t, "");
 }
 
-
-
-pragma(msg, generateCaseTrie(["\n", "abstract"]));
-
-
 template keywords(kws...) if (kws.length > 0)
 {
+    string ctfeGetNameKeywords()
+    {
+        string name= "keywords!(";
+        foreach(i,kw;kws)
+            name ~= "\"" ~ kw ~ "\""~ (i < kws.length -1 ? ", " : "");
+        name ~= ")";
+        return name;
+    }
+
+    enum name = ctfeGetNameKeywords();
+
     ParseTree keywords(ParseTree p)
     {
         string keywordCode(string[] keywords)
         {
-            string name= "keywords!(";
-            foreach(i,kw;keywords)
-                name ~= "\"" ~ kw ~ "\""~ (i < keywords.length -1 ? ", " : "");
-            name ~= ")";
-
             /++
             string result;
             foreach(kw; keywords)
@@ -1333,9 +1254,6 @@ template keywords(kws...) if (kws.length > 0)
         //mixin(keywordCode([kws]));
 
         enum nameList = concat([kws]);
-
-        enum name = keywordCode([kws]);
-
         auto temp = p;
 
         if (p.end < p.input.length)
@@ -1365,10 +1283,6 @@ template keywords(kws...) if (kws.length > 0)
 
     string keywords(GetName g)
     {
-        string name= "keywords!(";
-        foreach(i,kw; kws)
-            name ~= "\"" ~ kw ~ "\""~ (i < kws.length -1 ? ", " : "");
-        name ~= ")";
         return name;
     }
 }
@@ -1464,9 +1378,10 @@ assert(result.children.length == 0);
 */
 template zeroOrMore(alias r)
 {
+    enum name = "zeroOrMore!(" ~ getName!(r) ~ ")";
+
     ParseTree zeroOrMore(ParseTree p)
     {
-        enum name = "zeroOrMore!(" ~ getName!(r) ~ ")";
         auto result = ParseTree(name, true, [], p.input, p.end, p.end);
         auto temp = r(result);
         while(temp.successful
@@ -1488,7 +1403,7 @@ template zeroOrMore(alias r)
 
     string zeroOrMore(GetName g)
     {
-        return "zeroOrMore!(" ~ getName!(r)() ~ ")";
+        return name;
     }
 }
 
@@ -1598,12 +1513,12 @@ assert(!result.successful); // fails, since it failed on the first try.
 */
 template oneOrMore(alias r)
 {
+    enum name = "oneOrMore!(" ~ getName!(r) ~ ")";
+
     ParseTree oneOrMore(ParseTree p)
     {
-        enum name = "oneOrMore!(" ~ getName!(r) ~ ")";
         auto result = ParseTree(name, false, [], p.input, p.end, p.end);
         auto temp = r(result);
-
 
         if (!temp.successful)
         {
@@ -1633,7 +1548,7 @@ template oneOrMore(alias r)
 
     string oneOrMore(GetName g)
     {
-        return "oneOrMore!(" ~ getName!(r)() ~ ")";
+        return name;
     }
 }
 
@@ -1720,16 +1635,15 @@ assert(result.children[0] == literal!"abc"(input));
 */
 template option(alias r)
 {
+    enum name = "option!(" ~ getName!(r) ~ ")";
+
     ParseTree option(ParseTree p)
     {
-        enum name = "option!(" ~ getName!(r) ~ ")";
         auto result = r(p);
         if (result.successful)
-            return ParseTree(name, true,
-                             result.matches, result.input, result.begin, result.end, [result]);
+            return ParseTree(name, true, result.matches, result.input, result.begin, result.end, [result]);
         else
-            return ParseTree(name, true,
-                             [], p.input, p.end, p.end, null);
+            return ParseTree(name, true, [], p.input, p.end, p.end, null);
     }
 
     ParseTree option(string input)
@@ -1739,7 +1653,7 @@ template option(alias r)
 
     string option(GetName g)
     {
-        return "option!(" ~ getName!(r)() ~ ")";
+        return name;
     }
 }
 
@@ -1810,16 +1724,15 @@ If 'r' fails, then posLookahead!r also fails. Low-level implementation of '&r'.
 */
 template posLookahead(alias r)
 {
+    enum name = "posLookahead!(" ~ getName!(r) ~ ")";
+
     ParseTree posLookahead(ParseTree p)
     {
-        enum name = "posLookahead!(" ~ getName!(r) ~ ")";
         auto temp = r(p);
         if (temp.successful)
-            return ParseTree(name,
-                             temp.successful, [], p.input, p.end, p.end);
+            return ParseTree(name, temp.successful, [], p.input, p.end, p.end);
         else
-            return ParseTree(name,
-                             temp.successful, [temp.matches[$-1]], p.input, p.end, p.end);
+            return ParseTree(name, temp.successful, [temp.matches[$-1]], p.input, p.end, p.end);
     }
 
     ParseTree posLookahead(string input)
@@ -1829,7 +1742,7 @@ template posLookahead(alias r)
 
     string posLookahead(GetName g)
     {
-        return "posLookahead!(" ~ getName!(r)() ~ ")";
+        return name;
     }
 }
 
@@ -1897,16 +1810,15 @@ If 'r' succeeds, then negLookahead!r fails. Low-level implementation of '!r'.
 */
 template negLookahead(alias r)
 {
+    enum name = "negLookahead!(" ~ getName!(r) ~ ")";
+
     ParseTree negLookahead(ParseTree p)
     {
-        enum name = "negLookahead!(" ~ getName!(r) ~ ")";
         auto temp = r(p);
         if (temp.successful)
-            return ParseTree(name, false,
-                             ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
+            return ParseTree(name, false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
         else
-            return ParseTree(name, true,
-                             [], p.input, p.end, p.end);
+            return ParseTree(name, true, [], p.input, p.end, p.end);
     }
 
     ParseTree negLookahead(string input)
@@ -1916,7 +1828,7 @@ template negLookahead(alias r)
 
     string negLookahead(GetName g)
     {
-        return "negLookahead!(" ~ getName!(r)() ~ ")";
+        return name;
     }
 }
 
@@ -2062,7 +1974,8 @@ template action(alias r, alias act)
 
     string action(GetName g)
     {
-        return "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
+        enum name = "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";;
+        return name;
     }
 }
 
@@ -2128,7 +2041,8 @@ template fuse(alias r)
 
     string fuse(GetName g)
     {
-        return "fuse!(" ~ getName!(r)() ~ ")";
+        enum name = "fuse!(" ~ getName!(r)() ~ ")";;
+        return name;
     }
 }
 
@@ -2194,7 +2108,8 @@ template discardChildren(alias r)
 
     string discardChildren(GetName g)
     {
-        return "discardChildren!(" ~ getName!(r)() ~ ")";
+        enum name = "discardChildren!(" ~ getName!(r)() ~ ")";;
+        return name;
     }
 }
 
@@ -2218,7 +2133,8 @@ template discardMatches(alias r)
 
     string discardMatches(GetName g)
     {
-        return "discardMatches!(" ~ getName!(r)() ~ ")";
+        enum name = "discardMatches!(" ~ getName!(r)() ~ ")";;
+        return name;
     }
 }
 
