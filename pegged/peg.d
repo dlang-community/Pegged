@@ -743,7 +743,7 @@ and that the second subrule ('[a-z]') failed at position 3 (so, on '1').
 template and(rules...) if (rules.length > 0)
 {
 
-    string ctfeGetNameAnd(rules...)()
+    string ctfeGetNameAnd()
     {
         string name = "and!(";
         foreach(i,rule; rules)
@@ -754,7 +754,7 @@ template and(rules...) if (rules.length > 0)
         return name;
     }
 
-    enum name = ctfeGetNameAnd!(rules);
+    enum name = ctfeGetNameAnd();
 
     ParseTree and(ParseTree p)
     {
