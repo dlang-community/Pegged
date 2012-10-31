@@ -16,6 +16,16 @@ import std.string: strip;
 import std.typetuple;
 
 /**
+CT Switch for testing 'keywords' implementations
+*/
+enum
+{
+    IFCHAIN,
+    TRIE
+}
+enum KEYWORDS = IFCHAIN;
+
+/**
 The basic parse tree, as used throughout the project.
 You can defined your own parse tree node, but respect the basic layout.
 */
@@ -1105,22 +1115,10 @@ unittest // 'or' unit test
                              , "or!([a-b],[c-d]) error message.");
 }
 
+
 /**
-or special case for literal list ("abstract"/"alias"/...)
+Compile-time switch trie from Brian Schott
 */
-
-string concat(string[] kws)
-{
-    string s = "[";
-    foreach(i, k; kws)
-    {
-        s ~= `"` ~ k ~ `"`;
-        if (i < kws.length - 1)
-            s ~= ", ";
-    }
-    return s ~= "]";
-}
-
 class Trie(V) : TrieNode!(V)
 {
 	/**
@@ -1144,7 +1142,7 @@ class Trie(V) : TrieNode!(V)
 	}
 }
 
-class TrieNode(V) //if (isInputRange!K)
+class TrieNode(V)
 {
 	V value;
 	TrieNode!(V)[dchar] children;
@@ -1152,63 +1150,71 @@ class TrieNode(V) //if (isInputRange!K)
 
 string printCaseStatements(V)(TrieNode!(V) node, string indentString)
 {
-	string caseStatement = "";
+	string s = "";
+	string idnt = indentString;
+
+	void incIndent() { idnt ~= "  "; }
+	void decIndent() { idnt = idnt[2..$]; }
+
+	void put(string k) { s ~= idnt ~ k; }
+	void append(string k) { s ~= k;}
+
 	foreach(dchar k, TrieNode!(V) v; node.children)
 	{
-		caseStatement ~= indentString;
-		caseStatement ~= "case '";
-		if (k == '\n')
-            caseStatement ~= "\\n";
-		else if (k == '\t')
-            caseStatement ~= "\\t";
-        else if (cast(uint)k == 92)
-            caseStatement ~= "\\";
-        else
-            caseStatement ~= k;
-		caseStatement ~= "':\n";
-		caseStatement ~= indentString;
-		caseStatement ~= "\ttemp.end++;\n";
+		put("case '");
+		switch(k)
+		{
+            case '\n': append("\\n"); break;
+            case '\t': append("\\t"); break;
+            case 92:   append("\\");  break;
+            default:   append(k.to!string);
+		}
+		append("':\n");
+		incIndent();
+
+		put("temp.end++;\n");
 		if (v.children.length > 0)
 		{
-			caseStatement ~= indentString;
-			caseStatement ~= "\tif (temp.end >= temp.input.length)\n";
-			caseStatement ~= indentString;
-			caseStatement ~= "\t{\n";
-			caseStatement ~= indentString;
+			put("if (temp.end >= temp.input.length)\n");
+			put("{\n");
+			incIndent();
+
 			if (node.children[k].value.length != 0)
-                caseStatement ~= "\t\treturn ParseTree(name, true, [`" ~ node.children[k].value ~ "`], temp.input, p.end, temp.end)";
+                put("return ParseTree(name, true, [`" ~ node.children[k].value ~ "`], temp.input, p.end, temp.end)");
             else
-                caseStatement ~= "\t\treturn ParseTree(name, false, [`one among ` ~ nameList], p.input, p.end, p.end)";
-			caseStatement ~= ";\n";
-			caseStatement ~= indentString;
-			caseStatement ~= "\t}\n";
-			caseStatement ~= indentString;
-			caseStatement ~= "\tswitch (temp.input[temp.end])\n";
-			caseStatement ~= indentString;
-			caseStatement ~= "\t{\n";
-			caseStatement ~= printCaseStatements(v, indentString ~ "\t");
-			caseStatement ~= "default:\n";
-			caseStatement ~= indentString;
+                put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
+
+			append(";\n");
+			decIndent();
+
+			put("}\n");
+			put("switch (temp.input[temp.end])\n");
+			put("{\n");
+
+			incIndent();
+			append(printCaseStatements(v, idnt));
+
+			put("default:\n");
+			incIndent();
 			if (v.value.length != 0)
-                caseStatement ~= "\treturn ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)";
+                put("return ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)");
             else
-                caseStatement ~= "\treturn ParseTree(name, false, [`one among ` ~ nameList], p.input, p.end, p.end)";
-			caseStatement ~= ";\n";
-			caseStatement ~= indentString;
-			caseStatement ~= "\t}\n";
+                put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
+			append(";\n");
+			decIndent();
+			decIndent();
+			put("}\n");
 		}
 		else
 		{
-			caseStatement ~= indentString;
 			if (v.value.length != 0)
-                caseStatement ~= "\treturn ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)";
+                put("return ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)");
             else
-                caseStatement ~= "\treturn ParseTree(name, false, [`one among ` ~ nameList], p.input, p.end, p.end)";
-			caseStatement ~= ";\n";
-			caseStatement ~= indentString;
+                put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
+			append(";\n");
 		}
 	}
-	return caseStatement;
+	return s;
 }
 
 string generateCaseTrie(string[] args ...)
@@ -1221,6 +1227,9 @@ string generateCaseTrie(string[] args ...)
 	return printCaseStatements(t, "");
 }
 
+/**
+or special case for literal list ("abstract"/"alias"/...)
+*/
 template keywords(kws...) if (kws.length > 0)
 {
     string ctfeGetNameKeywords()
@@ -1232,13 +1241,25 @@ template keywords(kws...) if (kws.length > 0)
         return name;
     }
 
+    string ctfeConcatKeywords()
+    {
+        string s = "[";
+        foreach(i, k; kws)
+        {
+            s ~= "\"" ~ k ~ "\"";
+            if (i < kws.length - 1)
+                s ~= ", ";
+        }
+        return s ~= "]";
+    }
+
     enum name = ctfeGetNameKeywords();
+    enum failString = "one among " ~ ctfeConcatKeywords();
 
     ParseTree keywords(ParseTree p)
     {
         string keywordCode(string[] keywords)
         {
-            /++
             string result;
             foreach(kw; keywords)
                 result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
@@ -1246,34 +1267,32 @@ template keywords(kws...) if (kws.length > 0)
                     ~kw~"\") return ParseTree(`"
                     ~name~"`,true,[\""~kw~"\"],p.input,p.end,p.end+"
                     ~to!string(kw.length)~");\n";
-            result ~= "return ParseTree(`"~name~"`,false,[`one among `" ~ concat!(kws) ~ "],p.input,p.end,p.end);";
-            ++/
 
-            return name;
+            result ~= "return ParseTree(`"~name~"`,false,[`" ~ failString ~ "`],p.input,p.end,p.end);";
+
+            return result;
         }
-        //mixin(keywordCode([kws]));
 
-        enum nameList = concat([kws]);
-        auto temp = p;
-
-        if (p.end < p.input.length)
+        static if (KEYWORDS == IFCHAIN)
         {
-            switch(p.input[p.end])
+            mixin(keywordCode([kws]));
+        }
+        else static if (KEYWORDS == TRIE)
+        {
+            auto temp = p;
+            if (p.end < p.input.length) // is this conditional required?
             {
-                mixin(generateCaseTrie([kws]));
-                mixin("default: return ParseTree(`"~name~"`,false,[`one among ` ~ `" ~ nameList ~ "`],p.input,p.end,p.end);");
+                switch(p.input[p.end])
+                {
+                    mixin(generateCaseTrie([kws]));
+                    mixin("default: return ParseTree(`"~name~"`,false,[`" ~ failString ~ "`],p.input,p.end,p.end);");
+                }
+            }
+            else
+            {
+                mixin("return ParseTree(`"~name~"`,false,[`" ~ failString ~ "`],p.input,p.end,p.end);");
             }
         }
-        else
-        {
-            mixin("return ParseTree(`"~name~"`,false,[`one among ` ~ `" ~ nameList ~ "`],p.input,p.end,p.end);");
-        }
-
-        //pragma(msg, generateCaseTrie([kws]));
-
-        //return p;
-
-
     }
 
     ParseTree keywords(string input)
@@ -1332,9 +1351,6 @@ unittest
     assert(result.children is null, "No children for `keywords`.");
 }
 
-import std.stdio;
-import std.array;
-import std.conv;
 
 /**
 Tries to match subrule 'r' zero or more times. It always succeeds, since if 'r' fails
