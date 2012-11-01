@@ -44,9 +44,9 @@ struct RuleInfo
 {
     string name; /// Name of the introspected rule.
     bool startRule; /// Whether the introspected rule is the start rule of the grammar or not.
-    string[] directCalls; /// All rules direcly called by the introspected rule. This include external rules.
-    string[] calls; /// All rules called by the introspected rule, directly or indirectly. This include external rules.
-    string[] calledBy; /// All grammar rules calling the introspected rule (no external rules).
+    bool[string] directCalls; /// All rules direcly called by the introspected rule. This include external rules.
+    bool[string] calls; /// All rules called by the introspected rule, directly or indirectly. This include external rules.
+    bool[string] calledBy; /// All grammar rules calling the introspected rule (no external rules).
     Recursive recursion; /// Is the rule recursive?
     LeftRecursive leftRecursion; /// Is the rule left-recursive?
     NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
@@ -55,9 +55,9 @@ struct RuleInfo
     string toString() @property
     {
         return  "rule " ~ name ~ (startRule? ": (start)\n" : ":\n")
-              ~ "calls direcly: " ~ to!string(directCalls) ~ "\n"
-              ~ "calls (total): " ~ to!string(calls) ~ "\n"
-              ~ "is called by: " ~ to!string(calledBy) ~ "\n"
+              ~ "calls direcly: " ~ to!string(directCalls.keys) ~ "\n"
+              ~ "calls (total): " ~ to!string(calls.keys) ~ "\n"
+              ~ "is called by: " ~ to!string(calledBy.keys) ~ "\n"
               ~ "recursive: " ~ to!string(recursion) ~ "\n"
               ~ "left recursive: " ~ to!string(leftRecursion) ~ "\n"
               ~ "can match while consuming nothing: " ~ to!string(nullMatch) ~ "\n"
@@ -374,15 +374,15 @@ RuleInfo[string] ruleInfo(ParseTree gram)
     auto cg = callGraph(gram);
     foreach(name, node; cg)
         foreach(callee, _; node)
-            result[name].directCalls ~= callee;
+            result[name].directCalls[callee] = true;
 
     auto cl = closure(cg);
     foreach(name, node; cl)
         foreach(callee, _; node)
         {
-            result[name].calls ~= callee;
+            result[name].calls[callee] = true;
             if (callee in result)
-                result[callee].calledBy ~= name;
+                result[callee].calledBy[name] = true;
         }
 
     // Filling the recursion informations
@@ -434,6 +434,48 @@ bool usefulRule(RuleInfo ri)
 bool terminal(RuleInfo ri)
 {
     return ri.calls.length == 0;
+}
+
+// set unionn
+bool[string] merge(bool[string] a, bool[string] b)
+{
+    bool[string] result;
+    foreach(name, _; a)
+        result[name] = true;
+    foreach(name, _; b)
+        if (name !in result)
+            result[name] = true;
+    return result;
+}
+
+unittest
+{
+    bool[string] empty;
+    bool[string] abc = ["a":true, "b": true, "c": true];
+    bool[string] abd = ["a":true, "b": true, "d": true];
+    bool[string] def = ["d":true, "e": true, "f": true];
+    bool[string] abcd = ["a":true, "b": true, "c": true, "d": true];
+    bool[string] abcdef = ["a":true, "b": true, "c": true, "d": true, "e": true, "f": true];
+
+    assert(merge(abc,abc) == abc); // idempotent
+    assert(merge(abc, empty) == abc); // empty has no effect
+    assert(merge(empty, abc) == abc);
+
+    assert(merge(empty, empty) == empty);
+
+    assert(merge(abc, abd) == abcd);
+    assert(merge(abd, abc) == abcd);
+
+    assert(merge(abc, abcd) == abcd);
+    assert(merge(abd, abcd) == abcd);
+    assert(merge(abcd, abc) == abcd);
+    assert(merge(abcd, abd) == abcd);
+
+    assert(merge(abc, def) == abcdef);
+    assert(merge(def, abc) == abcdef);
+
+    assert(merge(abcd, def) == abcdef);
+    assert(merge(def, abcd) == abcdef);
 }
 
 /**
