@@ -40,7 +40,7 @@ enum InfiniteLoop { no, yes, indeterminate }
 /**
 Struct holding the introspection info on a rule.
 */
-struct RuleInfo
+struct RuleIntrospection
 {
     string name; /// Name of the introspected rule.
     bool startRule; /// Whether the introspected rule is the start rule of the grammar or not.
@@ -75,9 +75,9 @@ Returns for all grammar rules:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-RuleInfo[string] ruleInfo(ParseTree gram)
+RuleIntrospection[string] grammarIntrospection(ParseTree gram)
 {
-    RuleInfo[string] result;
+    RuleIntrospection[string] result;
     ParseTree[string] rules;
 
     /**
@@ -237,17 +237,19 @@ RuleInfo[string] ruleInfo(ParseTree gram)
 
     InfiniteLoop infiniteLooping(ParseTree p)
     {
+        /+
         if (  p.matches[0] in result
            && result[p.matches[0]].nullMatch == NullMatch.yes
            && result[p.matches[0]].recursion != Recursive.no) // Calls itself while possibly null-matching
             return InfiniteLoop.yes;
-
+        +/
+        
         switch (p.name)
         {
             case "Pegged.Expression": // choice expressions loop whenever one of their components can loop
-                foreach(seq; p.children)
+                foreach(i,elem; p.children)
                 {
-                    auto nm = infiniteLooping(seq);
+                    auto nm = infiniteLooping(elem);
                     if (nm == InfiniteLoop.yes)
                         return InfiniteLoop.yes;
                     if (nm == InfiniteLoop.indeterminate)
@@ -255,12 +257,13 @@ RuleInfo[string] ruleInfo(ParseTree gram)
                 }
                 return InfiniteLoop.no;
             case "Pegged.Sequence": // sequence expressions can loop when one of their components can loop
-                foreach(seq; p.children)
+                foreach(i,elem; p.children)
                 {
-                    auto nm = infiniteLooping(seq);
+                    auto nm = infiniteLooping(elem);
                     if (nm == InfiniteLoop.yes)
                         return InfiniteLoop.yes;
-                    if (nm == InfiniteLoop.indeterminate)
+                    if (nm == InfiniteLoop.indeterminate && i == 0) // because if i>0, then the previous elems are all
+                                                                    // InfiniteLoop.no (.yes would cause en exit)
                         return InfiniteLoop.indeterminate;
                 }
                 return InfiniteLoop.no;
@@ -359,12 +362,12 @@ RuleInfo[string] ruleInfo(ParseTree gram)
         if (definition.name == "Pegged.Definition")
         {
             rules[definition.matches[0]] = definition.children[2];
-            RuleInfo ri;
+            RuleIntrospection ri;
             ri.name = definition.matches[0];
             ri.startRule = first;
             first = false;
             ri.recursion = Recursive.no;
-            ri. leftRecursion = LeftRecursive.no;
+            ri.leftRecursion = LeftRecursive.no;
             ri.nullMatch = NullMatch.indeterminate;
             ri.infiniteLoop = InfiniteLoop.indeterminate;
             result[definition.matches[0]] = ri;
@@ -426,12 +429,12 @@ RuleInfo[string] ruleInfo(ParseTree gram)
     return result;
 }
 
-bool usefulRule(RuleInfo ri)
+bool usefulRule(RuleIntrospection ri)
 {
     return ri.startRule || ri.calledBy.length == 0;
 }
 
-bool terminal(RuleInfo ri)
+bool terminal(RuleIntrospection ri)
 {
     return ri.calls.length == 0;
 }
@@ -442,6 +445,7 @@ bool[string] merge(bool[string] a, bool[string] b)
     bool[string] result;
     foreach(name, _; a)
         result[name] = true;
+
     foreach(name, _; b)
         if (name !in result)
             result[name] = true;

@@ -53,7 +53,7 @@ struct ParseTree
         {
             result ~= " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
         }
-        else // some failure info is needed
+        else // some failure Introspection is needed
         {
             if (allChildrenSuccessful) // no one calculated the position yet
             {
@@ -210,12 +210,14 @@ string getName(alias expr)() @property
         return __traits(identifier, expr);
 }
 
-RuleInfo introspect(alias expr)() @property
+RuleIntrospection introspect(alias expr)() @property
 {
-    static if (is(typeof( { expr(RuleInfo()); })))
-        return expr(RuleInfo());
+    static if (is(typeof( { expr(RuleIntrospection()); })))
+        return expr(RuleIntrospection());
     else
-        return RuleInfo();
+        return RuleIntrospection(getName!expr,
+                        false, null, null, null,
+                        Recursive.no, LeftRecursive.no, NullMatch.indeterminate, InfiniteLoop.indeterminate);
 }
 
 /**
@@ -237,10 +239,10 @@ string fail(GetName g)
     return "fail";
 }
 
-RuleInfo fail(RuleInfo ri)
+RuleIntrospection fail(RuleIntrospection ri)
 {
-    return RuleInfo( "fail"
-                   , false, null, null, null // grammar-specific information
+    return RuleIntrospection( "fail"
+                   , false, null, null, null // grammar-specific Introspectionrmation
                    , Recursive.no
                    , LeftRecursive.no
                    , NullMatch.yes
@@ -284,10 +286,10 @@ string eoi(GetName g)
     return "eoi";
 }
 
-RuleInfo eoi(RuleInfo ri)
+RuleIntrospection eoi(RuleIntrospection ri)
 {
-    return RuleInfo( "eoi"
-                   , false, null, null, null // grammar-specific information
+    return RuleIntrospection( "eoi"
+                   , false, null, null, null // grammar-specific Introspectionrmation
                    , Recursive.no
                    , LeftRecursive.no
                    , NullMatch.yes
@@ -339,10 +341,10 @@ string any(GetName g)
     return "any";
 }
 
-RuleInfo any(RuleInfo ri)
+RuleIntrospection any(RuleIntrospection ri)
 {
-    return RuleInfo( "any"
-                   , false, null, null, null // grammar-specific information
+    return RuleIntrospection( "any"
+                   , false, null, null, null // grammar-specific Introspectionrmation
                    , Recursive.no
                    , LeftRecursive.no
                    , NullMatch.no
@@ -411,10 +413,10 @@ template literal(string s)
         return "literal!(\""~s~"\")";
     }
 
-    RuleInfo literal(RuleInfo ri)
+    RuleIntrospection literal(RuleIntrospection ri)
     {
-        return RuleInfo( "literal!(\""~s~"\")"
-                       , false, null, null, null // grammar-specific information
+        return RuleIntrospection( "literal!(\""~s~"\")"
+                       , false, null, null, null // grammar-specific Introspectionrmation
                        , Recursive.no
                        , LeftRecursive.no
                        , (s == "" ? NullMatch.yes : NullMatch.no)
@@ -565,10 +567,10 @@ template charRange(char begin, char end) if (begin <= end)
         return "charRange!('"~begin~"','" ~ end ~ "')";
     }
 
-    RuleInfo charRange(RuleInfo ri)
+    RuleIntrospection charRange(RuleIntrospection ri)
     {
-        return RuleInfo( "charRange!('"~begin~"','" ~ end ~ "')"
-                       , false, null, null, null // grammar-specific information
+        return RuleIntrospection( "charRange!('"~begin~"','" ~ end ~ "')"
+                       , false, null, null, null // grammar-specific Introspectionrmation
                        , Recursive.no
                        , LeftRecursive.no
                        , NullMatch.no
@@ -719,10 +721,10 @@ string eps(GetName g)
     return "eps";
 }
 
-RuleInfo eps(RuleInfo ri)
+RuleIntrospection eps(RuleIntrospection ri)
 {
-    return RuleInfo( "eps"
-                    , false, null, null, null // grammar-specific information
+    return RuleIntrospection( "eps"
+                    , false, null, null, null // grammar-specific Introspectionrmation
                     , Recursive.no
                     , LeftRecursive.no
                     , NullMatch.yes
@@ -859,7 +861,7 @@ template and(rules...) if (rules.length > 0)
         return name;
     }
 
-    RuleInfo and(RuleInfo ri)
+    RuleIntrospection and(RuleIntrospection ri)
     {
         ri.name = "and!(";
         ri.startRule = false;
@@ -870,20 +872,20 @@ template and(rules...) if (rules.length > 0)
         ri.infiniteLoop = InfiniteLoop.no; // default case
         foreach(i,rule; rules)
         {
-            RuleInfo ruleInfo = introspect!(rule)();
-            ri.name ~= ruleInfo.name
+            RuleIntrospection ruleIntrospection = introspect!(rule)();
+            ri.name ~= ruleIntrospection.name
                  ~ (i < rules.length -1 ? ", " : "");
 
-            ri.directCalls = pegged.introspection.merge(ri.directCalls, ruleInfo.directCalls);
-            ri.calls = pegged.introspection.merge(ri.calls, ruleInfo.calls);
+            ri.directCalls = pegged.introspection.merge(ri.directCalls, ruleIntrospection.directCalls);
+            ri.calls = pegged.introspection.merge(ri.calls, ruleIntrospection.calls);
 
-            if (ruleInfo.nullMatch == NullMatch.indeterminate)
+            if (ruleIntrospection.nullMatch == NullMatch.indeterminate)
                 ri.nullMatch = NullMatch.indeterminate;
-            if (ruleInfo.nullMatch == NullMatch.no && ri.nullMatch != NullMatch.indeterminate)
+            if (ruleIntrospection.nullMatch == NullMatch.no && ri.nullMatch != NullMatch.indeterminate)
                 ri.nullMatch = NullMatch.no;
-            if (ruleInfo.infiniteLoop == InfiniteLoop.indeterminate)
+            if (ruleIntrospection.infiniteLoop == InfiniteLoop.indeterminate)
                 ri.infiniteLoop = InfiniteLoop.indeterminate;
-            if (ruleInfo.infiniteLoop == InfiniteLoop.yes && ri.infiniteLoop != InfiniteLoop.indeterminate)
+            if (ruleIntrospection.infiniteLoop == InfiniteLoop.yes && ri.infiniteLoop != InfiniteLoop.indeterminate)
                 ri.infiniteLoop = InfiniteLoop.yes;
         }
         ri.name ~= ")";
@@ -995,9 +997,9 @@ template wrapAround(alias before, alias target, alias after)
         return "wrapAround!(" ~ getName!(before)() ~ ", " ~ getName!(target)() ~ ", " ~ getName!(after)() ~ ")";
     }
 
-    RuleInfo wrapAround(RuleInfo ri)
+    RuleIntrospection wrapAround(RuleIntrospection ri)
     {
-        ri = introspect!(and!(before, target, after))();
+        RuleIntrospection ri = introspect!(and!(before, target, after))();
         ri.name = "wrapAround" ~ ri.name[3..$];
         return ri;
     }
@@ -1112,7 +1114,7 @@ template or(rules...) if (rules.length > 0)
         return name;
     }
 
-    RuleInfo or(RuleInfo ri)
+    RuleIntrospection or(RuleIntrospection ri)
     {
         ri.name = "and!(";
         ri.startRule = false;
@@ -1123,20 +1125,20 @@ template or(rules...) if (rules.length > 0)
         ri.infiniteLoop = InfiniteLoop.no; // default case
         foreach(i,rule; rules)
         {
-            RuleInfo ruleInfo = introspect!(rule)();
-            ri.name ~= ruleInfo.name
+            RuleIntrospection ruleIntrospection = introspect!(rule)();
+            ri.name ~= ruleIntrospection.name
                  ~ (i < rules.length -1 ? ", " : "");
 
-            ri.directCalls = pegged.introspection.merge(ri.directCalls, ruleInfo.directCalls);
-            ri.calls = pegged.introspection.merge(ri.calls, ruleInfo.calls);
+            ri.directCalls = pegged.introspection.merge(ri.directCalls, ruleIntrospection.directCalls);
+            ri.calls = pegged.introspection.merge(ri.calls, ruleIntrospection.calls);
 
-            if (ruleInfo.nullMatch == NullMatch.indeterminate)
+            if (ruleIntrospection.nullMatch == NullMatch.indeterminate)
                 ri.nullMatch = NullMatch.indeterminate;
-            if (ruleInfo.nullMatch == NullMatch.yes && ri.nullMatch != NullMatch.indeterminate)
+            if (ruleIntrospection.nullMatch == NullMatch.yes && ri.nullMatch != NullMatch.indeterminate)
                 ri.nullMatch = NullMatch.yes;
-            if (ruleInfo.infiniteLoop == InfiniteLoop.indeterminate)
+            if (ruleIntrospection.infiniteLoop == InfiniteLoop.indeterminate)
                 ri.infiniteLoop = InfiniteLoop.indeterminate;
-            if (ruleInfo.infiniteLoop == InfiniteLoop.yes && ri.infiniteLoop != InfiniteLoop.indeterminate)
+            if (ruleIntrospection.infiniteLoop == InfiniteLoop.yes && ri.infiniteLoop != InfiniteLoop.indeterminate)
                 ri.infiniteLoop = InfiniteLoop.yes;
         }
         ri.name ~= ")";
@@ -1247,7 +1249,7 @@ template keywords(kws...) if (kws.length > 0)
         return name;
     }
 
-    RuleInfo keywords(RuleInfo ri)
+    RuleIntrospection keywords(RuleIntrospection ri)
     {
         NullMatch nm = NullMatch.no;
         string name= "keywords!(";
@@ -1258,8 +1260,8 @@ template keywords(kws...) if (kws.length > 0)
                 nm = NullMatch.yes;
         }
         name ~= ")";
-        return RuleInfo( name
-                       , false, null, null, null // grammar-specific information
+        return RuleIntrospection( name
+                       , false, null, null, null // grammar-specific Introspectionrmation
                        , Recursive.no
                        , LeftRecursive.no
                        , nm
@@ -1380,7 +1382,7 @@ template zeroOrMore(alias r)
         return "zeroOrMore!(" ~ getName!(r)() ~ ")";
     }
 
-    RuleInfo zeroOrMore(RuleInfo ri)
+    RuleIntrospection zeroOrMore(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name= "zeroOrMore!(" ~ ri.name ~ ")";
@@ -1534,7 +1536,7 @@ template oneOrMore(alias r)
         return "oneOrMore!(" ~ getName!(r)() ~ ")";
     }
 
-    RuleInfo oneOrMore(RuleInfo ri)
+    RuleIntrospection oneOrMore(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name= "oneOrMore!(" ~ ri.name ~ ")";
@@ -1650,7 +1652,7 @@ template option(alias r)
         return "option!(" ~ getName!(r)() ~ ")";
     }
 
-    RuleInfo option(RuleInfo ri)
+    RuleIntrospection option(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name= "option!(" ~ ri.name ~ ")";
@@ -1748,7 +1750,7 @@ template posLookahead(alias r)
         return "posLookahead!(" ~ getName!(r)() ~ ")";
     }
 
-    RuleInfo posLookahead(RuleInfo ri)
+    RuleIntrospection posLookahead(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name= "posLookahead!(" ~ ri.name ~ ")";
@@ -1843,7 +1845,7 @@ template negLookahead(alias r)
         return "negLookahead!(" ~ getName!(r)() ~ ")";
     }
 
-    RuleInfo negLookahead(RuleInfo ri)
+    RuleIntrospection negLookahead(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name= "negLookahead!(" ~ ri.name ~ ")";
@@ -1945,7 +1947,7 @@ template named(alias r, string name)
         return name;
     }
 
-    RuleInfo named(RuleInfo ri)
+    RuleIntrospection named(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = name;
@@ -2006,7 +2008,7 @@ template action(alias r, alias act)
         return "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
     }
 
-    RuleInfo action(RuleInfo ri)
+    RuleIntrospection action(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = "action!("~ ri.name ~ ", " ~ __traits(identifier, act) ~ ")";
@@ -2080,7 +2082,7 @@ template fuse(alias r)
         return "fuse!(" ~ getName!(r)() ~ ")";
     }
 
-    RuleInfo fuse(RuleInfo ri)
+    RuleIntrospection fuse(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = "fuse!("~ ri.name ~ ")";
@@ -2154,7 +2156,7 @@ template discardChildren(alias r)
         return "discardChildren!(" ~ getName!(r)() ~ ")";
     }
 
-    RuleInfo discardChildren(RuleInfo ri)
+    RuleIntrospection discardChildren(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = "discardChildren!("~ ri.name ~ ")";
@@ -2185,7 +2187,7 @@ template discardMatches(alias r)
         return "discardMatches!(" ~ getName!(r)() ~ ")";
     }
 
-    RuleInfo discardMatches(RuleInfo ri)
+    RuleIntrospection discardMatches(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = "discardMatches!("~ ri.name ~ ")";
@@ -2221,7 +2223,7 @@ template discard(alias r)
         return "discard";
     }
 
-    RuleInfo discard(RuleInfo ri)
+    RuleIntrospection discard(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = "discard";
@@ -2309,7 +2311,7 @@ template drop(alias r)
         return "drop";
     }
 
-    RuleInfo drop(RuleInfo ri)
+    RuleIntrospection drop(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = "drop";
@@ -2395,7 +2397,7 @@ template propagate(alias r)
         return "propagate";
     }
 
-    RuleInfo propagate(RuleInfo ri)
+    RuleIntrospection propagate(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = "propagate";
@@ -2431,7 +2433,7 @@ template keep(alias r)
         return "keep";
     }
 
-    RuleInfo keep(RuleInfo ri)
+    RuleIntrospection keep(RuleIntrospection ri)
     {
         ri = introspect!(r)();
         ri.name = "keep";
@@ -2527,8 +2529,8 @@ template list(alias elem, alias sep)
 template list0(alias elem, alias sep)
 {
     alias named!(spaceAnd!(spacing, option!(and!(elem, zeroOrMore!(spaceAnd!(spacing, discardMatches!(sep), elem)))))
-                , "list0!(" ~ getName!elem ~ ", " ~ getName!sep ~ ")"
-                ) list0;
+                , "list!(" ~ getName!elem ~ ", " ~ getName!sep ~ ")"
+                ) list;
 }
 
 template AddSpace(alias sp)

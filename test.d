@@ -17,99 +17,100 @@ import pegged.introspection;
 enum g =
 `
     Recursive:
-        A <- A 'a' / eoi
-        B <- A C
-        C <- 'c' A
+        A <- 'a' / eoi
 `;
 
-enum PEGGEDgrammar = `
-# This is the PEG extended grammar used by Pegged
-Pegged:
+struct GenericRecursive(TParseTree)
+{
+    struct Recursive
+    {
+    enum name = "Recursive";
+    import std.typecons:Tuple, tuple;
+    static TParseTree[Tuple!(string, size_t)] memo;
+    static bool isRule(string s)
+    {
+        switch(s)
+        {
+            case "Recursive.A":
+                return true;
+            default:
+                return false;
+        }
+    }
+    mixin decimateTree;
+    alias spacing Spacing;
 
-# Syntactic rules:
-Grammar      <- Spacing GrammarName Definition+ :eoi
-Definition   <- LhsName Arrow Expression
-Expression   <- :OR? Sequence (:OR Sequence)*
-Sequence     <- Prefix+
-Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
-Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
-Primary      <- !(LhsName Arrow)
-                ( RhsName
-                / :OPEN Expression :CLOSE
-                / Literal
-                / CharClass
-                / ANY)
-# Lexical syntax
-Identifier   <- identifier
-GrammarName  <- Identifier ParamList? Spacing :':' Spacing
-LhsName      <- Identifier ParamList? Spacing
-RhsName      <- Identifier ArgList? (NAMESEP Identifier ArgList?)* Spacing         # NAMESEP is *not* discarded
-ParamList    <- :OPEN Param (:SEPARATOR Param)*  :CLOSE
-Param        <- DefaultParam / SingleParam
-DefaultParam <- Identifier Spacing :ASSIGN Expression
-SingleParam  <- Identifier Spacing
-ArgList      <- :OPEN Expression (:SEPARATOR Expression)* :CLOSE
-Action       <- ACTIONOPEN qualifiedIdentifier (SEPARATOR qualifiedIdentifier)* ACTIONCLOSE
+    static TParseTree A(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.literal!(`a`), eoi), name ~ `.`~ `A`)(p);
+        }
+        else
+        {
+            if(auto m = tuple(`A`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.or!(pegged.peg.literal!(`a`), eoi), name ~ `.`~ `A`)(p);
+                memo[tuple(`A`,p.end)] = result;
+                return result;
+            }
+        }
+    }
 
-Literal      <~ :quote       (!quote Char)*       :quote       Spacing
-              / :doublequote (!doublequote Char)* :doublequote Spacing
-CharClass    <- :'[' (!']' CharRange)* :']' Spacing
-CharRange    <- Char '-' Char / Char
+    static TParseTree A(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.literal!(`a`), eoi), name ~ `.`~ `A`)(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.literal!(`a`), eoi), name ~ `.`~ `A`)(TParseTree("", false,[], s));
+        }
+    }
+    static string A(GetName g)
+    {
+        return name ~ `.`~ `A`;
+    }
 
-# Terminals
-Char         <~ backslash ( quote
-                          / doublequote
-                          / backquote
-                          / backslash
-                          / '-'
-                          / '['
-                          / ']'
-                          / [nrt]
-                          / [0-2][0-7][0-7]
-                          / [0-7][0-7]?
-                          / 'x' hexDigit hexDigit
-                          / 'u' hexDigit hexDigit hexDigit hexDigit
-                          / 'U' hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit hexDigit
-                          )
-              / . # or anything else
+    static TParseTree opCall(TParseTree p)
+    {
+        TParseTree result = decimateTree(A(p));
+        result.children = [result];
+        result.name = "Recursive";
+        return result;
+    }
 
-Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / PROPAGATEARROW / SPACEARROW
-LEFTARROW    <- '<-' Spacing
-FUSEARROW    <- '<~' Spacing
-DISCARDARROW <- '<:' Spacing
-KEEPARROW    <- '<^' Spacing
-DROPARROW    <- '<;' Spacing
-PROPAGATEARROW <- '<%' Spacing
-SPACEARROW   <- '<' Spacing
+    static TParseTree opCall(string input)
+    {
+        if(__ctfe)
+        {
+            return Recursive(TParseTree(``, false, [], input, 0, 0));
+        }
+        else
+        {
+            memo = null;
+            return Recursive(TParseTree(``, false, [], input, 0, 0));
+        }
+    }
+    static string opCall(GetName g)
+    {
+        return "Recursive";
+    }
 
-OR           <- '/' Spacing
+    }
+}
 
-POS          <- '&' Spacing
-NEG          <- '!' Spacing
-FUSE         <- '~' Spacing
-DISCARD      <- ':' Spacing
-KEEP         <- '^' Spacing
-DROP         <- ';' Spacing
-PROPAGATE    <- '%' Spacing
-
-OPTION       <- '?' Spacing
-ZEROORMORE   <- '*' Spacing
-ONEORMORE    <- '+' Spacing
-ACTIONOPEN   <- '{' Spacing
-ACTIONCLOSE  <- '}' Spacing
-SEPARATOR    <- ',' Spacing
-ASSIGN       <- '=' Spacing
-NAMESEP      <- '.'   # No Spacing
-OPEN         <- '(' Spacing
-CLOSE        <- ')' Spacing
-ANY          <- '.' Spacing
-Spacing      <: (Space / Comment)*
-Comment      <- '#' (!eol .)* :eol
-Space        <- spacing / "\\t" / "\\n" / "\\r"
-`;
+alias GenericRecursive!(ParseTree).Recursive Recursive;
 
 void main()
 {
-    writeln(ruleInfo(PEGGEDgrammar)["Spacing"]);
-    //writeln(Pegged(g));
+    auto ri = grammarIntrospection(Pegged(`Recursive:
+        A <- B 'a' / eps`));
+    writeln(ri);
+
+    writeln(and!(literal!"abc", Recursive.A)(RuleIntrospection()));
 }
