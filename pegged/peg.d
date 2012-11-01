@@ -1654,7 +1654,7 @@ template option(alias r)
     {
         ri = introspect!(r)();
         ri.name= "option!(" ~ ri.name ~ ")";
-        ri.calledBy = null
+        ri.calledBy = null;
         ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
         return ri;
     }
@@ -1944,6 +1944,14 @@ template named(alias r, string name)
     {
         return name;
     }
+
+    RuleInfo named(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = name;
+        ri.calledBy = null;
+        return ri;
+    }
 }
 
 unittest // 'named' unit test
@@ -1996,6 +2004,14 @@ template action(alias r, alias act)
     string action(GetName g)
     {
         return "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
+    }
+
+    RuleInfo action(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = "action!("~ ri.name ~ ", " ~ __traits(identifier, act) ~ ")";
+        ri.calledBy = null;
+        return ri;
     }
 }
 
@@ -2063,6 +2079,14 @@ template fuse(alias r)
     {
         return "fuse!(" ~ getName!(r)() ~ ")";
     }
+
+    RuleInfo fuse(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = "fuse!("~ ri.name ~ ")";
+        ri.calledBy = null;
+        return ri;
+    }
 }
 
 unittest // 'fuse' unit test
@@ -2129,7 +2153,14 @@ template discardChildren(alias r)
     {
         return "discardChildren!(" ~ getName!(r)() ~ ")";
     }
-}
+
+    RuleInfo discardChildren(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = "discardChildren!("~ ri.name ~ ")";
+        ri.calledBy = null;
+        return ri;
+    }}
 
 /**
 Calls 'r' on the input and then discards its matches.
@@ -2153,7 +2184,14 @@ template discardMatches(alias r)
     {
         return "discardMatches!(" ~ getName!(r)() ~ ")";
     }
-}
+
+    RuleInfo discardMatches(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = "discardMatches!("~ ri.name ~ ")";
+        ri.calledBy = null;
+        return ri;
+    }}
 
 /**
 Calls 'r' on the input and then discard everything 'r' returned: no children, no match and index
@@ -2181,6 +2219,14 @@ template discard(alias r)
     string discard(GetName g)
     {
         return "discard";
+    }
+
+    RuleInfo discard(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = "discard";
+        ri.calledBy = null;
+        return ri;
     }
 }
 
@@ -2262,7 +2308,14 @@ template drop(alias r)
     {
         return "drop";
     }
-}
+
+    RuleInfo drop(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = "drop";
+        ri.calledBy = null;
+        return ri;
+    }}
 
 unittest // 'drop' unit test
 {
@@ -2341,6 +2394,14 @@ template propagate(alias r)
     {
         return "propagate";
     }
+
+    RuleInfo propagate(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = "propagate";
+        ri.calledBy = null;
+        return ri;
+    }
 }
 
 /**
@@ -2368,6 +2429,14 @@ template keep(alias r)
     string keep(GetName g)
     {
         return "keep";
+    }
+
+    RuleInfo keep(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name = "keep";
+        ri.calledBy = null;
+        return ri;
     }
 }
 
@@ -2449,13 +2518,17 @@ alias named!(literal!"`", "backquote") backquote; /// A parser recognizing ` (ba
 /// A list of elem's separated by sep's. One element minimum.
 template list(alias elem, alias sep)
 {
-    alias named!(spaceAnd!(spacing, and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem)))), "list") list;
+    alias named!( spaceAnd!(spacing, and!(elem, zeroOrMore!(spaceAnd!(spacing, discardMatches!(sep), elem))))
+                , "list!(" ~ getName!elem ~ ", " ~ getName!sep ~ ")"
+                ) list;
 }
 
 /// A list of elem's separated by sep's. The empty list (no elem, no sep) is OK.
 template list0(alias elem, alias sep)
 {
-    alias named!(spaceAnd!(spacing, option!(and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem))))), "list0") list0;
+    alias named!(spaceAnd!(spacing, option!(and!(elem, zeroOrMore!(spaceAnd!(spacing, discardMatches!(sep), elem)))))
+                , "list0!(" ~ getName!elem ~ ", " ~ getName!sep ~ ")"
+                ) list0;
 }
 
 template AddSpace(alias sp)
