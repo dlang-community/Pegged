@@ -250,6 +250,8 @@ struct RuleIntrospection
     NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
     InfiniteLoop infiniteLoop; /// Can the rule loop indefinitely, while consuming nothing?
 
+    string expected; /// The expected input to match the rule
+
     string toString() @property
     {
         return  "rule " ~ name ~ (startRule? ": (start)\n" : ":\n")
@@ -259,7 +261,8 @@ struct RuleIntrospection
               ~ "recursive: " ~ to!string(recursion) ~ "\n"
               ~ "left recursive: " ~ to!string(leftRecursion) ~ "\n"
               ~ "can match while consuming nothing: " ~ to!string(nullMatch) ~ "\n"
-              ~ "can loop infinitely: " ~ to!string(infiniteLoop) ~ "\n";
+              ~ "can loop infinitely: " ~ to!string(infiniteLoop) ~ "\n"
+              ~ "expected input: " ~ expected;
     }
 }
 
@@ -309,7 +312,8 @@ RuleIntrospection fail(RuleIntrospection ri)
                    , Recursive.no
                    , LeftRecursive.no
                    , NullMatch.yes
-                   , InfiniteLoop.no);
+                   , InfiniteLoop.no
+                   , "nothing (fail)");
 }
 
 unittest // 'fail' unit test
@@ -356,7 +360,8 @@ RuleIntrospection eoi(RuleIntrospection ri)
                    , Recursive.no
                    , LeftRecursive.no
                    , NullMatch.yes
-                   , InfiniteLoop.no);
+                   , InfiniteLoop.no
+                   , "end of input");
 }
 
 alias eoi endOfInput; /// helper alias.
@@ -411,7 +416,8 @@ RuleIntrospection any(RuleIntrospection ri)
                    , Recursive.no
                    , LeftRecursive.no
                    , NullMatch.no
-                   , InfiniteLoop.no);
+                   , InfiniteLoop.no
+                   , "any character");
 }
 
 unittest // 'any' unit test
@@ -483,7 +489,8 @@ template literal(string s)
                        , Recursive.no
                        , LeftRecursive.no
                        , (s == "" ? NullMatch.yes : NullMatch.no)
-                       , InfiniteLoop.no);
+                       , InfiniteLoop.no
+                       , s);
     }
 }
 
@@ -637,7 +644,8 @@ template charRange(char begin, char end) if (begin <= end)
                        , Recursive.no
                        , LeftRecursive.no
                        , NullMatch.no
-                       , InfiniteLoop.no);
+                       , InfiniteLoop.no
+                       , "any character between '" ~ begin ~ "' and '" ~ end ~ "'");
     }
 }
 
@@ -791,7 +799,8 @@ RuleIntrospection eps(RuleIntrospection ri)
                     , Recursive.no
                     , LeftRecursive.no
                     , NullMatch.yes
-                    , InfiniteLoop.no);
+                    , InfiniteLoop.no
+                    , "");
 }
 
 unittest // 'eps' unit test
@@ -938,6 +947,8 @@ template and(rules...) if (rules.length > 0)
             RuleIntrospection ruleIntrospection = introspect!(rule)();
             ri.name ~= ruleIntrospection.name
                  ~ (i < rules.length -1 ? ", " : "");
+            if (i == 0)
+                ri.expected = ruleIntrospection.expected;
 
             ri.directCalls[ruleIntrospection.name] = true;
             ri.calls = merge(ri.calls, ruleIntrospection.calls);
