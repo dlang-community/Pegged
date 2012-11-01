@@ -76,7 +76,7 @@ Returns for all grammar rules:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-RuleInfo[string] ruleInfo(string grammar)
+RuleInfo[string] ruleInfo(ParseTree gram)
 {
     RuleInfo[string] result;
     ParseTree[string] rules;
@@ -352,9 +352,11 @@ RuleInfo[string] ruleInfo(string grammar)
         }
     }
 
-    ParseTree p = Pegged(grammar).children[0];
+    if (gram.name == "Pegged")
+        gram = gram.children[0];
+
     bool first = true; // to catch the first real definition
-    foreach(index,definition; p.children)
+    foreach(index,definition; gram.children)
         if (definition.name == "Pegged.Definition")
         {
             rules[definition.matches[0]] = definition.children[2];
@@ -370,7 +372,7 @@ RuleInfo[string] ruleInfo(string grammar)
         }
 
     // Filling the calling informations
-    auto cg = callGraph(p);
+    auto cg = callGraph(gram);
     foreach(name, node; cg)
         foreach(callee, _; node)
             result[name].directCalls ~= callee;
