@@ -21,8 +21,6 @@ version(unittest)
     import std.stdio;
 }
 
-import pegged.introspection;
-
 /**
 The basic parse tree, as used throughout the project.
 You can defined your own parse tree node, but respect the basic layout.
@@ -204,6 +202,65 @@ unittest
 
 
 ") == Position(3,0,3), "Four lines, all empty.");
+}
+
+
+/**
+The different kinds of recursion for a rule.
+'direct' means the rule name appears in its own definition. 'indirect' means the rule calls itself through another rule (the call chain can be long).
+*/
+enum Recursive { no, direct, indirect }
+
+/**
+Left-recursion diagnostic for a rule. A rule is left-recursive when its own name appears at the beginning of its definition or behind possibly-null-matching rules (see below for null matches).
+For example A <- A 'a' is left-recursive, whereas A <- 'a' A is not. *But* A <- 'a'? A is left-recursive, since if the input does not begin
+with 'a', then the parsing will continue by invoking A again, at the same position.
+
+'direct' means the rule invokes itself in the first position of its definition (A <- A ...). 'hidden' means the rule names appears after a possibly-null other rule (A <- 'a'? A ...). 'indirect' means the rule calls itself trough another rule.
+*/
+enum LeftRecursive { no, direct, hidden, indirect }
+
+/**
+NullMatch.yes means a rule can succeed while consuming no input. For example e? or e*, for all expressions e.
+Nullmatch.no means a rule will always consume at least a token while succeeding.
+Nullmatch.indeterminate means the algorithm could not converge.
+*/
+enum NullMatch { no, yes, indeterminate }
+
+/**
+InfiniteLoop.yes means a rule can loop indefinitely while consuming nothing.
+InfiniteLoop.no means a rule cannot loop indefinitely.
+InfiniteLoop.indeterminate means the algorithm could not converge.
+*/
+enum InfiniteLoop { no, yes, indeterminate }
+
+/**
+Struct holding the introspection info on a rule or parsing expression.
+*/
+struct RuleIntrospection
+{
+    string name; /// Name of the introspected rule.
+    bool startRule; /// Whether the introspected rule is the start rule of the grammar or not.
+    bool[string] directCalls; /// All rules direcly called by the introspected rule. This include external rules.
+    bool[string] calls; /// All rules called by the introspected rule, directly or indirectly. This include external rules.
+    bool[string] calledBy; /// All grammar rules calling the introspected rule (no external rules).
+
+    Recursive recursion; /// Is the rule recursive?
+    LeftRecursive leftRecursion; /// Is the rule left-recursive?
+    NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
+    InfiniteLoop infiniteLoop; /// Can the rule loop indefinitely, while consuming nothing?
+
+    string toString() @property
+    {
+        return  "rule " ~ name ~ (startRule? ": (start)\n" : ":\n")
+              ~ "calls direcly: " ~ to!string(directCalls.keys) ~ "\n"
+              ~ "calls (total): " ~ to!string(calls.keys) ~ "\n"
+              ~ "is called by: " ~ to!string(calledBy.keys) ~ "\n"
+              ~ "recursive: " ~ to!string(recursion) ~ "\n"
+              ~ "left recursive: " ~ to!string(leftRecursion) ~ "\n"
+              ~ "can match while consuming nothing: " ~ to!string(nullMatch) ~ "\n"
+              ~ "can loop infinitely: " ~ to!string(infiniteLoop) ~ "\n";
+    }
 }
 
 struct GetName {}
@@ -883,7 +940,7 @@ template and(rules...) if (rules.length > 0)
                  ~ (i < rules.length -1 ? ", " : "");
 
             ri.directCalls[ruleIntrospection.name] = true;
-            ri.calls = pegged.introspection.merge(ri.calls, ruleIntrospection.calls);
+            ri.calls = merge(ri.calls, ruleIntrospection.calls);
             ri.calls[ruleIntrospection.name] = true;
 
             if (ruleIntrospection.nullMatch == NullMatch.indeterminate)
@@ -1137,7 +1194,7 @@ template or(rules...) if (rules.length > 0)
                  ~ (i < rules.length -1 ? ", " : "");
 
             ri.directCalls[ruleIntrospection.name] = true;
-            ri.calls = pegged.introspection.merge(ri.calls, ruleIntrospection.calls);
+            ri.calls = merge(ri.calls, ruleIntrospection.calls);
             ri.calls[ruleIntrospection.name] = true;
 
             if (ruleIntrospection.nullMatch == NullMatch.indeterminate)
@@ -2804,4 +2861,48 @@ ParseTree modify(alias predicate, alias modifier)(ParseTree input)
         input = modifier(input);
 
     return input;
+}
+
+
+// set unionn
+bool[string] merge(bool[string] a, bool[string] b)
+{
+    bool[string] result;
+    foreach(name, _; a)
+        result[name] = true;
+
+    foreach(name, _; b)
+        if (name !in result)
+            result[name] = true;
+    return result;
+}
+
+unittest
+{
+    bool[string] empty;
+    bool[string] abc = ["a":true, "b": true, "c": true];
+    bool[string] abd = ["a":true, "b": true, "d": true];
+    bool[string] def = ["d":true, "e": true, "f": true];
+    bool[string] abcd = ["a":true, "b": true, "c": true, "d": true];
+    bool[string] abcdef = ["a":true, "b": true, "c": true, "d": true, "e": true, "f": true];
+
+    assert(merge(abc,abc) == abc); // idempotent
+    assert(merge(abc, empty) == abc); // empty has no effect
+    assert(merge(empty, abc) == abc);
+
+    assert(merge(empty, empty) == empty);
+
+    assert(merge(abc, abd) == abcd);
+    assert(merge(abd, abc) == abcd);
+
+    assert(merge(abc, abcd) == abcd);
+    assert(merge(abd, abcd) == abcd);
+    assert(merge(abcd, abc) == abcd);
+    assert(merge(abcd, abd) == abcd);
+
+    assert(merge(abc, def) == abcdef);
+    assert(merge(def, abc) == abcdef);
+
+    assert(merge(abcd, def) == abcdef);
+    assert(merge(def, abcd) == abcdef);
 }
