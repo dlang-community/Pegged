@@ -47,6 +47,7 @@ struct RuleIntrospection
     bool[string] directCalls; /// All rules direcly called by the introspected rule. This include external rules.
     bool[string] calls; /// All rules called by the introspected rule, directly or indirectly. This include external rules.
     bool[string] calledBy; /// All grammar rules calling the introspected rule (no external rules).
+
     Recursive recursion; /// Is the rule recursive?
     LeftRecursive leftRecursion; /// Is the rule left-recursive?
     NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
@@ -376,16 +377,16 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
     // Filling the calling informations
     auto cg = callGraph(gram);
     foreach(name, node; cg)
-        foreach(callee, _; node)
-            result[name].directCalls[callee] = true;
+        foreach(called, _; node)
+            result[name].directCalls[called] = true;
 
     auto cl = closure(cg);
     foreach(name, node; cl)
-        foreach(callee, _; node)
+        foreach(called, _; node)
         {
-            result[name].calls[callee] = true;
-            if (callee in result)
-                result[callee].calledBy[name] = true;
+            result[name].calls[called] = true;
+            if (called in result)
+                result[called].calledBy[name] = true;
         }
 
     // Filling the recursion informations

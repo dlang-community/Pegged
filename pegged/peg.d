@@ -10,10 +10,16 @@ See the /docs directory for the full documentation as markdown files.
 */
 module pegged.peg;
 
-import std.conv;
+import std.algorithm: startsWith;
+import std.conv: to;
 import std.range: equal;
 import std.string: strip;
 import std.typetuple;
+
+version(unittest)
+{
+    import std.stdio;
+}
 
 import pegged.introspection;
 
@@ -809,9 +815,9 @@ template and(rules...) if (rules.length > 0)
         name ~= ")";
         bool isNullNode(ParseTree node)
         {
-            return (  node.name == "discard" || node.matches is null
+            return ( node.name.startsWith("discard!(") || node.matches is null
             //|| node.begin == node.end
-            ) && node.name != "keep";
+            ) && !node.name.startsWith("keep!(");
         }
 
         ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end, []);
@@ -825,11 +831,11 @@ template and(rules...) if (rules.length > 0)
                 if (!isNullNode(temp)) // discard empty nodes
                 {
                     result.matches ~= temp.matches;
-                    if (temp.name == "drop")
+                    if (temp.name.startsWith("drop!("))
                     {}
-                    else if (temp.name == "propagate")
+                    else if (temp.name.startsWith("propagate!("))
                         result.children ~= temp.children;
-                    else
+                    else // standard case
                         result.children ~= temp;
                 }
             }
@@ -876,8 +882,9 @@ template and(rules...) if (rules.length > 0)
             ri.name ~= ruleIntrospection.name
                  ~ (i < rules.length -1 ? ", " : "");
 
-            ri.directCalls = pegged.introspection.merge(ri.directCalls, ruleIntrospection.directCalls);
+            ri.directCalls[ruleIntrospection.name] = true;
             ri.calls = pegged.introspection.merge(ri.calls, ruleIntrospection.calls);
+            ri.calls[ruleIntrospection.name] = true;
 
             if (ruleIntrospection.nullMatch == NullMatch.indeterminate)
                 ri.nullMatch = NullMatch.indeterminate;
@@ -999,7 +1006,7 @@ template wrapAround(alias before, alias target, alias after)
 
     RuleIntrospection wrapAround(RuleIntrospection ri)
     {
-        RuleIntrospection ri = introspect!(and!(before, target, after))();
+        ri = introspect!(and!(before, target, after))();
         ri.name = "wrapAround" ~ ri.name[3..$];
         return ri;
     }
@@ -1116,7 +1123,7 @@ template or(rules...) if (rules.length > 0)
 
     RuleIntrospection or(RuleIntrospection ri)
     {
-        ri.name = "and!(";
+        ri.name = "or!(";
         ri.startRule = false;
         ri.calledBy = null;
         ri.recursion = Recursive.no;
@@ -1129,8 +1136,9 @@ template or(rules...) if (rules.length > 0)
             ri.name ~= ruleIntrospection.name
                  ~ (i < rules.length -1 ? ", " : "");
 
-            ri.directCalls = pegged.introspection.merge(ri.directCalls, ruleIntrospection.directCalls);
+            ri.directCalls[ruleIntrospection.name] = true;
             ri.calls = pegged.introspection.merge(ri.calls, ruleIntrospection.calls);
+            ri.calls[ruleIntrospection.name] = true;
 
             if (ruleIntrospection.nullMatch == NullMatch.indeterminate)
                 ri.nullMatch = NullMatch.indeterminate;
@@ -1385,8 +1393,14 @@ template zeroOrMore(alias r)
     RuleIntrospection zeroOrMore(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name= "zeroOrMore!(" ~ ri.name ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "zeroOrMore!(" ~ ri.name ~ ")";
+
         if ( ri.infiniteLoop == InfiniteLoop.no
           && ri.nullMatch == NullMatch.yes)
             ri.infiniteLoop = InfiniteLoop.yes;
@@ -1539,8 +1553,13 @@ template oneOrMore(alias r)
     RuleIntrospection oneOrMore(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name= "oneOrMore!(" ~ ri.name ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name= "oneOrMore!(" ~ ri.name ~ ")";
         if ( ri.infiniteLoop == InfiniteLoop.no
           && ri.nullMatch == NullMatch.yes)
             ri.infiniteLoop = InfiniteLoop.yes;
@@ -1655,8 +1674,13 @@ template option(alias r)
     RuleIntrospection option(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name= "option!(" ~ ri.name ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name= "option!(" ~ ri.name ~ ")";
         ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
         return ri;
     }
@@ -1753,8 +1777,13 @@ template posLookahead(alias r)
     RuleIntrospection posLookahead(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name= "posLookahead!(" ~ ri.name ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name= "posLookahead!(" ~ ri.name ~ ")";
         ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
         return ri;
     }
@@ -1848,8 +1877,14 @@ template negLookahead(alias r)
     RuleIntrospection negLookahead(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name= "negLookahead!(" ~ ri.name ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name= "negLookahead!(" ~ ri.name ~ ")";
+
         ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
         return ri;
     }
@@ -1950,8 +1985,13 @@ template named(alias r, string name)
     RuleIntrospection named(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = name;
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = name;
         return ri;
     }
 }
@@ -2011,8 +2051,14 @@ template action(alias r, alias act)
     RuleIntrospection action(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = "action!("~ ri.name ~ ", " ~ __traits(identifier, act) ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "action!("~ ri.name ~ ", " ~ __traits(identifier, act) ~ ")";
+
         return ri;
     }
 }
@@ -2085,8 +2131,13 @@ template fuse(alias r)
     RuleIntrospection fuse(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = "fuse!("~ ri.name ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "fuse!("~ ri.name ~ ")";
         return ri;
     }
 }
@@ -2159,10 +2210,16 @@ template discardChildren(alias r)
     RuleIntrospection discardChildren(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = "discardChildren!("~ ri.name ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "discardChildren!("~ ri.name ~ ")";
         return ri;
-    }}
+    }
+}
 
 /**
 Calls 'r' on the input and then discards its matches.
@@ -2190,10 +2247,16 @@ template discardMatches(alias r)
     RuleIntrospection discardMatches(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = "discardMatches!("~ ri.name ~ ")";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "discardMatches!("~ ri.name ~ ")";
         return ri;
-    }}
+    }
+}
 
 /**
 Calls 'r' on the input and then discard everything 'r' returned: no children, no match and index
@@ -2204,7 +2267,7 @@ template discard(alias r)
     ParseTree discard(ParseTree p)
     {
         ParseTree result = r(p);
-        result.name = "discard";
+        result.name = "discard!("~ getName!(r)() ~ ")";
         result.begin = result.end;
         result.children = null;
         if (result.successful)
@@ -2220,14 +2283,19 @@ template discard(alias r)
 
     string discard(GetName g)
     {
-        return "discard";
+        return "discard!("~ getName!(r)() ~ ")";
     }
 
     RuleIntrospection discard(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = "discard";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "discard!("~ ri.name ~ ")";
         return ri;
     }
 }
@@ -2237,14 +2305,14 @@ unittest // 'discard' unit test
     alias literal!"abc" abc;
     alias oneOrMore!abc abcs;
     alias discard!(literal!("abc")) dabc;
-    alias discard!(oneOrMore!(literal!("abc")))dabcs;
+    alias discard!(oneOrMore!(literal!("abc"))) dabcs;
 
     ParseTree reference = abc("abc");
     ParseTree result =dabc("abc");
 
     assert(result.successful == reference.successful);
     assert(result.successful);
-    assert(result.name =="discard");
+    assert(result.name == `discard!(literal!("abc"))`);
     assert(result.matches is null);
     assert(result.begin == result.end);
     assert(result.end == reference.end);
@@ -2255,7 +2323,7 @@ unittest // 'discard' unit test
 
     assert(result.successful == reference.successful);
     assert(result.successful);
-    assert(result.name =="discard");
+    assert(result.name == `discard!(oneOrMore!(literal!("abc")))`);
     assert(result.matches is null);
     assert(result.begin == result.end);
     assert(result.end == reference.end);
@@ -2267,7 +2335,7 @@ unittest // 'discard' unit test
 
     assert(result.successful == reference.successful);
     assert(!result.successful);
-    assert(result.name == "discard");
+    assert(result.name == `discard!(oneOrMore!(literal!("abc")))`);
     assert(result.matches == [`"abc"`], "discard error message.");
     assert(result.begin == result.end);
     assert(result.end == reference.end);
@@ -2297,7 +2365,7 @@ template drop(alias r)
         result.begin = result.end;
         result.children = null;
         if (result.successful)
-            result.name = "drop";
+            result.name = "drop!(" ~ getName!(r)() ~ ")";
         return result;
     }
 
@@ -2308,30 +2376,36 @@ template drop(alias r)
 
     string drop(GetName g)
     {
-        return "drop";
+        return "drop!(" ~ getName!(r)() ~ ")";
     }
 
     RuleIntrospection drop(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = "drop";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "drop!(" ~ ri.name ~ ")";
         return ri;
-    }}
+    }
+}
 
 unittest // 'drop' unit test
 {
     alias literal!"abc" abc;
     alias oneOrMore!abc abcs;
     alias drop!(literal!("abc")) dabc;
-    alias drop!(oneOrMore!(literal!("abc")))dabcs;
+    alias drop!(oneOrMore!(literal!("abc"))) dabcs;
 
     ParseTree reference = abc("abc");
     ParseTree result =dabc("abc");
 
     assert(result.successful == reference.successful);
     assert(result.successful);
-    assert(result.name == "drop");
+    assert(result.name == `drop!(literal!("abc"))`);
     assert(result.matches == reference.matches);
     assert(result.begin == result.end);
     assert(result.end == reference.end);
@@ -2342,7 +2416,7 @@ unittest // 'drop' unit test
 
     assert(result.successful == reference.successful);
     assert(result.successful);
-    assert(result.name == "drop");
+    assert(result.name == `drop!(oneOrMore!(literal!("abc")))`);
     assert(result.matches == reference.matches);
     assert(result.begin == result.end);
     assert(result.end == reference.end);
@@ -2354,7 +2428,6 @@ unittest // 'drop' unit test
 
     assert(result.successful == reference.successful);
     assert(!result.successful);
-    assert(result.name == reference.name);
     assert(result.matches == [`"abc"`], "'drop' error message.");
     assert(result.begin == result.end);
     assert(result.end == reference.end);
@@ -2383,7 +2456,7 @@ template propagate(alias r)
     {
         ParseTree result = r(p);
         if (result.successful)
-            result.name = "propagate";
+            result.name = "propagate!(" ~ getName!(r)() ~ ")";
         return result;
     }
 
@@ -2394,14 +2467,19 @@ template propagate(alias r)
 
     string propagate(GetName g)
     {
-        return "propagate";
+        return "propagate!(" ~ getName!(r)() ~ ")";
     }
 
     RuleIntrospection propagate(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = "propagate";
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "propagate!(" ~ ri.name ~ ")";
         return ri;
     }
 }
@@ -2418,7 +2496,7 @@ template keep(alias r)
         if (result.successful)
         {
             result.children = [result];
-            result.name = "keep";
+            result.name = "keep!("~ getName!(r)() ~ ")";
         }
         return result;
     }
@@ -2430,14 +2508,18 @@ template keep(alias r)
 
     string keep(GetName g)
     {
-        return "keep";
+        return "keep!("~ getName!(r)() ~ ")";
     }
 
     RuleIntrospection keep(RuleIntrospection ri)
     {
         ri = introspect!(r)();
-        ri.name = "keep";
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
         ri.calledBy = null;
+
+        ri.name = "keep!("~ ri.name ~ ")";
         return ri;
     }
 }
@@ -2655,13 +2737,14 @@ mixin template decimateTree()
             ParseTree[] result;
             foreach(child; pt.children)
             {
-                if (isRule(child.name) || !child.successful && child.children.length == 0) // keep nodes that belongs to the current grammar
+                // keep nodes that belongs to the current grammar
+                if (isRule(child.name) || !child.successful && child.children.length == 0) 
                 {
                     child.children = filterChildren(child);
                     result ~= child;
                 }
-                else if (child.name == "keep") // 'keep' node are never discarded.
-                                               // They have only one child, the node to keep
+                else if (child.name.startsWith("keep!(")) // 'keep' node are never discarded.
+                                                          // They have only one child, the node to keep
                 {
                     result ~= child.children[0];
                 }
