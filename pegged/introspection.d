@@ -4,6 +4,7 @@ This module contains function to inspect a Pegged grammar.
 module pegged.introspection;
 
 import std.typecons;
+import std.stdio;
 
 import pegged.grammar;
 import pegged.parser;
@@ -42,14 +43,28 @@ Struct holding the introspection info on a rule.
 */
 struct RuleInfo
 {
+    string name; /// Name of the introspected rule.
+    string[] directCalls; /// All rules direcly calls by the introspected rule.
+    string[] indirectCalls; /// All rules indirectly called by the introspected rule.
+    string[] calls; /// All rules called by the introspected rule, be they direct or indirect.
+    string[] calledBy; /// All rules calling the introspected rule.
     Recursive recursion; /// Is the rule recursive?
     LeftRecursive leftRecursion; /// Is the rule left-recursive?
     NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
-    InfiniteLoop infiniteLoop; /// Can the rule loop while indefinitely, while consuming nothing?
+    InfiniteLoop infiniteLoop; /// Can the rule loop indefinitely, while consuming nothing?
+
+    string toString() @property
+    {
+        return "rule " ~ name ~ ":\n"
+              ~ "- recursive: " ~ to!string(recursion) ~ "\n"
+              ~ "- left recursive: " ~ to!string(leftRecursion) ~ "\n"
+              ~ "- can match while consuming nothing: " ~ to!string(nullMatch) ~ "\n"
+              ~ "- can loop infinitely: " ~ to!string(infiniteLoop) ~ "\n";
+    }
 }
 
 /**
-Returns for all grammar rule:
+Returns for all grammar rules:
 
 - the recursion type (no recursion, direct or indirect recursion).
 - the left-recursion type (no left-recursion, direct left-recursion, hidden, or indirect)
@@ -159,19 +174,23 @@ RuleInfo[string] ruleInfo(string grammar)
         switch (p.name)
         {
             case "Pegged.Expression": // choice expressions null-match whenever one of their components can null-match
+                bool someIndetermination;
                 foreach(seq; p.children)
                 {
-                    auto nm = nullMatching(seq);
+                    NullMatch nm = nullMatching(seq);
                     if (nm == NullMatch.yes)
                         return NullMatch.yes;
-                    if (nm == NullMatch.indeterminate)
-                        return NullMatch.indeterminate;
+                    else if (nm == NullMatch.indeterminate)
+                        someIndetermination = true;
                 }
-                return NullMatch.no;
+                if (someIndetermination) // All were indeterminate
+                    return NullMatch.indeterminate;
+                else
+                    return NullMatch.no;
             case "Pegged.Sequence": // sequence expressions can null-match when all their components can null-match
                 foreach(seq; p.children)
                 {
-                    auto nm = nullMatching(seq);
+                    NullMatch nm = nullMatching(seq);
                     if (nm == NullMatch.indeterminate)
                         return NullMatch.indeterminate;
                     if (nm == NullMatch.no)
@@ -204,10 +223,11 @@ RuleInfo[string] ruleInfo(string grammar)
                 return NullMatch.no;
             case "Pegged.ANY":
                 return NullMatch.no;
-            case "eps":
-                return NullMatch.yes;
-            case "eoi":
-                return NullMatch.yes;
+            case "Pegged.Identifier":
+                if (p.matches[0] == "eps" || p.matches[0] == "eoi")
+                    return NullMatch.yes;
+                else
+                    return NullMatch.indeterminate;
             default:
                 return NullMatch.indeterminate;
         }
@@ -215,6 +235,11 @@ RuleInfo[string] ruleInfo(string grammar)
 
     InfiniteLoop infiniteLooping(ParseTree p)
     {
+        if (  p.matches[0] in result
+           && result[p.matches[0]].nullMatch == NullMatch.yes
+           && result[p.matches[0]].recursion != Recursive.no) // Calls itself while possibly null-matching
+            return InfiniteLoop.yes;
+
         switch (p.name)
         {
             case "Pegged.Expression": // choice expressions loop whenever one of their components can loop
@@ -259,10 +284,11 @@ RuleInfo[string] ruleInfo(string grammar)
                 return InfiniteLoop.no;
             case "Pegged.ANY":
                 return InfiniteLoop.no;
-            case "eps":
-                return InfiniteLoop.no;
-            case "eoi":
-                return InfiniteLoop.no;
+            case "Pegged.Identifier":
+                if (p.matches[0] == "eps" || p.matches[0] == "eoi")
+                    return InfiniteLoop.no;
+                else
+                    return InfiniteLoop.indeterminate;
             default:
                 return InfiniteLoop.indeterminate;
         }
@@ -328,8 +354,13 @@ RuleInfo[string] ruleInfo(string grammar)
         if (definition.name == "Pegged.Definition")
         {
             rules[definition.matches[0]] = definition.children[2];
-            result[definition.matches[0]] = RuleInfo(Recursive.no, LeftRecursive.no,
-                                                     NullMatch.indeterminate,InfiniteLoop.indeterminate);
+            RuleInfo ri;
+            ri.name = definition.matches[0];
+            ri.recursion = Recursive.no;
+            ri. leftRecursion = LeftRecursive.no;
+            ri.nullMatch = NullMatch.indeterminate;
+            ri.infiniteLoop = InfiniteLoop.indeterminate;
+            result[definition.matches[0]] = ri;
         }
 
     auto rec = recursions(callGraph(p));
