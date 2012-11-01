@@ -1752,6 +1752,7 @@ template posLookahead(alias r)
     {
         ri = introspect!(r)();
         ri.name= "posLookahead!(" ~ ri.name ~ ")";
+        ri.calledBy = null;
         ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
         return ri;
     }
@@ -1840,6 +1841,15 @@ template negLookahead(alias r)
     string negLookahead(GetName g)
     {
         return "negLookahead!(" ~ getName!(r)() ~ ")";
+    }
+
+    RuleInfo negLookahead(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name= "negLookahead!(" ~ ri.name ~ ")";
+        ri.calledBy = null;
+        ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
+        return ri;
     }
 }
 
