@@ -374,6 +374,7 @@ RuleInfo[string] ruleInfo(string grammar)
     foreach(name, node; cg)
         foreach(callee, _; node)
             result[name].directCalls ~= callee;
+
     auto cl = closure(cg);
     foreach(name, node; cl)
         foreach(callee, _; node)
@@ -417,7 +418,7 @@ RuleInfo[string] ruleInfo(string grammar)
             {
                 result [name].infiniteLoop = infiniteLooping(tree); // try to find if it's looping
                 if (result[name].infiniteLoop != InfiniteLoop.indeterminate)
-                    changed = true;
+                    changed = true; // something changed, we will continue the process
             }
     }
 
@@ -426,7 +427,7 @@ RuleInfo[string] ruleInfo(string grammar)
 
 bool usefulRule(RuleInfo ri)
 {
-    return ri.start || ri.calledBy.length == 0;
+    return ri.startRule || ri.calledBy.length == 0;
 }
 
 bool terminal(RuleInfo ri)
