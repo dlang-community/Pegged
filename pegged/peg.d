@@ -417,7 +417,7 @@ template literal(string s)
                        , false, null, null, null // grammar-specific information
                        , Recursive.no
                        , LeftRecursive.no
-                       , NullMatch.no
+                       , (s == "" ? NullMatch.yes : NullMatch.no)
                        , InfiniteLoop.no);
     }
 }
@@ -1240,6 +1240,25 @@ template keywords(kws...) if (kws.length > 0)
         name ~= ")";
         return name;
     }
+
+    RuleInfo keywords(RuleInfo ri)
+    {
+        NullMatch nm = NullMatch.no;
+        string name= "keywords!(";
+        foreach(i,kw; kws)
+        {
+            name ~= "\"" ~ kw ~ "\""~ (i < kws.length -1 ? ", " : "");
+            if (kw == "")
+                nm = NullMatch.yes;
+        }
+        name ~= ")";
+        return RuleInfo( name
+                       , false, null, null, null // grammar-specific information
+                       , Recursive.no
+                       , LeftRecursive.no
+                       , nm
+                       , InfiniteLoop.no);
+    }
 }
 
 unittest
@@ -1353,6 +1372,17 @@ template zeroOrMore(alias r)
     string zeroOrMore(GetName g)
     {
         return "zeroOrMore!(" ~ getName!(r)() ~ ")";
+    }
+
+    RuleInfo zeroOrMore(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name= "zeroOrMore!(" ~ ri.name ~ ")";
+        if ( ri.infiniteLoop == InfiniteLoop.no
+          && ri.nullMatch == NullMatch.yes)
+            ri.infiniteLoop = InfiniteLoop.yes;
+        ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
+        return ri;
     }
 }
 
@@ -1496,6 +1526,16 @@ template oneOrMore(alias r)
     {
         return "oneOrMore!(" ~ getName!(r)() ~ ")";
     }
+
+    RuleInfo oneOrMore(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name= "oneOrMore!(" ~ ri.name ~ ")";
+        if ( ri.infiniteLoop == InfiniteLoop.no
+          && ri.nullMatch == NullMatch.yes)
+            ri.infiniteLoop = InfiniteLoop.yes;
+        return ri;
+    }
 }
 
 unittest // 'oneOrMore' unit test
@@ -1600,6 +1640,14 @@ template option(alias r)
     string option(GetName g)
     {
         return "option!(" ~ getName!(r)() ~ ")";
+    }
+
+    RuleInfo option(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name= "option!(" ~ ri.name ~ ")";
+        ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
+        return ri;
     }
 }
 
