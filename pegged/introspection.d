@@ -44,9 +44,8 @@ Struct holding the introspection info on a rule.
 struct RuleInfo
 {
     string name; /// Name of the introspected rule.
-    string[] directCalls; /// All rules direcly calls by the introspected rule.
-    string[] indirectCalls; /// All rules indirectly called by the introspected rule.
-    string[] calls; /// All rules called by the introspected rule, be they direct or indirect.
+    string[] directCalls; /// All rules direcly called by the introspected rule.
+    string[] calls; /// All rules called by the introspected rule, directly or indirectly.
     string[] calledBy; /// All rules calling the introspected rule.
     Recursive recursion; /// Is the rule recursive?
     LeftRecursive leftRecursion; /// Is the rule left-recursive?
@@ -55,11 +54,14 @@ struct RuleInfo
 
     string toString() @property
     {
-        return "rule " ~ name ~ ":\n"
-              ~ "- recursive: " ~ to!string(recursion) ~ "\n"
-              ~ "- left recursive: " ~ to!string(leftRecursion) ~ "\n"
-              ~ "- can match while consuming nothing: " ~ to!string(nullMatch) ~ "\n"
-              ~ "- can loop infinitely: " ~ to!string(infiniteLoop) ~ "\n";
+        return  "rule " ~ name ~ ":\n"
+              ~ "calls direcly: " ~ to!string(directCalls) ~ "\n"
+              ~ "calls (total): " ~ to!string(calls) ~ "\n"
+              ~ "is called by: " ~ to!string(calledBy) ~ "\n"
+              ~ "recursive: " ~ to!string(recursion) ~ "\n"
+              ~ "left recursive: " ~ to!string(leftRecursion) ~ "\n"
+              ~ "can match while consuming nothing: " ~ to!string(nullMatch) ~ "\n"
+              ~ "can loop infinitely: " ~ to!string(infiniteLoop) ~ "\n";
     }
 }
 
@@ -151,7 +153,7 @@ RuleInfo[string] ruleInfo(string grammar)
 
     Recursive[string] recursions(bool[string][string] graph)
     {
-        bool[string][string] path = closure(graph);
+        bool[string][string] path = graph;
 
         Recursive[string] result;
         foreach(rule, children; path)
@@ -363,21 +365,32 @@ RuleInfo[string] ruleInfo(string grammar)
             result[definition.matches[0]] = ri;
         }
 
-    auto rec = recursions(callGraph(p));
+    // Filling the calling informations
+    auto cg = callGraph(p);
+    foreach(name, node; cg)
+        foreach(callee, _; node)
+            result[name].directCalls ~= callee;
+    auto cl = closure(cg);
+    foreach(name, node; cl)
+        foreach(callee, _; node)
+        {
+            result[name].calls ~= callee;
+            if (callee in result)
+                result[callee].calledBy ~= name;
+        }
+
+    // Filling the recursion informations
+    auto rec = recursions(cl);
     foreach(rule, recursionType; rec)
         if (rule in result) // external rules are in rec, but not in result
             result[rule].recursion = recursionType;
 
     foreach(name, tree; rules)
-    {
         if (result[name].recursion != Recursive.no)
-        {
             result[name].leftRecursion = leftRecursion(tree, name);
-        }
-    }
 
+    // Filling the null-matching information
     bool changed = true;
-
     while(changed) // while something new happened, the process is not over
     {
         changed = false;
@@ -390,8 +403,8 @@ RuleInfo[string] ruleInfo(string grammar)
             }
     }
 
+    // Filling the infinite looping information
     changed = true;
-
     while(changed) // while something new happened, the process is not over
     {
         changed = false;
