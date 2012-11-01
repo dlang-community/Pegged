@@ -15,6 +15,8 @@ import std.range: equal;
 import std.string: strip;
 import std.typetuple;
 
+import pegged.introspection;
+
 /**
 The basic parse tree, as used throughout the project.
 You can defined your own parse tree node, but respect the basic layout.
@@ -198,6 +200,8 @@ unittest
 ") == Position(3,0,3), "Four lines, all empty.");
 }
 
+struct GetName {}
+
 string getName(alias expr)() @property
 {
     static if (is(typeof( { expr(GetName()); })))
@@ -206,7 +210,13 @@ string getName(alias expr)() @property
         return __traits(identifier, expr);
 }
 
-struct GetName {}
+RuleInfo introspect(alias expr)() @property
+{
+    static if (is(typeof( { expr(RuleInfo()); })))
+        return expr(RuleInfo());
+    else
+        return RuleInfo();
+}
 
 /**
 Basic rule, that always fail without consuming.
@@ -225,6 +235,16 @@ ParseTree fail(string input)
 string fail(GetName g)
 {
     return "fail";
+}
+
+RuleInfo fail(RuleInfo ri)
+{
+    return RuleInfo( "fail"
+                   , false, null, null, null // grammar-specific information
+                   , Recursive.no
+                   , LeftRecursive.no
+                   , NullMatch.yes
+                   , InfiniteLoop.no);
 }
 
 unittest // 'fail' unit test
@@ -262,6 +282,16 @@ ParseTree eoi(string input)
 string eoi(GetName g)
 {
     return "eoi";
+}
+
+RuleInfo eoi(RuleInfo ri)
+{
+    return RuleInfo( "eoi"
+                   , false, null, null, null // grammar-specific information
+                   , Recursive.no
+                   , LeftRecursive.no
+                   , NullMatch.yes
+                   , InfiniteLoop.no);
 }
 
 alias eoi endOfInput; /// helper alias.
@@ -307,6 +337,16 @@ ParseTree any(string input)
 string any(GetName g)
 {
     return "any";
+}
+
+RuleInfo any(RuleInfo ri)
+{
+    return RuleInfo( "any"
+                   , false, null, null, null // grammar-specific information
+                   , Recursive.no
+                   , LeftRecursive.no
+                   , NullMatch.no
+                   , InfiniteLoop.no);
 }
 
 unittest // 'any' unit test
@@ -371,6 +411,15 @@ template literal(string s)
         return "literal!(\""~s~"\")";
     }
 
+    RuleInfo literal(RuleInfo ri)
+    {
+        return RuleInfo( "literal!(\""~s~"\")"
+                       , false, null, null, null // grammar-specific information
+                       , Recursive.no
+                       , LeftRecursive.no
+                       , NullMatch.no
+                       , InfiniteLoop.no);
+    }
 }
 
 unittest // 'literal' unit test
@@ -514,6 +563,16 @@ template charRange(char begin, char end) if (begin <= end)
     string charRange(GetName g)
     {
         return "charRange!('"~begin~"','" ~ end ~ "')";
+    }
+
+    RuleInfo charRange(RuleInfo ri)
+    {
+        return RuleInfo( "charRange!('"~begin~"','" ~ end ~ "')"
+                       , false, null, null, null // grammar-specific information
+                       , Recursive.no
+                       , LeftRecursive.no
+                       , NullMatch.no
+                       , InfiniteLoop.no);
     }
 }
 
@@ -660,6 +719,16 @@ string eps(GetName g)
     return "eps";
 }
 
+RuleInfo eps(RuleInfo ri)
+{
+    return RuleInfo( "eps"
+                    , false, null, null, null // grammar-specific information
+                    , Recursive.no
+                    , LeftRecursive.no
+                    , NullMatch.yes
+                    , InfiniteLoop.no);
+}
+
 unittest // 'eps' unit test
 {
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
@@ -789,6 +858,34 @@ template and(rules...) if (rules.length > 0)
         name ~= ")";
         return name;
     }
+
+    RuleInfo and(RuleInfo ri)
+    {
+        string name = "and!(";
+        NullMatch nm = NullMatch.yes; // default case
+        InfiniteLoop il = InfiniteLoop.no; // default case
+        foreach(i,rule; rules)
+        {
+            RuleInfo ruleInfo = introspect!(rule)();
+            name ~= ruleInfo.name
+                 ~ (i < rules.length -1 ? ", " : "");
+            if (ruleInfo.nullMatch == NullMatch.indeterminate)
+                nm = NullMatch.indeterminate;
+            if (ruleInfo.nullMatch == NullMatch.no && nm != NullMatch.indeterminate)
+                nm = NullMatch.no;
+            if (ruleInfo.infiniteLoop == InfiniteLoop.indeterminate)
+                il = InfiniteLoop.indeterminate;
+            if (ruleInfo.infiniteLoop == InfiniteLoop.yes && il != InfiniteLoop.indeterminate)
+                il = InfiniteLoop.yes;
+        }
+        name ~= ")";
+        return RuleInfo( name
+                       , false, null, null, null // grammar-specific information
+                       , Recursive.no
+                       , LeftRecursive.no
+                       , nm
+                       , il);
+    }
 }
 
 unittest // 'and' unit test
@@ -893,6 +990,13 @@ template wrapAround(alias before, alias target, alias after)
     string wrapAround(GetName g)
     {
         return "wrapAround!(" ~ getName!(before)() ~ ", " ~ getName!(target)() ~ ", " ~ getName!(after)() ~ ")";
+    }
+
+    RuleInfo wrapAround(RuleInfo ri)
+    {
+        RuleInfo ri = introspect!(and!(before, target, after))();
+        ri.name = "wrapAround" ~ ri.name[3..$];
+        return ri;
     }
 }
 
@@ -1003,6 +1107,34 @@ template or(rules...) if (rules.length > 0)
                     ~ (i < rules.length -1 ? ", " : "");
         name ~= ")";
         return name;
+    }
+
+    RuleInfo or(RuleInfo ri)
+    {
+        string name = "or!(";
+        NullMatch nm = NullMatch.no; // default case
+        InfiniteLoop il = InfiniteLoop.no; // default case
+        foreach(i,rule; rules)
+        {
+            RuleInfo ruleInfo = introspect!(rule)();
+            name ~= ruleInfo.name
+                 ~ (i < rules.length -1 ? ", " : "");
+            if (ruleInfo.nullMatch == NullMatch.indeterminate)
+                nm = NullMatch.indeterminate;
+            if (ruleInfo.nullMatch == NullMatch.yes && nm != NullMatch.indeterminate)
+                nm = NullMatch.yes;
+            if (ruleInfo.infiniteLoop == InfiniteLoop.indeterminate)
+                il = InfiniteLoop.indeterminate;
+            if (ruleInfo.infiniteLoop == InfiniteLoop.yes && il != InfiniteLoop.indeterminate)
+                il = InfiniteLoop.yes;
+        }
+        name ~= ")";
+        return RuleInfo( name
+                       , false, null, null, null // grammar-specific information
+                       , Recursive.no
+                       , LeftRecursive.no
+                       , nm
+                       , il);
     }
 }
 
