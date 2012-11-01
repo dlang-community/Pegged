@@ -83,6 +83,12 @@ ParseTree spaceArrow(ParseTree input)
                     wrapInSpaces)(input);
 }
 
+// Expression-level code: [abc] or 'a'+, *not* A <- 'a'+
+string generateCode(string s)
+{
+    return generateCode(Pegged.decimateTree(Pegged.Expression(s)));
+}
+
 string generateCode(ParseTree p)
 {
     string result;
@@ -1945,3 +1951,9 @@ Here is another line.
 }
 
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
+
+
+RuleInfo introspectCode(string s)() @property
+{
+    return introspect!(mixin(generateCode(Pegged.decimateTree(Pegged.Expression(s)))));
+}
