@@ -3,11 +3,10 @@ This module contains function to inspect a Pegged grammar.
 */
 module pegged.introspection;
 
+import std.conv;
 import std.typecons;
-import std.stdio;
 
-import pegged.grammar;
-import pegged.parser;
+import pegged.peg;
 
 /**
 The different kinds of recursion for a rule.
