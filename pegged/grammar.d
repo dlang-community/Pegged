@@ -271,7 +271,7 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                             ~ "    {\n";
                     innerName ~= "`" ~ shortName ~ "!(` ~ ";
                     foreach(i,param; p.children[0].children[1].children)
-                        innerName ~= "getName!("~ param.children[0].matches[0]
+                        innerName ~= "pegged.peg.getName!("~ param.children[0].matches[0]
                                     ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ `, ` ~ " : ")");
                     innerName ~= " ~ `)`";
                 }
