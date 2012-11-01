@@ -14,7 +14,7 @@ Branch <
 	/ UnorderedBranch
 
 OrderedBranch <
-	/ {kr}'->' Node
+	/ :'->' Node
 	/ :'[' Node+ :']'
 
 UnorderedBranch <

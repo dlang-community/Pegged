@@ -1,3 +1,7 @@
+/**
+Grammar testing module for Pegged.
+
+*/
 module pegged.grammartester;
 
 import std.stdio;
@@ -7,6 +11,7 @@ import std.range : retro;
 import std.algorithm : max, splitter;
 import std.string : xformat, stripRight, removechars, squeeze;
 
+import pegged.examples.arithmetic;
 import pegged.testerparser;
 import pegged.grammar;
 
@@ -68,17 +73,30 @@ class GrammarTester(grammar, string startSymbol)
 		writefln("%s",treeChecker);
 		writefln("");+/
 		
-		auto ctx = getDifferencer(treeGot, treeChecker);
-		latestDiff = ctx.diff();
+		if ( !treeGot.successful )
+			consumeResults(file, lineNo, false, 
+				grammar.stringof ~ " failed to parse (left-hand-side).  Details:\n" ~ treeGot.toString());
 		
-		bool pass;
-		if ( invert )
-			pass = (ctx.differences != 0);
+		if ( !treeChecker.successful )
+			consumeResults(file, lineNo, false,
+				"Failed to parse test expectation (right-hand-side). Details:\n" ~ treeChecker.toString());
+		
+		if ( treeGot.successful && treeChecker.successful )
+		{
+			auto ctx = getDifferencer(treeGot, treeChecker);
+			latestDiff = ctx.diff();
+			
+			bool pass;
+			if ( invert )
+				pass = (ctx.differences != 0);
+			else
+				pass = (ctx.differences == 0);
+			
+			consumeResults(file, lineNo, pass, latestDiff);
+			return pass;
+		}
 		else
-			pass = (ctx.differences == 0);
-		
-		consumeResults(file, lineNo, pass, latestDiff);
-		return pass;
+			return false;
 	}
 	
 	bool assertSimilar(string file = __FILE__, size_t lineNo = __LINE__)
@@ -554,4 +572,55 @@ TesterGrammar.Root                   =  Root
 	assert(tester.testCount == 1);
 	assert(tester.errorCount == 1);
 	assert(tester.errorText.length > 0);
+	
+	auto arithmeticTester = new GrammarTester!(Arithmetic, "Term");
+	
+	arithmeticTester.assertSimilar(`1 + 3`,
+		`
+		Term
+		[
+			Factor->Primary->Number
+			Add~>
+				Factor->Primary->Number->Bug
+		]
+		`);
+	
+	arithmeticTester.assertSimilar(`1*2 + 3/4`,
+		`
+		Term
+		[
+			Factor
+			[
+				Primary->Number
+				Mul~>
+				Primary->Number
+			]
+			Add~>
+			Factor
+			[
+				Primary->Number
+				Div~>
+				Primary->Number
+			]
+		]
+		`);
 }
+
+/+ For reference:
+mixin(grammar(`
+Arithmetic:
+    Term     < Factor (Add / Sub)*
+    Add      < "+" Factor
+    Sub      < "-" Factor
+    Factor   < Primary (Mul / Div)*
+    Mul      < "*" Primary
+    Div      < "/" Primary
+    Primary  < Parens / Neg / Number / Variable
+    Parens   < :"(" Term :")"
+    Neg      < "-" Primary
+    Number   < ~([0-9]+)
+    Variable <- identifier
+`));
++/
+
+
