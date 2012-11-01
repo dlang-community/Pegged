@@ -11,9 +11,19 @@ import std.typecons;
 import std.typetuple;
 
 import pegged.grammar;
-import pegged.examples.arithmetic;
+import pegged.parser;
+import pegged.introspection;
+
+string g =
+`
+    Recursive:
+        A <- B 'a' / eps
+        B <- A C
+        C <- 'c'
+`;
 
 void main()
 {
-    writeln(Arithmetic("1+1"));
+    writeln(ruleInfo(g));
+    //writeln(Pegged(g));
 }
