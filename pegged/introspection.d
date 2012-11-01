@@ -44,9 +44,10 @@ Struct holding the introspection info on a rule.
 struct RuleInfo
 {
     string name; /// Name of the introspected rule.
-    string[] directCalls; /// All rules direcly called by the introspected rule.
-    string[] calls; /// All rules called by the introspected rule, directly or indirectly.
-    string[] calledBy; /// All rules calling the introspected rule.
+    bool startRule; /// Whether the introspected rule is the start rule of the grammar or not.
+    string[] directCalls; /// All rules direcly called by the introspected rule. This include external rules.
+    string[] calls; /// All rules called by the introspected rule, directly or indirectly. This include external rules.
+    string[] calledBy; /// All grammar rules calling the introspected rule (no external rules).
     Recursive recursion; /// Is the rule recursive?
     LeftRecursive leftRecursion; /// Is the rule left-recursive?
     NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
@@ -54,7 +55,7 @@ struct RuleInfo
 
     string toString() @property
     {
-        return  "rule " ~ name ~ ":\n"
+        return  "rule " ~ name ~ (startRule? ": (start)\n" : ":\n")
               ~ "calls direcly: " ~ to!string(directCalls) ~ "\n"
               ~ "calls (total): " ~ to!string(calls) ~ "\n"
               ~ "is called by: " ~ to!string(calledBy) ~ "\n"
@@ -352,12 +353,15 @@ RuleInfo[string] ruleInfo(string grammar)
     }
 
     ParseTree p = Pegged(grammar).children[0];
-    foreach(definition; p.children)
+    bool first = true; // to catch the first real definition
+    foreach(index,definition; p.children)
         if (definition.name == "Pegged.Definition")
         {
             rules[definition.matches[0]] = definition.children[2];
             RuleInfo ri;
             ri.name = definition.matches[0];
+            ri.startRule = first;
+            first = false;
             ri.recursion = Recursive.no;
             ri. leftRecursion = LeftRecursive.no;
             ri.nullMatch = NullMatch.indeterminate;
@@ -418,6 +422,16 @@ RuleInfo[string] ruleInfo(string grammar)
     }
 
     return result;
+}
+
+bool usefulRule(RuleInfo ri)
+{
+    return ri.start || ri.calledBy.length == 0;
+}
+
+bool terminal(RuleInfo ri)
+{
+    return ri.calls.length == 0;
 }
 
 /**
