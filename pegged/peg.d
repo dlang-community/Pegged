@@ -861,30 +861,33 @@ template and(rules...) if (rules.length > 0)
 
     RuleInfo and(RuleInfo ri)
     {
-        string name = "and!(";
-        NullMatch nm = NullMatch.yes; // default case
-        InfiniteLoop il = InfiniteLoop.no; // default case
+        ri.name = "and!(";
+        ri.startRule = false;
+        ri.calledBy = null;
+        ri.recursion = Recursive.no;
+        ri.leftRecursion = LeftRecursive.no;
+        ri.nullMatch = NullMatch.yes; // default case
+        ri.infiniteLoop = InfiniteLoop.no; // default case
         foreach(i,rule; rules)
         {
             RuleInfo ruleInfo = introspect!(rule)();
-            name ~= ruleInfo.name
+            ri.name ~= ruleInfo.name
                  ~ (i < rules.length -1 ? ", " : "");
+
+            ri.directCalls = pegged.introspection.merge(ri.directCalls, ruleInfo.directCalls);
+            ri.calls = pegged.introspection.merge(ri.calls, ruleInfo.calls);
+
             if (ruleInfo.nullMatch == NullMatch.indeterminate)
-                nm = NullMatch.indeterminate;
-            if (ruleInfo.nullMatch == NullMatch.no && nm != NullMatch.indeterminate)
-                nm = NullMatch.no;
+                ri.nullMatch = NullMatch.indeterminate;
+            if (ruleInfo.nullMatch == NullMatch.no && ri.nullMatch != NullMatch.indeterminate)
+                ri.nullMatch = NullMatch.no;
             if (ruleInfo.infiniteLoop == InfiniteLoop.indeterminate)
-                il = InfiniteLoop.indeterminate;
-            if (ruleInfo.infiniteLoop == InfiniteLoop.yes && il != InfiniteLoop.indeterminate)
-                il = InfiniteLoop.yes;
+                ri.infiniteLoop = InfiniteLoop.indeterminate;
+            if (ruleInfo.infiniteLoop == InfiniteLoop.yes && ri.infiniteLoop != InfiniteLoop.indeterminate)
+                ri.infiniteLoop = InfiniteLoop.yes;
         }
-        name ~= ")";
-        return RuleInfo( name
-                       , false, null, null, null // grammar-specific information
-                       , Recursive.no
-                       , LeftRecursive.no
-                       , nm
-                       , il);
+        ri.name ~= ")";
+        return ri;
     }
 }
 
@@ -1111,30 +1114,33 @@ template or(rules...) if (rules.length > 0)
 
     RuleInfo or(RuleInfo ri)
     {
-        string name = "or!(";
-        NullMatch nm = NullMatch.no; // default case
-        InfiniteLoop il = InfiniteLoop.no; // default case
+        ri.name = "and!(";
+        ri.startRule = false;
+        ri.calledBy = null;
+        ri.recursion = Recursive.no;
+        ri.leftRecursion = LeftRecursive.no;
+        ri.nullMatch = NullMatch.no; // default case
+        ri.infiniteLoop = InfiniteLoop.no; // default case
         foreach(i,rule; rules)
         {
             RuleInfo ruleInfo = introspect!(rule)();
-            name ~= ruleInfo.name
+            ri.name ~= ruleInfo.name
                  ~ (i < rules.length -1 ? ", " : "");
+
+            ri.directCalls = pegged.introspection.merge(ri.directCalls, ruleInfo.directCalls);
+            ri.calls = pegged.introspection.merge(ri.calls, ruleInfo.calls);
+
             if (ruleInfo.nullMatch == NullMatch.indeterminate)
-                nm = NullMatch.indeterminate;
-            if (ruleInfo.nullMatch == NullMatch.yes && nm != NullMatch.indeterminate)
-                nm = NullMatch.yes;
+                ri.nullMatch = NullMatch.indeterminate;
+            if (ruleInfo.nullMatch == NullMatch.yes && ri.nullMatch != NullMatch.indeterminate)
+                ri.nullMatch = NullMatch.yes;
             if (ruleInfo.infiniteLoop == InfiniteLoop.indeterminate)
-                il = InfiniteLoop.indeterminate;
-            if (ruleInfo.infiniteLoop == InfiniteLoop.yes && il != InfiniteLoop.indeterminate)
-                il = InfiniteLoop.yes;
+                ri.infiniteLoop = InfiniteLoop.indeterminate;
+            if (ruleInfo.infiniteLoop == InfiniteLoop.yes && ri.infiniteLoop != InfiniteLoop.indeterminate)
+                ri.infiniteLoop = InfiniteLoop.yes;
         }
-        name ~= ")";
-        return RuleInfo( name
-                       , false, null, null, null // grammar-specific information
-                       , Recursive.no
-                       , LeftRecursive.no
-                       , nm
-                       , il);
+        ri.name ~= ")";
+        return ri;
     }
 }
 
@@ -1378,6 +1384,7 @@ template zeroOrMore(alias r)
     {
         ri = introspect!(r)();
         ri.name= "zeroOrMore!(" ~ ri.name ~ ")";
+        ri.calledBy = null;
         if ( ri.infiniteLoop == InfiniteLoop.no
           && ri.nullMatch == NullMatch.yes)
             ri.infiniteLoop = InfiniteLoop.yes;
@@ -1531,6 +1538,7 @@ template oneOrMore(alias r)
     {
         ri = introspect!(r)();
         ri.name= "oneOrMore!(" ~ ri.name ~ ")";
+        ri.calledBy = null;
         if ( ri.infiniteLoop == InfiniteLoop.no
           && ri.nullMatch == NullMatch.yes)
             ri.infiniteLoop = InfiniteLoop.yes;
@@ -1646,6 +1654,7 @@ template option(alias r)
     {
         ri = introspect!(r)();
         ri.name= "option!(" ~ ri.name ~ ")";
+        ri.calledBy = null
         ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
         return ri;
     }
@@ -1737,6 +1746,14 @@ template posLookahead(alias r)
     string posLookahead(GetName g)
     {
         return "posLookahead!(" ~ getName!(r)() ~ ")";
+    }
+
+    RuleInfo posLookahead(RuleInfo ri)
+    {
+        ri = introspect!(r)();
+        ri.name= "posLookahead!(" ~ ri.name ~ ")";
+        ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
+        return ri;
     }
 }
 
