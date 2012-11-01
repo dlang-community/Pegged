@@ -997,7 +997,7 @@ template wrapAround(alias before, alias target, alias after)
 
     RuleInfo wrapAround(RuleInfo ri)
     {
-        RuleInfo ri = introspect!(and!(before, target, after))();
+        ri = introspect!(and!(before, target, after))();
         ri.name = "wrapAround" ~ ri.name[3..$];
         return ri;
     }
