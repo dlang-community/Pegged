@@ -79,6 +79,9 @@ Not only will that make the grammar more readable, it'll also make it more effic
 
 ----------
 
-[[Pegged Tutorial]]
+* * * *
+Next lesson: [[Testing Grammars]]
 
-[[Home]]
+* * * *
+
+[[Pegged Tutorial]]
