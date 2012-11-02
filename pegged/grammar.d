@@ -38,9 +38,9 @@ void asModule(Memoization withMemo = Memoization.no)(string moduleName, string f
     import std.stdio;
     auto f = File(fileName ~ ".d","w");
 
-    f.write("/**\nThis module was automatically generated from the following grammar:\n\n");
+    f.write("/++\nThis module was automatically generated from the following grammar:\n\n");
     f.write(grammarString);
-    f.write("\n\n*/\n");
+    f.write("\n\n+/\n");
 
     f.write("module " ~ moduleName ~ ";\n\n");
     f.write("public import pegged.peg;\n");
