@@ -490,7 +490,7 @@ template literal(string s)
                        , LeftRecursive.no
                        , (s == "" ? NullMatch.yes : NullMatch.no)
                        , InfiniteLoop.no
-                       , s);
+                       , "\"" ~ s ~ "\"");
     }
 }
 
@@ -639,13 +639,16 @@ template charRange(char begin, char end) if (begin <= end)
 
     RuleIntrospection charRange(RuleIntrospection ri)
     {
-        return RuleIntrospection( "charRange!('"~begin~"','" ~ end ~ "')"
+        return RuleIntrospection(
+                         "charRange!('"~begin~"','" ~ end ~ "')"
                        , false, null, null, null // grammar-specific Introspectionrmation
                        , Recursive.no
                        , LeftRecursive.no
                        , NullMatch.no
                        , InfiniteLoop.no
-                       , "any character between '" ~ begin ~ "' and '" ~ end ~ "'");
+                       , (begin < end ? "any character between '" ~ begin ~ "' and '" ~ end ~ "'"
+                                      : "'" ~ begin ~ "'")
+                       );
     }
 }
 
@@ -800,7 +803,7 @@ RuleIntrospection eps(RuleIntrospection ri)
                     , LeftRecursive.no
                     , NullMatch.yes
                     , InfiniteLoop.no
-                    , "");
+                    , "the empty string (epsilon)");
 }
 
 unittest // 'eps' unit test
@@ -1203,7 +1206,8 @@ template or(rules...) if (rules.length > 0)
             RuleIntrospection ruleIntrospection = introspect!(rule)();
             ri.name ~= ruleIntrospection.name
                  ~ (i < rules.length -1 ? ", " : "");
-
+            ri.expected ~= ruleIntrospection.expected
+                 ~ (i < rules.length -1 ? " or " : "");
             ri.directCalls[ruleIntrospection.name] = true;
             ri.calls = merge(ri.calls, ruleIntrospection.calls);
             ri.calls[ruleIntrospection.name] = true;
@@ -1328,10 +1332,12 @@ template keywords(kws...) if (kws.length > 0)
     RuleIntrospection keywords(RuleIntrospection ri)
     {
         NullMatch nm = NullMatch.no;
+        string expected;
         string name= "keywords!(";
         foreach(i,kw; kws)
         {
             name ~= "\"" ~ kw ~ "\""~ (i < kws.length -1 ? ", " : "");
+            expected ~= "\"" ~ kw ~ "\""~ (i < kws.length -1 ? " or " : "");
             if (kw == "")
                 nm = NullMatch.yes;
         }
@@ -1341,7 +1347,8 @@ template keywords(kws...) if (kws.length > 0)
                        , Recursive.no
                        , LeftRecursive.no
                        , nm
-                       , InfiniteLoop.no);
+                       , InfiniteLoop.no
+                       , expected);
     }
 }
 
@@ -1468,7 +1475,7 @@ template zeroOrMore(alias r)
         ri.calledBy = null;
 
         ri.name = "zeroOrMore!(" ~ ri.name ~ ")";
-
+        ri.expected ~= " or nothing";
         if ( ri.infiniteLoop == InfiniteLoop.no
           && ri.nullMatch == NullMatch.yes)
             ri.infiniteLoop = InfiniteLoop.yes;
@@ -1628,6 +1635,7 @@ template oneOrMore(alias r)
         ri.calledBy = null;
 
         ri.name= "oneOrMore!(" ~ ri.name ~ ")";
+        //ri.expected = "one or more " ~ ri.expected;
         if ( ri.infiniteLoop == InfiniteLoop.no
           && ri.nullMatch == NullMatch.yes)
             ri.infiniteLoop = InfiniteLoop.yes;
@@ -1749,6 +1757,7 @@ template option(alias r)
         ri.calledBy = null;
 
         ri.name= "option!(" ~ ri.name ~ ")";
+        ri.expected = "optionally " ~ ri.expected;
         ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
         return ri;
     }
@@ -1952,7 +1961,7 @@ template negLookahead(alias r)
         ri.calledBy = null;
 
         ri.name= "negLookahead!(" ~ ri.name ~ ")";
-
+        ri.expected = "anything but " ~ ri.expected;
         ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
         return ri;
     }
