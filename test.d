@@ -12,26 +12,33 @@ import std.typetuple;
 
 import pegged.grammar;
 import pegged.parser;
-import pegged.introspection;
 
-enum g =
-`
-    Recursive:
-        A <- 'a' / eoi
-`;
-
-struct GenericRecursive(TParseTree)
+struct GenericTest(TParseTree)
 {
-    struct Recursive
+    struct Test
     {
-    enum name = "Recursive";
+    enum name = "Test";
     import std.typecons:Tuple, tuple;
     static TParseTree[Tuple!(string, size_t)] memo;
+
+    static RuleIntrospection[string] internal;
+    static RuleIntrospection[string] external;
+
+    static this()
+    {
+        external["identifier"] = identifier(RuleIntrospection());
+        internal = grammarIntrospection(Pegged(
+            `Test:
+                A <- identifier`)
+        , external);
+    }
+
+
     static bool isRule(string s)
     {
         switch(s)
         {
-            case "Recursive.A":
+            case "Test.A":
                 return true;
             default:
                 return false;
@@ -44,7 +51,7 @@ struct GenericRecursive(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.literal!(`a`), eoi), name ~ `.`~ `A`)(p);
+            return pegged.peg.named!(identifier, name ~ `.`~ `A`)(p);
         }
         else
         {
@@ -52,7 +59,7 @@ struct GenericRecursive(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.or!(pegged.peg.literal!(`a`), eoi), name ~ `.`~ `A`)(p);
+                TParseTree result = pegged.peg.named!(identifier, name ~ `.`~ `A`)(p);
                 memo[tuple(`A`,p.end)] = result;
                 return result;
             }
@@ -63,12 +70,12 @@ struct GenericRecursive(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.literal!(`a`), eoi), name ~ `.`~ `A`)(TParseTree("", false,[], s));
+            return pegged.peg.named!(identifier, name ~ `.`~ `A`)(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.literal!(`a`), eoi), name ~ `.`~ `A`)(TParseTree("", false,[], s));
+            return pegged.peg.named!(identifier, name ~ `.`~ `A`)(TParseTree("", false,[], s));
         }
     }
     static string A(GetName g)
@@ -80,7 +87,7 @@ struct GenericRecursive(TParseTree)
     {
         TParseTree result = decimateTree(A(p));
         result.children = [result];
-        result.name = "Recursive";
+        result.name = "Test";
         return result;
     }
 
@@ -88,29 +95,40 @@ struct GenericRecursive(TParseTree)
     {
         if(__ctfe)
         {
-            return Recursive(TParseTree(``, false, [], input, 0, 0));
+            return Test(TParseTree(``, false, [], input, 0, 0));
         }
         else
         {
             memo = null;
-            return Recursive(TParseTree(``, false, [], input, 0, 0));
+            return Test(TParseTree(``, false, [], input, 0, 0));
         }
     }
     static string opCall(GetName g)
     {
-        return "Recursive";
+        return "Test";
     }
 
     }
 }
 
-alias GenericRecursive!(ParseTree).Recursive Recursive;
+alias GenericTest!(ParseTree).Test Test;
+
+enum g =
+`
+    Test:
+        A <- identifier
+`;
+
+/**
+ TODO: add 'expected' info in introspection (beware of left-recursive rules)
+ TODO: roll my sleeves up and inject introspection information into grammars.
+*/
 
 void main()
 {
-    auto ri = grammarIntrospection(Pegged(`Recursive:
-        A <- B 'a' / eps`));
-    writeln(ri);
+    //writeln(Test.internal);
+    writeln(identifier(RuleIntrospection()));
+    //writeln(Test("ad"));
+    //writeln(Recursive.A(RuleIntrospection()));
 
-    writeln(and!(literal!"abc", Recursive.A)(RuleIntrospection()));
 }

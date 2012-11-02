@@ -550,7 +550,7 @@ Returns for all grammar rules:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-RuleIntrospection[string] grammarIntrospection(ParseTree gram)
+RuleIntrospection[string] grammarIntrospection(ParseTree gram, RuleIntrospection[string] external = null)
 {
     RuleIntrospection[string] result;
     ParseTree[string] rules;
@@ -651,7 +651,7 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
         return result;
     }
 
-    NullMatch nullMatching(ParseTree p)
+    NullMatch nullMatching(ParseTree p, RuleIntrospection[string] external = null)
     {
         switch (p.name)
         {
@@ -659,7 +659,7 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
                 bool someIndetermination;
                 foreach(seq; p.children)
                 {
-                    NullMatch nm = nullMatching(seq);
+                    NullMatch nm = nullMatching(seq, external);
                     if (nm == NullMatch.yes)
                         return NullMatch.yes;
                     else if (nm == NullMatch.indeterminate)
@@ -672,7 +672,7 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
             case "Pegged.Sequence": // sequence expressions can null-match when all their components can null-match
                 foreach(seq; p.children)
                 {
-                    NullMatch nm = nullMatching(seq);
+                    NullMatch nm = nullMatching(seq, external);
                     if (nm == NullMatch.indeterminate)
                         return NullMatch.indeterminate;
                     if (nm == NullMatch.no)
@@ -683,19 +683,21 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
                 foreach(pref; p.children[0..$-1])
                     if (pref.name == "Pegged.POS" || pref.name == "Pegged.NEG")
                         return NullMatch.yes;
-                return nullMatching(p.children[$-1]);
+                return nullMatching(p.children[$-1], external);
             case "Pegged.Suffix":
                 foreach(pref; p.children[1..$])
                     if (pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.OPTION")
                         return NullMatch.yes;
-                return nullMatching(p.children[0]);
+                return nullMatching(p.children[0], external);
             case "Pegged.Primary":
-                return nullMatching(p.children[0]);
+                return nullMatching(p.children[0], external);
             case "Pegged.RhsName":
-                if (p.matches[0] in result)
-                    return result[p.matches[0]].nullMatch;
+                if (auto m1 = p.matches[0] in result)
+                    return m1.nullMatch;
+                else if (auto m2 = p.matches[0] in external)
+                    return m2.nullMatch;
                 else
-                    return nullMatching(p.children[0]);
+                    return NullMatch.indeterminate;
             case "Pegged.Literal":
                 if (p.matches[0].length == 0) // Empty literal, '' or ""
                     return NullMatch.yes;
@@ -705,17 +707,12 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
                 return NullMatch.no;
             case "Pegged.ANY":
                 return NullMatch.no;
-            case "Pegged.Identifier":
-                if (p.matches[0] == "eps" || p.matches[0] == "eoi")
-                    return NullMatch.yes;
-                else
-                    return NullMatch.indeterminate;
             default:
                 return NullMatch.indeterminate;
         }
     }
 
-    InfiniteLoop infiniteLooping(ParseTree p)
+    InfiniteLoop infiniteLooping(ParseTree p, RuleIntrospection[string] external = null)
     {
         /+
         if (  p.matches[0] in result
@@ -729,7 +726,7 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
             case "Pegged.Expression": // choice expressions loop whenever one of their components can loop
                 foreach(i,elem; p.children)
                 {
-                    auto nm = infiniteLooping(elem);
+                    auto nm = infiniteLooping(elem, external);
                     if (nm == InfiniteLoop.yes)
                         return InfiniteLoop.yes;
                     if (nm == InfiniteLoop.indeterminate)
@@ -739,7 +736,7 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
             case "Pegged.Sequence": // sequence expressions can loop when one of their components can loop
                 foreach(i,elem; p.children)
                 {
-                    auto nm = infiniteLooping(elem);
+                    auto nm = infiniteLooping(elem, external);
                     if (nm == InfiniteLoop.yes)
                         return InfiniteLoop.yes;
                     if (nm == InfiniteLoop.indeterminate && i == 0) // because if i>0, then the previous elems are all
@@ -748,32 +745,29 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
                 }
                 return InfiniteLoop.no;
             case "Pegged.Prefix":
-                return infiniteLooping(p.children[$-1]);
+                return infiniteLooping(p.children[$-1], external);
             case "Pegged.Suffix":
                 foreach(pref; p.children[1..$])
                     if ((  pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.ONEORMORE")
                         && p.matches[0] in result
                         && result[p.matches[0]].nullMatch == NullMatch.yes)
                         return InfiniteLoop.yes;
-                return infiniteLooping(p.children[0]);
+                return infiniteLooping(p.children[0], external);
             case "Pegged.Primary":
-                return infiniteLooping(p.children[0]);
+                return infiniteLooping(p.children[0], external);
             case "Pegged.RhsName":
-                if (p.matches[0] in result)
-                    return result[p.matches[0]].infiniteLoop;
+                if (auto m1 = p.matches[0] in result)
+                    return m1.infiniteLoop;
+                else if (auto m2 = p.matches[0] in external)
+                    return m2.infiniteLoop;
                 else
-                    return infiniteLooping(p.children[0]);
+                    return InfiniteLoop.indeterminate;
             case "Pegged.Literal":
                 return InfiniteLoop.no;
             case "Pegged.CharClass":
                 return InfiniteLoop.no;
             case "Pegged.ANY":
                 return InfiniteLoop.no;
-            case "Pegged.Identifier":
-                if (p.matches[0] == "eps" || p.matches[0] == "eoi")
-                    return InfiniteLoop.no;
-                else
-                    return InfiniteLoop.indeterminate;
             default:
                 return InfiniteLoop.indeterminate;
         }
@@ -894,7 +888,7 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
         foreach(name, tree; rules)
             if (result[name].nullMatch == NullMatch.indeterminate) // not done yet
             {
-                result [name].nullMatch = nullMatching(tree); // try to find if it's null-matching
+                result [name].nullMatch = nullMatching(tree, external); // try to find if it's null-matching
                 if (result[name].nullMatch != NullMatch.indeterminate)
                     changed = true;
             }
@@ -908,7 +902,7 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram)
         foreach(name, tree; rules)
             if (result[name].infiniteLoop == InfiniteLoop.indeterminate) // not done yet
             {
-                result [name].infiniteLoop = infiniteLooping(tree); // try to find if it's looping
+                result [name].infiniteLoop = infiniteLooping(tree, external); // try to find if it's looping
                 if (result[name].infiniteLoop != InfiniteLoop.indeterminate)
                     changed = true; // something changed, we will continue the process
             }
@@ -2355,7 +2349,7 @@ Here is another line.
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
 
 
-RuleInfo introspectCode(string s)() @property
+RuleIntrospection introspectCode(string s)() @property
 {
     return introspect!(mixin(generateCode(Pegged.decimateTree(Pegged.Expression(s)))));
 }

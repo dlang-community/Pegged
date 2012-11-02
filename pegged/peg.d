@@ -2069,6 +2069,7 @@ template named(alias r, string name)
         ri.calledBy = null;
 
         ri.name = name;
+        //ri.expected = name;
         return ri;
     }
 }
