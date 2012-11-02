@@ -336,15 +336,15 @@ string generateCode(ParseTree p)
                 if (keywordList)
                 {
                     result = "pegged.peg.keywords!(";
-                    foreach(seq; p.children)
-                        result ~= "\"" ~ seq.matches[0] ~ "\", ";
+                    foreach(elem; p.children)
+                        result ~= "\"" ~ elem.matches[0] ~ "\", ";
                     result = result[0..$-2] ~ ")";
                 }
                 else
                 {
                     result = "pegged.peg.or!(";
-                    foreach(seq; p.children)
-                        result ~= generateCode(seq) ~ ", ";
+                    foreach(elem; p.children)
+                        result ~= generateCode(elem) ~ ", ";
                     result = result[0..$-2] ~ ")";
                 }
             }
@@ -357,9 +357,9 @@ string generateCode(ParseTree p)
             if (p.children.length > 1) // real sequence
             {
                 result = "pegged.peg.and!(";
-                foreach(seq; p.children)
+                foreach(elem; p.children)
                 {
-                    string elementCode = generateCode(seq);
+                    string elementCode = generateCode(elem);
                     // flattening inner sequences
                     if (elementCode.length > 6 && elementCode[0..5] == "pegged.peg.and!(")
                         elementCode = elementCode[5..$-1]; // cutting 'and!(' and ')'
@@ -428,8 +428,8 @@ string generateCode(ParseTree p)
             if (p.children.length > 1)
             {
                 result = "pegged.peg.or!(";
-                foreach(seq; p.children)
-                    result ~= generateCode(seq) ~ ", ";
+                foreach(elem; p.children)
+                    result ~= generateCode(elem) ~ ", ";
                 result = result[0..$-2] ~ ")";
             }
             else // One child -> just a sequence, no need for a or!( , )
@@ -657,9 +657,9 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram, RuleIntrospection
         {
             case "Pegged.Expression": // choice expressions null-match whenever one of their components can null-match
                 bool someIndetermination;
-                foreach(seq; p.children)
+                foreach(elem; p.children)
                 {
-                    NullMatch nm = nullMatching(seq, external);
+                    NullMatch nm = nullMatching(elem, external);
                     if (nm == NullMatch.yes)
                         return NullMatch.yes;
                     else if (nm == NullMatch.indeterminate)
@@ -670,9 +670,9 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram, RuleIntrospection
                 else
                     return NullMatch.no;
             case "Pegged.Sequence": // sequence expressions can null-match when all their components can null-match
-                foreach(seq; p.children)
+                foreach(elem; p.children)
                 {
-                    NullMatch nm = nullMatching(seq, external);
+                    NullMatch nm = nullMatching(elem, external);
                     if (nm == NullMatch.indeterminate)
                         return NullMatch.indeterminate;
                     if (nm == NullMatch.no)
@@ -778,23 +778,23 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram, RuleIntrospection
         switch (p.name)
         {
             case "Pegged.Expression": // Choices are left-recursive is any choice is left-recursive
-                foreach(seq; p.children)
+                foreach(elem; p.children)
                 {
-                    auto lr = leftRecursion(seq, target);
+                    auto lr = leftRecursion(elem, target);
                     if (lr != LeftRecursive.no)
                         return lr;
                 }
                 return LeftRecursive.no;
             case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive
                                     // or behind null-matching members
-                foreach(i, seq; p.children)
+                foreach(i, elem; p.children)
                 {
-                    auto lr = leftRecursion(seq, target);
+                    auto lr = leftRecursion(elem, target);
                     if (lr == LeftRecursive.direct)
                         return (i == 0 ? LeftRecursive.direct : LeftRecursive.hidden);
                     else if (lr == LeftRecursive.hidden || lr == LeftRecursive.indirect)
                         return lr;
-                    else if (nullMatching(seq) == NullMatch.yes)
+                    else if (nullMatching(elem) == NullMatch.yes)
                         continue;
                     else
                         return LeftRecursive.no;
@@ -828,6 +828,78 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram, RuleIntrospection
         }
     }
 
+
+    string expectedInput(ParseTree p, RuleIntrospection[string] external = null)
+    {
+        switch(p.name)
+        {
+            case "Pegged.Expression":
+                string expectation;
+                foreach(i, child; p.children)
+                    expectation ~= expectedInput(child, external) ~ (i < p.children.length -1 ? " or " : "");
+                return expectation;
+            case "Pegged.Sequence":
+                string expectation;
+                foreach(i, expr; p.children)
+                    expectation ~= expectedInput(expr, external) ~ (i < p.children.length -1 ? " followed by " : "");
+                return expectation;
+            case "Pegged.Prefix":
+                return expectedInput(p.children[$-1], external);
+            case "Pegged.Suffix":
+                string expectation;
+                string end;
+                foreach(prefix; p.children[1..$])
+                    switch(prefix.name)
+                    {
+                        case "Pegged.ZEROORMORE":
+                            expectation ~= "zero or more times (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.ONEORMORE":
+                            expectation ~= "one or more times (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.OPTION":
+                            expectation ~= "optionally (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.Action":
+                            break;
+                        default:
+                            break;
+                    }
+                return expectation ~ expectedInput(p.children[0], external) ~ end;
+            case "Pegged.Primary":
+                return expectedInput(p.children[0], external);
+            case "Pegged.RhsName":
+                string expectation;
+                foreach(elem; p.matches)
+                    expectation ~= elem;
+                if (auto m = expectation in external)
+                    return m.expected;
+                else
+                    return "rule " ~ expectation;
+            case "Pegged.Literal":
+                return "the literal `" ~ p.matches[0] ~ "`";
+            case "Pegged.CharClass":
+                string expectation;
+                foreach(i, child; p.children)
+                    expectation ~= expectedInput(child, external) ~ (i < p.children.length -1 ? " or " : "");
+                return expectation;
+            case "Pegged.CharRange":
+                if (p.children.length == 1)
+                    return expectedInput(p.children[0], external);
+                else
+                    return "any character between '" ~ p.matches[0] ~ "' and '" ~ p.matches[2] ~ "'";
+            case "Pegged.Char":
+                return "the character '" ~ p.matches[0] ~ "'";
+            case "Pegged.ANY":
+                return "any character";
+            default:
+                return "unknow rule (" ~ p.matches[0] ~ ")";
+        }
+    }
+
     if (gram.name == "Pegged")
         gram = gram.children[0];
     string grammarName;
@@ -850,6 +922,7 @@ RuleIntrospection[string] grammarIntrospection(ParseTree gram, RuleIntrospection
             ri.leftRecursion = LeftRecursive.no;
             ri.nullMatch = NullMatch.indeterminate;
             ri.infiniteLoop = InfiniteLoop.indeterminate;
+            ri.expected = expectedInput(definition.children[2], external);
             // !!!!!!!!! To change: use generateCode to get the correct name for parameterized rules !!!!!
             result[grammarName ~ "." ~ definition.matches[0]] = ri;
         }
@@ -935,79 +1008,6 @@ ParseTree replaceInto(ParseTree parent, ParseTree child)
         foreach(ref branch; parent.children)
             branch = replaceInto(branch, child);
     return parent;
-}
-
-/**
-Mixin to get what a failed rule expected as input.
-Not used by Pegged yet. I have to transform it to use introspection.
-*/
-mixin template expected()
-{
-    string expected(ParseTree p)
-    {
-
-        switch(p.name)
-        {
-            case "Pegged.Expression":
-                string expectation;
-                foreach(i, child; p.children)
-                    expectation ~= "(" ~ expected(child) ~ ")" ~ (i < p.children.length -1 ? " or " : "");
-                return expectation;
-            case "Pegged.Sequence":
-                string expectation;
-                foreach(i, expr; p.children)
-                    expectation ~= "(" ~ expected(expr) ~ ")" ~ (i < p.children.length -1 ? " followed by " : "");
-                return expectation;
-            case "Pegged.Prefix":
-                return expected(p.children[$-1]);
-            case "Pegged.Suffix":
-                string expectation;
-                string end;
-                foreach(prefix; p.children[1..$])
-                    switch(prefix.name)
-                    {
-                        case "Pegged.ZEROORMORE":
-                            expectation ~= "zero or more times (";
-                            end ~= ")";
-                            break;
-                        case "Pegged.ONEORMORE":
-                            expectation ~= "one or more times (";
-                            end ~= ")";
-                            break;
-                        case "Pegged.OPTION":
-                            expectation ~= "optionally (";
-                            end ~= ")";
-                            break;
-                        case "Pegged.Action":
-                            break;
-                        default:
-                            break;
-                    }
-                return expectation ~ expected(p.children[0]) ~ end;
-            case "Pegged.Primary":
-                return expected(p.children[0]);
-            //case "Pegged.RhsName":
-            //    return "RhsName, not implemented.";
-            case "Pegged.Literal":
-                return "the literal `" ~ p.matches[0] ~ "`";
-            case "Pegged.CharClass":
-                string expectation;
-                foreach(i, child; p.children)
-                    expectation ~= expected(child) ~ (i < p.children.length -1 ? " or " : "");
-                return expectation;
-            case "Pegged.CharRange":
-                if (p.children.length == 1)
-                    return expected(p.children[0]);
-                else
-                    return "any character between '" ~ p.matches[0] ~ "' and '" ~ p.matches[2] ~ "'";
-            case "Pegged.Char":
-                return "the character '" ~ p.matches[0] ~ "'";
-            case "Pegged.ANY":
-                return "any character";
-            default:
-                return "unknow rule (" ~ p.matches[0] ~ ")";
-        }
-    }
 }
 
 unittest // 'grammar' unit test: low-level functionalities

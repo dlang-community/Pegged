@@ -126,8 +126,8 @@ enum g =
 
 void main()
 {
-    //writeln(Test.internal);
-    writeln(identifier(RuleIntrospection()));
+    writeln(Test.internal);
+    //writeln(identifier(RuleIntrospection()));
     //writeln(Test("ad"));
     //writeln(Recursive.A(RuleIntrospection()));
 
