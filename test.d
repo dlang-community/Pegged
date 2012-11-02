@@ -27,9 +27,13 @@ struct GenericTest(TParseTree)
     static this()
     {
         external["identifier"] = identifier(RuleIntrospection());
+        external["Test.A"] = grammarIntrospection(Pegged(
+            `Test:
+                A <- identifier? A`)
+        , external)["Test.A"];
         internal = grammarIntrospection(Pegged(
             `Test:
-                A <- identifier`)
+                A <- identifier? A`)
         , external);
     }
 
