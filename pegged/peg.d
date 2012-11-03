@@ -2041,10 +2041,12 @@ template fuse(alias r)
         p = r(p);
         if(p.successful)
         {
-            string fused;
-            foreach(match; p.matches)
-                fused ~= match;
-            p.matches = (p.matches is null ? null : [fused]);
+            if (p.matches !is null)
+            {
+                p.matches[0] = std.array.join(p.matches);
+                p.matches = p.matches[0..1];
+            }
+
             p.children = null; // also discard children
         }
         return p;
