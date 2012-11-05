@@ -1,3 +1,6 @@
 [submodule "pegged/docs"]
 	path = pegged/docs
 	url = https://github.com/PhilippeSigaud/Pegged.wiki.git
+[submodule "pegged/docs/wiki"]
+	path = pegged/docs/wiki
+	url = https://github.com/PhilippeSigaud/Pegged.wiki.git
