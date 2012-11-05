@@ -6,7 +6,7 @@ TesterGrammar:
 Root < Node eoi
 
 Node <
-	/ :'/' identifier
+	/ :'^' identifier
 	/ identifier (%Branch)*
 
 Branch <
@@ -14,12 +14,12 @@ Branch <
 	/ UnorderedBranch
 
 OrderedBranch <
+	/ :'->' '{' Node+ :'}'
 	/ :'->' Node
-	/ :'[' Node+ :']'
 
 UnorderedBranch <
+	/ :'~>' '{' Node+ :'}'
 	/ :'~>' Node
-	/ :'{' Node+ :'}'
 
 Spacing <- blank / Comment
 

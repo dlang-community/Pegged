@@ -412,10 +412,10 @@ TesterGrammar.Root               =  Root
       TesterGrammar.Node         <
 `));
 	
-	tester.assertSimilar(`foo[bar]`, `Root->Node->OrderedBranch->Node`);
-	tester.assertDifferent(`foo[bar]`, `Root->Node->UnorderedBranch->Node`);
+	tester.assertSimilar(`foo->{bar}`, `Root->Node->OrderedBranch->Node`);
+	tester.assertDifferent(`foo->{bar}`, `Root->Node->UnorderedBranch->Node`);
 	
-	tester.assertSimilar(`foo{bar}`, `Root->Node->UnorderedBranch->Node`);
+	tester.assertSimilar(`foo~>{bar}`, `Root->Node->UnorderedBranch->Node`);
 	
 	tester.assertSimilar(`foo~>bar`, `Root->Node->UnorderedBranch->Node`);
 
@@ -431,40 +431,40 @@ TesterGrammar.Root               =  Root
 				->UnorderedBranch->Node
 		`);
 
-	tester.assertSimilar(`foo->/bar->baz`,
-		`Root->Node
-		[
+	tester.assertSimilar(`foo->^bar->baz`,
+		`Root->Node->
+		{
 			OrderedBranch->Node
 			OrderedBranch->Node
-		]
+		}
 		`);
 		
-	tester.assertSimilar(`foo[/bar]->baz`,
-		`Root->Node
-		[
+	tester.assertSimilar(`foo->{^bar}->baz`,
+		`Root->Node->
+		{
 			OrderedBranch->Node
 			OrderedBranch->Node
-		]
+		}
 		`);
 
-	tester.assertSimilar(`foo~>/bar~>baz`,
-		`Root->Node
-		[
+	tester.assertSimilar(`foo~>^bar~>baz`,
+		`Root->Node->
+		{
 			UnorderedBranch->Node
 			UnorderedBranch->Node
-		]
+		}
 		`);
 		
-	tester.assertSimilar(`foo{/bar}~>baz`,
-		`Root->Node
-		[
+	tester.assertSimilar(`foo~>{^bar}~>baz`,
+		`Root->Node->
+		{
 			UnorderedBranch->Node
 			UnorderedBranch->Node
-		]
+		}
 		`);
 	
 	tester.assertSimilar(`
-		FOO
+		FOO~>
 		{
 			Bar->baz
 		}
@@ -475,18 +475,18 @@ TesterGrammar.Root               =  Root
 		`);
 		
 	tester.assertSimilar(`
-		FOO
+		FOO~>
 		{
-			x->/y->/z
+			x->^y->^z
 			u
 			v
 			Bar->baz
 		}
 		`,`
-		/* FOO */   Root->Node
-		/*     */       ->UnorderedBranch
-		/*     */       [
-		/* x   */           Node
+		/* FOO */   Root->Node->
+		/*     */       UnorderedBranch->
+		/*     */       {
+		/* x   */           Node~>
 		/*     */           {
 		/*  y  */               OrderedBranch->Node
 		/*   z */               OrderedBranch->Node
@@ -495,28 +495,28 @@ TesterGrammar.Root               =  Root
 		/* v   */           Node
 		/* Bar */           Node->OrderedBranch
 		/* baz */               ->Node
-		/*     */       ]
+		/*     */       }
 		`);
 	
 	tester.assertDifferent(`
-		FOO
+		FOO~>
 		{
-			x->/y->/z
+			x->^y->^z
 			u
 			v
 			Bar->baz
 		}
 		`,`
-		/* FOO */   Root->Node
-		/*     */       ->UnorderedBranch
-		/*     */       [
-		/* x   */           Node->OrderedBranch
+		/* FOO */   Root->Node->
+		/*     */       UnorderedBranch->
+		/*     */       {
+		/* x   */           Node->OrderedBranch~>
 		/*     */           { // There should actually be two ordered branches.
 		/*   y */               Node
 		/*bug:z*/               Node
 		/*bug:z*/               Node
 		/*     */           }
-		/*     */       ]
+		/*     */       }
 		`);
 	
 	assert(normalizeStr(tester.latestDiff) ==
@@ -551,16 +551,16 @@ TesterGrammar.Root                   =  Root
 	tester.assertSimilar(`
 		FOO
 		{
-			x->/y->/z
+			x->^y->^z
 			u
 			v
 			Bar->baz
 		}
 		`,`
-		/* FOO */   Root->Node
-		/*     */       ->UnorderedBranch
+		/* FOO */   Root->Node->
+		/*     */       UnorderedBranch->
 		/*     */       {
-		/* x   */           Node->OrderedBranch
+		/* x   */           Node->OrderedBranch~>
 		/*     */           { // There should actually be two ordered branches.
 		/*   y */               Node
 		/*not z*/               Node
@@ -577,32 +577,32 @@ TesterGrammar.Root                   =  Root
 	
 	arithmeticTester.assertSimilar(`1 + 3`,
 		`
-		Term
-		[
+		Term->
+		{
 			Factor->Primary->Number
 			Add~>
 				Factor->Primary->Number
-		]
+		}
 		`);
 	
 	arithmeticTester.assertSimilar(`1*2 + 3/4`,
 		`
-		Term
-		[
-			Factor
-			[
+		Term->
+		{
+			Factor->
+			{
 				Primary->Number
 				Mul~>
 				Primary->Number
-			]
+			}
 			Add~>
-			Factor
-			[
+			Factor->
+			{
 				Primary->Number
 				Div~>
 				Primary->Number
-			]
-		]
+			}
+		}
 		`);
 }
 
