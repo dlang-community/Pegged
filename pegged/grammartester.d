@@ -581,7 +581,7 @@ TesterGrammar.Root                   =  Root
 		[
 			Factor->Primary->Number
 			Add~>
-				Factor->Primary->Number->Bug
+				Factor->Primary->Number
 		]
 		`);
 	
