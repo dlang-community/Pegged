@@ -580,7 +580,7 @@ TesterGrammar.Root                   =  Root
 		Term->
 		{
 			Factor->Primary->Number
-			Add~>
+			Add->
 				Factor->Primary->Number
 		}
 		`);
@@ -595,7 +595,7 @@ TesterGrammar.Root                   =  Root
 				Mul~>
 				Primary->Number
 			}
-			Add~>
+			Add->
 			Factor->
 			{
 				Primary->Number
