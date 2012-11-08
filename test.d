@@ -11,9 +11,11 @@ import std.typecons;
 import std.typetuple;
 
 import pegged.grammar;
-import pegged.examples.arithmetic;
+import pegged.examples.xml;
 
 void main()
 {
-    writeln(Arithmetic("1+1"));
+    auto p1 = XML("<a>Test<b>B</b></a>");
+    writeln(p1);
+    writeln(pegged.examples.xml.nameStack);
 }
