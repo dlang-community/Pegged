@@ -1652,7 +1652,7 @@ mixin(grammar("
 unittest // Extended char range tests
 {
     import std.conv;
-    
+
     mixin(grammar(`
     CharRanges:
         Rule1 <- [a-z]
@@ -1945,6 +1945,53 @@ Here is another line.
     assert(!Arith1("1 + 2*3/456").successful);
     assert(Arith2("1 + 2*3/456").successful);
     assert(Arith2("1 + 2*3/z").successful);
+}
+
+version(unittest) // Semantic actions
+{
+    P doubler(P)(P p)
+    {
+        if (p.successful)
+            p.matches ~= p.matches;
+        return p;
+    }
+}
+
+unittest // Semantic actions, testing { foo } and { foo, bar, baz }
+{
+    mixin(grammar(`
+    Semantic:
+        Rule1 <- 'a' {doubler}
+        Rule2 <- 'b' {doubler, doubler}
+        Rule3 <- 'b' {doubler} {doubler} # Same as Rule2
+        Rule4 <- 'b' {doubler, doubler, doubler}
+        Rule5 <- 'a' {doubler} 'b' 'c'{doubler}
+        `));
+
+    ParseTree result = Semantic.decimateTree(Semantic.Rule1("a"));
+    assert(result.successful);
+    assert(result.matches == ["a", "a"]);
+
+    result = Semantic.decimateTree(Semantic.Rule1("b"));
+    assert(!result.successful);
+    assert(result.matches == [`"a"`]);
+
+    result = Semantic.decimateTree(Semantic.Rule2("b"));
+    assert(result.successful);
+    assert(result.matches == ["b", "b", "b", "b"]);
+
+    result = Semantic.decimateTree(Semantic.Rule3("b"));
+    assert(result.successful);
+    assert(result.matches == ["b", "b", "b", "b"]);
+
+    result = Semantic.decimateTree(Semantic.Rule4("b"));
+    assert(result.successful);
+    assert(result.matches == ["b", "b", "b", "b", "b", "b", "b", "b"]);
+    
+    result = Semantic.decimateTree(Semantic.Rule5("abc"));
+    assert(result.successful);
+    assert(result.matches == ["a", "a", "b", "c", "c"]);
+
 }
 
 // TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.

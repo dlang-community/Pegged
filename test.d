@@ -11,11 +11,10 @@ import std.typecons;
 import std.typetuple;
 
 import pegged.grammar;
-import pegged.examples.xml;
+
+
 
 void main()
 {
-    auto p1 = XML("<a>Test<b>B</b></a>");
-    writeln(p1);
-    writeln(pegged.examples.xml.nameStack);
+
 }
