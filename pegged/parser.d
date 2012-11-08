@@ -28,7 +28,7 @@ Param        <- DefaultParam / SingleParam
 DefaultParam <- Identifier Spacing :ASSIGN Expression
 SingleParam  <- Identifier Spacing
 ArgList      <- :OPEN Expression (:SEPARATOR Expression)* :CLOSE
-Action       <- ACTIONOPEN qualifiedIdentifier (SEPARATOR qualifiedIdentifier)* ACTIONCLOSE
+Action       <- :ACTIONOPEN qualifiedIdentifier (SEPARATOR qualifiedIdentifier)* :ACTIONCLOSE
 
 Literal      <~ :quote       (!quote Char)*       :quote       Spacing
               / :doublequote (!doublequote Char)* :doublequote Spacing
@@ -739,7 +739,7 @@ struct GenericPegged(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(ACTIONOPEN, qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(SEPARATOR, qualifiedIdentifier)), ACTIONCLOSE), name ~ `.`~ `Action`)(p);
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(ACTIONOPEN), qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(SEPARATOR, qualifiedIdentifier)), pegged.peg.discard!(ACTIONCLOSE)), name ~ `.`~ `Action`)(p);
         }
         else
         {
@@ -747,7 +747,7 @@ struct GenericPegged(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(ACTIONOPEN, qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(SEPARATOR, qualifiedIdentifier)), ACTIONCLOSE), name ~ `.`~ `Action`)(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(ACTIONOPEN), qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(SEPARATOR, qualifiedIdentifier)), pegged.peg.discard!(ACTIONCLOSE)), name ~ `.`~ `Action`)(p);
                 memo[tuple(`Action`,p.end)] = result;
                 return result;
             }
@@ -758,12 +758,12 @@ struct GenericPegged(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(ACTIONOPEN, qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(SEPARATOR, qualifiedIdentifier)), ACTIONCLOSE), name ~ `.`~ `Action`)(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(ACTIONOPEN), qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(SEPARATOR, qualifiedIdentifier)), pegged.peg.discard!(ACTIONCLOSE)), name ~ `.`~ `Action`)(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(ACTIONOPEN, qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(SEPARATOR, qualifiedIdentifier)), ACTIONCLOSE), name ~ `.`~ `Action`)(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(ACTIONOPEN), qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(SEPARATOR, qualifiedIdentifier)), pegged.peg.discard!(ACTIONCLOSE)), name ~ `.`~ `Action`)(TParseTree("", false,[], s));
         }
     }
     static string Action(GetName g)
