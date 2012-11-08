@@ -1,0 +1,84 @@
+% based on the fantastic work from http://www.stdout.org/~winston/latex/
+\documentclass[10pt]{article}
+
+\usepackage{multicol}
+\usepackage{calc}
+\usepackage{ifthen}
+\usepackage{geometry}
+
+% conditional page margins based on paper size
+\ifthenelse{\lengthtest { \paperwidth = 11in}}
+	{ \geometry{top=.5in,left=.5in,right=.5in,bottom=.5in} }
+	{\ifthenelse{ \lengthtest{ \paperwidth = 297mm}}
+		{\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+		{\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+	}
+
+% remove page header and footer
+\pagestyle{empty}
+
+% redefine section commands to use less space
+\makeatletter
+\renewcommand{\section}{\@startsection{section}{1}{0mm}%
+                                {-1ex plus -.5ex minus -.2ex}%
+                                {0.5ex plus .2ex}%x
+                                {\normalfont\large\bfseries}}
+\renewcommand{\subsection}{\@startsection{subsection}{2}{0mm}%
+                                {-1explus -.5ex minus -.2ex}%
+                                {0.5ex plus .2ex}%
+                                {\normalfont\normalsize\bfseries}}
+\renewcommand{\subsubsection}{\@startsection{subsubsection}{3}{0mm}%
+                                {-1ex plus -.5ex minus -.2ex}%
+                                {1ex plus .2ex}%
+                                {\normalfont\small\bfseries}}
+\makeatother
+
+% disable section numbering
+\setcounter{secnumdepth}{0}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt plus 0.5ex}
+
+\begin{document}
+
+\raggedright
+\footnotesize
+\begin{multicols}{2}
+	% multicol parameters
+	\setlength{\premulticols}{1pt}
+	\setlength{\postmulticols}{1pt}
+	\setlength{\multicolsep}{1pt}
+	\setlength{\columnsep}{2pt}
+
+    % header
+    \begin{center}
+         \Large{\textbf{Pegged Cheat Sheet}} \\
+    \end{center}
+
+    \section{Rules}
+    \begin{tabular}{@{}ll@{}}
+    \verb!  < !    & Creates a space consuming sequence. \\
+	\verb!  <~!    & Concatenates a sequences of matches into one string. \\
+	\verb!  <:!    & Creates a sequence to be discarded. \\
+	\verb!  <;!    & Creates a sequence stored in the parent node. \\
+    \end{tabular}
+
+Every operator suffix of a \verb!<! rule will work on token literals and on child rules from the parent context.
+
+    \section{Non-Terminals}
+    \begin{tabular}{@{}ll@{}}
+    \verb!book!    & Default is two-sided. \\
+    \end{tabular}
+
+    \section{Terminals}
+    \begin{tabular}{@{}ll@{}}
+    \verb!book!    & Default is two-sided. \\
+    \end{tabular}
+
+    % footer
+	\rule{0.3\linewidth}{0.25pt}
+	\scriptsize
+
+	Copyright \copyright\ 2012 Pegged Developers \& Contributors
+\end{multicols}
+\end{document}
