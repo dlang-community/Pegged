@@ -10,6 +10,14 @@ See the /docs directory for the full documentation as markdown files.
 */
 module pegged.peg;
 
+/*
+NOTE:
+Do not use the GrammarTester for unittesting in this module.  This module needs
+to be able to pass its unittests before the GrammarTester is even trustable.
+Writing tests the long way is preferred here, as it will avoid the circular 
+dependency.
+*/
+
 import std.conv;
 import std.range: equal;
 import std.string: strip;
