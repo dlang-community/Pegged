@@ -642,13 +642,18 @@ unittest // 'grammar' unit test: PEG syntax
         Literal2 <- 'abc'
         EmptyLiteral1 <- ""
         EmptyLiteral2 <- ''
-        Any <- .
-        Eps <- eps
+
+        Any    <- .
+        Eps    <- eps
         Letter <- [a-z]
         Digit  <- [0-9]
         ABC    <- [abc]
-        Alpha1  <- [a-zA-Z_]
-        Alpha2  <- [_a-zA-Z]
+        Alpha1 <- [a-zA-Z_]
+        Alpha2 <- [_a-zA-Z]
+        Chars1 <- [\0-\127]
+        Chars2 <- [\x00-\xFF]
+        Chars3 <- [\u0000-\u00FF]
+        Chars4 <- [\x00000000-\U00FFFFFF]
     `));
 
     ParseTree result = Terminals("abc");
@@ -712,6 +717,19 @@ unittest // 'grammar' unit test: PEG syntax
         assert( (index < 3  && Terminals.ABC(to!string(dc)).successful)
              || (index >= 3 && !Terminals.ABC(to!string(dc)).successful));
 
+    foreach(dchar dc; 0..256)
+    {
+        string s = to!string(dc);
+        if (dc <= '\127')
+            assert(Terminals.Chars1(s).successful);
+        else
+            assert(!Terminals.Chars1(s).successful);
+
+        assert(Terminals.Chars2(s).successful);
+        assert(Terminals.Chars3(s).successful);
+        assert(Terminals.Chars4(s).successful);
+    }
+    
     mixin(grammar(`
     Structure:
         Rule1 <- Rule2 / Rule3 / Rule4   # Or test

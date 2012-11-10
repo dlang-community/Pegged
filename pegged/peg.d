@@ -502,16 +502,16 @@ If begin == end, it will match one char (begin... or end).
 
 begin > end is non-legal.
 */
-template charRange(char begin, char end) if (begin <= end)
+template charRange(dchar begin, dchar end) if (begin <= end)
 {
     ParseTree charRange(ParseTree p)
     {
         if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
-            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", true,
+            return ParseTree("charRange!('"~to!string(begin)~"','" ~ to!string(end) ~ "')", true,
                              [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
         else
-            return ParseTree("charRange!('"~begin~"','" ~ end ~ "')", false,
-                             ["a char between '"~begin~"' and '"~end~"'"], p.input, p.end, p.end);
+            return ParseTree("charRange!('"~to!string(begin)~"','" ~ to!string(end) ~ "')", false,
+                             ["a char between '"~to!string(begin)~"' and '"~to!string(end)~"'"], p.input, p.end, p.end);
     }
 
     ParseTree charRange(string input)
@@ -521,7 +521,7 @@ template charRange(char begin, char end) if (begin <= end)
 
     string charRange(GetName g)
     {
-        return "charRange!('"~begin~"','" ~ end ~ "')";
+        return "charRange!('"~to!string(begin)~"','" ~ to!string(end) ~ "')";
     }
 }
 
@@ -532,6 +532,8 @@ unittest // 'charRange' unit test
     alias charRange!('a','a') aa;
     alias charRange!('a','b') ab;
     alias charRange!('a','z') az;
+    alias charRange!(dchar.min,dchar.max) allChars;
+    alias charRange!('\U00000000','\U000000FF') ASCII;
 
     static assert(!__traits(compiles, {alias charRange!('z','a') za;}));
 
@@ -640,13 +642,11 @@ unittest // 'charRange' unit test
     assert(result.end == input.end, "'a-z' does not advance the index on '123'.");
     assert(result.children is null, "'a-z' has no children.");
 
-    alias charRange!(char.min,char.max) allChars;
 
-    assert(allChars("\0").successful);
-    assert(allChars("" ~ char.min).successful);
-    assert(allChars("" ~ char.max).successful);
+    foreach(dchar ch; 0..256*(128+64+16+8))
+        assert(allChars(to!string(ch)).successful);
+
     assert(!allChars("").successful);
-    assert(allChars("\xFF").successful);
 }
 
 /**
