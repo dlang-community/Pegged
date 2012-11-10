@@ -653,7 +653,7 @@ unittest // 'grammar' unit test: PEG syntax
         Chars1 <- [\0-\127]
         Chars2 <- [\x00-\xFF]
         Chars3 <- [\u0000-\u00FF]
-        Chars4 <- [\x00000000-\U00FFFFFF]
+        Chars4 <- [\U00000000-\U000000FF]
     `));
 
     ParseTree result = Terminals("abc");
