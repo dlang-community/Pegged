@@ -1994,4 +1994,133 @@ unittest // Semantic actions, testing { foo } and { foo, bar, baz }
 
 }
 
-// TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
+version(unittest)
+{
+    P foo(P)(P p) { return p;} // for testing actions
+
+    void badGrammar(string s)()
+    {
+        assert(!__traits(compiles, {mixin(grammar(s));}), "This should fail: " ~ s);
+    }
+
+    void goodGrammar(string s)()
+    {
+        assert(__traits(compiles, {mixin(grammar(s));}), "This should work: " ~ s);
+    }
+}
+
+unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
+{
+    // No grammar
+    badGrammar!"";
+
+    // Name without colon nor rules
+    badGrammar!"Name";
+
+    // No rule
+    badGrammar!"Name:";
+    badGrammar!"Name1 Name2";
+
+    // Incomplete and badly formulated rules
+    badGrammar!"Name:
+        Rule1";
+    badGrammar!"Name:
+        Rule1 Rule2";
+    badGrammar!"Name
+        Rule1 Rule2";
+    badGrammar!"Name:
+        Rule1 <-"; 
+    badGrammar!"Name:
+        Rule1 <~";
+    badGrammar!"Name:
+        Rule1 < ";
+    badGrammar!"Name:
+        Rule1 <%";
+    badGrammar!"Name:
+        Rule1 <;";
+    badGrammar!"Name
+        Rule1 <- <-";
+
+    // Non-closing parenthesis, brackets and quotes
+    badGrammar!"Name:
+        Rule1 <- ('a'";
+    badGrammar!"Name:
+        Rule1 <- 'a')";
+    badGrammar!"Name:
+        Rule1 <- ('a'))";
+    badGrammar!"Name:
+        Rule1 <- (('a')";
+    badGrammar!"Name:
+        Rule1 <- 'a";
+    badGrammar!"Name:
+        Rule1 <- a'";
+    badGrammar!`Name:
+        Rule1 <- "a`;
+    badGrammar!`Name:
+        Rule1 <- a"`;
+    badGrammar!`Name:
+        Rule1 <- 'a"`;
+    badGrammar!`Name:
+        Rule1 <- "a'`;
+    badGrammar!"Name:
+        Rule1 <- [a";
+    badGrammar!"Name:
+        Rule1 <- a]";
+    badGrammar!"Name:
+        Rule1 <- [a]]";
+    // But <- [[a] is legal: matches '[' or 'a'
+    goodGrammar!"Name:
+        Rule1 <- [[a]";
+
+    // Bad prefix/postfix
+    badGrammar!"Name:
+        Rule1 <- 'a'~";
+    badGrammar!"Name:
+        Rule1 <- 'a'%";
+    badGrammar!"Name:
+        Rule1 <- 'a'!";
+    badGrammar!"Name:
+        Rule1 <- 'a'&";
+    badGrammar!"Name:
+        Rule1 <- 'a';";
+    badGrammar!"Name:
+        Rule1 <- *'a'";
+    badGrammar!"Name:
+        Rule1 <- +'a'";
+    badGrammar!"Name:
+        Rule1 <- ?'a'";
+    badGrammar!"Name:
+        Rule1 <- 'a' {}";
+    // Foo is defined in a version(unittest) block
+    badGrammar!"Name:
+        Rule1 <- 'a' { foo";
+    badGrammar!"Name:
+        Rule1 <- 'a' foo}";
+    badGrammar!"Name:
+        Rule1 <- 'a' {foo}}"; // closing }
+    badGrammar!"Name:
+        Rule1 <- 'a' {{foo}"; // opening {
+    badGrammar!"Name:
+        Rule1 <- 'a' {foo,}"; // bad comma
+    badGrammar!"Name:
+        Rule1 <- 'a' {,foo}";
+    badGrammar!"Name:
+        Rule1 <- {foo}"; // no rule before {}'s
+    // DMD Bug :-(
+    /+glue.c line 1150 dmd::virtual unsigned int Type::totym():Assertion `0' failed.
+    badGrammar!"Name:
+        Rule1 <- 'a' {bar}"; // bar not defined
+    +/
+
+    // choice ('/') syntax errors
+    badGrammar!"Name:
+        Rule1 <- 'a' /";
+    // But: <- / 'a' is legal (it's equivalent to: <- 'a')
+    goodGrammar!"Name:
+        Rule1 <- / 'a'";
+    badGrammar!"Name:
+        Rule1 <- /";
+    badGrammar!"Name:
+        Rule1 <- 'a' / / 'b'";
+
+}
