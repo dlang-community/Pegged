@@ -2049,7 +2049,7 @@ template fuse(alias r)
         p = r(p);
         if(p.successful)
         {
-            if (p.matches !is null)
+            if (p.matches.length != 0)
             {
                 p.matches[0] = std.array.join(p.matches);
                 p.matches = p.matches[0..1];

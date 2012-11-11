@@ -30,8 +30,8 @@ SingleParam  <- Identifier Spacing
 ArgList      <- :OPEN Expression (:SEPARATOR Expression)* :CLOSE
 Action       <- :ACTIONOPEN qualifiedIdentifier (:SEPARATOR qualifiedIdentifier)* :ACTIONCLOSE
 
-Literal      <~ :quote       (!quote Char)*       :quote       Spacing
-              / :doublequote (!doublequote Char)* :doublequote Spacing
+Literal      <- quote       ~(!quote Char)*       quote       Spacing
+              / doublequote ~(!doublequote Char)* doublequote Spacing
 CharClass    <- :'[' (!']' CharRange)* :']' Spacing
 CharRange    <- Char '-' Char / Char
 
@@ -775,7 +775,7 @@ struct GenericPegged(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(quote), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char)), pegged.peg.discard!(quote), Spacing), pegged.peg.and!(pegged.peg.discard!(doublequote), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char)), pegged.peg.discard!(doublequote), Spacing))), name ~ `.`~ `Literal`)(p);
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(quote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char))), quote, Spacing), pegged.peg.and!(doublequote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char))), doublequote, Spacing)), name ~ `.`~ `Literal`)(p);
         }
         else
         {
@@ -783,7 +783,7 @@ struct GenericPegged(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(quote), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char)), pegged.peg.discard!(quote), Spacing), pegged.peg.and!(pegged.peg.discard!(doublequote), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char)), pegged.peg.discard!(doublequote), Spacing))), name ~ `.`~ `Literal`)(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(quote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char))), quote, Spacing), pegged.peg.and!(doublequote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char))), doublequote, Spacing)), name ~ `.`~ `Literal`)(p);
                 memo[tuple(`Literal`,p.end)] = result;
                 return result;
             }
@@ -794,12 +794,12 @@ struct GenericPegged(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(quote), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char)), pegged.peg.discard!(quote), Spacing), pegged.peg.and!(pegged.peg.discard!(doublequote), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char)), pegged.peg.discard!(doublequote), Spacing))), name ~ `.`~ `Literal`)(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(quote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char))), quote, Spacing), pegged.peg.and!(doublequote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char))), doublequote, Spacing)), name ~ `.`~ `Literal`)(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(quote), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char)), pegged.peg.discard!(quote), Spacing), pegged.peg.and!(pegged.peg.discard!(doublequote), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char)), pegged.peg.discard!(doublequote), Spacing))), name ~ `.`~ `Literal`)(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(quote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char))), quote, Spacing), pegged.peg.and!(doublequote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char))), doublequote, Spacing)), name ~ `.`~ `Literal`)(TParseTree("", false,[], s));
         }
     }
     static string Literal(GetName g)
