@@ -2027,6 +2027,7 @@ version(unittest)
     }
 }
 
+/+
 unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
 {
     // No grammar
@@ -2142,3 +2143,4 @@ unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
         Rule1 <- 'a' / / 'b'";
 
 }
++/
