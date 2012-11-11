@@ -653,10 +653,10 @@ unittest // 'grammar' unit test: PEG syntax
         ABC    <- [abc]
         Alpha1 <- [a-zA-Z_]
         Alpha2 <- [_a-zA-Z]
-        #Chars1 <- [\0-\127]
-        #Chars2 <- [\x00-\xFF]
-        #Chars3 <- [\u0000-\u00FF]
-        #Chars4 <- [\U00000000-\U000000FF]
+        Chars1 <- [\0-\127]
+        Chars2 <- [\x00-\xFF]
+        Chars3 <- [\u0000-\u00FF]
+        Chars4 <- [\U00000000-\U000000FF]
     `));
 
     ParseTree result = Terminals("abc");
@@ -720,7 +720,6 @@ unittest // 'grammar' unit test: PEG syntax
         assert( (index < 3  && Terminals.ABC(to!string(dc)).successful)
              || (index >= 3 && !Terminals.ABC(to!string(dc)).successful));
 
-    /+
     foreach(dchar dc; 0..256)
     {
         string s = to!string(dc);
@@ -733,7 +732,6 @@ unittest // 'grammar' unit test: PEG syntax
         assert(Terminals.Chars3(s).successful);
         assert(Terminals.Chars4(s).successful);
     }
-    +/
 
     mixin(grammar(`
     Structure:
@@ -2032,7 +2030,7 @@ version(unittest)
     }
 }
 
-/+
+/+ Failed (commit 4cd177a), DMD crashed.
 unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
 {
     // No grammar
@@ -2146,6 +2144,5 @@ unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
         Rule1 <- /";
     badGrammar!"Name:
         Rule1 <- 'a' / / 'b'";
-
 }
 +/
