@@ -982,13 +982,13 @@ template or(rules...) if (rules.length > 0)
         // error-management
         ParseTree longestFail = ParseTree(name, false, [], p.input, p.end, 0);
         string[] errorStrings;
-        uint errorStringChars;
+        size_t errorStringChars;
         string orErrorString;
 
         ParseTree[rules.length] results;
         string[rules.length] names;
-        int[rules.length] failedLength;
-        int maxFailedLength;
+        size_t[rules.length] failedLength;
+        size_t maxFailedLength;
 
 		// Real 'or' loop
 		foreach(i,r; rules)
