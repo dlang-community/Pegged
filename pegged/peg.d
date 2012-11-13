@@ -1175,7 +1175,7 @@ string printCaseStatements(V)(TrieNode!(V) node, string indentString)
             case '\n': append("\\n"); break;
             case '\t': append("\\t"); break;
             case 92:   append("\\");  break;
-            default:   append(k.to!string);
+            default:   append(to!string(k));
 		}
 		append("':\n");
 		incIndent();
@@ -1998,7 +1998,7 @@ template action(alias r, alias act)
 
     string action(GetName g)
     {
-        enum name = "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";;
+        enum name = "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
         return name;
     }
 }
@@ -2064,7 +2064,7 @@ template fuse(alias r)
 
     string fuse(GetName g)
     {
-        enum name = "fuse!(" ~ getName!(r)() ~ ")";;
+        enum name = "fuse!(" ~ getName!(r)() ~ ")";
         return name;
     }
 }
@@ -2131,7 +2131,7 @@ template discardChildren(alias r)
 
     string discardChildren(GetName g)
     {
-        enum name = "discardChildren!(" ~ getName!(r)() ~ ")";;
+        enum name = "discardChildren!(" ~ getName!(r)() ~ ")";
         return name;
     }
 }
@@ -2156,7 +2156,7 @@ template discardMatches(alias r)
 
     string discardMatches(GetName g)
     {
-        enum name = "discardMatches!(" ~ getName!(r)() ~ ")";;
+        enum name = "discardMatches!(" ~ getName!(r)() ~ ")";
         return name;
     }
 }
