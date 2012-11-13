@@ -14,7 +14,7 @@ module pegged.peg;
 NOTE:
 Do not use the GrammarTester for unittesting in this module.  This module needs
 to be able to pass its unittests before the GrammarTester is even trustable.
-Writing tests the long way is preferred here, as it will avoid the circular 
+Writing tests the long way is preferred here, as it will avoid the circular
 dependency.
 */
 
@@ -2050,10 +2050,7 @@ template fuse(alias r)
         if(p.successful)
         {
             if (p.matches.length != 0)
-            {
-                p.matches[0] = std.array.join(p.matches);
-                p.matches = p.matches[0..1];
-            }
+                p.matches = [std.array.join(p.matches)];
 
             p.children = null; // also discard children
         }
