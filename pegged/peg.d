@@ -2432,8 +2432,8 @@ alias named!(literal!"\t", "tab") tab; /// A parser recognizing \t (tabulation)
 alias named!(fuse!(discardChildren!(oneOrMore!space)),
              "spaces") spaces; /// aka '~space+'
 alias or!(space, endOfLine) blank; /// Any blank char (spaces or end of line).
-alias named!(fuse!(discardChildren!(zeroOrMore!blank)),
-             "spacing") spacing; /// The basic space-management parser: fuse zero or more blank spaces.
+alias named!(discard!(zeroOrMore!blank),
+             "spacing") spacing; /// The basic space-management parser: discard zero or more blank spaces.
 
 alias charRange!('0', '9') digit; /// Decimal digit: [0-9]
 alias named!(fuse!(discardChildren!(oneOrMore!digit)), "digits") digits; /// [0-9]+
