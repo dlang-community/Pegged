@@ -11,6 +11,7 @@ import std.typecons;
 import std.typetuple;
 
 import pegged.grammar;
+import pegged.grammartester;
 
 void main()
 {

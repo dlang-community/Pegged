@@ -82,9 +82,8 @@ NAMESEP      <- '.'   # No Spacing
 OPEN         <- '(' Spacing
 CLOSE        <- ')' Spacing
 ANY          <- '.' Spacing
-Spacing      <: (Space / Comment)*
+Spacing      <: (blank / Comment)*
 Comment      <- '#' (!eol .)* :eol
-Space        <- spacing / "\\t" / "\\n" / "\\r"
 
 
 +/
@@ -152,7 +151,6 @@ struct GenericPegged(TParseTree)
             case "Pegged.ANY":
             case "Pegged.Spacing":
             case "Pegged.Comment":
-            case "Pegged.Space":
                 return true;
             default:
                 return false;
@@ -1891,7 +1889,7 @@ struct GenericPegged(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(Space, Comment))), name ~ `.`~ `Spacing`)(p);
+            return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment))), name ~ `.`~ `Spacing`)(p);
         }
         else
         {
@@ -1899,7 +1897,7 @@ struct GenericPegged(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(Space, Comment))), name ~ `.`~ `Spacing`)(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment))), name ~ `.`~ `Spacing`)(p);
                 memo[tuple(`Spacing`,p.end)] = result;
                 return result;
             }
@@ -1910,12 +1908,12 @@ struct GenericPegged(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(Space, Comment))), name ~ `.`~ `Spacing`)(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment))), name ~ `.`~ `Spacing`)(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(Space, Comment))), name ~ `.`~ `Spacing`)(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment))), name ~ `.`~ `Spacing`)(TParseTree("", false,[], s));
         }
     }
     static string Spacing(GetName g)
@@ -1957,42 +1955,6 @@ struct GenericPegged(TParseTree)
     static string Comment(GetName g)
     {
         return name ~ `.`~ `Comment`;
-    }
-
-    static TParseTree Space(TParseTree p)
-    {
-        if(__ctfe)
-        {
-            return pegged.peg.named!(pegged.peg.or!(spacing, pegged.peg.literal!(`\\t`), pegged.peg.literal!(`\\n`), pegged.peg.literal!(`\\r`)), name ~ `.`~ `Space`)(p);
-        }
-        else
-        {
-            if(auto m = tuple(`Space`,p.end) in memo)
-                return *m;
-            else
-            {
-                TParseTree result = pegged.peg.named!(pegged.peg.or!(spacing, pegged.peg.literal!(`\\t`), pegged.peg.literal!(`\\n`), pegged.peg.literal!(`\\r`)), name ~ `.`~ `Space`)(p);
-                memo[tuple(`Space`,p.end)] = result;
-                return result;
-            }
-        }
-    }
-
-    static TParseTree Space(string s)
-    {
-        if(__ctfe)
-        {
-            return pegged.peg.named!(pegged.peg.or!(spacing, pegged.peg.literal!(`\\t`), pegged.peg.literal!(`\\n`), pegged.peg.literal!(`\\r`)), name ~ `.`~ `Space`)(TParseTree("", false,[], s));
-        }
-        else
-        {
-            memo = null;
-            return pegged.peg.named!(pegged.peg.or!(spacing, pegged.peg.literal!(`\\t`), pegged.peg.literal!(`\\n`), pegged.peg.literal!(`\\r`)), name ~ `.`~ `Space`)(TParseTree("", false,[], s));
-        }
-    }
-    static string Space(GetName g)
-    {
-        return name ~ `.`~ `Space`;
     }
 
     static TParseTree opCall(TParseTree p)

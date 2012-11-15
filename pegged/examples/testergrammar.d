@@ -21,7 +21,7 @@ UnorderedBranch <
 	/ :'~>' '{' Node+ :'}'
 	/ :'~>' Node
 
-Spacing <- blank / Comment
+Spacing <: (blank / Comment)*
 
 Comment <- 
 	/ '//' (!eol .)* (eol)

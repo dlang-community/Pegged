@@ -83,14 +83,12 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
         {
             ParseTree spacer =
             ParseTree("Pegged.Prefix", true, null, null, 0,0, [
-                ParseTree("Pegged.DISCARD", true),
                 ParseTree("Pegged.Suffix", true, null, null, 0, 0, [
                     ParseTree("Pegged.Primary", true, null, null, 0, 0, [
                         ParseTree("Pegged.RhsName", true, null, null, 0,0, [
                             ParseTree("Pegged.Identifier", true, ["Spacing"])
                         ])
-                    ]),
-                    ParseTree("Pegged.ZEROORMORE", true)
+                    ])
                 ])
             ]);
             ParseTree result = ParseTree("Pegged.WrapAround", true, p.matches, p.input, p.begin, p.end, p.children);
