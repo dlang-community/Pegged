@@ -58,6 +58,28 @@ Even for such a simple grammar and such a simple expression, the resulting parse
 
 By default, the grammars do not silently consume spaces, as this is the standard behaviour for PEGs. There is an opt-out though, with the simple `< ` arrow instead of `<-` (you can see it in the previous example).
 
+How to get Pegged
+-----------------
+
+Pegged is a github project, hosted at https://github.com/PhilippeSigaud/Pegged
+
+To get it:
+
+```bash
+$ git clone https://github.com/PhilippeSigaud/Pegged
+```
+
+The `/docs` directory contains an empty `/wiki` directory, linked to the github wiki as a git submodule.
+Here is how to get it:
+
+```bash
+$ cd <pegged directory>
+$ git submodule init
+$ git submodule update
+```
+
+This should give you a `/docs/wiki` directory full of markdown files, right from the online wiki.
+
 Tutorial and docs
 -----------------
 
