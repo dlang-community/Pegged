@@ -58,6 +58,32 @@ void asModule(Memoization withMemo = Memoization.no)(string moduleName, File fil
     asModule!(withMemo)(moduleName, grammarDefinition);
 }
 
+// Helper to insert ':Spacing*' before and after Primaries
+ParseTree spaceArrow(ParseTree input)
+{
+    ParseTree wrapInSpaces(ParseTree p)
+    {
+        ParseTree spacer =
+        ParseTree("Pegged.Prefix", true, null, null, 0,0, [
+            ParseTree("Pegged.DISCARD", true),
+            ParseTree("Pegged.Suffix", true, null, null, 0, 0, [
+                ParseTree("Pegged.Primary", true, null, null, 0, 0, [
+                    ParseTree("Pegged.RhsName", true, null, null, 0,0, [
+                        ParseTree("Pegged.Identifier", true, ["Spacing"])
+                    ])
+                ]),
+                ParseTree("Pegged.ZEROORMORE", true)
+            ])
+        ]);
+        ParseTree result = ParseTree("Pegged.WrapAround", true, p.matches, p.input, p.begin, p.end, p.children);
+        result.children = spacer ~ result.children ~ spacer;
+        return result;
+    }
+    return modify!( p => p.name == "Pegged.Primary",
+                    wrapInSpaces)(input);
+}
+
+
 /**
 Generate a parser from a PEG definition.
 The parser is a string containing D code, to be mixed in or written in a file.
@@ -76,30 +102,7 @@ ParseTree p = Gram("abcbccbcd");
 */
 string grammar(Memoization withMemo = Memoization.no)(string definition)
 {
-    // Helper to insert ':Spacing*' before and after Primaries
-    ParseTree spaceArrow(ParseTree input)
-    {
-        ParseTree wrapInSpaces(ParseTree p)
-        {
-            ParseTree spacer =
-            ParseTree("Pegged.Prefix", true, null, null, 0,0, [
-                ParseTree("Pegged.DISCARD", true),
-                ParseTree("Pegged.Suffix", true, null, null, 0, 0, [
-                    ParseTree("Pegged.Primary", true, null, null, 0, 0, [
-                        ParseTree("Pegged.RhsName", true, null, null, 0,0, [
-                            ParseTree("Pegged.Identifier", true, ["Spacing"])
-                        ])
-                    ]),
-                    ParseTree("Pegged.ZEROORMORE", true)
-                ])
-            ]);
-            ParseTree result = ParseTree("Pegged.WrapAround", true, p.matches, p.input, p.begin, p.end, p.children);
-            result.children = spacer ~ result.children ~ spacer;
-            return result;
-        }
-        return modify!( p => p.name == "Pegged.Primary",
-                        wrapInSpaces)(input);
-    }
+
 
     ParseTree defAsParseTree = Pegged(definition);
 
@@ -109,7 +112,6 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
         string result = "static assert(false, `" ~ defAsParseTree.toString("") ~ "`);";
         return result;
     }
-
 
     string generateCode(ParseTree p)
     {
@@ -129,10 +131,13 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                 result =  "struct Generic" ~ shortGrammarName ~ "(TParseTree)\n"
                         ~ "{\n"
                         ~ "    struct " ~ grammarName ~ "\n    {\n"
-                        ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n"
-                        ~ "    import std.typecons:Tuple, tuple;\n"
-                        ~ "    static TParseTree[Tuple!(string, size_t)] memo;\n"
-                        ~ "    static bool isRule(string s)\n"
+                        ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n";
+
+                if (withMemo == Memoization.yes)
+                    result ~= "    import std.typecons:Tuple, tuple;\n"
+                            ~ "    static TParseTree[Tuple!(string, size_t)] memo;\n";
+
+                result ~= "    static bool isRule(string s)\n"
                         ~ "    {\n"
                         ~ "        switch(s)\n"
                         ~ "        {\n";
@@ -192,17 +197,22 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
                            ~  "        return result;\n"
                            ~  "    }\n\n"
                            ~  "    static TParseTree opCall(string input)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
-                           ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                           ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
-                           ~  "            memo = null;\n"
-                           ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                           ~  "        }\n"
-                           ~  "    }\n";
+                           ~  "    {\n";
+
+                    if (withMemo == Memoization.no)
+                        result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                               ~  "}\n";
+                    else
+                        result ~= "        if(__ctfe)\n"
+                               ~  "        {\n"
+                               ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                               ~  "        }\n"
+                               ~  "        else\n"
+                               ~  "        {\n"
+                               ~  "            memo = null;\n"
+                               ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                               ~  "        }\n"
+                               ~  "    }\n";
 
                     result ~= "    static string opCall(GetName g)\n"
                             ~ "    {\n"
@@ -271,40 +281,51 @@ string grammar(Memoization withMemo = Memoization.no)(string definition)
 
                 code ~= ", name ~ `.`~ " ~ innerName ~ ")";
 
-                result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                       ~  "    {\n"
-                       ~  "        if(__ctfe)\n"
-                       ~  "        {\n"
-                       ~  "            return " ~ code ~ "(p);\n"
-                       ~  "        }\n"
-                       ~  "        else\n"
-                       ~  "        {\n"
-                       ~  "            if(auto m = tuple("~innerName~",p.end) in memo)\n"
-                       ~  "                return *m;\n"
-                       ~  "            else\n"
-                       ~  "            {\n"
-                       ~  "                TParseTree result = " ~ code ~ "(p);\n"
-                       ~  "                memo[tuple("~innerName~",p.end)] = result;\n"
-                       ~  "                return result;\n"
-                       ~  "            }\n"
-                       ~  "        }\n"
-                       ~  "    }\n\n"
-                       ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
-                       ~  "    {\n"
-                       ~  "        if(__ctfe)\n"
-                       ~  "        {\n"
-                       ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                       ~  "        }\n"
-                       ~  "        else\n"
-                       ~  "        {\n"
-                       ~  "            memo = null;\n"
-                       ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                       ~  "        }\n"
-                       ~  "    }\n"
-                       ~  "    static string " ~ shortName ~ "(GetName g)\n"
-                       ~  "    {\n"
-                       ~  "        return name ~ `.`~ " ~ innerName ~ ";\n"
-                       ~  "    }\n\n";
+                if (withMemo == Memoization.no)
+                    result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
+                           ~  "    {\n"
+                           ~  "         return " ~ code ~ "(p);\n"
+                           ~  "    }\n"
+                           ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
+                           ~  "    {\n"
+                           ~  "        return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                           ~  "    }\n";
+                else
+                    result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
+                           ~  "    {\n"
+                           ~  "        if(__ctfe)\n"
+                           ~  "        {\n"
+                           ~  "            return " ~ code ~ "(p);\n"
+                           ~  "        }\n"
+                           ~  "        else\n"
+                           ~  "        {\n"
+                           ~  "            if(auto m = tuple("~innerName~",p.end) in memo)\n"
+                           ~  "                return *m;\n"
+                           ~  "            else\n"
+                           ~  "            {\n"
+                           ~  "                TParseTree result = " ~ code ~ "(p);\n"
+                           ~  "                memo[tuple("~innerName~",p.end)] = result;\n"
+                           ~  "                return result;\n"
+                           ~  "            }\n"
+                           ~  "        }\n"
+                           ~  "    }\n\n"
+                           ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
+                           ~  "    {\n"
+                           ~  "        if(__ctfe)\n"
+                           ~  "        {\n"
+                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                           ~  "        }\n"
+                           ~  "        else\n"
+                           ~  "        {\n"
+                           ~  "            memo = null;\n"
+                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                           ~  "        }\n"
+                           ~  "    }\n";
+
+                    result ~= "    static string " ~ shortName ~ "(GetName g)\n"
+                           ~  "    {\n"
+                           ~  "        return name ~ `.`~ " ~ innerName ~ ";\n"
+                           ~  "    }\n\n";
 
                 if (parameterizedRule)
                     result ~= "    }\n";
@@ -2146,3 +2167,48 @@ unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
         Rule1 <- 'a' / / 'b'";
 }
 +/
+
+unittest // Memoization testing
+{
+    enum gram1 = `
+    Test1:
+        Rule1 <- Rule2* 'b'   # To force a long evaluation of aaaa...
+               / Rule2* 'c'   # before finding a 'b' or a 'c'
+        Rule2 <- 'a'
+        `;
+
+    enum gram2 = `
+    Test2:
+        Rule1 <- Rule2* 'b'   # To force a long evaluation of aaaa...
+               / Rule2* 'c'   # before finding a 'b' or a 'c'
+        Rule2 <- 'a'
+        `;
+
+    mixin(grammar!(Memoization.yes)(gram1));
+    mixin(grammar!(Memoization.no)(gram2));
+
+    assert(is(typeof(Test1.memo)));
+    assert(!is(typeof(Test2.memo)));
+
+    ParseTree result1 = Test1("aaaaaaac");      // Memo + Runtime
+    enum ParseTree result2 = Test1("aaaaaaac"); // Memo + Compile-time
+    ParseTree result3 = Test2("aaaaaaac");      // No memo + Runtime
+    enum ParseTree result4 = Test2("aaaaaaac"); // No memo + Compile-time
+
+    assert(result1 == result2);
+    assert(result3 == result4);
+
+    //Directly comparing result1 and result3 is not possible, for the grammar names are different
+    bool softCompare(ParseTree p1, ParseTree p2)
+    {
+        return p1.successful == p2.successful
+            && p1.matches == p2.matches
+            && p1.begin == p2.begin
+            && p1.end == p2.end
+            && std.algorithm.equal!(softCompare)(p1.children, p2.children); // the same for children
+    }
+
+    assert(softCompare(result1, result2));
+    assert(softCompare(result1, result3));
+    assert(softCompare(result1, result4));
+}
