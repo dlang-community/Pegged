@@ -27,13 +27,13 @@ enum Memoization { no, yes }
 This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
 It writes the corresponding parser inside a module with the given name.
 */
-void asModule(Memoization withMemo = Memoization.no)(string moduleName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString)
 {
     asModule!(withMemo)(moduleName, moduleName, grammarString);
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.no)(string moduleName, string fileName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString)
 {
     import std.stdio;
     auto f = File(fileName ~ ".d","w");
@@ -48,7 +48,7 @@ void asModule(Memoization withMemo = Memoization.no)(string moduleName, string f
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.no)(string moduleName, File file)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File file)
 {
     string grammarDefinition;
     foreach(line; file.byLine)
@@ -100,7 +100,7 @@ mixin(grammar(def));
 ParseTree p = Gram("abcbccbcd");
 ----
 */
-string grammar(Memoization withMemo = Memoization.no)(string definition)
+string grammar(Memoization withMemo = Memoization.yes)(string definition)
 {
 
 
