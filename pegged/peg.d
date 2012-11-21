@@ -18,6 +18,8 @@ Writing tests the long way is preferred here, as it will avoid the circular
 dependency.
 */
 
+import std.algorithm: map;
+import std.array;
 import std.conv;
 import std.range: equal;
 import std.string: strip;
@@ -121,6 +123,14 @@ struct ParseTree
               && p.end        == end
               && equal(p.children, children));
     }
+
+    ParseTree dup() @property
+    {
+        ParseTree result = this;
+        result.matches = result.matches.dup;
+        result.children = map!(p => p.dup)(result.children).array;
+        return result;
+    }
 }
 
 
@@ -132,8 +142,25 @@ unittest // ParseTree testing
     p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
     assert(p == p, "Self identity on non-null tree.");
 
+    ParseTree child = ParseTree("Child", true, ["abc", "", "def"], "input", 0, 1, null);
+    p.children = [child, child];
+
     ParseTree q = p;
-    assert(p == q, "Copying makes equal trees.");
+    assert(p == q, "Copying creates equal trees.");
+
+    assert(p.children == q.children);
+    p.children = [child, child, child];
+    assert(q.children != p.children, "Disconnecting children.");
+
+    p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
+    p.children = [child, child];
+
+    q = p.dup;
+    assert(p == q, "Dupping creates equal trees.");
+
+    assert(p.children == q.children, "Equal children for dupped trees.");
+    p.children = null;
+    assert(q.children != p.children);
 
     q.children = [p,p];
     assert(p != q, "Tree with different children are not equal.");
@@ -146,6 +173,32 @@ unittest // ParseTree testing
 
     p.matches = q.matches;
     assert(p == q, "Copying matches makes equal trees.");
+}
+
+/// To compare two trees for content (not bothering with node names)
+/// That's useful to compare the results from two different grammars.
+bool softCompare(ParseTree p1, ParseTree p2)
+{
+    return p1.successful == p2.successful
+        && p1.matches == p2.matches
+        && p1.begin == p2.begin
+        && p1.end == p2.end
+        && std.algorithm.equal!(softCompare)(p1.children, p2.children); // the same for children
+}
+
+unittest // softCompare
+{
+    ParseTree p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
+    ParseTree child = ParseTree("Child", true, ["abc", "", "def"], "input", 0, 1, null);
+    p.children = [child, child];
+
+    ParseTree q = p;
+    assert(p == q, "Copy => Equal trees.");
+    assert(softCompare(p,q), "Copy => Trees equal for softCompare.");
+
+    q.name = "Another One";
+    assert(p != q, "Name change => non-equal trees.");
+    assert(softCompare(p,q), "Name change => Trees equal for softCompare.");
 }
 
 /// To record a position in a text

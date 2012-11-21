@@ -2199,16 +2199,7 @@ unittest // Memoization testing
     assert(result3 == result4);
 
     //Directly comparing result1 and result3 is not possible, for the grammar names are different
-    bool softCompare(ParseTree p1, ParseTree p2)
-    {
-        return p1.successful == p2.successful
-            && p1.matches == p2.matches
-            && p1.begin == p2.begin
-            && p1.end == p2.end
-            && std.algorithm.equal!(softCompare)(p1.children, p2.children); // the same for children
-    }
-
-    assert(softCompare(result1, result2));
-    assert(softCompare(result1, result3));
-    assert(softCompare(result1, result4));
+    assert(pegged.peg.softCompare(result1, result2));
+    assert(pegged.peg.softCompare(result1, result3));
+    assert(pegged.peg.softCompare(result1, result4));
 }
