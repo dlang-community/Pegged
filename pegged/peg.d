@@ -2644,7 +2644,8 @@ mixin template decimateTree()
             ParseTree[] result;
             foreach(child; pt.children)
             {
-                if (isRule(child.name) || !child.successful && child.children.length == 0) // keep nodes that belongs to the current grammar
+                if (  (isRule(child.name) && child.matches.length != 0)
+                   || !child.successful && child.children.length == 0)
                 {
                     child.children = filterChildren(child);
                     result ~= child;
