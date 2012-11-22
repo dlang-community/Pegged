@@ -1601,6 +1601,25 @@ unittest // Prefix and suffix tests
     assert(result.children[0].children[0].children[2].name == `literal!("abc")`);
 }
 
+unittest // Issue #88 unit test
+{
+    enum gram = `
+        P:
+        Rule1 <- (w 'a' w)*
+        Rule2 <- (wx 'a' wx)*
+        w <- :(' ')*
+        wx <- (:' ')*
+        `;
+
+    mixin(grammar(gram));
+
+    string input = "   a   a   a a  a a ";
+
+    ParseTree p1 = P.decimateTree(P.Rule1(input));
+    ParseTree p2 = P.decimateTree(P.Rule2(input));
+    assert(softCompare(p1,p2));
+}
+
 unittest // Leading alternation
 {
     mixin(grammar(`
