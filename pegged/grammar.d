@@ -1133,7 +1133,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     // Comparing <- ABC DEF and <: ABC DEF
     result = Arrows.decimateTree(Arrows.Rule7("abcdef"));
     assert(result.successful);
-    assert(result.begin == "abcdef".length);
+    assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches is null, "No match with the discard arrow.");
     assert(result.children.length == 0, "No children with the discard arrow.");
@@ -1150,7 +1150,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     // Comparing <- ABC DEF and <; ABC DEF
     result = Arrows.decimateTree(Arrows.Rule9("abcdef"));
     assert(result.successful);
-    assert(result.begin == "abcdef".length);
+    assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches == ["abc", "def"], "The drop arrow keeps the matches.");
     assert(result.children.length == 0, "The drop arrow drops the children.");
@@ -1529,21 +1529,21 @@ unittest // Prefix and suffix tests
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule1("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abcabcabc".length);
+    assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches is null);
     assert(result.children is null);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule2("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abcabcabc".length);
+    assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches is null);
     assert(result.children is null);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule3("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abc".length);
+    assert(result.begin == 0);
     assert(result.end == "abc".length);
     assert(result.matches is null);
     assert(result.children is null);
