@@ -1133,7 +1133,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     // Comparing <- ABC DEF and <: ABC DEF
     result = Arrows.decimateTree(Arrows.Rule7("abcdef"));
     assert(result.successful);
-    assert(result.begin == "abcdef".length);
+    assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches is null, "No match with the discard arrow.");
     assert(result.children.length == 0, "No children with the discard arrow.");
@@ -1150,7 +1150,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     // Comparing <- ABC DEF and <; ABC DEF
     result = Arrows.decimateTree(Arrows.Rule9("abcdef"));
     assert(result.successful);
-    assert(result.begin == "abcdef".length);
+    assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches == ["abc", "def"], "The drop arrow keeps the matches.");
     assert(result.children.length == 0, "The drop arrow drops the children.");
@@ -1529,21 +1529,21 @@ unittest // Prefix and suffix tests
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule1("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abcabcabc".length);
+    assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches is null);
     assert(result.children is null);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule2("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abcabcabc".length);
+    assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches is null);
     assert(result.children is null);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule3("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abc".length);
+    assert(result.begin == 0);
     assert(result.end == "abc".length);
     assert(result.matches is null);
     assert(result.children is null);
@@ -1599,6 +1599,25 @@ unittest // Prefix and suffix tests
     assert(result.children[0].children[0].children[0].name == `literal!("abc")`);
     assert(result.children[0].children[0].children[1].name == `literal!("abc")`);
     assert(result.children[0].children[0].children[2].name == `literal!("abc")`);
+}
+
+unittest // Issue #88 unit test
+{
+    enum gram = `
+        P:
+        Rule1 <- (w 'a' w)*
+        Rule2 <- (wx 'a' wx)*
+        w <- :(' ')*
+        wx <- (:' ')*
+        `;
+
+    mixin(grammar(gram));
+
+    string input = "   a   a   a a  a a ";
+
+    ParseTree p1 = P.decimateTree(P.Rule1(input));
+    ParseTree p2 = P.decimateTree(P.Rule2(input));
+    assert(softCompare(p1,p2));
 }
 
 unittest // Leading alternation

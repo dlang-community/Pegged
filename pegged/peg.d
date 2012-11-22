@@ -819,11 +819,14 @@ template and(rules...) if (rules.length > 0)
 
     ParseTree and(ParseTree p)
     {
-        bool isNullNode(ParseTree node)
+        bool keepNode(ParseTree node)
         {
-            return (  node.name == "discard" || node.matches is null
-            //|| node.begin == node.end
-            ) && node.name != "keep";
+            return    node.name == "keep"
+                || (  node.name != "discard"
+                   //&& node.name != "drop"
+                   && node.matches !is null
+                   //&& node.begin != node.end
+                   );
         }
 
         ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end, []);
@@ -834,7 +837,7 @@ template and(rules...) if (rules.length > 0)
             result.end = temp.end;
             if (temp.successful)
             {
-                if (!isNullNode(temp)) // discard empty nodes
+                if (keepNode(temp))
                 {
                     result.matches ~= temp.matches;
                     if (temp.name == "drop")
@@ -1462,7 +1465,8 @@ template zeroOrMore(alias r)
         auto result = ParseTree(name, true, [], p.input, p.end, p.end);
         auto temp = r(result);
         while(temp.successful
-            && temp.begin < temp.end)  // To avoid infinite loops on epsilon-matching rules
+            && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
+            || temp.name == "discard"))
         {
             result.matches ~= temp.matches;
             result.children ~= temp;
@@ -1605,8 +1609,9 @@ template oneOrMore(alias r)
         }
         else
         {
-            while(temp.successful
-                && temp.begin < temp.end) // To avoid infinite loops on epsilon-matching rules
+            while(  temp.successful
+                && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
+            || temp.name == "discard"))
             {
                 result.matches ~= temp.matches;
                 result.children ~= temp;
@@ -2224,7 +2229,7 @@ template discard(alias r)
     {
         ParseTree result = r(p);
         result.name = "discard";
-        result.begin = result.end;
+        //result.begin = result.end;
         result.children = null;
         if (result.successful)
             result.matches = null;//to keep error messages, if any
@@ -2257,7 +2262,7 @@ unittest // 'discard' unit test
     assert(result.successful);
     assert(result.name =="discard");
     assert(result.matches is null);
-    assert(result.begin == result.end);
+    assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children is null);
 
@@ -2268,7 +2273,7 @@ unittest // 'discard' unit test
     assert(result.successful);
     assert(result.name =="discard");
     assert(result.matches is null);
-    assert(result.begin == result.end);
+    assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children is null);
 
@@ -2280,7 +2285,7 @@ unittest // 'discard' unit test
     assert(!result.successful);
     assert(result.name == "discard");
     assert(result.matches == [`"abc"`], "discard error message.");
-    assert(result.begin == result.end);
+    assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children is null);
 
@@ -2305,7 +2310,7 @@ template drop(alias r)
     ParseTree drop(ParseTree p)
     {
         ParseTree result = r(p);
-        result.begin = result.end;
+        //result.begin = result.end;
         result.children = null;
         if (result.successful)
             result.name = "drop";
@@ -2337,7 +2342,7 @@ unittest // 'drop' unit test
     assert(result.successful);
     assert(result.name == "drop");
     assert(result.matches == reference.matches);
-    assert(result.begin == result.end);
+    assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children is null);
 
@@ -2348,7 +2353,7 @@ unittest // 'drop' unit test
     assert(result.successful);
     assert(result.name == "drop");
     assert(result.matches == reference.matches);
-    assert(result.begin == result.end);
+    assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children is null);
 
@@ -2360,7 +2365,7 @@ unittest // 'drop' unit test
     assert(!result.successful);
     assert(result.name == reference.name);
     assert(result.matches == [`"abc"`], "'drop' error message.");
-    assert(result.begin == result.end);
+    assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children is null);
 
@@ -2639,7 +2644,8 @@ mixin template decimateTree()
             ParseTree[] result;
             foreach(child; pt.children)
             {
-                if (isRule(child.name) || !child.successful && child.children.length == 0) // keep nodes that belongs to the current grammar
+                if (  (isRule(child.name) && child.matches.length != 0)
+                   || !child.successful && child.children.length == 0)
                 {
                     child.children = filterChildren(child);
                     result ~= child;
