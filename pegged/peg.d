@@ -128,7 +128,7 @@ struct ParseTree
     {
         ParseTree result = this;
         result.matches = result.matches.dup;
-        result.children = map!(p => p.dup)(result.children).array;
+        result.children = map!(p => p.dup)(result.children).array();
         return result;
     }
 }
