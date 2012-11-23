@@ -467,7 +467,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 break;
             case "Pegged.Literal":
                 if(p.matches.length == 3) // standard case
-                    result = "pegged.peg.literal!(`" ~ p.matches[1] ~ "`)";
+                    result = "pegged.peg.literal!(\"" ~ p.matches[1] ~ "\")";
                 else
                     result = "pegged.peg.literal!(``)";
                 break;
