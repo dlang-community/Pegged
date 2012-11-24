@@ -468,7 +468,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
             case "Pegged.Literal":
                 if(p.matches.length == 3) // standard case
                     result = "pegged.peg.literal!(\"" ~ p.matches[1] ~ "\")";
-                else
+                else // only two children -> empty literal
                     result = "pegged.peg.literal!(``)";
                 break;
             case "Pegged.CharClass":
@@ -485,6 +485,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 }
                 break;
             case "Pegged.CharRange":
+                /// Make the generation at the Char level: directly what is needed, be it `` or "" or whatever
                 if (p.children.length > 1) // a-b range
                 {
                     result = "pegged.peg.charRange!('" ~ generateCode(p.children[0])
@@ -494,7 +495,37 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 }
                 else // lone char
                 {
-                    result = "pegged.peg.literal!(`" ~ generateCode(p.children[0]) ~ "`)";
+                    result = "pegged.peg.literal!(";
+                    string ch = p.matches[0];
+                    switch (ch)
+                    {
+                        case "\\[":
+                        case "\\]":
+                        case "\\-":
+                            result ~= "\""  ~ ch[1..$] ~ "\")";
+                            break;
+                        case "\\\'":
+                            result ~= "\"'\")";
+                            break;
+                        case "\\`":
+                            result ~= q{"`")};
+                            break;
+                        case "\\":
+                        case "\\\\":
+                            result ~= "`\\`)";
+                            break;
+                        case "\"":
+                        case "\\\"":
+                            result ~= "`\"`)";
+                            break;
+                        case "\n":
+                        case "\r":
+                        case "\t":
+                            result ~= "\"" ~ to!string(to!dchar(ch)) ~ "\")";
+                            break;
+                        default:
+                            result ~= "\"" ~ ch ~ "\")";
+                    }
                 }
                 break;
             case "Pegged.Char":

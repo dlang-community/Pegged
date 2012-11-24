@@ -1327,9 +1327,9 @@ template keywords(kws...) if (kws.length > 0)
             string result;
             foreach(kw; keywords)
                 result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
-                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""
-                    ~kw~"\") return ParseTree(`"
-                    ~name~"`,true,[\""~kw~"\"],p.input,p.end,p.end+"
+                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==`"
+                    ~kw~"`) return ParseTree(`"
+                    ~name~"`,true,[`"~kw~"`],p.input,p.end,p.end+"
                     ~to!string(kw.length)~");\n";
 
             result ~= "return ParseTree(`"~name~"`,false,[`" ~ failString ~ "`],p.input,p.end,p.end);";
