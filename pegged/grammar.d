@@ -494,15 +494,31 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 }
                 else // lone char
                 {
-                    result = "pegged.peg.literal!(\"" ~ generateCode(p.children[0]) ~ "\")";
+                    result = "pegged.peg.literal!(`" ~ generateCode(p.children[0]) ~ "`)";
                 }
                 break;
             case "Pegged.Char":
                 string ch = p.matches[0];
-                if(ch == "\\[" || ch == "\\]" || ch == "\\-")
-                    result = ch[1..$];
-                else
-                    result = ch;
+                switch (ch)
+                {
+                    case "\\[":
+                    case "\\]":
+                    case "\\-":
+
+                    case "\\\'":
+                    case "\\\"":
+                    case "\\`":
+                    case "\\\\":
+                        result = ch[1..$];
+                        break;
+                    case "\n":
+                    case "\r":
+                    case "\t":
+                        result = to!string(to!dchar(ch));
+                        break;
+                    default:
+                        result = ch;
+                }
                 break;
             case "Pegged.POS":
                 result = "pegged.peg.posLookahead!(";
@@ -1604,12 +1620,12 @@ unittest // Prefix and suffix tests
 unittest // Issue #88 unit test
 {
     enum gram = `
-        P:
+    P:
         Rule1 <- (w 'a' w)*
         Rule2 <- (wx 'a' wx)*
-        w <- :(' ')*
-        wx <- (:' ')*
-        `;
+        w <- :(' ' / '\n' / '\t' / '\r')*
+        wx <- (:' ' / '\n' / '\t' / '\r')*
+    `;
 
     mixin(grammar(gram));
 
@@ -1618,6 +1634,12 @@ unittest // Issue #88 unit test
     ParseTree p1 = P.decimateTree(P.Rule1(input));
     ParseTree p2 = P.decimateTree(P.Rule2(input));
     assert(softCompare(p1,p2));
+
+    input = " a\n  \011\012 a\n\t  a\x09\x0A a ";
+    p1 = P.decimateTree(P.Rule1(input));
+    p2 = P.decimateTree(P.Rule2(input));
+    assert(p1.end == input.length); // Parse the entire string
+    assert(p2.end == input.length);
 }
 
 unittest // Leading alternation
