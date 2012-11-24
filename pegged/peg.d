@@ -18,7 +18,7 @@ Writing tests the long way is preferred here, as it will avoid the circular
 dependency.
 */
 
-import std.algorithm: map;
+import std.algorithm: map, startsWith;
 import std.array;
 import std.conv;
 import std.range: equal;
@@ -82,13 +82,13 @@ struct ParseTree
                     left = input[0 .. pos.index];
                 else
                     left = input[pos.index-10 .. pos.index];
-                left = strip(left);
+                //left = strip(left);
 
                 if (pos.index + 10 < input.length)
                     right = input[pos.index .. pos.index + 10];
                 else
                     right = input[pos.index .. $];
-                right = strip(right);
+                //right = strip(right);
 
                 result ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
                        ~ (left.length > 0 ? "after \"" ~ left ~ "\" " : "")
@@ -821,9 +821,9 @@ template and(rules...) if (rules.length > 0)
     {
         bool keepNode(ParseTree node)
         {
-            return    node.name == "keep"
-                || (  node.name != "discard"
-                   //&& node.name != "drop"
+            return    node.name.startsWith("keep!(")
+                || (  !node.name.startsWith("discard!(")
+                   //&& !node.name.startsWith("drop!(")
                    && node.matches !is null
                    //&& node.begin != node.end
                    );
@@ -840,9 +840,9 @@ template and(rules...) if (rules.length > 0)
                 if (keepNode(temp))
                 {
                     result.matches ~= temp.matches;
-                    if (temp.name == "drop")
+                    if (temp.name.startsWith("drop!("))
                     {}
-                    else if (temp.name == "propagate")
+                    else if (temp.name.startsWith("propagate!("))
                         result.children ~= temp.children;
                     else
                         result.children ~= temp;
@@ -1327,9 +1327,9 @@ template keywords(kws...) if (kws.length > 0)
             string result;
             foreach(kw; keywords)
                 result ~= "if (p.end+"~to!string(kw.length) ~ " <= p.input.length "
-                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==\""
-                    ~kw~"\") return ParseTree(`"
-                    ~name~"`,true,[\""~kw~"\"],p.input,p.end,p.end+"
+                    ~" && p.input[p.end..p.end+"~to!string(kw.length)~"]==`"
+                    ~kw~"`) return ParseTree(`"
+                    ~name~"`,true,[`"~kw~"`],p.input,p.end,p.end+"
                     ~to!string(kw.length)~");\n";
 
             result ~= "return ParseTree(`"~name~"`,false,[`" ~ failString ~ "`],p.input,p.end,p.end);";
@@ -1466,7 +1466,7 @@ template zeroOrMore(alias r)
         auto temp = r(result);
         while(temp.successful
             && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
-            || temp.name == "discard"))
+            || temp.name.startsWith("discard!(")))
         {
             result.matches ~= temp.matches;
             result.children ~= temp;
@@ -1611,7 +1611,7 @@ template oneOrMore(alias r)
         {
             while(  temp.successful
                 && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
-            || temp.name == "discard"))
+            || temp.name.startsWith("discard!(")))
             {
                 result.matches ~= temp.matches;
                 result.children ~= temp;
@@ -2228,7 +2228,7 @@ template discard(alias r)
     ParseTree discard(ParseTree p)
     {
         ParseTree result = r(p);
-        result.name = "discard";
+        result.name = "discard!(" ~ getName!(r)() ~ ")";
         //result.begin = result.end;
         result.children = null;
         if (result.successful)
@@ -2244,7 +2244,7 @@ template discard(alias r)
 
     string discard(GetName g)
     {
-        return "discard";
+        return "discard!(" ~ getName!(r)() ~ ")";
     }
 }
 
@@ -2260,7 +2260,7 @@ unittest // 'discard' unit test
 
     assert(result.successful == reference.successful);
     assert(result.successful);
-    assert(result.name =="discard");
+    assert(result.name == `discard!(literal!("abc"))`);
     assert(result.matches is null);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
@@ -2271,7 +2271,7 @@ unittest // 'discard' unit test
 
     assert(result.successful == reference.successful);
     assert(result.successful);
-    assert(result.name =="discard");
+    assert(result.name == `discard!(oneOrMore!(literal!("abc")))`);
     assert(result.matches is null);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
@@ -2283,7 +2283,7 @@ unittest // 'discard' unit test
 
     assert(result.successful == reference.successful);
     assert(!result.successful);
-    assert(result.name == "discard");
+    assert(result.name == `discard!(oneOrMore!(literal!("abc")))`);
     assert(result.matches == [`"abc"`], "discard error message.");
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
@@ -2313,7 +2313,7 @@ template drop(alias r)
         //result.begin = result.end;
         result.children = null;
         if (result.successful)
-            result.name = "drop";
+            result.name = "drop!(" ~ getName!(r)() ~ ")";
         return result;
     }
 
@@ -2324,7 +2324,7 @@ template drop(alias r)
 
     string drop(GetName g)
     {
-        return "drop";
+        return "drop!(" ~ getName!(r)() ~ ")";
     }
 }
 
@@ -2333,14 +2333,14 @@ unittest // 'drop' unit test
     alias literal!"abc" abc;
     alias oneOrMore!abc abcs;
     alias drop!(literal!("abc")) dabc;
-    alias drop!(oneOrMore!(literal!("abc")))dabcs;
+    alias drop!(oneOrMore!(literal!("abc"))) dabcs;
 
     ParseTree reference = abc("abc");
     ParseTree result =dabc("abc");
 
     assert(result.successful == reference.successful);
     assert(result.successful);
-    assert(result.name == "drop");
+    assert(result.name == `drop!(literal!("abc"))`);
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
@@ -2351,7 +2351,7 @@ unittest // 'drop' unit test
 
     assert(result.successful == reference.successful);
     assert(result.successful);
-    assert(result.name == "drop");
+    assert(result.name == `drop!(oneOrMore!(literal!("abc")))`);
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
@@ -2392,7 +2392,7 @@ template propagate(alias r)
     {
         ParseTree result = r(p);
         if (result.successful)
-            result.name = "propagate";
+            result.name = "propagate!(" ~ getName!(r)() ~ ")";
         return result;
     }
 
@@ -2403,7 +2403,7 @@ template propagate(alias r)
 
     string propagate(GetName g)
     {
-        return "propagate";
+        return "propagate!(" ~ getName!(r)() ~ ")";
     }
 }
 
@@ -2419,7 +2419,7 @@ template keep(alias r)
         if (result.successful)
         {
             result.children = [result];
-            result.name = "keep";
+            result.name = "keep!(" ~ getName!(r)() ~ ")";
         }
         return result;
     }
@@ -2431,7 +2431,7 @@ template keep(alias r)
 
     string keep(GetName g)
     {
-        return "keep";
+        return "keep!(" ~ getName!(r)() ~ ")";
     }
 }
 
@@ -2650,7 +2650,7 @@ mixin template decimateTree()
                     child.children = filterChildren(child);
                     result ~= child;
                 }
-                else if (child.name == "keep") // 'keep' node are never discarded.
+                else if (child.name.startsWith("keep!(")) // 'keep' node are never discarded.
                                                // They have only one child, the node to keep
                 {
                     result ~= child.children[0];
