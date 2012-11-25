@@ -9,9 +9,6 @@ For example they take a ParseTree as input, not a string.
 See the /docs directory for the full documentation as markdown files.
 */
 module pegged.peg;
-
-import std.algorithm: startsWith;
-import std.conv: to;
 /*
 NOTE:
 Do not use the GrammarTester for unittesting in this module.  This module needs
@@ -716,14 +713,14 @@ template charRange(dchar begin, dchar end) if (begin <= end)
     RuleIntrospection charRange(RuleIntrospection ri)
     {
         return RuleIntrospection(
-                         "charRange!('"~begin~"','" ~ end ~ "')"
+                         "charRange!('"~to!string(begin)~"','" ~ to!string(end) ~ "')"
                        , false, null, null, null // grammar-specific Introspectionrmation
                        , Recursive.no
                        , LeftRecursive.no
                        , NullMatch.no
                        , InfiniteLoop.no
-                       , (begin < end ? "any character between '" ~ begin ~ "' and '" ~ end ~ "'"
-                                      : "'" ~ begin ~ "'")
+                       , (begin < end ? "any character between '" ~ to!string(begin) ~ "' and '" ~ to!string(end) ~ "'"
+                                      : "'" ~ to!string(begin) ~ "'")
                        );
     }
 }

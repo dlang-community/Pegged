@@ -422,7 +422,7 @@ string generateCode(ParseTree p)
             result = ".";
             break;
         case "Pegged.Literal":
-            result = "pegged.peg.literal!(`" ~ p.matches[0] ~ "`)";
+            result = "pegged.peg.literal!(`" ~ p.matches[1] ~ "`)";
             break;
         case "Pegged.CharClass":
             if (p.children.length > 1)
