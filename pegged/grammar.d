@@ -26,20 +26,20 @@ enum Memoization { no, yes }
 This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
 It writes the corresponding parser inside a module with the given name.
 */
-void asModule(Memoization withMemo = Memoization.no)(string moduleName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString)
 {
     asModule!(withMemo)(moduleName, moduleName, grammarString);
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.no)(string moduleName, string fileName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString)
 {
     import std.stdio;
     auto f = File(fileName ~ ".d","w");
 
-    f.write("/**\nThis module was automatically generated from the following grammar:\n\n");
+    f.write("/++\nThis module was automatically generated from the following grammar:\n\n");
     f.write(grammarString);
-    f.write("\n\n*/\n");
+    f.write("\n\n+/\n");
 
     f.write("module " ~ moduleName ~ ";\n\n");
     f.write("public import pegged.peg;\n");
@@ -47,7 +47,7 @@ void asModule(Memoization withMemo = Memoization.no)(string moduleName, string f
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.no)(string moduleName, File file)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File file)
 {
     string grammarDefinition;
     foreach(line; file.byLine)
@@ -526,7 +526,7 @@ mixin(grammar(def));
 ParseTree p = Gram("abcbccbcd");
 ----
 */
-string grammar(Memoization withMemo = Memoization.no)(string definition)
+string grammar(Memoization withMemo = Memoization.yes)(string definition)
 {
     ParseTree defAsParseTree = Pegged(definition);
 
@@ -1041,13 +1041,18 @@ unittest // 'grammar' unit test: PEG syntax
         Literal2 <- 'abc'
         EmptyLiteral1 <- ""
         EmptyLiteral2 <- ''
-        Any <- .
-        Eps <- eps
+
+        Any    <- .
+        Eps    <- eps
         Letter <- [a-z]
         Digit  <- [0-9]
         ABC    <- [abc]
-        Alpha1  <- [a-zA-Z_]
-        Alpha2  <- [_a-zA-Z]
+        Alpha1 <- [a-zA-Z_]
+        Alpha2 <- [_a-zA-Z]
+        Chars1 <- [\0-\127]
+        Chars2 <- [\x00-\xFF]
+        Chars3 <- [\u0000-\u00FF]
+        Chars4 <- [\U00000000-\U000000FF]
     `));
 
     ParseTree result = Terminals("abc");
@@ -1110,6 +1115,19 @@ unittest // 'grammar' unit test: PEG syntax
     foreach(size_t index, dchar dc; lower ~ upper ~ under)
         assert( (index < 3  && Terminals.ABC(to!string(dc)).successful)
              || (index >= 3 && !Terminals.ABC(to!string(dc)).successful));
+
+    foreach(dchar dc; 0..256)
+    {
+        string s = to!string(dc);
+        if (dc <= '\127')
+            assert(Terminals.Chars1(s).successful);
+        else
+            assert(!Terminals.Chars1(s).successful);
+
+        assert(Terminals.Chars2(s).successful);
+        assert(Terminals.Chars3(s).successful);
+        assert(Terminals.Chars4(s).successful);
+    }
 
     mixin(grammar(`
     Structure:
@@ -1490,7 +1508,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     // Comparing <- ABC DEF and <: ABC DEF
     result = Arrows.decimateTree(Arrows.Rule7("abcdef"));
     assert(result.successful);
-    assert(result.begin == "abcdef".length);
+    assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches is null, "No match with the discard arrow.");
     assert(result.children.length == 0, "No children with the discard arrow.");
@@ -1507,7 +1525,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     // Comparing <- ABC DEF and <; ABC DEF
     result = Arrows.decimateTree(Arrows.Rule9("abcdef"));
     assert(result.successful);
-    assert(result.begin == "abcdef".length);
+    assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches == ["abc", "def"], "The drop arrow keeps the matches.");
     assert(result.children.length == 0, "The drop arrow drops the children.");
@@ -1886,21 +1904,21 @@ unittest // Prefix and suffix tests
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule1("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abcabcabc".length);
+    assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches is null);
     assert(result.children is null);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule2("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abcabcabc".length);
+    assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches is null);
     assert(result.children is null);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule3("abcabcabc"));
     assert(result.successful);
-    assert(result.begin == "abc".length);
+    assert(result.begin == 0);
     assert(result.end == "abc".length);
     assert(result.matches is null);
     assert(result.children is null);
@@ -1956,6 +1974,31 @@ unittest // Prefix and suffix tests
     assert(result.children[0].children[0].children[0].name == `literal!("abc")`);
     assert(result.children[0].children[0].children[1].name == `literal!("abc")`);
     assert(result.children[0].children[0].children[2].name == `literal!("abc")`);
+}
+
+unittest // Issue #88 unit test
+{
+    enum gram = `
+    P:
+        Rule1 <- (w 'a' w)*
+        Rule2 <- (wx 'a' wx)*
+        w <- :(' ' / '\n' / '\t' / '\r')*
+        wx <- (:' ' / '\n' / '\t' / '\r')*
+    `;
+
+    mixin(grammar(gram));
+
+    string input = "   a   a   a a  a a ";
+
+    ParseTree p1 = P.decimateTree(P.Rule1(input));
+    ParseTree p2 = P.decimateTree(P.Rule2(input));
+    assert(softCompare(p1,p2));
+
+    input = " a\n  \011\012 a\n\t  a\x09\x0A a ";
+    p1 = P.decimateTree(P.Rule1(input));
+    p2 = P.decimateTree(P.Rule2(input));
+    assert(p1.end == input.length); // Parse the entire string
+    assert(p2.end == input.length);
 }
 
 unittest // Leading alternation
@@ -2346,10 +2389,217 @@ Here is another line.
     assert(Arith2("1 + 2*3/z").successful);
 }
 
-// TODO: failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
-
-
-RuleIntrospection introspectCode(string s)() @property
+version(unittest) // Semantic actions
 {
-    return introspect!(mixin(generateCode(Pegged.decimateTree(Pegged.Expression(s)))));
+    P doubler(P)(P p)
+    {
+        if (p.successful)
+            p.matches ~= p.matches;
+        return p;
+    }
+}
+
+unittest // Semantic actions, testing { foo } and { foo, bar, baz }
+{
+    mixin(grammar(`
+    Semantic:
+        Rule1 <- 'a' {doubler}
+        Rule2 <- 'b' {doubler, doubler}
+        Rule3 <- 'b' {doubler} {doubler} # Same as Rule2
+        Rule4 <- 'b' {doubler, doubler, doubler}
+        Rule5 <- 'a' {doubler} 'b' 'c'{doubler}
+        `));
+
+    ParseTree result = Semantic.decimateTree(Semantic.Rule1("a"));
+    assert(result.successful);
+    assert(result.matches == ["a", "a"]);
+
+    result = Semantic.decimateTree(Semantic.Rule1("b"));
+    assert(!result.successful);
+    assert(result.matches == [`"a"`]);
+
+    result = Semantic.decimateTree(Semantic.Rule2("b"));
+    assert(result.successful);
+    assert(result.matches == ["b", "b", "b", "b"]);
+
+    result = Semantic.decimateTree(Semantic.Rule3("b"));
+    assert(result.successful);
+    assert(result.matches == ["b", "b", "b", "b"]);
+
+    result = Semantic.decimateTree(Semantic.Rule4("b"));
+    assert(result.successful);
+    assert(result.matches == ["b", "b", "b", "b", "b", "b", "b", "b"]);
+
+    result = Semantic.decimateTree(Semantic.Rule5("abc"));
+    assert(result.successful);
+    assert(result.matches == ["a", "a", "b", "c", "c"]);
+
+}
+
+version(unittest)
+{
+    P foo(P)(P p) { return p;} // for testing actions
+
+    void badGrammar(string s)()
+    {
+        assert(!__traits(compiles, {mixin(grammar(s));}), "This should fail: " ~ s);
+    }
+
+    void goodGrammar(string s)()
+    {
+        assert(__traits(compiles, {mixin(grammar(s));}), "This should work: " ~ s);
+    }
+}
+
+/+ Failed (commit 4cd177a), DMD crashed.
+unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
+{
+    // No grammar
+    badGrammar!"";
+
+    // Name without colon nor rules
+    badGrammar!"Name";
+
+    // No rule
+    badGrammar!"Name:";
+    badGrammar!"Name1 Name2";
+
+    // Incomplete and badly formulated rules
+    badGrammar!"Name:
+        Rule1";
+    badGrammar!"Name:
+        Rule1 Rule2";
+    badGrammar!"Name
+        Rule1 Rule2";
+    badGrammar!"Name:
+        Rule1 <-";
+    badGrammar!"Name:
+        Rule1 <~";
+    badGrammar!"Name:
+        Rule1 < ";
+    badGrammar!"Name:
+        Rule1 <%";
+    badGrammar!"Name:
+        Rule1 <;";
+    badGrammar!"Name
+        Rule1 <- <-";
+
+    // Non-closing parenthesis, brackets and quotes
+    badGrammar!"Name:
+        Rule1 <- ('a'";
+    badGrammar!"Name:
+        Rule1 <- 'a')";
+    badGrammar!"Name:
+        Rule1 <- ('a'))";
+    badGrammar!"Name:
+        Rule1 <- (('a')";
+    badGrammar!"Name:
+        Rule1 <- 'a";
+    badGrammar!"Name:
+        Rule1 <- a'";
+    badGrammar!`Name:
+        Rule1 <- "a`;
+    badGrammar!`Name:
+        Rule1 <- a"`;
+    badGrammar!`Name:
+        Rule1 <- 'a"`;
+    badGrammar!`Name:
+        Rule1 <- "a'`;
+    badGrammar!"Name:
+        Rule1 <- [a";
+    badGrammar!"Name:
+        Rule1 <- a]";
+    badGrammar!"Name:
+        Rule1 <- [a]]";
+    // But <- [[a] is legal: matches '[' or 'a'
+    goodGrammar!"Name:
+        Rule1 <- [[a]";
+
+    // Bad prefix/postfix
+    badGrammar!"Name:
+        Rule1 <- 'a'~";
+    badGrammar!"Name:
+        Rule1 <- 'a'%";
+    badGrammar!"Name:
+        Rule1 <- 'a'!";
+    badGrammar!"Name:
+        Rule1 <- 'a'&";
+    badGrammar!"Name:
+        Rule1 <- 'a';";
+    badGrammar!"Name:
+        Rule1 <- *'a'";
+    badGrammar!"Name:
+        Rule1 <- +'a'";
+    badGrammar!"Name:
+        Rule1 <- ?'a'";
+    badGrammar!"Name:
+        Rule1 <- 'a' {}";
+    // Foo is defined in a version(unittest) block
+    badGrammar!"Name:
+        Rule1 <- 'a' { foo";
+    badGrammar!"Name:
+        Rule1 <- 'a' foo}";
+    badGrammar!"Name:
+        Rule1 <- 'a' {foo}}"; // closing }
+    badGrammar!"Name:
+        Rule1 <- 'a' {{foo}"; // opening {
+    badGrammar!"Name:
+        Rule1 <- 'a' {foo,}"; // bad comma
+    badGrammar!"Name:
+        Rule1 <- 'a' {,foo}";
+    badGrammar!"Name:
+        Rule1 <- {foo}"; // no rule before {}'s
+    // DMD Bug :-(
+    /+glue.c line 1150 dmd::virtual unsigned int Type::totym():Assertion `0' failed.
+    badGrammar!"Name:
+        Rule1 <- 'a' {bar}"; // bar not defined
+    +/
+
+    // choice ('/') syntax errors
+    badGrammar!"Name:
+        Rule1 <- 'a' /";
+    // But: <- / 'a' is legal (it's equivalent to: <- 'a')
+    goodGrammar!"Name:
+        Rule1 <- / 'a'";
+    badGrammar!"Name:
+        Rule1 <- /";
+    badGrammar!"Name:
+        Rule1 <- 'a' / / 'b'";
+}
++/
+
+unittest // Memoization testing
+{
+    enum gram1 = `
+    Test1:
+        Rule1 <- Rule2* 'b'   # To force a long evaluation of aaaa...
+               / Rule2* 'c'   # before finding a 'b' or a 'c'
+        Rule2 <- 'a'
+        `;
+
+    enum gram2 = `
+    Test2:
+        Rule1 <- Rule2* 'b'   # To force a long evaluation of aaaa...
+               / Rule2* 'c'   # before finding a 'b' or a 'c'
+        Rule2 <- 'a'
+        `;
+
+    mixin(grammar!(Memoization.yes)(gram1));
+    mixin(grammar!(Memoization.no)(gram2));
+
+    assert(is(typeof(Test1.memo)));
+    assert(!is(typeof(Test2.memo)));
+
+    ParseTree result1 = Test1("aaaaaaac");      // Memo + Runtime
+    enum ParseTree result2 = Test1("aaaaaaac"); // Memo + Compile-time
+    ParseTree result3 = Test2("aaaaaaac");      // No memo + Runtime
+    enum ParseTree result4 = Test2("aaaaaaac"); // No memo + Compile-time
+
+    assert(result1 == result2);
+    assert(result3 == result4);
+
+    //Directly comparing result1 and result3 is not possible, for the grammar names are different
+    assert(pegged.peg.softCompare(result1, result2));
+    assert(pegged.peg.softCompare(result1, result3));
+    assert(pegged.peg.softCompare(result1, result4));
 }
