@@ -9,7 +9,6 @@ For example they take a ParseTree as input, not a string.
 See the /docs directory for the full documentation as markdown files.
 */
 module pegged.peg;
-
 /*
 NOTE:
 Do not use the GrammarTester for unittesting in this module.  This module needs
@@ -24,6 +23,11 @@ import std.conv;
 import std.range: equal;
 import std.string: strip;
 import std.typetuple;
+
+version(unittest)
+{
+    import std.stdio;
+}
 
 /**
 CT Switch for testing 'keywords' implementations
@@ -71,7 +75,7 @@ struct ParseTree
         {
             result ~= " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
         }
-        else // some failure info is needed
+        else // some failure Introspection is needed
         {
             if (allChildrenSuccessful) // no one calculated the position yet
             {
@@ -269,6 +273,70 @@ unittest
 ") == Position(3,0,3), "Four lines, all empty.");
 }
 
+
+/**
+The different kinds of recursion for a rule.
+'direct' means the rule name appears in its own definition. 'indirect' means the rule calls itself through another rule (the call chain can be long).
+*/
+enum Recursive { no, direct, indirect }
+
+/**
+Left-recursion diagnostic for a rule. A rule is left-recursive when its own name appears at the beginning of its definition or behind possibly-null-matching rules (see below for null matches).
+For example A <- A 'a' is left-recursive, whereas A <- 'a' A is not. *But* A <- 'a'? A is left-recursive, since if the input does not begin
+with 'a', then the parsing will continue by invoking A again, at the same position.
+
+'direct' means the rule invokes itself in the first position of its definition (A <- A ...). 'hidden' means the rule names appears after a possibly-null other rule (A <- 'a'? A ...). 'indirect' means the rule calls itself trough another rule.
+*/
+enum LeftRecursive { no, direct, hidden, indirect }
+
+/**
+NullMatch.yes means a rule can succeed while consuming no input. For example e? or e*, for all expressions e.
+Nullmatch.no means a rule will always consume at least a token while succeeding.
+Nullmatch.indeterminate means the algorithm could not converge.
+*/
+enum NullMatch { no, yes, indeterminate }
+
+/**
+InfiniteLoop.yes means a rule can loop indefinitely while consuming nothing.
+InfiniteLoop.no means a rule cannot loop indefinitely.
+InfiniteLoop.indeterminate means the algorithm could not converge.
+*/
+enum InfiniteLoop { no, yes, indeterminate }
+
+/**
+Struct holding the introspection info on a rule or parsing expression.
+*/
+struct RuleIntrospection
+{
+    string name; /// Name of the introspected rule.
+    bool startRule; /// Whether the introspected rule is the start rule of the grammar or not.
+    bool[string] directCalls; /// All rules direcly called by the introspected rule. This include external rules.
+    bool[string] calls; /// All rules called by the introspected rule, directly or indirectly. This include external rules.
+    bool[string] calledBy; /// All grammar rules calling the introspected rule (no external rules).
+
+    Recursive recursion; /// Is the rule recursive?
+    LeftRecursive leftRecursion; /// Is the rule left-recursive?
+    NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
+    InfiniteLoop infiniteLoop; /// Can the rule loop indefinitely, while consuming nothing?
+
+    string expected; /// The expected input to match the rule
+
+    string toString() @property
+    {
+        return  "rule " ~ name ~ (startRule? ": (start)\n" : ":\n")
+              ~ "calls direcly: " ~ to!string(directCalls.keys) ~ "\n"
+              ~ "calls (total): " ~ to!string(calls.keys) ~ "\n"
+              ~ "is called by: " ~ to!string(calledBy.keys) ~ "\n"
+              ~ "recursive: " ~ to!string(recursion) ~ "\n"
+              ~ "left recursive: " ~ to!string(leftRecursion) ~ "\n"
+              ~ "can match while consuming nothing: " ~ to!string(nullMatch) ~ "\n"
+              ~ "can loop infinitely: " ~ to!string(infiniteLoop) ~ "\n"
+              ~ "expected input: " ~ expected;
+    }
+}
+
+struct GetName {}
+
 string getName(alias expr)() @property
 {
     static if (is(typeof( { expr(GetName()); })))
@@ -277,7 +345,15 @@ string getName(alias expr)() @property
         return __traits(identifier, expr);
 }
 
-struct GetName {}
+RuleIntrospection introspect(alias expr)() @property
+{
+    static if (is(typeof( { expr(RuleIntrospection()); })))
+        return expr(RuleIntrospection());
+    else
+        return RuleIntrospection(getName!expr,
+                        false, null, null, null,
+                        Recursive.no, LeftRecursive.no, NullMatch.indeterminate, InfiniteLoop.indeterminate);
+}
 
 /**
 Basic rule, that always fail without consuming.
@@ -296,6 +372,17 @@ ParseTree fail(string input)
 string fail(GetName g)
 {
     return "fail";
+}
+
+RuleIntrospection fail(RuleIntrospection ri)
+{
+    return RuleIntrospection( "fail"
+                   , false, null, null, null // grammar-specific Introspectionrmation
+                   , Recursive.no
+                   , LeftRecursive.no
+                   , NullMatch.yes
+                   , InfiniteLoop.no
+                   , "nothing (fail)");
 }
 
 unittest // 'fail' unit test
@@ -333,6 +420,17 @@ ParseTree eoi(string input)
 string eoi(GetName g)
 {
     return "eoi";
+}
+
+RuleIntrospection eoi(RuleIntrospection ri)
+{
+    return RuleIntrospection( "eoi"
+                   , false, null, null, null // grammar-specific Introspectionrmation
+                   , Recursive.no
+                   , LeftRecursive.no
+                   , NullMatch.yes
+                   , InfiniteLoop.no
+                   , "end of input");
 }
 
 alias eoi endOfInput; /// helper alias.
@@ -378,6 +476,17 @@ ParseTree any(string input)
 string any(GetName g)
 {
     return "any";
+}
+
+RuleIntrospection any(RuleIntrospection ri)
+{
+    return RuleIntrospection( "any"
+                   , false, null, null, null // grammar-specific Introspectionrmation
+                   , Recursive.no
+                   , LeftRecursive.no
+                   , NullMatch.no
+                   , InfiniteLoop.no
+                   , "any character");
 }
 
 unittest // 'any' unit test
@@ -445,6 +554,16 @@ template literal(string s)
         return name;
     }
 
+    RuleIntrospection literal(RuleIntrospection ri)
+    {
+        return RuleIntrospection( "literal!(\""~s~"\")"
+                       , false, null, null, null // grammar-specific Introspectionrmation
+                       , Recursive.no
+                       , LeftRecursive.no
+                       , (s == "" ? NullMatch.yes : NullMatch.no)
+                       , InfiniteLoop.no
+                       , "\"" ~ s ~ "\"");
+    }
 }
 
 unittest // 'literal' unit test
@@ -589,6 +708,20 @@ template charRange(dchar begin, dchar end) if (begin <= end)
     string charRange(GetName g)
     {
         return name;
+    }
+
+    RuleIntrospection charRange(RuleIntrospection ri)
+    {
+        return RuleIntrospection(
+                         "charRange!('"~to!string(begin)~"','" ~ to!string(end) ~ "')"
+                       , false, null, null, null // grammar-specific Introspectionrmation
+                       , Recursive.no
+                       , LeftRecursive.no
+                       , NullMatch.no
+                       , InfiniteLoop.no
+                       , (begin < end ? "any character between '" ~ to!string(begin) ~ "' and '" ~ to!string(end) ~ "'"
+                                      : "'" ~ to!string(begin) ~ "'")
+                       );
     }
 }
 
@@ -735,6 +868,17 @@ string eps(GetName g)
     return "eps";
 }
 
+RuleIntrospection eps(RuleIntrospection ri)
+{
+    return RuleIntrospection( "eps"
+                    , false, null, null, null // grammar-specific Introspectionrmation
+                    , Recursive.no
+                    , LeftRecursive.no
+                    , NullMatch.yes
+                    , InfiniteLoop.no
+                    , "the empty string (epsilon)");
+}
+
 unittest // 'eps' unit test
 {
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
@@ -844,7 +988,7 @@ template and(rules...) if (rules.length > 0)
                     {}
                     else if (temp.name.startsWith("propagate!("))
                         result.children ~= temp.children;
-                    else
+                    else // standard case
                         result.children ~= temp;
                 }
             }
@@ -868,6 +1012,40 @@ template and(rules...) if (rules.length > 0)
     string and(GetName g)
     {
         return name;
+    }
+
+    RuleIntrospection and(RuleIntrospection ri)
+    {
+        ri.name = "and!(";
+        ri.startRule = false;
+        ri.calledBy = null;
+        ri.recursion = Recursive.no;
+        ri.leftRecursion = LeftRecursive.no;
+        ri.nullMatch = NullMatch.yes; // default case
+        ri.infiniteLoop = InfiniteLoop.no; // default case
+        foreach(i,rule; rules)
+        {
+            RuleIntrospection ruleIntrospection = introspect!(rule)();
+            ri.name ~= ruleIntrospection.name
+                 ~ (i < rules.length -1 ? ", " : "");
+            if (i == 0)
+                ri.expected = ruleIntrospection.expected;
+
+            ri.directCalls[ruleIntrospection.name] = true;
+            ri.calls = merge(ri.calls, ruleIntrospection.calls);
+            ri.calls[ruleIntrospection.name] = true;
+
+            if (ruleIntrospection.nullMatch == NullMatch.indeterminate)
+                ri.nullMatch = NullMatch.indeterminate;
+            if (ruleIntrospection.nullMatch == NullMatch.no && ri.nullMatch != NullMatch.indeterminate)
+                ri.nullMatch = NullMatch.no;
+            if (ruleIntrospection.infiniteLoop == InfiniteLoop.indeterminate)
+                ri.infiniteLoop = InfiniteLoop.indeterminate;
+            if (ruleIntrospection.infiniteLoop == InfiniteLoop.yes && ri.infiniteLoop != InfiniteLoop.indeterminate)
+                ri.infiniteLoop = InfiniteLoop.yes;
+        }
+        ri.name ~= ")";
+        return ri;
     }
 }
 
@@ -975,6 +1153,13 @@ template wrapAround(alias before, alias target, alias after)
     {
         return name;
     }
+
+    RuleIntrospection wrapAround(RuleIntrospection ri)
+    {
+        ri = introspect!(and!(before, target, after))();
+        ri.name = "wrapAround" ~ ri.name[3..$];
+        return ri;
+    }
 }
 
 /**
@@ -1046,8 +1231,8 @@ template or(rules...) if (rules.length > 0)
         size_t[rules.length] failedLength;
         size_t maxFailedLength;
 
-		// Real 'or' loop
-		foreach(i,r; rules)
+        // Real 'or' loop
+        foreach(i,r; rules)
         {
             ParseTree temp = r(p);
             if (temp.successful)
@@ -1102,7 +1287,7 @@ template or(rules...) if (rules.length > 0)
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = name;
-		longestFail.begin = p.end;
+        longestFail.begin = p.end;
         return longestFail;
     }
 
@@ -1114,6 +1299,39 @@ template or(rules...) if (rules.length > 0)
     string or(GetName g)
     {
         return name;
+    }
+
+    RuleIntrospection or(RuleIntrospection ri)
+    {
+        ri.name = "or!(";
+        ri.startRule = false;
+        ri.calledBy = null;
+        ri.recursion = Recursive.no;
+        ri.leftRecursion = LeftRecursive.no;
+        ri.nullMatch = NullMatch.no; // default case
+        ri.infiniteLoop = InfiniteLoop.no; // default case
+        foreach(i,rule; rules)
+        {
+            RuleIntrospection ruleIntrospection = introspect!(rule)();
+            ri.name ~= ruleIntrospection.name
+                 ~ (i < rules.length -1 ? ", " : "");
+            ri.expected ~= ruleIntrospection.expected
+                 ~ (i < rules.length -1 ? " or " : "");
+            ri.directCalls[ruleIntrospection.name] = true;
+            ri.calls = merge(ri.calls, ruleIntrospection.calls);
+            ri.calls[ruleIntrospection.name] = true;
+
+            if (ruleIntrospection.nullMatch == NullMatch.indeterminate)
+                ri.nullMatch = NullMatch.indeterminate;
+            if (ruleIntrospection.nullMatch == NullMatch.yes && ri.nullMatch != NullMatch.indeterminate)
+                ri.nullMatch = NullMatch.yes;
+            if (ruleIntrospection.infiniteLoop == InfiniteLoop.indeterminate)
+                ri.infiniteLoop = InfiniteLoop.indeterminate;
+            if (ruleIntrospection.infiniteLoop == InfiniteLoop.yes && ri.infiniteLoop != InfiniteLoop.indeterminate)
+                ri.infiniteLoop = InfiniteLoop.yes;
+        }
+        ri.name ~= ")";
+        return ri;
     }
 }
 
@@ -1185,110 +1403,110 @@ Compile-time switch trie from Brian Schott
 */
 class Trie(V) : TrieNode!(V)
 {
-	/**
-	 * Adds the given value to the trie with the given key
-	 */
-	void add(string key, V value) pure
-	{
-		TrieNode!(V) current = this;
-		foreach(dchar keyPart; key)
-		{
-			if ((keyPart in current.children) is null)
-			{
-				auto node = new TrieNode!(V);
-				current.children[keyPart] = node;
-				current = node;
-			}
-			else
-				current = current.children[keyPart];
-		}
-		current.value = value;
-	}
+    /**
+     * Adds the given value to the trie with the given key
+     */
+    void add(string key, V value) pure
+    {
+        TrieNode!(V) current = this;
+        foreach(dchar keyPart; key)
+        {
+            if ((keyPart in current.children) is null)
+            {
+                auto node = new TrieNode!(V);
+                current.children[keyPart] = node;
+                current = node;
+            }
+            else
+                current = current.children[keyPart];
+        }
+        current.value = value;
+    }
 }
 
 class TrieNode(V)
 {
-	V value;
-	TrieNode!(V)[dchar] children;
+    V value;
+    TrieNode!(V)[dchar] children;
 }
 
 string printCaseStatements(V)(TrieNode!(V) node, string indentString)
 {
-	string s = "";
-	string idnt = indentString;
+    string s = "";
+    string idnt = indentString;
 
-	void incIndent() { idnt ~= "  "; }
-	void decIndent() { idnt = idnt[2..$]; }
+    void incIndent() { idnt ~= "  "; }
+    void decIndent() { idnt = idnt[2..$]; }
 
-	void put(string k) { s ~= idnt ~ k; }
-	void append(string k) { s ~= k;}
+    void put(string k) { s ~= idnt ~ k; }
+    void append(string k) { s ~= k;}
 
-	foreach(dchar k, TrieNode!(V) v; node.children)
-	{
-		put("case '");
-		switch(k)
-		{
+    foreach(dchar k, TrieNode!(V) v; node.children)
+    {
+        put("case '");
+        switch(k)
+        {
             case '\n': append("\\n"); break;
             case '\t': append("\\t"); break;
             case 92:   append("\\");  break;
             default:   append(to!string(k));
-		}
-		append("':\n");
-		incIndent();
+        }
+        append("':\n");
+        incIndent();
 
-		put("temp.end++;\n");
-		if (v.children.length > 0)
-		{
-			put("if (temp.end >= temp.input.length)\n");
-			put("{\n");
-			incIndent();
+        put("temp.end++;\n");
+        if (v.children.length > 0)
+        {
+            put("if (temp.end >= temp.input.length)\n");
+            put("{\n");
+            incIndent();
 
-			if (node.children[k].value.length != 0)
+            if (node.children[k].value.length != 0)
                 put("return ParseTree(name, true, [`" ~ node.children[k].value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
 
-			append(";\n");
-			decIndent();
+            append(";\n");
+            decIndent();
 
-			put("}\n");
-			put("switch (temp.input[temp.end])\n");
-			put("{\n");
+            put("}\n");
+            put("switch (temp.input[temp.end])\n");
+            put("{\n");
 
-			incIndent();
-			append(printCaseStatements(v, idnt));
+            incIndent();
+            append(printCaseStatements(v, idnt));
 
-			put("default:\n");
-			incIndent();
-			if (v.value.length != 0)
+            put("default:\n");
+            incIndent();
+            if (v.value.length != 0)
                 put("return ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
-			append(";\n");
-			decIndent();
-			decIndent();
-			put("}\n");
-		}
-		else
-		{
-			if (v.value.length != 0)
+            append(";\n");
+            decIndent();
+            decIndent();
+            put("}\n");
+        }
+        else
+        {
+            if (v.value.length != 0)
                 put("return ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
-			append(";\n");
-		}
-	}
-	return s;
+            append(";\n");
+        }
+    }
+    return s;
 }
 
 string generateCaseTrie(string[] args ...)
 {
-	auto t = new Trie!(string);
-	foreach(arg; args)
-	{
-		t.add(arg, arg);
-	}
-	return printCaseStatements(t, "");
+    auto t = new Trie!(string);
+    foreach(arg; args)
+    {
+        t.add(arg, arg);
+    }
+    return printCaseStatements(t, "");
 }
 
 /**
@@ -1367,6 +1585,28 @@ template keywords(kws...) if (kws.length > 0)
     string keywords(GetName g)
     {
         return name;
+    }
+
+    RuleIntrospection keywords(RuleIntrospection ri)
+    {
+        NullMatch nm = NullMatch.no;
+        string expected;
+        string name= "keywords!(";
+        foreach(i,kw; kws)
+        {
+            name ~= "\"" ~ kw ~ "\""~ (i < kws.length -1 ? ", " : "");
+            expected ~= "\"" ~ kw ~ "\""~ (i < kws.length -1 ? " or " : "");
+            if (kw == "")
+                nm = NullMatch.yes;
+        }
+        name ~= ")";
+        return RuleIntrospection( name
+                       , false, null, null, null // grammar-specific Introspectionrmation
+                       , Recursive.no
+                       , LeftRecursive.no
+                       , nm
+                       , InfiniteLoop.no
+                       , expected);
     }
 }
 
@@ -1485,6 +1725,24 @@ template zeroOrMore(alias r)
     string zeroOrMore(GetName g)
     {
         return name;
+    }
+
+    RuleIntrospection zeroOrMore(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "zeroOrMore!(" ~ ri.name ~ ")";
+        ri.expected ~= " or nothing";
+        if ( ri.infiniteLoop == InfiniteLoop.no
+          && ri.nullMatch == NullMatch.yes)
+            ri.infiniteLoop = InfiniteLoop.yes;
+        ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
+        return ri;
     }
 }
 
@@ -1632,6 +1890,23 @@ template oneOrMore(alias r)
     {
         return name;
     }
+
+    RuleIntrospection oneOrMore(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name= "oneOrMore!(" ~ ri.name ~ ")";
+        //ri.expected = "one or more " ~ ri.expected;
+        if ( ri.infiniteLoop == InfiniteLoop.no
+          && ri.nullMatch == NullMatch.yes)
+            ri.infiniteLoop = InfiniteLoop.yes;
+        return ri;
+    }
 }
 
 unittest // 'oneOrMore' unit test
@@ -1737,6 +2012,21 @@ template option(alias r)
     {
         return name;
     }
+
+    RuleIntrospection option(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name= "option!(" ~ ri.name ~ ")";
+        ri.expected = "optionally " ~ ri.expected;
+        ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
+        return ri;
+    }
 }
 
 unittest // 'option' unit test
@@ -1826,6 +2116,20 @@ template posLookahead(alias r)
     {
         return name;
     }
+
+    RuleIntrospection posLookahead(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name= "posLookahead!(" ~ ri.name ~ ")";
+        ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
+        return ri;
+    }
 }
 
 unittest // 'posLookahead' unit test
@@ -1911,6 +2215,21 @@ template negLookahead(alias r)
     string negLookahead(GetName g)
     {
         return name;
+    }
+
+    RuleIntrospection negLookahead(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name= "negLookahead!(" ~ ri.name ~ ")";
+        ri.expected = "anything but " ~ ri.expected;
+        ri.nullMatch = NullMatch.yes; // can always succeed by matching nothing
+        return ri;
     }
 }
 
@@ -2005,6 +2324,20 @@ template named(alias r, string name)
     {
         return name;
     }
+
+    RuleIntrospection named(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = name;
+        ri.expected = name;
+        return ri;
+    }
 }
 
 unittest // 'named' unit test
@@ -2058,6 +2391,20 @@ template action(alias r, alias act)
     {
         enum name = "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
         return name;
+    }
+
+    RuleIntrospection action(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "action!("~ ri.name ~ ", " ~ __traits(identifier, act) ~ ")";
+
+        return ri;
     }
 }
 
@@ -2124,6 +2471,19 @@ template fuse(alias r)
     {
         enum name = "fuse!(" ~ getName!(r)() ~ ")";
         return name;
+    }
+
+    RuleIntrospection fuse(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "fuse!("~ ri.name ~ ")";
+        return ri;
     }
 }
 
@@ -2192,6 +2552,19 @@ template discardChildren(alias r)
         enum name = "discardChildren!(" ~ getName!(r)() ~ ")";
         return name;
     }
+
+    RuleIntrospection discardChildren(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "discardChildren!("~ ri.name ~ ")";
+        return ri;
+    }
 }
 
 /**
@@ -2216,6 +2589,19 @@ template discardMatches(alias r)
     {
         enum name = "discardMatches!(" ~ getName!(r)() ~ ")";
         return name;
+    }
+
+    RuleIntrospection discardMatches(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "discardMatches!("~ ri.name ~ ")";
+        return ri;
     }
 }
 
@@ -2244,7 +2630,20 @@ template discard(alias r)
 
     string discard(GetName g)
     {
-        return "discard!(" ~ getName!(r)() ~ ")";
+        return "discard!("~ getName!(r)() ~ ")";
+    }
+
+    RuleIntrospection discard(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "discard!("~ ri.name ~ ")";
+        return ri;
     }
 }
 
@@ -2253,7 +2652,7 @@ unittest // 'discard' unit test
     alias literal!"abc" abc;
     alias oneOrMore!abc abcs;
     alias discard!(literal!("abc")) dabc;
-    alias discard!(oneOrMore!(literal!("abc")))dabcs;
+    alias discard!(oneOrMore!(literal!("abc"))) dabcs;
 
     ParseTree reference = abc("abc");
     ParseTree result =dabc("abc");
@@ -2326,6 +2725,19 @@ template drop(alias r)
     {
         return "drop!(" ~ getName!(r)() ~ ")";
     }
+
+    RuleIntrospection drop(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "drop!(" ~ ri.name ~ ")";
+        return ri;
+    }
 }
 
 unittest // 'drop' unit test
@@ -2363,7 +2775,6 @@ unittest // 'drop' unit test
 
     assert(result.successful == reference.successful);
     assert(!result.successful);
-    assert(result.name == reference.name);
     assert(result.matches == [`"abc"`], "'drop' error message.");
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
@@ -2405,6 +2816,19 @@ template propagate(alias r)
     {
         return "propagate!(" ~ getName!(r)() ~ ")";
     }
+
+    RuleIntrospection propagate(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "propagate!(" ~ ri.name ~ ")";
+        return ri;
+    }
 }
 
 /**
@@ -2431,7 +2855,19 @@ template keep(alias r)
 
     string keep(GetName g)
     {
-        return "keep!(" ~ getName!(r)() ~ ")";
+        return "keep!("~ getName!(r)() ~ ")";
+    }
+
+    RuleIntrospection keep(RuleIntrospection ri)
+    {
+        ri = introspect!(r)();
+        ri.directCalls = null;
+        ri.directCalls[ri.name] = true;
+        ri.calls[ri.name] = true;
+        ri.calledBy = null;
+
+        ri.name = "keep!("~ ri.name ~ ")";
+        return ri;
     }
 }
 
@@ -2513,13 +2949,17 @@ alias named!(literal!"`", "backquote") backquote; /// A parser recognizing ` (ba
 /// A list of elem's separated by sep's. One element minimum.
 template list(alias elem, alias sep)
 {
-    alias named!(spaceAnd!(spacing, and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem)))), "list") list;
+    alias named!( spaceAnd!(spacing, and!(elem, zeroOrMore!(spaceAnd!(spacing, discardMatches!(sep), elem))))
+                , "list!(" ~ getName!elem ~ ", " ~ getName!sep ~ ")"
+                ) list;
 }
 
 /// A list of elem's separated by sep's. The empty list (no elem, no sep) is OK.
 template list0(alias elem, alias sep)
 {
-    alias named!(spaceAnd!(spacing, option!(and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem))))), "list0") list0;
+    alias named!(spaceAnd!(spacing, option!(and!(elem, zeroOrMore!(spaceAnd!(spacing, discardMatches!(sep), elem)))))
+                , "list!(" ~ getName!elem ~ ", " ~ getName!sep ~ ")"
+                ) list;
 }
 
 template AddSpace(alias sp)
@@ -2651,7 +3091,7 @@ mixin template decimateTree()
                     result ~= child;
                 }
                 else if (child.name.startsWith("keep!(")) // 'keep' node are never discarded.
-                                               // They have only one child, the node to keep
+                                                          // They have only one child, the node to keep
                 {
                     result ~= child.children[0];
                 }
@@ -2712,3 +3152,48 @@ ParseTree modify(alias predicate, alias modifier)(ParseTree input)
 
     return input;
 }
+
+
+// set unionn
+bool[string] merge(bool[string] a, bool[string] b)
+{
+    bool[string] result;
+    foreach(name, _; a)
+        result[name] = true;
+
+    foreach(name, _; b)
+        if (name !in result)
+            result[name] = true;
+    return result;
+}
+
+unittest
+{
+    bool[string] empty;
+    bool[string] abc = ["a":true, "b": true, "c": true];
+    bool[string] abd = ["a":true, "b": true, "d": true];
+    bool[string] def = ["d":true, "e": true, "f": true];
+    bool[string] abcd = ["a":true, "b": true, "c": true, "d": true];
+    bool[string] abcdef = ["a":true, "b": true, "c": true, "d": true, "e": true, "f": true];
+
+    assert(merge(abc,abc) == abc); // idempotent
+    assert(merge(abc, empty) == abc); // empty has no effect
+    assert(merge(empty, abc) == abc);
+
+    assert(merge(empty, empty) == empty);
+
+    assert(merge(abc, abd) == abcd);
+    assert(merge(abd, abc) == abcd);
+
+    assert(merge(abc, abcd) == abcd);
+    assert(merge(abd, abcd) == abcd);
+    assert(merge(abcd, abc) == abcd);
+    assert(merge(abcd, abd) == abcd);
+
+    assert(merge(abc, def) == abcdef);
+    assert(merge(def, abc) == abcdef);
+
+    assert(merge(abcd, def) == abcdef);
+    assert(merge(def, abcd) == abcdef);
+}
+
