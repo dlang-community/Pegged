@@ -27,13 +27,13 @@ enum Memoization { no, yes }
 This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
 It writes the corresponding parser inside a module with the given name.
 */
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString, string optHeader = "")
 {
-    asModule!(withMemo)(moduleName, moduleName, grammarString);
+    asModule!(withMemo)(moduleName, moduleName, grammarString, optHeader);
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString, string optHeader = "")
 {
     import std.stdio;
     auto f = File(fileName ~ ".d","w");
@@ -43,19 +43,23 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
     f.write("\n\n+/\n");
 
     f.write("module " ~ moduleName ~ ";\n\n");
+
+    if (optHeader.length > 0)
+        f.write(optHeader ~ "\n\n");
+
     f.write("public import pegged.peg;\n");
     f.write(grammar!(withMemo)(grammarString));
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File file)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File file, string optHeader = "")
 {
     string grammarDefinition;
     foreach(line; file.byLine)
     {
         grammarDefinition ~= line ~ '\n';
     }
-    asModule!(withMemo)(moduleName, grammarDefinition);
+    asModule!(withMemo)(moduleName, grammarDefinition, optHeader);
 }
 
 // Helper to insert ':Spacing*' before and after Primaries
@@ -2102,7 +2106,7 @@ unittest // Semantic actions, testing { foo } and { foo, bar, baz }
     result = Semantic.decimateTree(Semantic.Rule4("b"));
     assert(result.successful);
     assert(result.matches == ["b", "b", "b", "b", "b", "b", "b", "b"]);
-    
+
     result = Semantic.decimateTree(Semantic.Rule5("abc"));
     assert(result.successful);
     assert(result.matches == ["a", "a", "b", "c", "c"]);
@@ -2145,7 +2149,7 @@ unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
     badGrammar!"Name
         Rule1 Rule2";
     badGrammar!"Name:
-        Rule1 <-"; 
+        Rule1 <-";
     badGrammar!"Name:
         Rule1 <~";
     badGrammar!"Name:
