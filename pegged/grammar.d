@@ -2301,10 +2301,10 @@ unittest // Test lambda syntax in semantic actions
         return a;
      }}`,
 
-    // Lambda with spurious braces to try and confuse it
-    `{ (a) {
+    // Lambda with commas and spurious braces to try and confuse it
+    `{ (a, b) {
         string s = "}";
-        if (a.successful) {
+        if (a.successful,) {
             s ~= q"<}>";
         } else {
             { s ~= q"<}>"; /* } */ }
@@ -2361,9 +2361,9 @@ unittest // Test lambda syntax in semantic actions
     [`(a) {
         return a;
      }`],
-    [`(a) {
+    [`(a, b) {
         string s = "}";
-        if (a.successful) {
+        if (a.successful,) {
             s ~= q"<}>";
         } else {
             { s ~= q"<}>"; /* } */ }
@@ -2422,9 +2422,8 @@ unittest // Test lambda syntax in semantic actions
                                    .children[1];
 
         assert(action.matches.length == results[idx].length);
-
         foreach(i, s; action.matches)
             assert(strip(s) == results[idx][i],
-                   "Lambda Syntax Unittest:\nGot |"~s~"|" ~ "\nNeeded: |"~results[idx][i]~"|");
+                   "\nGot |"~s~"|" ~ "\nNeeded: |"~results[idx][i]~"|");
     }
 }

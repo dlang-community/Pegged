@@ -90,7 +90,7 @@ Space        <- spacing / "\\t" / "\\n" / "\\r"
 Action      < :ACTIONOPEN ((Lambda / qualifiedIdentifier) (:SEPARATOR (Lambda / qualifiedIdentifier))*) :ACTIONCLOSE
 Lambda      <~ (!(ACTIONCLOSE/SEPARATOR) (LambdaItems / NestedList('{',LambdaItems,'}') / .))*
 
-LambdaItems <- ~DComment / ~DString
+LambdaItems <- ~DComment / ~DString / ~DParamList
 DString     <- WYSString / DBQString / TKNString / DLMString
 
 WYSString   <- 'r' doublequote (!doublequote .)* doublequote /
@@ -111,6 +111,8 @@ DComment             <- DLineComment / DBlockComment / DNestingBlockComment
 DLineComment         <- "//" (!endOfLine .)* endOfLine
 DBlockComment        <- "/*" (!"*/" .)* "*/"
 DNestingBlockComment <- NestedList("/+","+/")
+
+DParamList <- NestedList('(',')')
 
 # Linear nested lists with and without special items
 NestedList(L,Items,R)   <- ^L ( !(L/R/Items) . )* ( Items

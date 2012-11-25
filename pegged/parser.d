@@ -89,7 +89,7 @@ Space        <- spacing / "\\t" / "\\n" / "\\r"
 Action      < :ACTIONOPEN ((Lambda / qualifiedIdentifier) (:SEPARATOR (Lambda / qualifiedIdentifier))*) :ACTIONCLOSE
 Lambda      <~ (!(ACTIONCLOSE/SEPARATOR) (LambdaItems / NestedList('{',LambdaItems,'}') / .))*
 
-LambdaItems <- ~DComment / ~DString
+LambdaItems <- ~DComment / ~DString / ~DParamList
 DString     <- WYSString / DBQString / TKNString / DLMString
 
 WYSString   <- 'r' doublequote (!doublequote .)* doublequote /
@@ -110,6 +110,8 @@ DComment             <- DLineComment / DBlockComment / DNestingBlockComment
 DLineComment         <- "//" (!endOfLine .)* endOfLine
 DBlockComment        <- "/*" (!"*/" .)* "*/"
 DNestingBlockComment <- NestedList("/+","+/")
+
+DParamList <- NestedList('(',')')
 
 # Linear nested lists with and without special items
 NestedList(L,Items,R)   <- ^L ( !(L/R/Items) . )* ( Items
@@ -195,6 +197,7 @@ struct GenericPegged(TParseTree)
             case "Pegged.DLineComment":
             case "Pegged.DBlockComment":
             case "Pegged.DNestingBlockComment":
+            case "Pegged.DParamList":
                 return true;
             default:
                 if (s.length >= 19 && s[0..19] == "Pegged.NestedList!(") return true;
@@ -880,11 +883,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree LambdaItems(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.or!(pegged.peg.fuse!(DComment), pegged.peg.fuse!(DString)), "Pegged.LambdaItems")(p);
+         return pegged.peg.named!(pegged.peg.or!(pegged.peg.fuse!(DComment), pegged.peg.fuse!(DString), pegged.peg.fuse!(DParamList)), "Pegged.LambdaItems")(p);
     }
     static TParseTree LambdaItems(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(pegged.peg.fuse!(DComment), pegged.peg.fuse!(DString)), "Pegged.LambdaItems")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(pegged.peg.fuse!(DComment), pegged.peg.fuse!(DString), pegged.peg.fuse!(DParamList)), "Pegged.LambdaItems")(TParseTree("", false,[], s));
     }
     static string LambdaItems(GetName g)
     {
@@ -1006,6 +1009,19 @@ struct GenericPegged(TParseTree)
     static string DNestingBlockComment(GetName g)
     {
         return "Pegged.DNestingBlockComment";
+    }
+
+    static TParseTree DParamList(TParseTree p)
+    {
+         return pegged.peg.named!(NestedList!(pegged.peg.literal!("("), pegged.peg.literal!(")")), "Pegged.DParamList")(p);
+    }
+    static TParseTree DParamList(string s)
+    {
+        return pegged.peg.named!(NestedList!(pegged.peg.literal!("("), pegged.peg.literal!(")")), "Pegged.DParamList")(TParseTree("", false,[], s));
+    }
+    static string DParamList(GetName g)
+    {
+        return "Pegged.DParamList";
     }
 
     template NestedList(alias L, alias Items, alias R)
