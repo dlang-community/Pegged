@@ -2280,3 +2280,151 @@ unittest // Memoization testing
     assert(pegged.peg.softCompare(result1, result3));
     assert(pegged.peg.softCompare(result1, result4));
 }
+
+unittest // Test lambda syntax in semantic actions
+{
+    import std.array;
+
+    auto actions = [
+
+    // Normal action
+    `{ myAction }`,
+
+    // List of normal actions
+    `{ myAction, myAction2 }`,
+
+    // Simple do-nothing lambda
+    `{ (a) {return a;} }`,
+
+    // Simple do-nothing lambda with formatting
+    `{ (a) {
+        return a;
+     }}`,
+
+    // Lambda with spurious braces to try and confuse it
+    `{ (a) {
+        string s = "}";
+        if (a.successful) {
+            s ~= q"<}>";
+        } else {
+            { s ~= q"<}>"; /* } */ }
+        }
+        return a;} }`,
+
+    // List of mixed actions and lambdas
+    `{ myAction , (a) {return a;}, myAction2 , (a) { /* , } */ return a; } }`,
+
+    // Ambiguous lambda (not sure it would compile if used... but it should parse)
+    `{ myAction, a => transform(a), myAction2 }`,
+
+    // Something more convoluted
+    "{ myAction, (a) {
+        /* block } comment with } braces */
+        string s = `} {` // wysiwyg string with braces and line comment with brace }
+        if (s is null) {
+            // }
+        } else { // scopes
+            { // nested scopes
+                writeln(q{ \"}\" }); // token string with nested string with brace
+            }
+        }
+
+        string s = `1,2,3,4,5` // commas separate actions
+
+        /+ } Crazy nesting block comment
+            /+ } +/
+            /+ } +/
+            /+ /+ } +/ } +/
+            }
+        +/
+
+        q\"<  } <}> <> <<}<>}>>  >\"; // delimited string
+        q\"[ [}] [] [[[ } ]]] ]\"; // delimited string
+        q\"( () }(}) (((}))}) )\"; // delimited string
+        q\"{ {} {} {{{}}} }\"; // delimited string
+        q{ class {} {} struct void \"}\" } /* another token string } */
+
+        struct S
+        {
+            void foo() {}
+            void bar() {}
+        }
+
+        return a;
+    }, myAction2 }",
+    ];
+
+    auto results = [
+    [`myAction`],
+    [`myAction`,`myAction2`],
+    [`(a) {return a;}`],
+    [`(a) {
+        return a;
+     }`],
+    [`(a) {
+        string s = "}";
+        if (a.successful) {
+            s ~= q"<}>";
+        } else {
+            { s ~= q"<}>"; /* } */ }
+        }
+        return a;}`],
+    [`myAction`,`(a) {return a;}`,`myAction2`,`(a) { /* , } */ return a; }`],
+    [`myAction`,`a => transform(a)`,`myAction2`],
+    [`myAction`,"(a) {
+        /* block } comment with } braces */
+        string s = `} {` // wysiwyg string with braces and line comment with brace }
+        if (s is null) {
+            // }
+        } else { // scopes
+            { // nested scopes
+                writeln(q{ \"}\" }); // token string with nested string with brace
+            }
+        }
+
+        string s = `1,2,3,4,5` // commas separate actions
+
+        /+ } Crazy nesting block comment
+            /+ } +/
+            /+ } +/
+            /+ /+ } +/ } +/
+            }
+        +/
+
+        q\"<  } <}> <> <<}<>}>>  >\"; // delimited string
+        q\"[ [}] [] [[[ } ]]] ]\"; // delimited string
+        q\"( () }(}) (((}))}) )\"; // delimited string
+        q\"{ {} {} {{{}}} }\"; // delimited string
+        q{ class {} {} struct void \"}\" } /* another token string } */
+
+        struct S
+        {
+            void foo() {}
+            void bar() {}
+        }
+
+        return a;
+    }",`myAction2`]
+    ];
+
+    foreach(idx, act; actions)
+    {
+        auto grammar = `P: Rule <- RuleA ` ~ act ~ ` RuleA <- 'A'`;
+        auto p = Pegged(grammar);
+
+        assert(p.successful);
+
+        auto action = p.children[0].children[1]
+                                   .children[2]
+                                   .children[0]
+                                   .children[0]
+                                   .children[0]
+                                   .children[1];
+
+        assert(action.matches.length == results[idx].length);
+
+        foreach(i, s; action.matches)
+            assert(strip(s) == results[idx][i],
+                   "Lambda Syntax Unittest:\nGot |"~s~"|" ~ "\nNeeded: |"~results[idx][i]~"|");
+    }
+}

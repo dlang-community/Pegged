@@ -28,7 +28,6 @@ Param        <- DefaultParam / SingleParam
 DefaultParam <- Identifier Spacing :ASSIGN Expression
 SingleParam  <- Identifier Spacing
 ArgList      <- :OPEN Expression (:SEPARATOR Expression)* :CLOSE
-Action       <- :ACTIONOPEN qualifiedIdentifier (:SEPARATOR qualifiedIdentifier)* :ACTIONCLOSE
 
 Literal      <- quote       ~(!quote Char)*       quote       Spacing
               / doublequote ~(!doublequote Char)* doublequote Spacing
@@ -86,6 +85,40 @@ Spacing      <: (Space / Comment)*
 Comment      <- '#' (!eol .)* :eol
 Space        <- spacing / "\\t" / "\\n" / "\\r"
 
+# Action Rule
+Action      < :ACTIONOPEN ((Lambda / qualifiedIdentifier) (:SEPARATOR (Lambda / qualifiedIdentifier))*) :ACTIONCLOSE
+Lambda      <~ (!(ACTIONCLOSE/SEPARATOR) (LambdaItems / NestedList('{',LambdaItems,'}') / .))*
+
+LambdaItems <- ~DComment / ~DString
+DString     <- WYSString / DBQString / TKNString / DLMString
+
+WYSString   <- 'r' doublequote (!doublequote .)* doublequote /
+               backquote (!backquote .)* backquote
+
+DBQString   <- doublequote (!doublequote Char)* doublequote
+
+TKNString   <- (&'q{' ('q' NestedList('{',DString,'}')))
+
+DLMString   <- ('q' doublequote) ( (&'{' NestedList('{',DString,'}'))
+                                 / (&'[' NestedList('[',DString,']'))
+                                 / (&'(' NestedList('(',DString,')'))
+                                 / (&'<' NestedList('<',DString,'>'))
+                                 ) doublequote
+
+DComment             <- DLineComment / DBlockComment / DNestingBlockComment
+
+DLineComment         <- "//" (!endOfLine .)* endOfLine
+DBlockComment        <- "/*" (!"*/" .)* "*/"
+DNestingBlockComment <- NestedList("/+","+/")
+
+# Linear nested lists with and without special items
+NestedList(L,Items,R)   <- ^L ( !(L/R/Items) . )* ( Items
+                                                  / NestedList(L,Items,R)
+                                                  / ( !(L/R/Items) . )*
+                                                  )* ( !(L/R/Items) . )* ^R
+
+NestedList(L,R) <- ^L ( !(L/R) . )* (NestedList(L,R) / ( !(L/R) . )* )* ( !(L/R) . )* ^R
+
 
 +/
 module pegged.parser;
@@ -116,7 +149,6 @@ struct GenericPegged(TParseTree)
             case "Pegged.DefaultParam":
             case "Pegged.SingleParam":
             case "Pegged.ArgList":
-            case "Pegged.Action":
             case "Pegged.Literal":
             case "Pegged.CharClass":
             case "Pegged.CharRange":
@@ -151,8 +183,21 @@ struct GenericPegged(TParseTree)
             case "Pegged.Spacing":
             case "Pegged.Comment":
             case "Pegged.Space":
+            case "Pegged.Action":
+            case "Pegged.Lambda":
+            case "Pegged.LambdaItems":
+            case "Pegged.DString":
+            case "Pegged.WYSString":
+            case "Pegged.DBQString":
+            case "Pegged.TKNString":
+            case "Pegged.DLMString":
+            case "Pegged.DComment":
+            case "Pegged.DLineComment":
+            case "Pegged.DBlockComment":
+            case "Pegged.DNestingBlockComment":
                 return true;
             default:
+                if (s.length >= 19 && s[0..19] == "Pegged.NestedList!(") return true;
                 return false;
         }
     }
@@ -263,11 +308,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree GrammarName(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(Identifier, pegged.peg.option!(ParamList), Spacing, pegged.peg.discard!(pegged.peg.literal!(`:`)), Spacing), "Pegged.GrammarName")(p);
+         return pegged.peg.named!(pegged.peg.and!(Identifier, pegged.peg.option!(ParamList), Spacing, pegged.peg.discard!(pegged.peg.literal!(":")), Spacing), "Pegged.GrammarName")(p);
     }
     static TParseTree GrammarName(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(Identifier, pegged.peg.option!(ParamList), Spacing, pegged.peg.discard!(pegged.peg.literal!(`:`)), Spacing), "Pegged.GrammarName")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(Identifier, pegged.peg.option!(ParamList), Spacing, pegged.peg.discard!(pegged.peg.literal!(":")), Spacing), "Pegged.GrammarName")(TParseTree("", false,[], s));
     }
     static string GrammarName(GetName g)
     {
@@ -365,19 +410,6 @@ struct GenericPegged(TParseTree)
         return "Pegged.ArgList";
     }
 
-    static TParseTree Action(TParseTree p)
-    {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(ACTIONOPEN), qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(SEPARATOR), qualifiedIdentifier)), pegged.peg.discard!(ACTIONCLOSE)), "Pegged.Action")(p);
-    }
-    static TParseTree Action(string s)
-    {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(ACTIONOPEN), qualifiedIdentifier, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(SEPARATOR), qualifiedIdentifier)), pegged.peg.discard!(ACTIONCLOSE)), "Pegged.Action")(TParseTree("", false,[], s));
-    }
-    static string Action(GetName g)
-    {
-        return "Pegged.Action";
-    }
-
     static TParseTree Literal(TParseTree p)
     {
          return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(quote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(quote), Char))), quote, Spacing), pegged.peg.and!(doublequote, pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char))), doublequote, Spacing)), "Pegged.Literal")(p);
@@ -393,11 +425,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree CharClass(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!(`[`)), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!(`]`)), CharRange)), pegged.peg.discard!(pegged.peg.literal!(`]`)), Spacing), "Pegged.CharClass")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("[")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!("]")), CharRange)), pegged.peg.discard!(pegged.peg.literal!("]")), Spacing), "Pegged.CharClass")(p);
     }
     static TParseTree CharClass(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!(`[`)), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!(`]`)), CharRange)), pegged.peg.discard!(pegged.peg.literal!(`]`)), Spacing), "Pegged.CharClass")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("[")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!("]")), CharRange)), pegged.peg.discard!(pegged.peg.literal!("]")), Spacing), "Pegged.CharClass")(TParseTree("", false,[], s));
     }
     static string CharClass(GetName g)
     {
@@ -406,11 +438,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree CharRange(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(Char, pegged.peg.literal!(`-`), Char), Char), "Pegged.CharRange")(p);
+         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(Char, pegged.peg.literal!("-"), Char), Char), "Pegged.CharRange")(p);
     }
     static TParseTree CharRange(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(Char, pegged.peg.literal!(`-`), Char), Char), "Pegged.CharRange")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(Char, pegged.peg.literal!("-"), Char), Char), "Pegged.CharRange")(TParseTree("", false,[], s));
     }
     static string CharRange(GetName g)
     {
@@ -419,11 +451,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Char(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(backslash, pegged.peg.or!(quote, doublequote, backquote, backslash, pegged.peg.literal!(`-`), pegged.peg.literal!(`[`), pegged.peg.literal!(`]`), pegged.peg.or!(pegged.peg.literal!("n"), pegged.peg.literal!("r"), pegged.peg.literal!("t")), pegged.peg.and!(pegged.peg.charRange!('0', '2'), pegged.peg.charRange!('0', '7'), pegged.peg.charRange!('0', '7')), pegged.peg.and!(pegged.peg.charRange!('0', '7'), pegged.peg.option!(pegged.peg.charRange!('0', '7'))), pegged.peg.and!(pegged.peg.literal!(`x`), hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!(`u`), hexDigit, hexDigit, hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!(`U`), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), pegged.peg.any)), "Pegged.Char")(p);
+         return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(backslash, pegged.peg.or!(quote, doublequote, backquote, backslash, pegged.peg.literal!("-"), pegged.peg.literal!("["), pegged.peg.literal!("]"), pegged.peg.or!(pegged.peg.literal!("n"), pegged.peg.literal!("r"), pegged.peg.literal!("t")), pegged.peg.and!(pegged.peg.charRange!('0', '2'), pegged.peg.charRange!('0', '7'), pegged.peg.charRange!('0', '7')), pegged.peg.and!(pegged.peg.charRange!('0', '7'), pegged.peg.option!(pegged.peg.charRange!('0', '7'))), pegged.peg.and!(pegged.peg.literal!("x"), hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("u"), hexDigit, hexDigit, hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("U"), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), pegged.peg.any)), "Pegged.Char")(p);
     }
     static TParseTree Char(string s)
     {
-        return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(backslash, pegged.peg.or!(quote, doublequote, backquote, backslash, pegged.peg.literal!(`-`), pegged.peg.literal!(`[`), pegged.peg.literal!(`]`), pegged.peg.or!(pegged.peg.literal!("n"), pegged.peg.literal!("r"), pegged.peg.literal!("t")), pegged.peg.and!(pegged.peg.charRange!('0', '2'), pegged.peg.charRange!('0', '7'), pegged.peg.charRange!('0', '7')), pegged.peg.and!(pegged.peg.charRange!('0', '7'), pegged.peg.option!(pegged.peg.charRange!('0', '7'))), pegged.peg.and!(pegged.peg.literal!(`x`), hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!(`u`), hexDigit, hexDigit, hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!(`U`), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), pegged.peg.any)), "Pegged.Char")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(backslash, pegged.peg.or!(quote, doublequote, backquote, backslash, pegged.peg.literal!("-"), pegged.peg.literal!("["), pegged.peg.literal!("]"), pegged.peg.or!(pegged.peg.literal!("n"), pegged.peg.literal!("r"), pegged.peg.literal!("t")), pegged.peg.and!(pegged.peg.charRange!('0', '2'), pegged.peg.charRange!('0', '7'), pegged.peg.charRange!('0', '7')), pegged.peg.and!(pegged.peg.charRange!('0', '7'), pegged.peg.option!(pegged.peg.charRange!('0', '7'))), pegged.peg.and!(pegged.peg.literal!("x"), hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("u"), hexDigit, hexDigit, hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("U"), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), pegged.peg.any)), "Pegged.Char")(TParseTree("", false,[], s));
     }
     static string Char(GetName g)
     {
@@ -445,11 +477,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree LEFTARROW(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<-`), Spacing), "Pegged.LEFTARROW")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<-"), Spacing), "Pegged.LEFTARROW")(p);
     }
     static TParseTree LEFTARROW(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<-`), Spacing), "Pegged.LEFTARROW")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<-"), Spacing), "Pegged.LEFTARROW")(TParseTree("", false,[], s));
     }
     static string LEFTARROW(GetName g)
     {
@@ -458,11 +490,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree FUSEARROW(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<~`), Spacing), "Pegged.FUSEARROW")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<~"), Spacing), "Pegged.FUSEARROW")(p);
     }
     static TParseTree FUSEARROW(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<~`), Spacing), "Pegged.FUSEARROW")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<~"), Spacing), "Pegged.FUSEARROW")(TParseTree("", false,[], s));
     }
     static string FUSEARROW(GetName g)
     {
@@ -471,11 +503,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree DISCARDARROW(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<:`), Spacing), "Pegged.DISCARDARROW")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<:"), Spacing), "Pegged.DISCARDARROW")(p);
     }
     static TParseTree DISCARDARROW(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<:`), Spacing), "Pegged.DISCARDARROW")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<:"), Spacing), "Pegged.DISCARDARROW")(TParseTree("", false,[], s));
     }
     static string DISCARDARROW(GetName g)
     {
@@ -484,11 +516,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree KEEPARROW(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<^`), Spacing), "Pegged.KEEPARROW")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<^"), Spacing), "Pegged.KEEPARROW")(p);
     }
     static TParseTree KEEPARROW(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<^`), Spacing), "Pegged.KEEPARROW")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<^"), Spacing), "Pegged.KEEPARROW")(TParseTree("", false,[], s));
     }
     static string KEEPARROW(GetName g)
     {
@@ -497,11 +529,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree DROPARROW(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<;`), Spacing), "Pegged.DROPARROW")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<;"), Spacing), "Pegged.DROPARROW")(p);
     }
     static TParseTree DROPARROW(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<;`), Spacing), "Pegged.DROPARROW")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<;"), Spacing), "Pegged.DROPARROW")(TParseTree("", false,[], s));
     }
     static string DROPARROW(GetName g)
     {
@@ -510,11 +542,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree PROPAGATEARROW(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<%`), Spacing), "Pegged.PROPAGATEARROW")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<%"), Spacing), "Pegged.PROPAGATEARROW")(p);
     }
     static TParseTree PROPAGATEARROW(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<%`), Spacing), "Pegged.PROPAGATEARROW")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<%"), Spacing), "Pegged.PROPAGATEARROW")(TParseTree("", false,[], s));
     }
     static string PROPAGATEARROW(GetName g)
     {
@@ -523,11 +555,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree SPACEARROW(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<`), Spacing), "Pegged.SPACEARROW")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<"), Spacing), "Pegged.SPACEARROW")(p);
     }
     static TParseTree SPACEARROW(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`<`), Spacing), "Pegged.SPACEARROW")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<"), Spacing), "Pegged.SPACEARROW")(TParseTree("", false,[], s));
     }
     static string SPACEARROW(GetName g)
     {
@@ -536,11 +568,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree OR(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`/`), Spacing), "Pegged.OR")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("/"), Spacing), "Pegged.OR")(p);
     }
     static TParseTree OR(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`/`), Spacing), "Pegged.OR")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("/"), Spacing), "Pegged.OR")(TParseTree("", false,[], s));
     }
     static string OR(GetName g)
     {
@@ -549,11 +581,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree POS(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`&`), Spacing), "Pegged.POS")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("&"), Spacing), "Pegged.POS")(p);
     }
     static TParseTree POS(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`&`), Spacing), "Pegged.POS")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("&"), Spacing), "Pegged.POS")(TParseTree("", false,[], s));
     }
     static string POS(GetName g)
     {
@@ -562,11 +594,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree NEG(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`!`), Spacing), "Pegged.NEG")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("!"), Spacing), "Pegged.NEG")(p);
     }
     static TParseTree NEG(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`!`), Spacing), "Pegged.NEG")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("!"), Spacing), "Pegged.NEG")(TParseTree("", false,[], s));
     }
     static string NEG(GetName g)
     {
@@ -575,11 +607,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree FUSE(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`~`), Spacing), "Pegged.FUSE")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("~"), Spacing), "Pegged.FUSE")(p);
     }
     static TParseTree FUSE(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`~`), Spacing), "Pegged.FUSE")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("~"), Spacing), "Pegged.FUSE")(TParseTree("", false,[], s));
     }
     static string FUSE(GetName g)
     {
@@ -588,11 +620,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree DISCARD(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`:`), Spacing), "Pegged.DISCARD")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(":"), Spacing), "Pegged.DISCARD")(p);
     }
     static TParseTree DISCARD(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`:`), Spacing), "Pegged.DISCARD")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(":"), Spacing), "Pegged.DISCARD")(TParseTree("", false,[], s));
     }
     static string DISCARD(GetName g)
     {
@@ -601,11 +633,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree KEEP(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`^`), Spacing), "Pegged.KEEP")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("^"), Spacing), "Pegged.KEEP")(p);
     }
     static TParseTree KEEP(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`^`), Spacing), "Pegged.KEEP")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("^"), Spacing), "Pegged.KEEP")(TParseTree("", false,[], s));
     }
     static string KEEP(GetName g)
     {
@@ -614,11 +646,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree DROP(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`;`), Spacing), "Pegged.DROP")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(";"), Spacing), "Pegged.DROP")(p);
     }
     static TParseTree DROP(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`;`), Spacing), "Pegged.DROP")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(";"), Spacing), "Pegged.DROP")(TParseTree("", false,[], s));
     }
     static string DROP(GetName g)
     {
@@ -627,11 +659,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree PROPAGATE(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`%`), Spacing), "Pegged.PROPAGATE")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("%"), Spacing), "Pegged.PROPAGATE")(p);
     }
     static TParseTree PROPAGATE(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`%`), Spacing), "Pegged.PROPAGATE")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("%"), Spacing), "Pegged.PROPAGATE")(TParseTree("", false,[], s));
     }
     static string PROPAGATE(GetName g)
     {
@@ -640,11 +672,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree OPTION(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`?`), Spacing), "Pegged.OPTION")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("?"), Spacing), "Pegged.OPTION")(p);
     }
     static TParseTree OPTION(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`?`), Spacing), "Pegged.OPTION")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("?"), Spacing), "Pegged.OPTION")(TParseTree("", false,[], s));
     }
     static string OPTION(GetName g)
     {
@@ -653,11 +685,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ZEROORMORE(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`*`), Spacing), "Pegged.ZEROORMORE")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("*"), Spacing), "Pegged.ZEROORMORE")(p);
     }
     static TParseTree ZEROORMORE(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`*`), Spacing), "Pegged.ZEROORMORE")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("*"), Spacing), "Pegged.ZEROORMORE")(TParseTree("", false,[], s));
     }
     static string ZEROORMORE(GetName g)
     {
@@ -666,11 +698,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ONEORMORE(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`+`), Spacing), "Pegged.ONEORMORE")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("+"), Spacing), "Pegged.ONEORMORE")(p);
     }
     static TParseTree ONEORMORE(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`+`), Spacing), "Pegged.ONEORMORE")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("+"), Spacing), "Pegged.ONEORMORE")(TParseTree("", false,[], s));
     }
     static string ONEORMORE(GetName g)
     {
@@ -679,11 +711,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ACTIONOPEN(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`{`), Spacing), "Pegged.ACTIONOPEN")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), Spacing), "Pegged.ACTIONOPEN")(p);
     }
     static TParseTree ACTIONOPEN(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`{`), Spacing), "Pegged.ACTIONOPEN")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), Spacing), "Pegged.ACTIONOPEN")(TParseTree("", false,[], s));
     }
     static string ACTIONOPEN(GetName g)
     {
@@ -692,11 +724,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ACTIONCLOSE(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`}`), Spacing), "Pegged.ACTIONCLOSE")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("}"), Spacing), "Pegged.ACTIONCLOSE")(p);
     }
     static TParseTree ACTIONCLOSE(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`}`), Spacing), "Pegged.ACTIONCLOSE")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("}"), Spacing), "Pegged.ACTIONCLOSE")(TParseTree("", false,[], s));
     }
     static string ACTIONCLOSE(GetName g)
     {
@@ -705,11 +737,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree SEPARATOR(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`,`), Spacing), "Pegged.SEPARATOR")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(","), Spacing), "Pegged.SEPARATOR")(p);
     }
     static TParseTree SEPARATOR(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`,`), Spacing), "Pegged.SEPARATOR")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(","), Spacing), "Pegged.SEPARATOR")(TParseTree("", false,[], s));
     }
     static string SEPARATOR(GetName g)
     {
@@ -718,11 +750,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ASSIGN(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`=`), Spacing), "Pegged.ASSIGN")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("="), Spacing), "Pegged.ASSIGN")(p);
     }
     static TParseTree ASSIGN(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`=`), Spacing), "Pegged.ASSIGN")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("="), Spacing), "Pegged.ASSIGN")(TParseTree("", false,[], s));
     }
     static string ASSIGN(GetName g)
     {
@@ -731,11 +763,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree NAMESEP(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.literal!(`.`), "Pegged.NAMESEP")(p);
+         return pegged.peg.named!(pegged.peg.literal!("."), "Pegged.NAMESEP")(p);
     }
     static TParseTree NAMESEP(string s)
     {
-        return pegged.peg.named!(pegged.peg.literal!(`.`), "Pegged.NAMESEP")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.literal!("."), "Pegged.NAMESEP")(TParseTree("", false,[], s));
     }
     static string NAMESEP(GetName g)
     {
@@ -744,11 +776,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree OPEN(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`(`), Spacing), "Pegged.OPEN")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("("), Spacing), "Pegged.OPEN")(p);
     }
     static TParseTree OPEN(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`(`), Spacing), "Pegged.OPEN")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("("), Spacing), "Pegged.OPEN")(TParseTree("", false,[], s));
     }
     static string OPEN(GetName g)
     {
@@ -757,11 +789,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree CLOSE(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`)`), Spacing), "Pegged.CLOSE")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(")"), Spacing), "Pegged.CLOSE")(p);
     }
     static TParseTree CLOSE(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`)`), Spacing), "Pegged.CLOSE")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(")"), Spacing), "Pegged.CLOSE")(TParseTree("", false,[], s));
     }
     static string CLOSE(GetName g)
     {
@@ -770,11 +802,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree ANY(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`.`), Spacing), "Pegged.ANY")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("."), Spacing), "Pegged.ANY")(p);
     }
     static TParseTree ANY(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`.`), Spacing), "Pegged.ANY")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("."), Spacing), "Pegged.ANY")(TParseTree("", false,[], s));
     }
     static string ANY(GetName g)
     {
@@ -796,11 +828,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Comment(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`#`), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(eol), pegged.peg.any)), pegged.peg.discard!(eol)), "Pegged.Comment")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("#"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(eol), pegged.peg.any)), pegged.peg.discard!(eol)), "Pegged.Comment")(p);
     }
     static TParseTree Comment(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!(`#`), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(eol), pegged.peg.any)), pegged.peg.discard!(eol)), "Pegged.Comment")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("#"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(eol), pegged.peg.any)), pegged.peg.discard!(eol)), "Pegged.Comment")(TParseTree("", false,[], s));
     }
     static string Comment(GetName g)
     {
@@ -809,17 +841,205 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Space(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.or!(spacing, pegged.peg.literal!(`\\t`), pegged.peg.literal!(`\\n`), pegged.peg.literal!(`\\r`)), "Pegged.Space")(p);
+         return pegged.peg.named!(pegged.peg.or!(spacing, pegged.peg.literal!("\\t"), pegged.peg.literal!("\\n"), pegged.peg.literal!("\\r")), "Pegged.Space")(p);
     }
     static TParseTree Space(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(spacing, pegged.peg.literal!(`\\t`), pegged.peg.literal!(`\\n`), pegged.peg.literal!(`\\r`)), "Pegged.Space")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(spacing, pegged.peg.literal!("\\t"), pegged.peg.literal!("\\n"), pegged.peg.literal!("\\r")), "Pegged.Space")(TParseTree("", false,[], s));
     }
     static string Space(GetName g)
     {
         return "Pegged.Space";
     }
 
+    static TParseTree Action(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), ACTIONOPEN, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.and!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Lambda, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), qualifiedIdentifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), SEPARATOR, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Lambda, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), qualifiedIdentifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), ACTIONCLOSE, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), "Pegged.Action")(p);
+    }
+    static TParseTree Action(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), ACTIONOPEN, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.and!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Lambda, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), qualifiedIdentifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), SEPARATOR, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Lambda, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), qualifiedIdentifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), ACTIONCLOSE, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), "Pegged.Action")(TParseTree("", false,[], s));
+    }
+    static string Action(GetName g)
+    {
+        return "Pegged.Action";
+    }
+
+    static TParseTree Lambda(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(ACTIONCLOSE, SEPARATOR)), pegged.peg.or!(LambdaItems, NestedList!(pegged.peg.literal!("{"), LambdaItems, pegged.peg.literal!("}")), pegged.peg.any)))), "Pegged.Lambda")(p);
+    }
+    static TParseTree Lambda(string s)
+    {
+        return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(ACTIONCLOSE, SEPARATOR)), pegged.peg.or!(LambdaItems, NestedList!(pegged.peg.literal!("{"), LambdaItems, pegged.peg.literal!("}")), pegged.peg.any)))), "Pegged.Lambda")(TParseTree("", false,[], s));
+    }
+    static string Lambda(GetName g)
+    {
+        return "Pegged.Lambda";
+    }
+
+    static TParseTree LambdaItems(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.or!(pegged.peg.fuse!(DComment), pegged.peg.fuse!(DString)), "Pegged.LambdaItems")(p);
+    }
+    static TParseTree LambdaItems(string s)
+    {
+        return pegged.peg.named!(pegged.peg.or!(pegged.peg.fuse!(DComment), pegged.peg.fuse!(DString)), "Pegged.LambdaItems")(TParseTree("", false,[], s));
+    }
+    static string LambdaItems(GetName g)
+    {
+        return "Pegged.LambdaItems";
+    }
+
+    static TParseTree DString(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.or!(WYSString, DBQString, TKNString, DLMString), "Pegged.DString")(p);
+    }
+    static TParseTree DString(string s)
+    {
+        return pegged.peg.named!(pegged.peg.or!(WYSString, DBQString, TKNString, DLMString), "Pegged.DString")(TParseTree("", false,[], s));
+    }
+    static string DString(GetName g)
+    {
+        return "Pegged.DString";
+    }
+
+    static TParseTree WYSString(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.literal!("r"), doublequote, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), pegged.peg.any)), doublequote), pegged.peg.and!(backquote, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(backquote), pegged.peg.any)), backquote)), "Pegged.WYSString")(p);
+    }
+    static TParseTree WYSString(string s)
+    {
+        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.literal!("r"), doublequote, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), pegged.peg.any)), doublequote), pegged.peg.and!(backquote, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(backquote), pegged.peg.any)), backquote)), "Pegged.WYSString")(TParseTree("", false,[], s));
+    }
+    static string WYSString(GetName g)
+    {
+        return "Pegged.WYSString";
+    }
+
+    static TParseTree DBQString(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char)), doublequote), "Pegged.DBQString")(p);
+    }
+    static TParseTree DBQString(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(doublequote), Char)), doublequote), "Pegged.DBQString")(TParseTree("", false,[], s));
+    }
+    static string DBQString(GetName g)
+    {
+        return "Pegged.DBQString";
+    }
+
+    static TParseTree TKNString(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("q{")), pegged.peg.and!(pegged.peg.literal!("q"), NestedList!(pegged.peg.literal!("{"), DString, pegged.peg.literal!("}")))), "Pegged.TKNString")(p);
+    }
+    static TParseTree TKNString(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("q{")), pegged.peg.and!(pegged.peg.literal!("q"), NestedList!(pegged.peg.literal!("{"), DString, pegged.peg.literal!("}")))), "Pegged.TKNString")(TParseTree("", false,[], s));
+    }
+    static string TKNString(GetName g)
+    {
+        return "Pegged.TKNString";
+    }
+
+    static TParseTree DLMString(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.and!(pegged.peg.literal!("q"), doublequote), pegged.peg.or!(pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("{")), NestedList!(pegged.peg.literal!("{"), DString, pegged.peg.literal!("}"))), pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("[")), NestedList!(pegged.peg.literal!("["), DString, pegged.peg.literal!("]"))), pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("(")), NestedList!(pegged.peg.literal!("("), DString, pegged.peg.literal!(")"))), pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("<")), NestedList!(pegged.peg.literal!("<"), DString, pegged.peg.literal!(">")))), doublequote), "Pegged.DLMString")(p);
+    }
+    static TParseTree DLMString(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.and!(pegged.peg.literal!("q"), doublequote), pegged.peg.or!(pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("{")), NestedList!(pegged.peg.literal!("{"), DString, pegged.peg.literal!("}"))), pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("[")), NestedList!(pegged.peg.literal!("["), DString, pegged.peg.literal!("]"))), pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("(")), NestedList!(pegged.peg.literal!("("), DString, pegged.peg.literal!(")"))), pegged.peg.and!(pegged.peg.posLookahead!(pegged.peg.literal!("<")), NestedList!(pegged.peg.literal!("<"), DString, pegged.peg.literal!(">")))), doublequote), "Pegged.DLMString")(TParseTree("", false,[], s));
+    }
+    static string DLMString(GetName g)
+    {
+        return "Pegged.DLMString";
+    }
+
+    static TParseTree DComment(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.or!(DLineComment, DBlockComment, DNestingBlockComment), "Pegged.DComment")(p);
+    }
+    static TParseTree DComment(string s)
+    {
+        return pegged.peg.named!(pegged.peg.or!(DLineComment, DBlockComment, DNestingBlockComment), "Pegged.DComment")(TParseTree("", false,[], s));
+    }
+    static string DComment(GetName g)
+    {
+        return "Pegged.DComment";
+    }
+
+    static TParseTree DLineComment(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("//"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(endOfLine), pegged.peg.any)), endOfLine), "Pegged.DLineComment")(p);
+    }
+    static TParseTree DLineComment(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("//"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(endOfLine), pegged.peg.any)), endOfLine), "Pegged.DLineComment")(TParseTree("", false,[], s));
+    }
+    static string DLineComment(GetName g)
+    {
+        return "Pegged.DLineComment";
+    }
+
+    static TParseTree DBlockComment(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("/*"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!("*/")), pegged.peg.any)), pegged.peg.literal!("*/")), "Pegged.DBlockComment")(p);
+    }
+    static TParseTree DBlockComment(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("/*"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!("*/")), pegged.peg.any)), pegged.peg.literal!("*/")), "Pegged.DBlockComment")(TParseTree("", false,[], s));
+    }
+    static string DBlockComment(GetName g)
+    {
+        return "Pegged.DBlockComment";
+    }
+
+    static TParseTree DNestingBlockComment(TParseTree p)
+    {
+         return pegged.peg.named!(NestedList!(pegged.peg.literal!("/+"), pegged.peg.literal!("+/")), "Pegged.DNestingBlockComment")(p);
+    }
+    static TParseTree DNestingBlockComment(string s)
+    {
+        return pegged.peg.named!(NestedList!(pegged.peg.literal!("/+"), pegged.peg.literal!("+/")), "Pegged.DNestingBlockComment")(TParseTree("", false,[], s));
+    }
+    static string DNestingBlockComment(GetName g)
+    {
+        return "Pegged.DNestingBlockComment";
+    }
+
+    template NestedList(alias L, alias Items, alias R)
+    {
+    static TParseTree NestedList(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.keep!(L), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R, Items)), pegged.peg.any)), pegged.peg.zeroOrMore!(pegged.peg.or!(Items, NestedList!(L, Items, R), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R, Items)), pegged.peg.any)))), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R, Items)), pegged.peg.any)), pegged.peg.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(Items)() ~ ", " ~ pegged.peg.getName!(R) ~ ")")(p);
+    }
+    static TParseTree NestedList(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.keep!(L), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R, Items)), pegged.peg.any)), pegged.peg.zeroOrMore!(pegged.peg.or!(Items, NestedList!(L, Items, R), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R, Items)), pegged.peg.any)))), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R, Items)), pegged.peg.any)), pegged.peg.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(Items)() ~ ", " ~ pegged.peg.getName!(R) ~ ")")(TParseTree("", false,[], s));
+    }
+    static string NestedList(GetName g)
+    {
+        return "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(Items)() ~ ", " ~ pegged.peg.getName!(R) ~ ")";
+    }
+
+    }
+    template NestedList(alias L, alias R)
+    {
+    static TParseTree NestedList(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.keep!(L), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R)), pegged.peg.any)), pegged.peg.zeroOrMore!(pegged.peg.or!(NestedList!(L, R), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R)), pegged.peg.any)))), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R)), pegged.peg.any)), pegged.peg.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(R) ~ ")")(p);
+    }
+    static TParseTree NestedList(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.keep!(L), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R)), pegged.peg.any)), pegged.peg.zeroOrMore!(pegged.peg.or!(NestedList!(L, R), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R)), pegged.peg.any)))), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.or!(L, R)), pegged.peg.any)), pegged.peg.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(R) ~ ")")(TParseTree("", false,[], s));
+    }
+    static string NestedList(GetName g)
+    {
+        return "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(R) ~ ")";
+    }
+
+    }
     static TParseTree opCall(TParseTree p)
     {
         TParseTree result = decimateTree(Grammar(p));
