@@ -87,25 +87,26 @@ unittest
         A <- Parameterized.Array( ~[0-9]+ )
     "));
 
-    assert(ParamTest3("[1, 2, 3]").successful);
-    assert(ParamTest3("[1, 2, 3]").matches == ["1", "2", "3"]);
     assert(ParamTest3("[1]").successful);
     assert(ParamTest3("[]").successful);
+    assert(ParamTest3("[1, 2, 3]").successful);
+    assert(ParamTest3("[1, 2, 3]").matches == ["1", "2", "3"]);
     assert(ParamTest3("[123,456,789]").successful);
     assert(ParamTest3("[123,456,789]").matches == ["123", "456", "789"]);
     // not arrays:
-    assert(!ParamTest3("[1,2,]").successful);
-    assert(!ParamTest3("[1,2,3").successful);
-    assert(!ParamTest3("1,2,3]").successful);
-    assert(!ParamTest3("[,]").successful);
+    assert(!ParamTest3("[1,2,]").successful, "Trailing comma.");
+    assert(!ParamTest3("[1,,2,3]").successful, "Two commas in a row.");
+    assert(!ParamTest3("[1,2,3").successful, "Missing closing ']'.");
+    assert(!ParamTest3("1,2,3]").successful, "Missing opening '['.");
+    assert(!ParamTest3("[,]").successful, "No numbers in array.");
 
     mixin(grammar("
     ParamTest4:
         A <- Parameterized.String
     "));
 
-    assert(ParamTest4(`"abc"`).successful);
-    assert(ParamTest4(`""`).successful);
+    assert(ParamTest4(`"abc"`).matches == [`"abc"`]);
+    assert(ParamTest4(`""`).matches == [`""`]);
 
     mixin(grammar("
     ParamTest5:

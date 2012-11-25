@@ -29,10 +29,10 @@ Param        <- DefaultParam / SingleParam
 DefaultParam <- Identifier Spacing :ASSIGN Expression
 SingleParam  <- Identifier Spacing
 ArgList      <- :OPEN Expression (:SEPARATOR Expression)* :CLOSE
-Action       <- ACTIONOPEN qualifiedIdentifier (SEPARATOR qualifiedIdentifier)* ACTIONCLOSE
+Action       <- :ACTIONOPEN qualifiedIdentifier (:SEPARATOR qualifiedIdentifier)* :ACTIONCLOSE
 
-Literal      <~ :quote       (!quote Char)*       :quote       Spacing
-              / :doublequote (!doublequote Char)* :doublequote Spacing
+Literal      <- quote       ~(!quote Char)*       quote       Spacing
+              / doublequote ~(!doublequote Char)* doublequote Spacing
 CharClass    <- :'[' (!']' CharRange)* :']' Spacing
 CharRange    <- Char '-' Char / Char
 

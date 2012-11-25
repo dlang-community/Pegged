@@ -2051,7 +2051,7 @@ mixin(grammar("
 unittest // Extended char range tests
 {
     import std.conv;
-    
+
     mixin(grammar(`
     CharRanges:
         Rule1 <- [a-z]

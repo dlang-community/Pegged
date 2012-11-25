@@ -37,4 +37,9 @@ unittest
     assert(String(`"\x40\x41"`).successful);
     assert(String(`"\u00A0\u00FF"`).successful);
     assert(String(`"\U000000A0\U000000B2"`).successful);
+
+    // Failures
+    assert(!String(`"Hello, World!`).successful);
+    assert(!String(`Hello, World!"`).successful);
+    assert(!String(`Hello, World!`).successful);
 }
