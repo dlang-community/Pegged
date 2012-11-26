@@ -100,8 +100,6 @@ ParseTree p = Gram("abcbccbcd");
 */
 string grammar(Memoization withMemo = Memoization.yes)(string definition)
 {
-
-
     ParseTree defAsParseTree = Pegged(definition);
 
     if (!defAsParseTree.successful)

@@ -1,36 +1,35 @@
 module pegged.examples.testergrammar;
 
-enum string testerGrammar = ` 
+enum string testerGrammar = `
 TesterGrammar:
 
 Root < Node eoi
 
 Node <
-	/ :'^' identifier
-	/ identifier (%Branch)*
+    / :'^' identifier
+    / identifier (%Branch)*
 
 Branch <
-	/ OrderedBranch
-	/ UnorderedBranch
+    / OrderedBranch
+    / UnorderedBranch
 
 OrderedBranch <
-	/ :'->' '{' Node+ :'}'
-	/ :'->' Node
+    / :'->' '{' Node+ :'}'
+    / :'->' Node
 
 UnorderedBranch <
-	/ :'~>' '{' Node+ :'}'
-	/ :'~>' Node
+    / :'~>' '{' Node+ :'}'
+    / :'~>' Node
 
-Spacing <- blank / Comment
+Spacing <: (blank / Comment)*
 
 Comment <- 
-	/ '//' (!eol .)* (eol)
-	/ '/*' (!'*/' .)* '*/'
-	/ NestedComment
+    / '//' (!eol .)* (eol)
+    / '/*' (!'*/' .)* '*/'
+    / NestedComment
 
 NestedComment <- '/+' (!NestedCommentEnd . / NestedComment) NestedCommentEnd
 
 # This is needed to make the /+ +/ nest when the grammar is placed into a D nested comment ;)
 NestedCommentEnd <- '+/'
-
 `;
