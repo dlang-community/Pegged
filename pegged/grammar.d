@@ -27,12 +27,6 @@ enum Memoization { no, yes }
 This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
 It writes the corresponding parser inside a module with the given name.
 */
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString, string optHeader = "")
-{
-    asModule!(withMemo)(moduleName, moduleName, grammarString, optHeader);
-}
-
-/// ditto
 void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString, string optHeader = "")
 {
     import std.stdio;
