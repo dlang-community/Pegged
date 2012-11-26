@@ -2487,8 +2487,8 @@ alias named!(literal!"\t", "tab") tab; /// A parser recognizing \t (tabulation)
 alias named!(fuse!(discardChildren!(oneOrMore!space)),
              "spaces") spaces; /// aka '~space+'
 alias or!(space, endOfLine) blank; /// Any blank char (spaces or end of line).
-alias named!(fuse!(discardChildren!(oneOrMore!blank)),
-             "spacing") spacing; /// The basic space-management parser: fuse one or more blank spaces.
+alias named!(discard!(zeroOrMore!blank),
+             "spacing") spacing; /// The basic space-management parser: discard zero or more blank spaces.
 
 alias charRange!('0', '9') digit; /// Decimal digit: [0-9]
 alias named!(fuse!(discardChildren!(oneOrMore!digit)), "digits") digits; /// [0-9]+
@@ -2513,13 +2513,13 @@ alias named!(literal!"`", "backquote") backquote; /// A parser recognizing ` (ba
 /// A list of elem's separated by sep's. One element minimum.
 template list(alias elem, alias sep)
 {
-    alias named!(spaceAnd!(spacing, and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem)))), "list") list;
+    alias named!(spaceAnd!(oneOrMore!blank, and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem)))), "list") list;
 }
 
 /// A list of elem's separated by sep's. The empty list (no elem, no sep) is OK.
 template list0(alias elem, alias sep)
 {
-    alias named!(spaceAnd!(spacing, option!(and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem))))), "list0") list0;
+    alias named!(spaceAnd!(oneOrMore!blank, option!(and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem))))), "list0") list0;
 }
 
 template AddSpace(alias sp)
@@ -2537,7 +2537,7 @@ but can be useful for low-level code. It might become deprecated, but it's not t
 
 ----
 alias and!(literal!"abc", literal!"def") rule1; // "abc" "def", equivalent to "abcdef"
-alias spaceAnd!(spacing, literal!"abc", literal!"def") rule2; // "abc" "def", but with spaces in-between.
+alias spaceAnd!(oneOrMore!blank, literal!"abc", literal!"def") rule2; // "abc" "def", but with spaces in-between.
 
 string input1 = "abcdef";
 string input2 = "  abc
@@ -2583,7 +2583,7 @@ unittest // 'spaceAnd' unit test
 
     //Basic use
     alias and!(a,b) ab;
-    alias spaceAnd!(spacing, a, b) a_b;
+    alias spaceAnd!(oneOrMore!blank, a, b) a_b;
 
     ParseTree reference = ab("ab");
     ParseTree result = a_b("ab");
