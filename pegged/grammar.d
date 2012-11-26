@@ -27,13 +27,13 @@ enum Memoization { no, yes }
 This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
 It writes the corresponding parser inside a module with the given name.
 */
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString, string optHeader = "")
 {
-    asModule!(withMemo)(moduleName, moduleName, grammarString);
+    asModule!(withMemo)(moduleName, moduleName, grammarString, optHeader);
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString, string optHeader = "")
 {
     import std.stdio;
     auto f = File(fileName ~ ".d","w");
@@ -43,19 +43,23 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
     f.write("\n\n+/\n");
 
     f.write("module " ~ moduleName ~ ";\n\n");
+
+    if (optHeader.length > 0)
+        f.write(optHeader ~ "\n\n");
+
     f.write("public import pegged.peg;\n");
     f.write(grammar!(withMemo)(grammarString));
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File file)
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File file, string optHeader = "")
 {
     string grammarDefinition;
     foreach(line; file.byLine)
     {
         grammarDefinition ~= line ~ '\n';
     }
-    asModule!(withMemo)(moduleName, grammarDefinition);
+    asModule!(withMemo)(moduleName, grammarDefinition, optHeader);
 }
 
 // Helper to insert ':Spacing*' before and after Primaries
@@ -2102,7 +2106,7 @@ unittest // Semantic actions, testing { foo } and { foo, bar, baz }
     result = Semantic.decimateTree(Semantic.Rule4("b"));
     assert(result.successful);
     assert(result.matches == ["b", "b", "b", "b", "b", "b", "b", "b"]);
-    
+
     result = Semantic.decimateTree(Semantic.Rule5("abc"));
     assert(result.successful);
     assert(result.matches == ["a", "a", "b", "c", "c"]);
@@ -2145,7 +2149,7 @@ unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
     badGrammar!"Name
         Rule1 Rule2";
     badGrammar!"Name:
-        Rule1 <-"; 
+        Rule1 <-";
     badGrammar!"Name:
         Rule1 <~";
     badGrammar!"Name:
@@ -2275,4 +2279,151 @@ unittest // Memoization testing
     assert(pegged.peg.softCompare(result1, result2));
     assert(pegged.peg.softCompare(result1, result3));
     assert(pegged.peg.softCompare(result1, result4));
+}
+
+unittest // Test lambda syntax in semantic actions
+{
+    import std.array;
+
+    auto actions = [
+
+    // Normal action
+    `{ myAction }`,
+
+    // List of normal actions
+    `{ myAction, myAction2 }`,
+
+    // Simple do-nothing lambda
+    `{ (a) {return a;} }`,
+
+    // Simple do-nothing lambda with formatting
+    `{ (a) {
+        return a;
+     }}`,
+
+    // Lambda with commas and spurious braces to try and confuse it
+    `{ (a, b) {
+        string s = "}";
+        if (a.successful,) {
+            s ~= q"<}>";
+        } else {
+            { s ~= q"<}>"; /* } */ }
+        }
+        return a;} }`,
+
+    // List of mixed actions and lambdas
+    `{ myAction , (a) {return a;}, myAction2 , (a) { /* , } */ return a; } }`,
+
+    // Ambiguous lambda (not sure it would compile if used... but it should parse)
+    `{ myAction, a => transform(a), myAction2 }`,
+
+    // Something more convoluted
+    "{ myAction, (a) {
+        /* block } comment with } braces */
+        string s = `} {` // wysiwyg string with braces and line comment with brace }
+        if (s is null) {
+            // }
+        } else { // scopes
+            { // nested scopes
+                writeln(q{ \"}\" }); // token string with nested string with brace
+            }
+        }
+
+        string s = `1,2,3,4,5` // commas separate actions
+
+        /+ } Crazy nesting block comment
+            /+ } +/
+            /+ } +/
+            /+ /+ } +/ } +/
+            }
+        +/
+
+        q\"<  } <}> <> <<}<>}>>  >\"; // delimited string
+        q\"[ [}] [] [[[ } ]]] ]\"; // delimited string
+        q\"( () }(}) (((}))}) )\"; // delimited string
+        q\"{ {} {} {{{}}} }\"; // delimited string
+        q{ class {} {} struct void \"}\" } /* another token string } */
+
+        struct S
+        {
+            void foo() {}
+            void bar() {}
+        }
+
+        return a;
+    }, myAction2 }",
+    ];
+
+    auto results = [
+    [`myAction`],
+    [`myAction`,`myAction2`],
+    [`(a) {return a;}`],
+    [`(a) {
+        return a;
+     }`],
+    [`(a, b) {
+        string s = "}";
+        if (a.successful,) {
+            s ~= q"<}>";
+        } else {
+            { s ~= q"<}>"; /* } */ }
+        }
+        return a;}`],
+    [`myAction`,`(a) {return a;}`,`myAction2`,`(a) { /* , } */ return a; }`],
+    [`myAction`,`a => transform(a)`,`myAction2`],
+    [`myAction`,"(a) {
+        /* block } comment with } braces */
+        string s = `} {` // wysiwyg string with braces and line comment with brace }
+        if (s is null) {
+            // }
+        } else { // scopes
+            { // nested scopes
+                writeln(q{ \"}\" }); // token string with nested string with brace
+            }
+        }
+
+        string s = `1,2,3,4,5` // commas separate actions
+
+        /+ } Crazy nesting block comment
+            /+ } +/
+            /+ } +/
+            /+ /+ } +/ } +/
+            }
+        +/
+
+        q\"<  } <}> <> <<}<>}>>  >\"; // delimited string
+        q\"[ [}] [] [[[ } ]]] ]\"; // delimited string
+        q\"( () }(}) (((}))}) )\"; // delimited string
+        q\"{ {} {} {{{}}} }\"; // delimited string
+        q{ class {} {} struct void \"}\" } /* another token string } */
+
+        struct S
+        {
+            void foo() {}
+            void bar() {}
+        }
+
+        return a;
+    }",`myAction2`]
+    ];
+
+    foreach(idx, act; actions)
+    {
+        auto grammar = `P: Rule <- RuleA ` ~ act ~ ` RuleA <- 'A'`;
+        auto p = Pegged(grammar);
+
+        assert(p.successful);
+
+        auto action = p.children[0].children[1]
+                                   .children[2]
+                                   .children[0]
+                                   .children[0]
+                                   .children[0]
+                                   .children[1];
+
+        assert(action.matches.length == results[idx].length);
+        foreach(i, s; action.matches)
+            assert(strip(s) == results[idx][i],
+                   "\nGot |"~s~"|" ~ "\nNeeded: |"~results[idx][i]~"|");
+    }
 }
