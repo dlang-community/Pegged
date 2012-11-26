@@ -82,7 +82,7 @@ NAMESEP      <- '.'   # No Spacing
 OPEN         <- '(' Spacing
 CLOSE        <- ')' Spacing
 ANY          <- '.' Spacing
-Spacing      <: (Space / Comment)*
+Spacing      <: (blank / Comment)*
 Comment      <- '#' (!eol .)* :eol
 Space        <- spacing / "\\t" / "\\n" / "\\r"
 

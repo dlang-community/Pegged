@@ -81,7 +81,7 @@ NAMESEP      <- '.'   # No Spacing
 OPEN         <- '(' Spacing
 CLOSE        <- ')' Spacing
 ANY          <- '.' Spacing
-Spacing      <: (Space / Comment)*
+Spacing      <: (blank / Comment)*
 Comment      <- '#' (!eol .)* :eol
 Space        <- spacing / "\\t" / "\\n" / "\\r"
 
@@ -818,11 +818,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Spacing(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(Space, Comment))), "Pegged.Spacing")(p);
+         return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment))), "Pegged.Spacing")(p);
     }
     static TParseTree Spacing(string s)
     {
-        return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(Space, Comment))), "Pegged.Spacing")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment))), "Pegged.Spacing")(TParseTree("", false,[], s));
     }
     static string Spacing(GetName g)
     {
