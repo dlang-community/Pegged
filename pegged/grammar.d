@@ -251,6 +251,12 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         ParseTree modified = spaceArrow(p.children[2]);
                         code ~= generateCode(modified);
                         break;
+                    case "Pegged.ACTIONARROW":
+                        auto actionResult = generateCode(p.children[2]);
+                        foreach(action; p.children[1].matches[1..$])
+                            actionResult = "pegged.peg.action!(" ~ actionResult ~ ", " ~ action ~ ")";
+                        code ~= actionResult;
+                        break;
                     default:
                         break;
                 }
@@ -352,11 +358,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 break;
             case "Pegged.DefaultParam":
                 result = p.matches[0] ~ " = " ~ generateCode(p.children[1]);
-                break;
-            case "Pegged.RuleAction":
-                result = generateCode(p.children[1]);
-                foreach(action; p.children[0].matches)
-                    result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
                 break;
             case "Pegged.Expression":
                 if (p.children.length > 1) // OR expression
@@ -2082,8 +2083,8 @@ unittest // Semantic actions, testing { foo } and { foo, bar, baz }
         Rule3 <- 'b' {doubler} {doubler} # Same as Rule2
         Rule4 <- 'b' {doubler, doubler, doubler}
         Rule5 <- 'a' {doubler} 'b' 'c'{doubler}
-        Rule6 <- {doubler} 'a'  # Rule Level actions
-        Rule7 <- {doubler} 'a' 'b' {doubler}  # Rule Level actions
+        Rule6 <{doubler} 'a'  # Rule Level actions
+        Rule7 <{doubler} 'a' 'b' {doubler}  # Rule Level actions
         `));
 
     ParseTree result = Semantic.decimateTree(Semantic.Rule1("a"));

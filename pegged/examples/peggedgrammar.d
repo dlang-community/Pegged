@@ -8,8 +8,7 @@ Pegged:
 
 # Syntactic rules:
 Grammar      <- Spacing GrammarName Definition+ :eoi
-Definition   <- LhsName Arrow (RuleAction / Expression)
-RuleAction   <- Action Expression
+Definition   <- LhsName Arrow Expression
 Expression   <- :OR? Sequence (:OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
@@ -53,7 +52,7 @@ Char         <~ backslash ( quote
                           )
               / . # or anything else
 
-Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / PROPAGATEARROW / SPACEARROW
+Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / PROPAGATEARROW / ACTIONARROW / SPACEARROW
 LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing
@@ -61,6 +60,7 @@ KEEPARROW    <- '<^' Spacing
 DROPARROW    <- '<;' Spacing
 PROPAGATEARROW <- '<%' Spacing
 SPACEARROW   <- '<' Spacing
+ACTIONARROW  <- '<' Action Spacing
 
 OR           <- '/' Spacing
 
@@ -88,7 +88,7 @@ Comment      <- '#' (!eol .)* :eol
 Space        <- spacing / "\\t" / "\\n" / "\\r"
 
 # Action Rule
-Action      < :ACTIONOPEN ((Lambda / qualifiedIdentifier) (:SEPARATOR (Lambda / qualifiedIdentifier))*) :ACTIONCLOSE
+Action      <- :ACTIONOPEN Spacing ((Lambda / qualifiedIdentifier) (:SEPARATOR (Lambda / qualifiedIdentifier))*) Spacing :ACTIONCLOSE
 Lambda      <~ (!(ACTIONCLOSE/SEPARATOR) (LambdaItems / NestedList('{',LambdaItems,'}') / .))*
 
 LambdaItems <- ~DComment / ~DString / ~DParamList
