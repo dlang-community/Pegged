@@ -121,8 +121,9 @@ struct ParseTree
               && p.input      == input
               && p.begin      == begin
               && p.end        == end
-              && equal(p.children, children));
+              && (p.children == children) );
     }
+
 
     ParseTree dup() @property
     {

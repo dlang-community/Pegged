@@ -7,7 +7,8 @@ Pegged:
 
 # Syntactic rules:
 Grammar      <- Spacing GrammarName Definition+ :eoi
-Definition   <- LhsName Arrow Expression
+Definition   <- LhsName Arrow (RuleAction / Expression)
+RuleAction   <- Action Expression
 Expression   <- :OR? Sequence (:OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
@@ -137,6 +138,7 @@ struct GenericPegged(TParseTree)
         {
             case "Pegged.Grammar":
             case "Pegged.Definition":
+            case "Pegged.RuleAction":
             case "Pegged.Expression":
             case "Pegged.Sequence":
             case "Pegged.Prefix":
@@ -220,15 +222,28 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Definition(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(LhsName, Arrow, Expression), "Pegged.Definition")(p);
+         return pegged.peg.named!(pegged.peg.and!(LhsName, Arrow, pegged.peg.or!(RuleAction, Expression)), "Pegged.Definition")(p);
     }
     static TParseTree Definition(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(LhsName, Arrow, Expression), "Pegged.Definition")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(LhsName, Arrow, pegged.peg.or!(RuleAction, Expression)), "Pegged.Definition")(TParseTree("", false,[], s));
     }
     static string Definition(GetName g)
     {
         return "Pegged.Definition";
+    }
+
+    static TParseTree RuleAction(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(Action, Expression), "Pegged.RuleAction")(p);
+    }
+    static TParseTree RuleAction(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(Action, Expression), "Pegged.RuleAction")(TParseTree("", false,[], s));
+    }
+    static string RuleAction(GetName g)
+    {
+        return "Pegged.RuleAction";
     }
 
     static TParseTree Expression(TParseTree p)
