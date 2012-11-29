@@ -419,6 +419,62 @@ unittest // 'any' unit test
 }
 
 /**
+Predefined parser: matches word boundaries, as \b for regexes.
+*/
+ParseTree wordBoundary(ParseTree p)
+{
+    bool matched =  (p.end == 0 && isAlpha(p.input.front()))
+                 || (p.end == p.input.length && isAlpha(p.input.back()))
+                 || (isAlpha(p.input[p.end-1]) && !isAlpha(p.input[p.end]))
+                 || (!isAlpha(p.input[p.end-1]) && isAlpha(p.input[p.end]));
+    if (matched)
+        return ParseTree("wordBoundary", matched, [], p.input, p.end, p.end, null);
+    else
+        return ParseTree("wordBoundary", matched, ["word boundary"], p.input, p.end, p.end, null);
+}
+
+/// ditto
+ParseTree wordBoundary(string input)
+{
+    return ParseTree("wordBoundary", isAlpha(input.front()), [], input, 0,0, null);
+}
+
+string wordBoundary(GetName g)
+{
+    return "wordBoundary";
+}
+
+unittest // word boundary
+{
+    ParseTree input = ParseTree("", false, [], "This is a word.");
+    auto wb = [// "This"
+               0:true, 1:false, 2:false, 3:false, 4: true,
+               // "is"
+               5: true, 6:false, 7: true,
+               // "a"
+               8: true, 9:true,
+               // "word"
+               10:true, 11:false, 12:false, 13:false, 14:true,
+               // "."
+               15:false
+              ];
+
+    foreach(size_t index; 0 .. input.input.length)
+    {
+        input.end = index;
+        ParseTree result = wordBoundary(input);
+
+        assert(result.name == "wordBoundary");
+        assert(result.successful == wb[index]); // true, false, ...
+        // for errors, there is an error message
+        assert(result.successful && result.matches is null || !result.successful);
+        assert(result.begin == input.end);
+        assert(result.end == input.end);
+        assert(result.children is null);
+    }
+}
+
+/**
 Represents a literal in a PEG, like "abc" or 'abc' (or even '').
 It succeeds if a prefix of the input is equal to its template parameter and fails otherwise.
 */
