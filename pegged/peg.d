@@ -125,8 +125,9 @@ struct ParseTree
               && p.input      == input
               && p.begin      == begin
               && p.end        == end
-              && equal(p.children, children));
+              && (p.children == children) );
     }
+
 
     ParseTree dup() @property
     {
@@ -2923,8 +2924,8 @@ alias named!(literal!"\t", "tab") tab; /// A parser recognizing \t (tabulation)
 alias named!(fuse!(discardChildren!(oneOrMore!space)),
              "spaces") spaces; /// aka '~space+'
 alias or!(space, endOfLine) blank; /// Any blank char (spaces or end of line).
-alias named!(fuse!(discardChildren!(oneOrMore!blank)),
-             "spacing") spacing; /// The basic space-management parser: fuse one or more blank spaces.
+alias named!(discard!(zeroOrMore!blank),
+             "spacing") spacing; /// The basic space-management parser: discard zero or more blank spaces.
 
 alias charRange!('0', '9') digit; /// Decimal digit: [0-9]
 alias named!(fuse!(discardChildren!(oneOrMore!digit)), "digits") digits; /// [0-9]+
@@ -2977,7 +2978,7 @@ but can be useful for low-level code. It might become deprecated, but it's not t
 
 ----
 alias and!(literal!"abc", literal!"def") rule1; // "abc" "def", equivalent to "abcdef"
-alias spaceAnd!(spacing, literal!"abc", literal!"def") rule2; // "abc" "def", but with spaces in-between.
+alias spaceAnd!(oneOrMore!blank, literal!"abc", literal!"def") rule2; // "abc" "def", but with spaces in-between.
 
 string input1 = "abcdef";
 string input2 = "  abc
@@ -3023,7 +3024,7 @@ unittest // 'spaceAnd' unit test
 
     //Basic use
     alias and!(a,b) ab;
-    alias spaceAnd!(spacing, a, b) a_b;
+    alias spaceAnd!(oneOrMore!blank, a, b) a_b;
 
     ParseTree reference = ab("ab");
     ParseTree result = a_b("ab");

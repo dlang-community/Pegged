@@ -27,12 +27,6 @@ enum Memoization { no, yes }
 This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
 It writes the corresponding parser inside a module with the given name.
 */
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string grammarString, string optHeader = "")
-{
-    asModule!(withMemo)(moduleName, moduleName, grammarString, optHeader);
-}
-
-/// ditto
 void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString, string optHeader = "")
 {
     import std.stdio;
@@ -106,8 +100,6 @@ ParseTree p = Gram("abcbccbcd");
 */
 string grammar(Memoization withMemo = Memoization.yes)(string definition)
 {
-
-
     ParseTree defAsParseTree = Pegged(definition);
 
     if (!defAsParseTree.successful)
@@ -258,6 +250,12 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     case "Pegged.SPACEARROW":
                         ParseTree modified = spaceArrow(p.children[2]);
                         code ~= generateCode(modified);
+                        break;
+                    case "Pegged.ACTIONARROW":
+                        auto actionResult = generateCode(p.children[2]);
+                        foreach(action; p.children[1].matches[1..$])
+                            actionResult = "pegged.peg.action!(" ~ actionResult ~ ", " ~ action ~ ")";
+                        code ~= actionResult;
                         break;
                     default:
                         break;
@@ -2085,6 +2083,8 @@ unittest // Semantic actions, testing { foo } and { foo, bar, baz }
         Rule3 <- 'b' {doubler} {doubler} # Same as Rule2
         Rule4 <- 'b' {doubler, doubler, doubler}
         Rule5 <- 'a' {doubler} 'b' 'c'{doubler}
+        Rule6 <{doubler} 'a'  # Rule Level actions
+        Rule7 <{doubler} 'a' 'b' {doubler}  # Rule Level actions
         `));
 
     ParseTree result = Semantic.decimateTree(Semantic.Rule1("a"));
@@ -2110,6 +2110,14 @@ unittest // Semantic actions, testing { foo } and { foo, bar, baz }
     result = Semantic.decimateTree(Semantic.Rule5("abc"));
     assert(result.successful);
     assert(result.matches == ["a", "a", "b", "c", "c"]);
+
+    result = Semantic.decimateTree(Semantic.Rule6("abc"));
+    assert(result.successful);
+    assert(result.matches == ["a", "a"]);
+
+    result = Semantic.decimateTree(Semantic.Rule7("abc"));
+    assert(result.successful);
+    assert(result.matches == ["a", "b", "b", "a", "b", "b"]);
 
 }
 

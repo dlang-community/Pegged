@@ -51,7 +51,7 @@ Char         <~ backslash ( quote
                           )
               / . # or anything else
 
-Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / PROPAGATEARROW / SPACEARROW
+Arrow        <- LEFTARROW / FUSEARROW / DISCARDARROW / KEEPARROW / DROPARROW / PROPAGATEARROW / ACTIONARROW / SPACEARROW
 LEFTARROW    <- '<-' Spacing
 FUSEARROW    <- '<~' Spacing
 DISCARDARROW <- '<:' Spacing
@@ -59,6 +59,7 @@ KEEPARROW    <- '<^' Spacing
 DROPARROW    <- '<;' Spacing
 PROPAGATEARROW <- '<%' Spacing
 SPACEARROW   <- '<' Spacing
+ACTIONARROW  <- '<' Action Spacing
 
 OR           <- '/' Spacing
 
@@ -81,12 +82,12 @@ NAMESEP      <- '.'   # No Spacing
 OPEN         <- '(' Spacing
 CLOSE        <- ')' Spacing
 ANY          <- '.' Spacing
-Spacing      <: (Space / Comment)*
+Spacing      <: (blank / Comment)*
 Comment      <- '#' (!eol .)* :eol
 Space        <- spacing / "\\t" / "\\n" / "\\r"
 
 # Action Rule
-Action      < :ACTIONOPEN ((Lambda / qualifiedIdentifier) (:SEPARATOR (Lambda / qualifiedIdentifier))*) :ACTIONCLOSE
+Action      <- :ACTIONOPEN Spacing ((Lambda / qualifiedIdentifier) (:SEPARATOR (Lambda / qualifiedIdentifier))*) Spacing :ACTIONCLOSE
 Lambda      <~ (!(ACTIONCLOSE/SEPARATOR) (LambdaItems / NestedList('{',LambdaItems,'}') / .))*
 
 LambdaItems <- ~DComment / ~DString / ~DParamList
@@ -163,6 +164,7 @@ struct GenericPegged(TParseTree)
             case "Pegged.DROPARROW":
             case "Pegged.PROPAGATEARROW":
             case "Pegged.SPACEARROW":
+            case "Pegged.ACTIONARROW":
             case "Pegged.OR":
             case "Pegged.POS":
             case "Pegged.NEG":
@@ -467,11 +469,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Arrow(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, PROPAGATEARROW, SPACEARROW), "Pegged.Arrow")(p);
+         return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, PROPAGATEARROW, ACTIONARROW, SPACEARROW), "Pegged.Arrow")(p);
     }
     static TParseTree Arrow(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, PROPAGATEARROW, SPACEARROW), "Pegged.Arrow")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(LEFTARROW, FUSEARROW, DISCARDARROW, KEEPARROW, DROPARROW, PROPAGATEARROW, ACTIONARROW, SPACEARROW), "Pegged.Arrow")(TParseTree("", false,[], s));
     }
     static string Arrow(GetName g)
     {
@@ -567,6 +569,19 @@ struct GenericPegged(TParseTree)
     static string SPACEARROW(GetName g)
     {
         return "Pegged.SPACEARROW";
+    }
+
+    static TParseTree ACTIONARROW(TParseTree p)
+    {
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<"), Action, Spacing), "Pegged.ACTIONARROW")(p);
+    }
+    static TParseTree ACTIONARROW(string s)
+    {
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("<"), Action, Spacing), "Pegged.ACTIONARROW")(TParseTree("", false,[], s));
+    }
+    static string ACTIONARROW(GetName g)
+    {
+        return "Pegged.ACTIONARROW";
     }
 
     static TParseTree OR(TParseTree p)
@@ -818,11 +833,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Spacing(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(Space, Comment))), "Pegged.Spacing")(p);
+         return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment))), "Pegged.Spacing")(p);
     }
     static TParseTree Spacing(string s)
     {
-        return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(Space, Comment))), "Pegged.Spacing")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.discard!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment))), "Pegged.Spacing")(TParseTree("", false,[], s));
     }
     static string Spacing(GetName g)
     {
@@ -857,11 +872,11 @@ struct GenericPegged(TParseTree)
 
     static TParseTree Action(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), ACTIONOPEN, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.and!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Lambda, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), qualifiedIdentifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), SEPARATOR, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Lambda, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), qualifiedIdentifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), ACTIONCLOSE, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), "Pegged.Action")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(ACTIONOPEN), Spacing, pegged.peg.and!(pegged.peg.or!(Lambda, qualifiedIdentifier), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(SEPARATOR), pegged.peg.or!(Lambda, qualifiedIdentifier)))), Spacing, pegged.peg.discard!(ACTIONCLOSE)), "Pegged.Action")(p);
     }
     static TParseTree Action(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), ACTIONOPEN, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.and!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Lambda, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), qualifiedIdentifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), SEPARATOR, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Lambda, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), qualifiedIdentifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), ACTIONCLOSE, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), "Pegged.Action")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(ACTIONOPEN), Spacing, pegged.peg.and!(pegged.peg.or!(Lambda, qualifiedIdentifier), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(SEPARATOR), pegged.peg.or!(Lambda, qualifiedIdentifier)))), Spacing, pegged.peg.discard!(ACTIONCLOSE)), "Pegged.Action")(TParseTree("", false,[], s));
     }
     static string Action(GetName g)
     {
