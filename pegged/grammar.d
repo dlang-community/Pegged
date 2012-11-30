@@ -63,14 +63,12 @@ ParseTree spaceArrow(ParseTree input)
     {
         ParseTree spacer =
         ParseTree("Pegged.Prefix", true, null, null, 0,0, [
-            ParseTree("Pegged.DISCARD", true),
             ParseTree("Pegged.Suffix", true, null, null, 0, 0, [
                 ParseTree("Pegged.Primary", true, null, null, 0, 0, [
                     ParseTree("Pegged.RhsName", true, null, null, 0,0, [
                         ParseTree("Pegged.Identifier", true, ["Spacing"])
                     ])
-                ]),
-                ParseTree("Pegged.ZEROORMORE", true)
+                ])
             ])
         ]);
         ParseTree result = ParseTree("Pegged.WrapAround", true, p.matches, p.input, p.begin, p.end, p.children);
@@ -2434,4 +2432,35 @@ unittest // Test lambda syntax in semantic actions
             assert(strip(s) == results[idx][i],
                    "\nGot |"~s~"|" ~ "\nNeeded: |"~results[idx][i]~"|");
     }
+}
+
+unittest
+{
+    // Higher-level word boundary test.
+    mixin(grammar(`
+        TestGrammar:
+
+        Foo < '{' 'X' '}'
+        Bar < 'A' 'B'
+
+        Spacing <: 
+            / blank+
+            / blank* wordBoundary
+            / wordBoundary blank*
+            / ![a-zA-Z]
+            / !.
+
+        `));
+
+    auto pt = TestGrammar.Foo("{ X }");
+    assert(pt.successful);
+    
+    pt = TestGrammar.Foo("{X}");
+    assert(pt.successful);
+    
+    pt = TestGrammar.Bar("A B");
+    assert(pt.successful);
+    
+    pt = TestGrammar.Bar("AB");
+    assert(!pt.successful);
 }
