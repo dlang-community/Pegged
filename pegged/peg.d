@@ -19,6 +19,7 @@ dependency.
 */
 
 import std.algorithm: map, startsWith;
+import std.uni : isAlpha;
 import std.array;
 import std.conv;
 import std.range: equal;
@@ -121,8 +122,9 @@ struct ParseTree
               && p.input      == input
               && p.begin      == begin
               && p.end        == end
-              && equal(p.children, children));
+              && (p.children == children) );
     }
+
 
     ParseTree dup() @property
     {

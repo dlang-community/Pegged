@@ -14,11 +14,11 @@ Branch <
     / UnorderedBranch
 
 OrderedBranch <
-    / :'->' '{' Node+ :'}'
+    / :'->' :'{' Node+ :'}'
     / :'->' Node
 
 UnorderedBranch <
-    / :'~>' '{' Node+ :'}'
+    / :'~>' :'{' Node+ :'}'
     / :'~>' Node
 
 Spacing <: (blank / Comment)*
