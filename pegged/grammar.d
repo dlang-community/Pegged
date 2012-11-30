@@ -2435,3 +2435,35 @@ unittest // Test lambda syntax in semantic actions
                    "\nGot |"~s~"|" ~ "\nNeeded: |"~results[idx][i]~"|");
     }
 }
+
+unittest
+{
+    // Higher-level word boundary test.
+    mixin(grammar(`
+        TestGrammar:
+
+        Foo < '{' 'X' '}'
+        Bar < 'A' 'B'
+
+        Spacing <: 
+            / blank+
+            / blank* wordBoundary
+            / wordBoundary blank*
+            / ![a-zA-Z]
+            / !.
+
+        `));
+
+    auto pt = TestGrammar.Foo("{ X }");
+    assert(pt.successful);
+    
+    pt = TestGrammar.Foo("{X}");
+    assert(pt.successful);
+    
+    pt = TestGrammar.Bar("A B");
+    assert(pt.successful);
+    
+    pt = TestGrammar.Bar("AB");
+    writefln("pt == %s", pt);
+    assert(!pt.successful);
+}

@@ -424,10 +424,12 @@ Predefined parser: matches word boundaries, as \b for regexes.
 */
 ParseTree wordBoundary(ParseTree p)
 {
+	// TODO: I added more indexing guards and now this could probably use 
+	//         some simplification.  Too tired to write it better. --Chad
     bool matched =  (p.end == 0 && isAlpha(p.input.front()))
                  || (p.end == p.input.length && isAlpha(p.input.back()))
-                 || (isAlpha(p.input[p.end-1]) && !isAlpha(p.input[p.end]))
-                 || (!isAlpha(p.input[p.end-1]) && isAlpha(p.input[p.end]));
+                 || (p.end > 0 && isAlpha(p.input[p.end-1])  && p.end < p.input.length && !isAlpha(p.input[p.end]))
+                 || (p.end > 0 && !isAlpha(p.input[p.end-1]) && p.end < p.input.length &&  isAlpha(p.input[p.end]));
     if (matched)
         return ParseTree("wordBoundary", matched, [], p.input, p.end, p.end, null);
     else
