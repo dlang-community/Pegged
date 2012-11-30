@@ -24,6 +24,7 @@ import std.conv;
 import std.range: equal;
 import std.string: strip;
 import std.typetuple;
+import std.uni: isAlpha;
 
 /**
 CT Switch for testing 'keywords' implementations
