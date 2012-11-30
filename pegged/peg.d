@@ -18,11 +18,13 @@ dependency.
 */
 
 import std.algorithm: map, startsWith;
+import std.uni : isAlpha;
 import std.array;
 import std.conv;
 import std.range: equal;
 import std.string: strip;
 import std.typetuple;
+import std.uni: isAlpha;
 
 version(unittest)
 {
@@ -525,6 +527,64 @@ unittest // 'any' unit test
     assert(!result.successful, "'any' fails on null strings.");
     assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
     assert(result.end == 0, "'any' does not advance the index.");
+}
+
+/**
+Predefined parser: matches word boundaries, as \b for regexes.
+*/
+ParseTree wordBoundary(ParseTree p)
+{
+	// TODO: I added more indexing guards and now this could probably use 
+	//         some simplification.  Too tired to write it better. --Chad
+    bool matched =  (p.end == 0 && isAlpha(p.input.front()))
+                 || (p.end == p.input.length && isAlpha(p.input.back()))
+                 || (p.end > 0 && isAlpha(p.input[p.end-1])  && p.end < p.input.length && !isAlpha(p.input[p.end]))
+                 || (p.end > 0 && !isAlpha(p.input[p.end-1]) && p.end < p.input.length &&  isAlpha(p.input[p.end]));
+    if (matched)
+        return ParseTree("wordBoundary", matched, [], p.input, p.end, p.end, null);
+    else
+        return ParseTree("wordBoundary", matched, ["word boundary"], p.input, p.end, p.end, null);
+}
+
+/// ditto
+ParseTree wordBoundary(string input)
+{
+    return ParseTree("wordBoundary", isAlpha(input.front()), [], input, 0,0, null);
+}
+
+string wordBoundary(GetName g)
+{
+    return "wordBoundary";
+}
+
+unittest // word boundary
+{
+    ParseTree input = ParseTree("", false, [], "This is a word.");
+    auto wb = [// "This"
+               0:true, 1:false, 2:false, 3:false, 4: true,
+               // "is"
+               5: true, 6:false, 7: true,
+               // "a"
+               8: true, 9:true,
+               // "word"
+               10:true, 11:false, 12:false, 13:false, 14:true,
+               // "."
+               15:false
+              ];
+
+    foreach(size_t index; 0 .. input.input.length)
+    {
+        input.end = index;
+        ParseTree result = wordBoundary(input);
+
+        assert(result.name == "wordBoundary");
+        assert(result.successful == wb[index]); // true, false, ...
+        // for errors, there is an error message
+        assert(result.successful && result.matches is null || !result.successful);
+        assert(result.begin == input.end);
+        assert(result.end == input.end);
+        assert(result.children is null);
+    }
 }
 
 /**

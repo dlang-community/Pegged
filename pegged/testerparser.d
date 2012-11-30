@@ -15,11 +15,11 @@ Branch <
     / UnorderedBranch
 
 OrderedBranch <
-    / :'->' '{' Node+ :'}'
+    / :'->' :'{' Node+ :'}'
     / :'->' Node
 
 UnorderedBranch <
-    / :'~>' '{' Node+ :'}'
+    / :'~>' :'{' Node+ :'}'
     / :'~>' Node
 
 Spacing <: (blank / Comment)*
@@ -65,11 +65,11 @@ struct GenericTesterGrammar(TParseTree)
     mixin decimateTree;
     static TParseTree Root(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), eoi, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), "TesterGrammar.Root")(p);
+         return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, Node, Spacing), pegged.peg.wrapAround!(Spacing, eoi, Spacing)), "TesterGrammar.Root")(p);
     }
     static TParseTree Root(string s)
     {
-        return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), eoi, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), "TesterGrammar.Root")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, Node, Spacing), pegged.peg.wrapAround!(Spacing, eoi, Spacing)), "TesterGrammar.Root")(TParseTree("", false,[], s));
     }
     static string Root(GetName g)
     {
@@ -78,11 +78,11 @@ struct GenericTesterGrammar(TParseTree)
 
     static TParseTree Node(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("^"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), identifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.and!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), identifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.propagate!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Branch, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))))), "TesterGrammar.Node")(p);
+         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("^"), Spacing)), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), pegged.peg.and!(pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.propagate!(pegged.peg.wrapAround!(Spacing, Branch, Spacing)), Spacing)))), "TesterGrammar.Node")(p);
     }
     static TParseTree Node(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("^"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), identifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.and!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), identifier, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.propagate!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Branch, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))))), "TesterGrammar.Node")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("^"), Spacing)), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), pegged.peg.and!(pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.propagate!(pegged.peg.wrapAround!(Spacing, Branch, Spacing)), Spacing)))), "TesterGrammar.Node")(TParseTree("", false,[], s));
     }
     static string Node(GetName g)
     {
@@ -91,11 +91,11 @@ struct GenericTesterGrammar(TParseTree)
 
     static TParseTree Branch(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), OrderedBranch, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), UnorderedBranch, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), "TesterGrammar.Branch")(p);
+         return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, OrderedBranch, Spacing), pegged.peg.wrapAround!(Spacing, UnorderedBranch, Spacing)), "TesterGrammar.Branch")(p);
     }
     static TParseTree Branch(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), OrderedBranch, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), UnorderedBranch, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), "TesterGrammar.Branch")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, OrderedBranch, Spacing), pegged.peg.wrapAround!(Spacing, UnorderedBranch, Spacing)), "TesterGrammar.Branch")(TParseTree("", false,[], s));
     }
     static string Branch(GetName g)
     {
@@ -104,11 +104,11 @@ struct GenericTesterGrammar(TParseTree)
 
     static TParseTree OrderedBranch(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("->"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("{"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.oneOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("}"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("->"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), "TesterGrammar.OrderedBranch")(p);
+         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("->"), Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing)), pegged.peg.oneOrMore!(pegged.peg.wrapAround!(Spacing, Node, Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing))), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("->"), Spacing)), pegged.peg.wrapAround!(Spacing, Node, Spacing))), "TesterGrammar.OrderedBranch")(p);
     }
     static TParseTree OrderedBranch(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("->"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("{"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.oneOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("}"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("->"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), "TesterGrammar.OrderedBranch")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("->"), Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing)), pegged.peg.oneOrMore!(pegged.peg.wrapAround!(Spacing, Node, Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing))), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("->"), Spacing)), pegged.peg.wrapAround!(Spacing, Node, Spacing))), "TesterGrammar.OrderedBranch")(TParseTree("", false,[], s));
     }
     static string OrderedBranch(GetName g)
     {
@@ -117,11 +117,11 @@ struct GenericTesterGrammar(TParseTree)
 
     static TParseTree UnorderedBranch(TParseTree p)
     {
-         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("~>"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("{"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.oneOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("}"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("~>"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), "TesterGrammar.UnorderedBranch")(p);
+         return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("~>"), Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing)), pegged.peg.oneOrMore!(pegged.peg.wrapAround!(Spacing, Node, Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing))), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("~>"), Spacing)), pegged.peg.wrapAround!(Spacing, Node, Spacing))), "TesterGrammar.UnorderedBranch")(p);
     }
     static TParseTree UnorderedBranch(string s)
     {
-        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("~>"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("{"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))), pegged.peg.oneOrMore!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("}"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), pegged.peg.literal!("~>"), pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)))), pegged.peg.wrapAround!(pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing)), Node, pegged.peg.discard!(pegged.peg.zeroOrMore!(Spacing))))), "TesterGrammar.UnorderedBranch")(TParseTree("", false,[], s));
+        return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("~>"), Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing)), pegged.peg.oneOrMore!(pegged.peg.wrapAround!(Spacing, Node, Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing))), pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("~>"), Spacing)), pegged.peg.wrapAround!(Spacing, Node, Spacing))), "TesterGrammar.UnorderedBranch")(TParseTree("", false,[], s));
     }
     static string UnorderedBranch(GetName g)
     {
