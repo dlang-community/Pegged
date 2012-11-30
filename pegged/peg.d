@@ -19,6 +19,7 @@ dependency.
 */
 
 import std.algorithm: map, startsWith;
+import std.uni : isAlpha;
 import std.array;
 import std.conv;
 import std.range: equal;

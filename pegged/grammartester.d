@@ -155,7 +155,7 @@ private struct Differencer(T,P)
 		auto diffText = appender!string();
 		for ( size_t i = 0; i < lcolumn.length; i++ )
 			diffText.put(xformat("\n%-*s  %c  %s", max1stColumnWidth,
-				lcolumn[i], center[i], rcolumn[i]).stripRight);
+				lcolumn[i], center[i], rcolumn[i]).stripRight());
 		diffText.put("\n");
 		
 		return diffText.data;
