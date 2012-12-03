@@ -10,7 +10,7 @@ import std.conv: to;
 import std.stdio;
 
 public import pegged.peg;
-public import pegged.introspection;
+//public import pegged.introspection;
 import pegged.parser;
 
 version(unittest)
@@ -79,6 +79,512 @@ ParseTree spaceArrow(ParseTree input)
                     wrapInSpaces)(input);
 }
 
+// Expression-level code: [abc] or 'a'+, *not* A <- 'a'+
+string generateCode(Memoization withMemo = Memoization.yes)(string s)
+{
+    return .generateCode!(withMemo)(Pegged.decimateTree(Pegged.Expression(s)));
+}
+
+// Main generating function
+string generateCode(Memoization withMemo = Memoization.yes)(ParseTree p, string propagatedName = "")
+{
+    string result;
+
+    switch (p.name)
+    {
+        case "Pegged":
+            result = generateCode!(withMemo)(p.children[0]);
+            break;
+        case "Pegged.Grammar":
+            string grammarName = generateCode!(withMemo)(p.children[0]);
+            string shortGrammarName = p.children[0].matches[0];
+            //string invokedGrammarName = generateCode!(withMemo)(transformName(p.children[0]));
+            string firstRuleName = generateCode!(withMemo)(p.children[1].children[0]);
+
+            result =  "struct Generic" ~ shortGrammarName ~ "(TParseTree)\n"
+                    ~ "{\n"
+                    ~ "    struct " ~ grammarName ~ "\n    {\n"
+                    ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n";
+
+            static if (withMemo == Memoization.yes)
+                result ~= "    import std.typecons:Tuple, tuple;\n"
+                        ~ "    static TParseTree[Tuple!(string, size_t)] memo;\n";
+
+            result ~= "    static bool isRule(string s)\n"
+                    ~ "    {\n"
+                    ~ "        switch(s)\n"
+                    ~ "        {\n";
+
+            ParseTree[] definitions = p.children[1 .. $];
+            bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
+            string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
+            bool userDefinedSpacing = false;
+
+            string paramRuleHandler(string target)
+            {
+                return "if (s.length >= "~to!string(shortGrammarName.length + target.length + 3)
+                        ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""
+                        ~shortGrammarName ~ "." ~ target~"!(\") return true;";
+            }
+
+            foreach(i,def; definitions)
+            {
+                if (def.matches[0] !in ruleNames)
+                {
+                    ruleNames[def.matches[0]] = true;
+
+                    if (def.children[0].children.length > 1)
+                        parameterizedRulesSpecialCode ~= "                " ~ paramRuleHandler(def.matches[0])~ "\n";
+                    else
+                        result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
+                }
+                if (def.matches[0] == "Spacing") // user-defined spacing
+                    userDefinedSpacing = true;
+            }
+            result ~= "                return true;\n"
+                    ~ "            default:\n"
+                    ~ parameterizedRulesSpecialCode
+                    ~ "                return false;\n        }\n    }\n";
+
+            result ~= "    mixin decimateTree;\n";
+
+            // If the grammar provides a Spacing rule, then this will be used.
+            // else, the predefined 'spacing' rule is used.
+            result ~= userDefinedSpacing ? "" : "    alias spacing Spacing;\n\n";
+
+            // Creating the inner functions, each corresponding to a grammar rule
+            foreach(def; definitions)
+                result ~= generateCode!(withMemo)(def, shortGrammarName);
+
+            // if the first rule is parameterized (a template), it's impossible to get an opCall
+            // because we don't know with which template arguments it should be called.
+            // So no opCall is generated in this case.
+            if (p.children[1].children[0].children.length == 1)
+            {
+                // General calling interface
+                result ~= "    static TParseTree opCall(TParseTree p)\n"
+                        ~  "    {\n"
+                        ~  "        TParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
+                        ~  "        result.children = [result];\n"
+                        ~  "        result.name = \"" ~ shortGrammarName ~ "\";\n"
+                        ~  "        return result;\n"
+                        ~  "    }\n\n"
+                        ~  "    static TParseTree opCall(string input)\n"
+                        ~  "    {\n";
+
+                if (withMemo == Memoization.no)
+                    result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                            ~  "}\n";
+                else
+                    result ~= "        if(__ctfe)\n"
+                            ~  "        {\n"
+                            ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                            ~  "        }\n"
+                            ~  "        else\n"
+                            ~  "        {\n"
+                            ~  "            memo = null;\n"
+                            ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                            ~  "        }\n"
+                            ~  "    }\n";
+
+                result ~= "    static string opCall(GetName g)\n"
+                        ~ "    {\n"
+                        ~ "        return \"" ~ shortGrammarName ~ "\";\n"
+                        ~ "    }\n\n";
+            }
+            result ~= "    }\n" // end of grammar struct definition
+                    ~ "}\n\n" // end of template definition
+                    ~ "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
+                    ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
+            break;
+        case "Pegged.Definition":
+            // children[0]: name
+            // children[1]: arrow (arrow type as first child)
+            // children[2]: description
+
+            string code = "pegged.peg.named!(";
+
+            switch(p.children[1].children[0].name)
+            {
+                case "Pegged.LEFTARROW":
+                    code ~= generateCode!(withMemo)(p.children[2]);
+                    break;
+                case "Pegged.FUSEARROW":
+                    code ~= "pegged.peg.fuse!(" ~ generateCode!(withMemo)(p.children[2]) ~ ")";
+                    break;
+                case "Pegged.DISCARDARROW":
+                    code ~= "pegged.peg.discard!(" ~ generateCode!(withMemo)(p.children[2]) ~ ")";
+                    break;
+                case "Pegged.KEEPARROW":
+                    code ~= "pegged.peg.keep!("~ generateCode!(withMemo)(p.children[2]) ~ ")";
+                    break;
+                case "Pegged.DROPARROW":
+                    code ~= "pegged.peg.drop!("~ generateCode!(withMemo)(p.children[2]) ~ ")";
+                    break;
+                case "Pegged.PROPAGATEARROW":
+                    code ~= "pegged.peg.propagate!("~ generateCode!(withMemo)(p.children[2]) ~ ")";
+                    break;
+                case "Pegged.SPACEARROW":
+                    ParseTree modified = spaceArrow(p.children[2]);
+                    code ~= generateCode!(withMemo)(modified);
+                    break;
+                case "Pegged.ACTIONARROW":
+                    string actionResult = generateCode!(withMemo)(p.children[2]);
+                    foreach(action; p.children[1].matches[1..$])
+                        actionResult = "pegged.peg.action!(" ~ actionResult ~ ", " ~ action ~ ")";
+                    code ~= actionResult;
+                    break;
+                default:
+                    break;
+            }
+
+            bool parameterizedRule = p.children[0].children.length > 1;
+            string completeName = generateCode!(withMemo)(p.children[0]);
+            string shortName = p.matches[0];
+            string innerName;
+
+            if (parameterizedRule)
+            {
+                result =  "    template " ~ completeName ~ "\n"
+                        ~ "    {\n";
+                innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
+                foreach(i,param; p.children[0].children[1].children)
+                    innerName ~= "pegged.peg.getName!("~ param.children[0].matches[0]
+                                ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ \", \" ~ "
+                                                                                    : ")");
+                innerName ~= " ~ \")\"";
+            }
+            else
+            {
+                innerName ~= "`" ~ completeName ~ "`";
+            }
+
+            code ~= ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+
+            if (withMemo == Memoization.no)
+                result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
+                        ~  "    {\n"
+                        ~  "         return " ~ code ~ "(p);\n"
+                        ~  "    }\n"
+                        ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
+                        ~  "    {\n"
+                        ~  "        return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                        ~  "    }\n";
+            else
+                result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
+                        ~  "    {\n"
+                        ~  "        if(__ctfe)\n"
+                        ~  "        {\n"
+                        ~  "            return " ~ code ~ "(p);\n"
+                        ~  "        }\n"
+                        ~  "        else\n"
+                        ~  "        {\n"
+                        ~  "            if(auto m = tuple("~innerName~",p.end) in memo)\n"
+                        ~  "                return *m;\n"
+                        ~  "            else\n"
+                        ~  "            {\n"
+                        ~  "                TParseTree result = " ~ code ~ "(p);\n"
+                        ~  "                memo[tuple("~innerName~",p.end)] = result;\n"
+                        ~  "                return result;\n"
+                        ~  "            }\n"
+                        ~  "        }\n"
+                        ~  "    }\n\n"
+                        ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
+                        ~  "    {\n"
+                        ~  "        if(__ctfe)\n"
+                        ~  "        {\n"
+                        ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                        ~  "        }\n"
+                        ~  "        else\n"
+                        ~  "        {\n"
+                        ~  "            memo = null;\n"
+                        ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                        ~  "        }\n"
+                        ~  "    }\n";
+
+                result ~= "    static string " ~ shortName ~ "(GetName g)\n"
+                        ~  "    {\n"
+                        ~  "        return \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\";\n"
+                        ~  "    }\n\n";
+
+            if (parameterizedRule)
+                result ~= "    }\n";
+
+            break;
+        case "Pegged.GrammarName":
+            result = generateCode!(withMemo)(p.children[0]);
+            if (p.children.length == 2)
+                result ~= generateCode!(withMemo)(p.children[1]);
+            break;
+        case "Pegged.LhsName":
+            result = generateCode!(withMemo)(p.children[0]);
+            if (p.children.length == 2)
+                result ~= generateCode!(withMemo)(p.children[1]);
+            break;
+        case "Pegged.ParamList":
+            result = "(";
+            foreach(i,child; p.children)
+                result ~= generateCode!(withMemo)(child) ~ ", ";
+            result = result[0..$-2] ~ ")";
+            break;
+        case "Pegged.Param":
+            result = "alias " ~ generateCode!(withMemo)(p.children[0]);
+            break;
+        case "Pegged.SingleParam":
+            result = p.matches[0];
+            break;
+        case "Pegged.DefaultParam":
+            result = p.matches[0] ~ " = " ~ generateCode!(withMemo)(p.children[1]);
+            break;
+        case "Pegged.Expression":
+            if (p.children.length > 1) // OR expression
+            {
+                // Keyword list detection: "abstract"/"alias"/...
+                bool isLiteral(ParseTree p)
+                {
+                    return ( p.name == "Pegged.Sequence"
+                            && p.children.length == 1
+                            && p.children[0].children.length == 1
+                            && p.children[0].children[0].children.length == 1
+                            && p.children[0].children[0].children[0].children.length == 1
+                            && p.children[0].children[0].children[0].children[0].name == "Pegged.Literal");
+                }
+                bool keywordList = true;
+                foreach(child;p.children)
+                    if (!isLiteral(child))
+                    {
+                        keywordList = false;
+                        break;
+                    }
+
+                if (keywordList)
+                {
+                    result = "pegged.peg.keywords!(";
+                    foreach(seq; p.children)
+                        result ~= "\"" ~ (seq.matches.length == 3 ? seq.matches[1] : "") ~ "\", ";
+                    result = result[0..$-2] ~ ")";
+                }
+                else
+                {
+                    result = "pegged.peg.or!(";
+                    foreach(seq; p.children)
+                        result ~= generateCode!(withMemo)(seq) ~ ", ";
+                    result = result[0..$-2] ~ ")";
+                }
+            }
+            else // One child -> just a sequence, no need for a or!( , )
+            {
+                result = generateCode!(withMemo)(p.children[0]);
+            }
+            break;
+        case "Pegged.Sequence":
+            if (p.children.length > 1) // real sequence
+            {
+                result = "pegged.peg.and!(";
+                foreach(seq; p.children)
+                {
+                    string elementCode = generateCode!(withMemo)(seq);
+                    // flattening inner sequences
+                    if (elementCode.length > 6 && elementCode[0..5] == "pegged.peg.and!(")
+                        elementCode = elementCode[5..$-1]; // cutting 'and!(' and ')'
+                    result ~= elementCode ~ ", ";
+                }
+                result = result[0..$-2] ~ ")";
+            }
+            else // One child -> just a Suffix, no need for a and!( , )
+            {
+                result = generateCode!(withMemo)(p.children[0]);
+            }
+            break;
+        case "Pegged.Prefix":
+            result = generateCode!(withMemo)(p.children[$-1]);
+            foreach(child; p.children[0..$-1])
+                result = generateCode!(withMemo)(child) ~ result ~ ")";
+            break;
+        case "Pegged.Suffix":
+            result = generateCode!(withMemo)(p.children[0]);
+            foreach(child; p.children[1..$])
+            {
+                switch (child.name)
+                {
+                    case "Pegged.OPTION":
+                        result = "pegged.peg.option!(" ~ result ~ ")";
+                        break;
+                    case "Pegged.ZEROORMORE":
+                        result = "pegged.peg.zeroOrMore!(" ~ result ~ ")";
+                        break;
+                    case "Pegged.ONEORMORE":
+                        result = "pegged.peg.oneOrMore!(" ~ result ~ ")";
+                        break;
+                    case "Pegged.Action":
+                        foreach(action; child.matches)
+                            result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
+                        break;
+                    default:
+                        break;
+                }
+            }
+            break;
+        case "Pegged.Primary":
+            result = generateCode!(withMemo)(p.children[0]);
+            break;
+        case "Pegged.RhsName":
+            result = "";
+            foreach(i,child; p.children)
+                result ~= generateCode!(withMemo)(child);
+            break;
+        case "Pegged.ArgList":
+            result = "!(";
+            foreach(child; p.children)
+                result ~= generateCode!(withMemo)(child) ~ ", "; // Allow  A <- List('A'*,',')
+            result = result[0..$-2] ~ ")";
+            break;
+        case "Pegged.Identifier":
+            result = p.matches[0];
+            break;
+        case "Pegged.NAMESEP":
+            result = ".";
+            break;
+        case "Pegged.Literal":
+            if(p.matches.length == 3) // standard case
+                result = "pegged.peg.literal!(\"" ~ p.matches[1] ~ "\")";
+            else // only two children -> empty literal
+                result = "pegged.peg.literal!(``)";
+            break;
+        case "Pegged.CharClass":
+            if (p.children.length > 1)
+            {
+                result = "pegged.peg.or!(";
+                foreach(seq; p.children)
+                    result ~= generateCode!(withMemo)(seq) ~ ", ";
+                result = result[0..$-2] ~ ")";
+            }
+            else // One child -> just a sequence, no need for a or!( , )
+            {
+                result = generateCode!(withMemo)(p.children[0]);
+            }
+            break;
+        case "Pegged.CharRange":
+            /// Make the generation at the Char level: directly what is needed, be it `` or "" or whatever
+            if (p.children.length > 1) // a-b range
+            {
+                result = "pegged.peg.charRange!('" ~ generateCode!(withMemo)(p.children[0])
+                                                    ~ "', '"
+                                                    ~ generateCode!(withMemo)(p.children[1])
+                                                    ~ "')";
+            }
+            else // lone char
+            {
+                result = "pegged.peg.literal!(";
+                string ch = p.matches[0];
+                switch (ch)
+                {
+                    case "\\[":
+                    case "\\]":
+                    case "\\-":
+                        result ~= "\""  ~ ch[1..$] ~ "\")";
+                        break;
+                    case "\\\'":
+                        result ~= "\"'\")";
+                        break;
+                    case "\\`":
+                        result ~= q{"`")};
+                        break;
+                    case "\\":
+                    case "\\\\":
+                        result ~= "`\\`)";
+                        break;
+                    case "\"":
+                    case "\\\"":
+                        result ~= "`\"`)";
+                        break;
+                    case "\n":
+                    case "\r":
+                    case "\t":
+                        result ~= "\"" ~ to!string(to!dchar(ch)) ~ "\")";
+                        break;
+                    default:
+                        result ~= "\"" ~ ch ~ "\")";
+                }
+            }
+            break;
+        case "Pegged.Char":
+            string ch = p.matches[0];
+            switch (ch)
+            {
+                case "\\[":
+                case "\\]":
+                case "\\-":
+
+                case "\\\'":
+                case "\\\"":
+                case "\\`":
+                case "\\\\":
+                    result = ch[1..$];
+                    break;
+                case "\n":
+                case "\r":
+                case "\t":
+                    result = to!string(to!dchar(ch));
+                    break;
+                default:
+                    result = ch;
+            }
+            break;
+        case "Pegged.POS":
+            result = "pegged.peg.posLookahead!(";
+            break;
+        case "Pegged.NEG":
+            result = "pegged.peg.negLookahead!(";
+            break;
+        case "Pegged.FUSE":
+            result = "pegged.peg.fuse!(";
+            break;
+        case "Pegged.DISCARD":
+            result = "pegged.peg.discard!(";
+            break;
+        //case "Pegged.CUT":
+        //    result = "discardChildren!(";
+        //    break;
+        case "Pegged.KEEP":
+            result = "pegged.peg.keep!(";
+            break;
+        case "Pegged.DROP":
+            result = "pegged.peg.drop!(";
+            break;
+        case "Pegged.PROPAGATE":
+            result = "pegged.peg.propagate!(";
+            break;
+        case "Pegged.OPTION":
+            result = "pegged.peg.option!(";
+            break;
+        case "Pegged.ZEROORMORE":
+            result = "pegged.peg.zeroOrMore!(";
+            break;
+        case "Pegged.ONEORMORE":
+            result = "pegged.peg.oneOrMore!(";
+            break;
+        case "Pegged.Action":
+            result = generateCode!(withMemo)(p.children[0]);
+            foreach(action; p.matches[1..$])
+                result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
+            break;
+        case "Pegged.ANY":
+            result = "pegged.peg.any";
+            break;
+        case "Pegged.WrapAround":
+            result = "pegged.peg.wrapAround!(" ~ generateCode!(withMemo)(p.children[0]) ~ ", "
+                                                ~ generateCode!(withMemo)(p.children[1]) ~ ", "
+                                                ~ generateCode!(withMemo)(p.children[2]) ~ ")";
+            break;
+        default:
+            result = "Bad tree: " ~ p.toString();
+            break;
+    }
+    return result;
+}
+
+
 
 /**
 Generate a parser from a PEG definition.
@@ -107,507 +613,461 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         return result;
     }
 
-    string generateCode(ParseTree p, string propagatedName = "")
+    return generateCode!(withMemo)(defAsParseTree);
+}
+
+/**
+Returns for all grammar rules:
+
+- the recursion type (no recursion, direct or indirect recursion).
+- the left-recursion type (no left-recursion, direct left-recursion, hidden, or indirect)
+- the null-match for a grammar's rules: whether the rule can succeed while consuming nothing.
+- the possibility of an infinite loop (if 'e' can null-match, then 'e*' can enter an infinite loop).
+
+This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
+*/
+RuleIntrospection[string] grammarIntrospection(ParseTree gram, RuleIntrospection[string] external = null)
+{
+    RuleIntrospection[string] result;
+    ParseTree[string] rules;
+
+    /**
+    Returns the call graph of a grammar: the list of rules directly called by each rule of the grammar.
+    The graph is represented as a bool[string][string] associative array, the string holding
+    the rules names. graph["ruleName"] contains all rules called by ruleName, as a set (a bool[string] AA).
+
+    graph.keys thus gives the grammar's rules names.
+
+    If a rule calls itself, its own name will appear in the called set. If a rule calls an external rule, it will
+    also appear in the call graph when the rule has a name: hence, calls to predefined rules like 'identifier' or
+    'digit' will appear, but not a call to '[0-9]+', considered here as an anonymous rule.
+    */
+    bool[string][string] callGraph(ParseTree p)
     {
-        string result;
-
-        switch (p.name)
+        bool[string] findIdentifiers(ParseTree p)
         {
-            case "Pegged":
-                result = generateCode(p.children[0]);
-                break;
-            case "Pegged.Grammar":
-                string grammarName = generateCode(p.children[0]);
-                string shortGrammarName = p.children[0].matches[0];
-                //string invokedGrammarName = generateCode(transformName(p.children[0]));
-                string firstRuleName = generateCode(p.children[1].children[0]);
-
-                result =  "struct Generic" ~ shortGrammarName ~ "(TParseTree)\n"
-                        ~ "{\n"
-                        ~ "    struct " ~ grammarName ~ "\n    {\n"
-                        ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n";
-
-                if (withMemo == Memoization.yes)
-                    result ~= "    import std.typecons:Tuple, tuple;\n"
-                            ~ "    static TParseTree[Tuple!(string, size_t)] memo;\n";
-
-                result ~= "    static bool isRule(string s)\n"
-                        ~ "    {\n"
-                        ~ "        switch(s)\n"
-                        ~ "        {\n";
-
-                ParseTree[] definitions = p.children[1 .. $];
-                bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
-                string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
-                bool userDefinedSpacing = false;
-
-                string paramRuleHandler(string target)
-                {
-                    return "if (s.length >= "~to!string(shortGrammarName.length + target.length + 3)
-                          ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""
-                          ~shortGrammarName ~ "." ~ target~"!(\") return true;";
-                }
-
-                foreach(i,def; definitions)
-                {
-                    if (def.matches[0] !in ruleNames)
-                    {
-                        ruleNames[def.matches[0]] = true;
-
-                        if (def.children[0].children.length > 1)
-                            parameterizedRulesSpecialCode ~= "                " ~ paramRuleHandler(def.matches[0])~ "\n";
-                        else
-                            result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
-                    }
-                    if (def.matches[0] == "Spacing") // user-defined spacing
-                        userDefinedSpacing = true;
-                }
-                result ~= "                return true;\n"
-                        ~ "            default:\n"
-                        ~ parameterizedRulesSpecialCode
-                        ~ "                return false;\n        }\n    }\n";
-
-                result ~= "    mixin decimateTree;\n";
-
-                // If the grammar provides a Spacing rule, then this will be used.
-                // else, the predefined 'spacing' rule is used.
-                result ~= userDefinedSpacing ? "" : "    alias spacing Spacing;\n\n";
-
-                // Creating the inner functions, each corresponding to a grammar rule
-                foreach(def; definitions)
-                    result ~= generateCode(def, shortGrammarName);
-
-                // if the first rule is parameterized (a template), it's impossible to get an opCall
-                // because we don't know with which template arguments it should be called.
-                // So no opCall is generated in this case.
-                if (p.children[1].children[0].children.length == 1)
-                {
-                    // General calling interface
-                    result ~= "    static TParseTree opCall(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "        TParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
-                           ~  "        result.children = [result];\n"
-                           ~  "        result.name = \"" ~ shortGrammarName ~ "\";\n"
-                           ~  "        return result;\n"
-                           ~  "    }\n\n"
-                           ~  "    static TParseTree opCall(string input)\n"
-                           ~  "    {\n";
-
-                    if (withMemo == Memoization.no)
-                        result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "}\n";
-                    else
-                        result ~= "        if(__ctfe)\n"
-                               ~  "        {\n"
-                               ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "        }\n"
-                               ~  "        else\n"
-                               ~  "        {\n"
-                               ~  "            memo = null;\n"
-                               ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "        }\n"
-                               ~  "    }\n";
-
-                    result ~= "    static string opCall(GetName g)\n"
-                            ~ "    {\n"
-                            ~ "        return \"" ~ shortGrammarName ~ "\";\n"
-                            ~ "    }\n\n";
-                }
-                result ~= "    }\n" // end of grammar struct definition
-                        ~ "}\n\n" // end of template definition
-                        ~ "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
-                        ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
-                break;
-            case "Pegged.Definition":
-                // children[0]: name
-                // children[1]: arrow (arrow type as first child)
-                // children[2]: description
-
-                string code = "pegged.peg.named!(";
-
-                switch(p.children[1].children[0].name)
-                {
-                    case "Pegged.LEFTARROW":
-                        code ~= generateCode(p.children[2]);
-                        break;
-                    case "Pegged.FUSEARROW":
-                        code ~= "pegged.peg.fuse!(" ~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.DISCARDARROW":
-                        code ~= "pegged.peg.discard!(" ~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.KEEPARROW":
-                        code ~= "pegged.peg.keep!("~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.DROPARROW":
-                        code ~= "pegged.peg.drop!("~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.PROPAGATEARROW":
-                        code ~= "pegged.peg.propagate!("~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.SPACEARROW":
-                        ParseTree modified = spaceArrow(p.children[2]);
-                        code ~= generateCode(modified);
-                        break;
-                    case "Pegged.ACTIONARROW":
-                        auto actionResult = generateCode(p.children[2]);
-                        foreach(action; p.children[1].matches[1..$])
-                            actionResult = "pegged.peg.action!(" ~ actionResult ~ ", " ~ action ~ ")";
-                        code ~= actionResult;
-                        break;
-                    default:
-                        break;
-                }
-
-                bool parameterizedRule = p.children[0].children.length > 1;
-                string completeName = generateCode(p.children[0]);
-                string shortName = p.matches[0];
-                string innerName;
-
-                if (parameterizedRule)
-                {
-                    result =  "    template " ~ completeName ~ "\n"
-                            ~ "    {\n";
-                    innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
-                    foreach(i,param; p.children[0].children[1].children)
-                        innerName ~= "pegged.peg.getName!("~ param.children[0].matches[0]
-                                    ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ \", \" ~ "
-                                                                                     : ")");
-                    innerName ~= " ~ \")\"";
-                }
-                else
-                {
-                    innerName ~= "`" ~ completeName ~ "`";
-                }
-
-                code ~= ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
-
-                if (withMemo == Memoization.no)
-                    result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "         return " ~ code ~ "(p);\n"
-                           ~  "    }\n"
-                           ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
-                           ~  "    {\n"
-                           ~  "        return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "    }\n";
-                else
-                    result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
-                           ~  "            return " ~ code ~ "(p);\n"
-                           ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
-                           ~  "            if(auto m = tuple("~innerName~",p.end) in memo)\n"
-                           ~  "                return *m;\n"
-                           ~  "            else\n"
-                           ~  "            {\n"
-                           ~  "                TParseTree result = " ~ code ~ "(p);\n"
-                           ~  "                memo[tuple("~innerName~",p.end)] = result;\n"
-                           ~  "                return result;\n"
-                           ~  "            }\n"
-                           ~  "        }\n"
-                           ~  "    }\n\n"
-                           ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
-                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
-                           ~  "            memo = null;\n"
-                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "        }\n"
-                           ~  "    }\n";
-
-                    result ~= "    static string " ~ shortName ~ "(GetName g)\n"
-                           ~  "    {\n"
-                           ~  "        return \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\";\n"
-                           ~  "    }\n\n";
-
-                if (parameterizedRule)
-                    result ~= "    }\n";
-
-                break;
-            case "Pegged.GrammarName":
-                result = generateCode(p.children[0]);
-                if (p.children.length == 2)
-                    result ~= generateCode(p.children[1]);
-                break;
-            case "Pegged.LhsName":
-                result = generateCode(p.children[0]);
-                if (p.children.length == 2)
-                    result ~= generateCode(p.children[1]);
-                break;
-            case "Pegged.ParamList":
-                result = "(";
-                foreach(i,child; p.children)
-                    result ~= generateCode(child) ~ ", ";
-                result = result[0..$-2] ~ ")";
-                break;
-            case "Pegged.Param":
-                result = "alias " ~ generateCode(p.children[0]);
-                break;
-            case "Pegged.SingleParam":
-                result = p.matches[0];
-                break;
-            case "Pegged.DefaultParam":
-                result = p.matches[0] ~ " = " ~ generateCode(p.children[1]);
-                break;
-            case "Pegged.Expression":
-                if (p.children.length > 1) // OR expression
-                {
-                    // Keyword list detection: "abstract"/"alias"/...
-                    bool isLiteral(ParseTree p)
-                    {
-                        return ( p.name == "Pegged.Sequence"
-                              && p.children.length == 1
-                              && p.children[0].children.length == 1
-                              && p.children[0].children[0].children.length == 1
-                              && p.children[0].children[0].children[0].children.length == 1
-                              && p.children[0].children[0].children[0].children[0].name == "Pegged.Literal");
-                    }
-                    bool keywordList = true;
-                    foreach(child;p.children)
-                        if (!isLiteral(child))
-                        {
-                            keywordList = false;
-                            break;
-                        }
-
-                    if (keywordList)
-                    {
-                        result = "pegged.peg.keywords!(";
-                        foreach(seq; p.children)
-                            result ~= "\"" ~ (seq.matches.length == 3 ? seq.matches[1] : "") ~ "\", ";
-                        result = result[0..$-2] ~ ")";
-                    }
-                    else
-                    {
-                        result = "pegged.peg.or!(";
-                        foreach(seq; p.children)
-                            result ~= generateCode(seq) ~ ", ";
-                        result = result[0..$-2] ~ ")";
-                    }
-                }
-                else // One child -> just a sequence, no need for a or!( , )
-                {
-                    result = generateCode(p.children[0]);
-                }
-                break;
-            case "Pegged.Sequence":
-                if (p.children.length > 1) // real sequence
-                {
-                    result = "pegged.peg.and!(";
-                    foreach(seq; p.children)
-                    {
-                        string elementCode = generateCode(seq);
-                        // flattening inner sequences
-                        if (elementCode.length > 6 && elementCode[0..5] == "pegged.peg.and!(")
-                            elementCode = elementCode[5..$-1]; // cutting 'and!(' and ')'
-                        result ~= elementCode ~ ", ";
-                    }
-                    result = result[0..$-2] ~ ")";
-                }
-                else // One child -> just a Suffix, no need for a and!( , )
-                {
-                    result = generateCode(p.children[0]);
-                }
-                break;
-            case "Pegged.Prefix":
-                result = generateCode(p.children[$-1]);
-                foreach(child; p.children[0..$-1])
-                    result = generateCode(child) ~ result ~ ")";
-                break;
-            case "Pegged.Suffix":
-                result = generateCode(p.children[0]);
-                foreach(child; p.children[1..$])
-                {
-                    switch (child.name)
-                    {
-                        case "Pegged.OPTION":
-                            result = "pegged.peg.option!(" ~ result ~ ")";
-                            break;
-                        case "Pegged.ZEROORMORE":
-                            result = "pegged.peg.zeroOrMore!(" ~ result ~ ")";
-                            break;
-                        case "Pegged.ONEORMORE":
-                            result = "pegged.peg.oneOrMore!(" ~ result ~ ")";
-                            break;
-                        case "Pegged.Action":
-                            foreach(action; child.matches)
-                                result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                break;
-            case "Pegged.Primary":
-                result = generateCode(p.children[0]);
-                break;
-            case "Pegged.RhsName":
-                result = "";
-                foreach(i,child; p.children)
-                    result ~= generateCode(child);
-                break;
-            case "Pegged.ArgList":
-                result = "!(";
+            bool[string] idList;
+            if (p.name == "Pegged.RhsName")
+            {
+                string qualifiedName;
+                foreach(match; p.matches)
+                    qualifiedName ~= match;
+                idList[qualifiedName] = true;
+            }
+            else
                 foreach(child; p.children)
-                    result ~= generateCode(child) ~ ", "; // Allow  A <- List('A'*,',')
-                result = result[0..$-2] ~ ")";
-                break;
-            case "Pegged.Identifier":
-                result = p.matches[0];
-                break;
-            case "Pegged.NAMESEP":
-                result = ".";
-                break;
-            case "Pegged.Literal":
-                if(p.matches.length == 3) // standard case
-                    result = "pegged.peg.literal!(\"" ~ p.matches[1] ~ "\")";
-                else // only two children -> empty literal
-                    result = "pegged.peg.literal!(``)";
-                break;
-            case "Pegged.CharClass":
-                if (p.children.length > 1)
-                {
-                    result = "pegged.peg.or!(";
-                    foreach(seq; p.children)
-                        result ~= generateCode(seq) ~ ", ";
-                    result = result[0..$-2] ~ ")";
-                }
-                else // One child -> just a sequence, no need for a or!( , )
-                {
-                    result = generateCode(p.children[0]);
-                }
-                break;
-            case "Pegged.CharRange":
-                /// Make the generation at the Char level: directly what is needed, be it `` or "" or whatever
-                if (p.children.length > 1) // a-b range
-                {
-                    result = "pegged.peg.charRange!('" ~ generateCode(p.children[0])
-                                                       ~ "', '"
-                                                       ~ generateCode(p.children[1])
-                                                       ~ "')";
-                }
-                else // lone char
-                {
-                    result = "pegged.peg.literal!(";
-                    string ch = p.matches[0];
-                    switch (ch)
-                    {
-                        case "\\[":
-                        case "\\]":
-                        case "\\-":
-                            result ~= "\""  ~ ch[1..$] ~ "\")";
-                            break;
-                        case "\\\'":
-                            result ~= "\"'\")";
-                            break;
-                        case "\\`":
-                            result ~= q{"`")};
-                            break;
-                        case "\\":
-                        case "\\\\":
-                            result ~= "`\\`)";
-                            break;
-                        case "\"":
-                        case "\\\"":
-                            result ~= "`\"`)";
-                            break;
-                        case "\n":
-                        case "\r":
-                        case "\t":
-                            result ~= "\"" ~ to!string(to!dchar(ch)) ~ "\")";
-                            break;
-                        default:
-                            result ~= "\"" ~ ch ~ "\")";
-                    }
-                }
-                break;
-            case "Pegged.Char":
-                string ch = p.matches[0];
-                switch (ch)
-                {
-                    case "\\[":
-                    case "\\]":
-                    case "\\-":
+                    foreach(name; findIdentifiers(child).keys)
+                        idList[name] = true;
 
-                    case "\\\'":
-                    case "\\\"":
-                    case "\\`":
-                    case "\\\\":
-                        result = ch[1..$];
-                        break;
-                    case "\n":
-                    case "\r":
-                    case "\t":
-                        result = to!string(to!dchar(ch));
-                        break;
-                    default:
-                        result = ch;
-                }
-                break;
-            case "Pegged.POS":
-                result = "pegged.peg.posLookahead!(";
-                break;
-            case "Pegged.NEG":
-                result = "pegged.peg.negLookahead!(";
-                break;
-            case "Pegged.FUSE":
-                result = "pegged.peg.fuse!(";
-                break;
-            case "Pegged.DISCARD":
-                result = "pegged.peg.discard!(";
-                break;
-            //case "Pegged.CUT":
-            //    result = "discardChildren!(";
-            //    break;
-            case "Pegged.KEEP":
-                result = "pegged.peg.keep!(";
-                break;
-            case "Pegged.DROP":
-                result = "pegged.peg.drop!(";
-                break;
-            case "Pegged.PROPAGATE":
-                result = "pegged.peg.propagate!(";
-                break;
-            case "Pegged.OPTION":
-                result = "pegged.peg.option!(";
-                break;
-            case "Pegged.ZEROORMORE":
-                result = "pegged.peg.zeroOrMore!(";
-                break;
-            case "Pegged.ONEORMORE":
-                result = "pegged.peg.oneOrMore!(";
-                break;
-            case "Pegged.Action":
-                result = generateCode(p.children[0]);
-                foreach(action; p.matches[1..$])
-                    result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
-                break;
-            case "Pegged.ANY":
-                result = "pegged.peg.any";
-                break;
-            case "Pegged.WrapAround":
-                result = "pegged.peg.wrapAround!(" ~ generateCode(p.children[0]) ~ ", "
-                                                   ~ generateCode(p.children[1]) ~ ", "
-                                                   ~ generateCode(p.children[2]) ~ ")";
-                break;
-            default:
-                result = "Bad tree: " ~ p.toString();
-                break;
+            return idList;
         }
+
+        bool[string][string] graph;
+
+        foreach(definition; p.children)
+            if (definition.name == "Pegged.Definition")
+            {
+                auto ids = findIdentifiers(definition.children[2]);
+                graph[definition.matches[0]] = ids;
+                foreach(id, _; ids) // getting possible external calls
+                    if (id !in graph)
+                        graph[id] = (bool[string]).init;
+            }
+
+        return graph;
+    }
+
+    /**
+    The transitive closure of a call graph.
+    It will propagate the calls to find all rules called by a given rule,
+    directly (already in the call graph) or indirectly (through another rule).
+    */
+    bool[string][string] closure(bool[string][string] graph)
+    {
+        bool[string][string] path;
+        foreach(rule, children; graph) // deep-dupping, to avoid children aliasing
+            path[rule] = children.dup;
+
+        bool changed = true;
+
+        while(changed)
+        {
+            changed = false;
+            foreach(rule1; graph.keys)
+                foreach(rule2; graph.keys)
+                    if (rule2 in path[rule1])
+                        foreach(rule3; graph.keys)
+                            if (rule3 in path[rule2] && rule3 !in path[rule1])
+                            {
+                                path[rule1][rule3] = true;
+                                changed = true;
+                            }
+        }
+
+        return path;
+    }
+
+    Recursive[string] recursions(bool[string][string] graph)
+    {
+        bool[string][string] path = graph;
+
+        Recursive[string] result;
+        foreach(rule, children; path)
+        {
+            result[rule] = Recursive.no;
+            if (rule in children)
+            {
+                if (rule in graph[rule])
+                    result[rule] = Recursive.direct;
+                else
+                    result[rule] = Recursive.indirect;
+            }
+        }
+
         return result;
     }
 
+    NullMatch nullMatching(ParseTree p, RuleIntrospection[string] external = null)
+    {
+        switch (p.name)
+        {
+            case "Pegged.Expression": // choice expressions null-match whenever one of their components can null-match
+                bool someIndetermination;
+                foreach(elem; p.children)
+                {
+                    NullMatch nm = nullMatching(elem, external);
+                    if (nm == NullMatch.yes)
+                        return NullMatch.yes;
+                    else if (nm == NullMatch.indeterminate)
+                        someIndetermination = true;
+                }
+                if (someIndetermination) // All were indeterminate
+                    return NullMatch.indeterminate;
+                else
+                    return NullMatch.no;
+            case "Pegged.Sequence": // sequence expressions can null-match when all their components can null-match
+                foreach(elem; p.children)
+                {
+                    NullMatch nm = nullMatching(elem, external);
+                    if (nm == NullMatch.indeterminate)
+                        return NullMatch.indeterminate;
+                    if (nm == NullMatch.no)
+                        return NullMatch.no;
+                }
+                return NullMatch.yes;
+            case "Pegged.Prefix":
+                foreach(pref; p.children[0..$-1])
+                    if (pref.name == "Pegged.POS" || pref.name == "Pegged.NEG")
+                        return NullMatch.yes;
+                return nullMatching(p.children[$-1], external);
+            case "Pegged.Suffix":
+                foreach(pref; p.children[1..$])
+                    if (pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.OPTION")
+                        return NullMatch.yes;
+                return nullMatching(p.children[0], external);
+            case "Pegged.Primary":
+                return nullMatching(p.children[0], external);
+            case "Pegged.RhsName":
+                if (auto m1 = p.matches[0] in result)
+                    return m1.nullMatch;
+                else if (auto m2 = p.matches[0] in external)
+                    return m2.nullMatch;
+                else
+                    return NullMatch.indeterminate;
+            case "Pegged.Literal":
+                if (p.matches[0].length == 0) // Empty literal, '' or ""
+                    return NullMatch.yes;
+                else
+                    return NullMatch.no;
+            case "Pegged.CharClass":
+                return NullMatch.no;
+            case "Pegged.ANY":
+                return NullMatch.no;
+            default:
+                return NullMatch.indeterminate;
+        }
+    }
+
+    InfiniteLoop infiniteLooping(ParseTree p, RuleIntrospection[string] external = null)
+    {
+        /+
+        if (  p.matches[0] in result
+           && result[p.matches[0]].nullMatch == NullMatch.yes
+           && result[p.matches[0]].recursion != Recursive.no) // Calls itself while possibly null-matching
+            return InfiniteLoop.yes;
+        +/
+
+        switch (p.name)
+        {
+            case "Pegged.Expression": // choice expressions loop whenever one of their components can loop
+                foreach(i,elem; p.children)
+                {
+                    auto nm = infiniteLooping(elem, external);
+                    if (nm == InfiniteLoop.yes)
+                        return InfiniteLoop.yes;
+                    if (nm == InfiniteLoop.indeterminate)
+                        return InfiniteLoop.indeterminate;
+                }
+                return InfiniteLoop.no;
+            case "Pegged.Sequence": // sequence expressions can loop when one of their components can loop
+                foreach(i,elem; p.children)
+                {
+                    auto nm = infiniteLooping(elem, external);
+                    if (nm == InfiniteLoop.yes)
+                        return InfiniteLoop.yes;
+                    if (nm == InfiniteLoop.indeterminate && i == 0) // because if i>0, then the previous elems are all
+                                                                    // InfiniteLoop.no (.yes would cause en exit)
+                        return InfiniteLoop.indeterminate;
+                }
+                return InfiniteLoop.no;
+            case "Pegged.Prefix":
+                return infiniteLooping(p.children[$-1], external);
+            case "Pegged.Suffix":
+                foreach(pref; p.children[1..$])
+                    if ((  pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.ONEORMORE")
+                        && p.matches[0] in result
+                        && result[p.matches[0]].nullMatch == NullMatch.yes)
+                        return InfiniteLoop.yes;
+                return infiniteLooping(p.children[0], external);
+            case "Pegged.Primary":
+                return infiniteLooping(p.children[0], external);
+            case "Pegged.RhsName":
+                if (auto m1 = p.matches[0] in result)
+                    return m1.infiniteLoop;
+                else if (auto m2 = p.matches[0] in external)
+                    return m2.infiniteLoop;
+                else
+                    return InfiniteLoop.indeterminate;
+            case "Pegged.Literal":
+                return InfiniteLoop.no;
+            case "Pegged.CharClass":
+                return InfiniteLoop.no;
+            case "Pegged.ANY":
+                return InfiniteLoop.no;
+            default:
+                return InfiniteLoop.indeterminate;
+        }
+    }
+
+    LeftRecursive leftRecursion(ParseTree p, string target)
+    {
+        switch (p.name)
+        {
+            case "Pegged.Expression": // Choices are left-recursive is any choice is left-recursive
+                foreach(elem; p.children)
+                {
+                    auto lr = leftRecursion(elem, target);
+                    if (lr != LeftRecursive.no)
+                        return lr;
+                }
+                return LeftRecursive.no;
+            case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive
+                                    // or behind null-matching members
+                foreach(i, elem; p.children)
+                {
+                    auto lr = leftRecursion(elem, target);
+                    if (lr == LeftRecursive.direct)
+                        return (i == 0 ? LeftRecursive.direct : LeftRecursive.hidden);
+                    else if (lr == LeftRecursive.hidden || lr == LeftRecursive.indirect)
+                        return lr;
+                    else if (nullMatching(elem) == NullMatch.yes)
+                        continue;
+                    else
+                        return LeftRecursive.no;
+                }
+                return LeftRecursive.no; // found only null-matching rules!
+            case "Pegged.Prefix":
+                return leftRecursion(p.children[$-1], target);
+            case "Pegged.Suffix":
+                return leftRecursion(p.children[0], target);
+            case "Pegged.Primary":
+                return leftRecursion(p.children[0], target);
+            case "Pegged.RhsName":
+                if (p.matches[0] == target) // ?? Or generateCode!(withMemo)(p) ?
+                    return LeftRecursive.direct;
+                else if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no))
+                    return LeftRecursive.hidden;
+                else
+                    return LeftRecursive.no;
+            case "Pegged.Literal":
+                return LeftRecursive.no;
+            case "Pegged.CharClass":
+                return LeftRecursive.no;
+            case "Pegged.ANY":
+                return LeftRecursive.no;
+            case "eps":
+                return LeftRecursive.no;
+            case "eoi":
+                return LeftRecursive.no;
+            default:
+                return LeftRecursive.no;
+        }
+    }
 
 
-    return generateCode(defAsParseTree);
+    string expectedInput(ParseTree p, RuleIntrospection[string] external = null)
+    {
+        switch(p.name)
+        {
+            case "Pegged.Expression":
+                string expectation;
+                foreach(i, child; p.children)
+                    expectation ~= expectedInput(child, external) ~ (i < p.children.length -1 ? " or " : "");
+                return expectation;
+            case "Pegged.Sequence":
+                string expectation;
+                foreach(i, expr; p.children)
+                    expectation ~= expectedInput(expr, external) ~ (i < p.children.length -1 ? " followed by " : "");
+                return expectation;
+            case "Pegged.Prefix":
+                return expectedInput(p.children[$-1], external);
+            case "Pegged.Suffix":
+                string expectation;
+                string end;
+                foreach(prefix; p.children[1..$])
+                    switch(prefix.name)
+                    {
+                        case "Pegged.ZEROORMORE":
+                            expectation ~= "zero or more times (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.ONEORMORE":
+                            expectation ~= "one or more times (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.OPTION":
+                            expectation ~= "optionally (";
+                            end ~= ")";
+                            break;
+                        case "Pegged.Action":
+                            break;
+                        default:
+                            break;
+                    }
+                return expectation ~ expectedInput(p.children[0], external) ~ end;
+            case "Pegged.Primary":
+                return expectedInput(p.children[0], external);
+            case "Pegged.RhsName":
+                string expectation;
+                foreach(elem; p.matches)
+                    expectation ~= elem;
+                if (auto m = expectation in external)
+                    return m.expected;
+                else
+                    return "rule " ~ expectation;
+            case "Pegged.Literal":
+                return "the literal `" ~ p.matches[0] ~ "`";
+            case "Pegged.CharClass":
+                string expectation;
+                foreach(i, child; p.children)
+                    expectation ~= expectedInput(child, external) ~ (i < p.children.length -1 ? " or " : "");
+                return expectation;
+            case "Pegged.CharRange":
+                if (p.children.length == 1)
+                    return expectedInput(p.children[0], external);
+                else
+                    return "any character between '" ~ p.matches[0] ~ "' and '" ~ p.matches[2] ~ "'";
+            case "Pegged.Char":
+                return "the character '" ~ p.matches[0] ~ "'";
+            case "Pegged.ANY":
+                return "any character";
+            default:
+                return "unknow rule (" ~ p.matches[0] ~ ")";
+        }
+    }
+
+    if (gram.name == "Pegged")
+        gram = gram.children[0];
+    string grammarName;
+
+    bool first = true; // to catch the first real definition
+    foreach(index,definition; gram.children)
+    {
+        if (definition.name == "Pegged.GrammarName")
+            grammarName = definition.matches[0];
+        else if (definition.name == "Pegged.Definition")
+        {
+            // !!!!!!!!! To change: use generateCode to get the correct name for parameterized rules !!!!!
+            rules[grammarName ~ "." ~ definition.matches[0]] = definition.children[2];
+            RuleIntrospection ri;
+            // !!!!!!!!! To change: use generateCode to get the correct name for parameterized rules !!!!!
+            ri.name = grammarName ~ "." ~ definition.matches[0];
+            ri.startRule = first;
+            first = false;
+            ri.recursion = Recursive.no;
+            ri.leftRecursion = LeftRecursive.no;
+            ri.nullMatch = NullMatch.indeterminate;
+            ri.infiniteLoop = InfiniteLoop.indeterminate;
+            ri.expected = expectedInput(definition.children[2], external);
+            // !!!!!!!!! To change: use generateCode to get the correct name for parameterized rules !!!!!
+            result[grammarName ~ "." ~ definition.matches[0]] = ri;
+        }
+    }
+
+    // Filling the calling informations
+    auto cg = callGraph(gram);
+    foreach(name, node; cg)
+        foreach(called, _; node)
+            result[grammarName ~ "." ~ name].directCalls[(called in result ? grammarName ~ "." ~ called : called)] = true;
+
+    auto cl = closure(cg);
+    foreach(name, node; cl)
+        foreach(called, _; node)
+        {
+            result[grammarName ~ "." ~ name].calls[(called in result ? grammarName ~ "." ~ called : called)] = true;
+            if (called in result)
+                result[grammarName ~ "." ~ called].calledBy[grammarName ~ "." ~ name] = true;
+        }
+
+    // Filling the recursion informations
+    auto rec = recursions(cl);
+    foreach(rule, recursionType; rec)
+        if (rule in result) // external rules are in rec, but not in result
+            result[rule].recursion = recursionType;
+
+    foreach(name, tree; rules)
+        if (result[name].recursion != Recursive.no)
+            result[name].leftRecursion = leftRecursion(tree, name);
+
+    // Filling the null-matching information
+    bool changed = true;
+    while(changed) // while something new happened, the process is not over
+    {
+        changed = false;
+        foreach(name, tree; rules)
+            if (result[name].nullMatch == NullMatch.indeterminate) // not done yet
+            {
+                result [name].nullMatch = nullMatching(tree, external); // try to find if it's null-matching
+                if (result[name].nullMatch != NullMatch.indeterminate)
+                    changed = true;
+            }
+    }
+
+    // Filling the infinite looping information
+    changed = true;
+    while(changed) // while something new happened, the process is not over
+    {
+        changed = false;
+        foreach(name, tree; rules)
+            if (result[name].infiniteLoop == InfiniteLoop.indeterminate) // not done yet
+            {
+                result [name].infiniteLoop = infiniteLooping(tree, external); // try to find if it's looping
+                if (result[name].infiniteLoop != InfiniteLoop.indeterminate)
+                    changed = true; // something changed, we will continue the process
+            }
+    }
+
+    return result;
+}
+
+bool usefulRule(RuleIntrospection ri)
+{
+    return ri.startRule || ri.calledBy.length == 0;
+}
+
+bool terminal(RuleIntrospection ri)
+{
+    return ri.calls.length == 0;
 }
 
 /**
