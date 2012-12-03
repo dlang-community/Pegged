@@ -172,7 +172,7 @@ string generateCode(Memoization withMemo = Memoization.yes)(ParseTree p, string 
                         ~  "    static TParseTree opCall(string input)\n"
                         ~  "    {\n";
 
-                if (withMemo == Memoization.no)
+                static if (withMemo == Memoization.no)
                     result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
                             ~  "}\n";
                 else
@@ -261,7 +261,7 @@ string generateCode(Memoization withMemo = Memoization.yes)(ParseTree p, string 
 
             code ~= ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
 
-            if (withMemo == Memoization.no)
+            static if (withMemo == Memoization.no)
                 result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                         ~  "    {\n"
                         ~  "         return " ~ code ~ "(p);\n"
@@ -574,8 +574,8 @@ string generateCode(Memoization withMemo = Memoization.yes)(ParseTree p, string 
             break;
         case "Pegged.WrapAround":
             result = "pegged.peg.wrapAround!(" ~ generateCode!(withMemo)(p.children[0]) ~ ", "
-                                                ~ generateCode!(withMemo)(p.children[1]) ~ ", "
-                                                ~ generateCode!(withMemo)(p.children[2]) ~ ")";
+                                               ~ generateCode!(withMemo)(p.children[1]) ~ ", "
+                                               ~ generateCode!(withMemo)(p.children[2]) ~ ")";
             break;
         default:
             result = "Bad tree: " ~ p.toString();
