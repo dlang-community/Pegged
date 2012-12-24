@@ -11,23 +11,8 @@ import std.typecons;
 import std.typetuple;
 
 import pegged.grammar;
-import pegged.grammartester;
-
-import std.uni: isAlpha;
-
-ParseTree log(ParseTree p)
-{
-    writeln("called on ", p.name);
-    return p;
-}
-
-mixin(grammar(`Test:
-    A <{log, log} 'a' { log }
-    `));
+//import pegged.grammartester;
 
 void main()
 {
-    writeln(Test("abc"));
 }
-
-
