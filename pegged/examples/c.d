@@ -238,26 +238,26 @@ Keyword <- "auto" / "break" / "case" / "char" / "const" / "continue"
          / "unsigned" / "void" / "volatile" / "while"
          / "_Bool" / "_Complex" / "_Imaginary"
 
-Spacing <~ (Space / Blank / EOL / Comment)*
+Spacing <~ (space / blank / endOfLine / Comment)*
 
-Comment <~ "//" (!EOL .)* EOL
+Comment <~ "//" (!endOfLine .)* endOfLine
 
-StringLiteral <~ DoubleQuote (DQChar)* DoubleQuote
+StringLiteral <~ doublequote (DQChar)* doublequote
 
 DQChar <- EscapeSequence
-        / !DoubleQuote .
+        / !doublequote .
 
-EscapeSequence <~ BackSlash ( Quote
-                            / DoubleQuote
-                            / BackSlash
+EscapeSequence <~ backslash ( quote
+                            / doublequote
+                            / backslash
                             / [abfnrtv]
                             )
 
-CharLiteral <~ Quote (!Quote (EscapeSequence / .)) Quote
+CharLiteral <~ quote (!quote (EscapeSequence / .)) quote
 
 IntegerLiteral <~ Sign? Integer IntegerSuffix?
 
-Integer <~ Digit+
+Integer <~ digit+
 
 IntegerSuffix <- "Lu" / "LU" / "uL" / "UL"
                / "L" / "u" / "U"
