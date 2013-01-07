@@ -136,10 +136,10 @@ StorageClass < "abstract"
               / "synchronized"
 
 Property < "@" ( "property"
-                / "safe"
-                / "trusted"
-                / "system"
-                / "disable")
+               / "safe"
+               / "trusted"
+               / "system"
+               / "disable")
 
 Type < BasicType Declarator2?
 
@@ -150,8 +150,8 @@ Parameters < "(" ParameterList? ")"
 ParameterList < "..."
                / Parameter (:',' Parameter)*
 
-Parameter <- InOut? space+ BasicType Declarator ("..." / "=" DefaultInitializerExpression)?
-           / InOut? Type "..."?
+Parameter < InOut? BasicType Declarator ("..." / "=" DefaultInitializerExpression)?
+          / InOut? Type "..."?
 
 InOut < InOutX InOut?
 
@@ -160,7 +160,7 @@ InOutX < "auto"
         / "final"
         / "immutable"
         / "inout"
-        / "in"
+        / "in "
         / "lazy"
         / "out"
         / "ref"
