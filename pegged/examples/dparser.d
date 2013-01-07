@@ -30,6 +30,315 @@ DeclDef < AttributeSpecifier
         / TemplateMixinDeclaration
         / TemplateMixin
         / MixinDeclaration
+        / MacroDeclaration
+
+### MACROS ADDITION TO THE D GRAMMAR ###
+
+MacroDeclaration < "macro" identifier MacroParameterList
+                   MacroBeforeBody "return" MacroAfterBody
+
+MacroParameterList < "(" List(MacroParameter)? ")"
+
+MacroParameter < DRule identifier
+
+#Mind the '<-' arrow!
+MacroBeforeBody <- "{"
+                   ~(!(endOfLine "}") .)*
+                   endOfLine "}"
+
+MacroAfterBody < "{" Statement "}"
+
+DRule <- "AddExpression"
+       / "AggregateDeclaration"
+       / "Aggregate"
+       / "AliasDeclaration"
+       / "AliasThisDeclaration"
+       / "AliasThis"
+       / "AlignAttribute"
+       / "AllocatorArguments"
+       / "AlternateWysiwygString"
+       / "AndAndExpression"
+       / "AndExpression"
+       / "ArgumentList"
+       / "ArrayInitializer"
+       / "ArrayLiteral"
+       / "ArrayMemberInitializations"
+       / "ArrayMemberInitialization"
+       / "AsmAddExp"
+       / "AsmAndExp"
+       / "AsmBrExp"
+       / "AsmEqualExp"
+       / "AsmExp"
+       / "AsmInstructionList"
+       / "AsmInstruction"
+       / "AsmLogAndExp"
+       / "AsmLogOrExp"
+       / "AsmMulExp"
+       / "AsmOrExp"
+       / "AsmPrimaryExp"
+       / "AsmRelExp"
+       / "AsmShiftExp"
+       / "AsmStatement"
+       / "AsmTypePrefix"
+       / "AsmUnaExp"
+       / "AsmXorExp"
+       / "AssertExpression"
+       / "AssignExpression"
+       / "AssocArrayLiteral"
+       / "AttributeSpecifier"
+       / "Attribute"
+       / "AutoDeclarationX"
+       / "AutoDeclaration"
+       / "BaseClassList"
+       / "BaseInterfaceList"
+       / "BasicType2"
+       / "BasicTypeX"
+       / "BasicType"
+       / "BinaryInteger"
+       / "BlockComment"
+       / "BlockStatement"
+       / "BodyStatement"
+       / "BreakStatement"
+       / "CaseRangeStatement"
+       / "CaseStatement"
+       / "CastEqual"
+       / "CastExpression"
+       / "Catches"
+       / "CatchParameter"
+       / "Catch"
+       / "CatExpression"
+       / "CCDeclarationBlock"
+       / "CharacterLiteral"
+       / "ClassAllocator"
+       / "ClassArguments"
+       / "ClassBodyDeclarations"
+       / "ClassBodyDeclaration"
+       / "ClassBody"
+       / "ClassDeallocator"
+       / "ClassDeclaration"
+       / "ClassTemplateDeclaration"
+       / "CmpExpression"
+       / "Comment"
+       / "ComplementExpression"
+       / "ConditionalDeclaration"
+       / "ConditionalExpression"
+       / "ConditionalStatement"
+       / "Condition"
+       / "Constraint"
+       / "Constructor"
+       / "ContinueStatement"
+       / "DebugCondition"
+       / "DebugSpecification"
+       / "DecimalInteger"
+       / "DeclarationStatement"
+       / "DeclarationBlock"
+       / "Declarations"
+       / "Declaration"
+       / "DeclaratorIdentifier"
+       / "DeclaratorInitializer"
+       / "DeclaratorSuffixes"
+       / "DeclaratorSuffix"
+       / "Declarators"
+       / "Declarator2"
+       / "Declarator"
+       / "DeclDefs"
+       / "DeclDef"
+       / "Decl"
+       / "DefaultInitializerExpression"
+       / "DefaultStatement"
+       / "DeleteExpression"
+       / "Destructor"
+       / "DoStatement"
+       / "DotIdentifier"
+       / "DoublequotedString"
+       / "DQChar"
+       / "ElseStatement"
+       / "EnumBaseType"
+       / "EnumBody"
+       / "EnumDeclaration"
+       / "EnumMember"
+       / "EnumTag"
+       / "EqualExpression"
+       / "EscapeSequence"
+       / "ExpressionStatement"
+       / "Expression"
+       / "FinallyStatement"
+       / "FinalSwitchStatement"
+       / "FloatLiteral"
+       / "ForeachRangeStatement"
+       / "ForeachStatement"
+       / "ForeachType"
+       / "ForStatement"
+       / "FunctionAttributes"
+       / "FunctionAttribute"
+       / "FunctionBody"
+       / "FunctionLiteral"
+       / "GotoStatement"
+       / "HexadecimalInteger"
+       / "HexDigit"
+       / "IdentifierList"
+       / "Identifier"
+       / "IdentityExpression"
+       / "IfCondition"
+       / "IfStatement"
+       / "ImportBindings"
+       / "ImportBind"
+       / "ImportDeclaration"
+       / "ImportExpression"
+       / "ImportList"
+       / "Import"
+       / "Increment"
+       / "IndexExpression"
+       / "InExpression"
+       / "Initializer"
+       / "Initialize"
+       / "InOutX"
+       / "InOut"
+       / "InStatement"
+       / "IntegerExpression"
+       / "IntegerLiteral"
+       / "IntegerSuffix"
+       / "Integer"
+       / "InterfaceBody"
+       / "InterfaceDeclaration"
+       / "InterfaceTemplateDeclaration"
+       / "Invariant"
+       / "IsExpression"
+       / "KeyValuePair"
+       / "Keyword"
+       / "LabeledStatement"
+       / "Lambda"
+       / "LastCatch"
+       / "LineComment"
+       / "LinkageAttribute"
+       / "LinkageType"
+       / "MacroAfterBody"
+       / "MacroBeforeBody"
+       / "MacroDeclaration"
+       / "MacroParameter"
+       / "MacroParameterList"
+       / "MemberFunctionAttributes"
+       / "MemberFunctionAttribute"
+       / "MixinDeclaration"
+       / "MixinExpression"
+       / "MixinIdentifier"
+       / "MixinStatement"
+       / "ModuleDeclaration"
+       / "Module"
+       / "MulExpression"
+       / "NestingBlockComment"
+       / "NewAnonClassExpression"
+       / "NewExpression"
+       / "NonEmptyOrScopeBlockStatement"
+       / "NonEmptyStatementNoCaseNoDefault"
+       / "NonEmptyStatement"
+       / "NonVoidInitializer"
+       / "NoScopeNonEmptyStatement"
+       / "NoScopeStatement"
+       / "OpCode"
+       / "Operand"
+       / "Op"
+       / "OrExpression"
+       / "OrOrExpression"
+       / "OutStatement"
+       / "ParameterAttributes"
+       / "ParameterList"
+       / "Parameters"
+       / "Parameter"
+       / "PostfixExpression"
+       / "PowExpression"
+       / "PragmaStatement"
+       / "Pragma"
+       / "PrimaryExpression"
+       / "Property"
+       / "ProtectionAttribute"
+       / "Register"
+       / "RelExpression"
+       / "RelOp"
+       / "ReturnStatement"
+       / "ScopeBlockStatement"
+       / "ScopeGuardStatement"
+       / "ScopeStatementList"
+       / "ScopeStatement"
+       / "SharedStaticConstructor"
+       / "SharedStaticDestructor"
+       / "ShiftExpression"
+       / "Sign"
+       / "SliceExpression"
+       / "StatementList"
+       / "StatementListNoCaseNoDefault"
+       / "StatementNoCaseNoDefault"
+       / "Statement"
+       / "StaticAssert"
+       / "StaticConstructor"
+       / "StaticDestructor"
+       / "StaticIfCondition"
+       / "StorageClasses"
+       / "StorageClass"
+       / "StringLiterals"
+       / "StringLiteral"
+       / "StringPostfix"
+       / "StructAllocator"
+       / "StructBodyDeclarations"
+       / "StructBodyDeclaration"
+       / "StructBody"
+       / "StructDeallocator"
+       / "StructInitializer"
+       / "StructMemberInitializer"
+       / "StructMemberInitializers"
+       / "StructPostblit"
+       / "StructTemplateDeclaration"
+       / "SwitchStatement"
+       / "SymbolTail"
+       / "Symbol"
+       / "SynchronizedStatement"
+       / "TAPDefault"
+       / "TAPSpecialization"
+       / "TemplateAliasParameter"
+       / "TemplateArgument"
+       / "TemplatedConstructor"
+       / "TemplateDeclaration"
+       / "TemplateIdentifier"
+       / "TemplateInstance"
+       / "TemplateMixinDeclaration"
+       / "TemplateMixin"
+       / "TemplateParameterList"
+       / "TemplateParameter"
+       / "TemplateSingleArgument"
+       / "TemplateThisParameter"
+       / "TemplateTupleParameter"
+       / "TemplateTypeParameter"
+       / "TemplateValueParameter"
+       / "Test"
+       / "ThenStatement"
+       / "ThrowStatement"
+       / "TokenString"
+       / "TraitsArgument"
+       / "TraitsExpression"
+       / "TraitsKeyword"
+       / "TryStatement"
+       / "TTPDefault"
+       / "TTPSpecialization"
+       / "TVPDefault"
+       / "TVPSpecialization"
+       / "TypeidExpression"
+       / "Typeof"
+       / "TypeSpecialization"
+       / "Type"
+       / "UnaryExpression"
+       / "UnaryOp"
+       / "UnionTemplateDeclaration"
+       / "UnitTest"
+       / "VersionCondition"
+       / "VersionSpecification"
+       / "VoidInitializer"
+       / "WhileStatement"
+       / "WithStatement"
+       / "WysiwygString"
+       / "XorExpression"
+
+
+###
 
 ModuleDeclaration < "module" qualifiedIdentifier ";"
 
@@ -281,7 +590,7 @@ ExpressionStatement < Expression ";"
 
 DeclarationStatement < Declaration
 
-IfStatement < "if" "(" IfCondition ")" ThenStatement "else" ElseStatement
+IfStatement < "if" "(" IfCondition ")" ThenStatement ("else" ElseStatement)?
 
 IfCondition < Expression
              / "auto" Identifier "=" Expression
@@ -963,7 +1272,7 @@ NestingBlockComment <~ "/+" (!("/+"/"+/") .)* NestingBlockComment? (!("/+"/"+/")
 
 StringLiteral < WysiwygString
                / AlternateWysiwygString
-               / doublequotedString
+               / DoublequotedString
                # No HexString
                # No DelimitedString
                / TokenString
@@ -972,7 +1281,7 @@ WysiwygString <- 'r' doublequote (!doublequote .)* doublequote StringPostfix?
 
 AlternateWysiwygString <- backquote (!backquote .)* backquote StringPostfix?
 
-doublequotedString <- doublequote (DQChar)* doublequote StringPostfix?
+DoublequotedString <- doublequote (DQChar)* doublequote StringPostfix?
 
 DQChar <- EscapeSequence
         / !doublequote .
@@ -1034,6 +1343,12 @@ struct GenericD(TParseTree)
             case "D.Module":
             case "D.DeclDefs":
             case "D.DeclDef":
+            case "D.MacroDeclaration":
+            case "D.MacroParameterList":
+            case "D.MacroParameter":
+            case "D.MacroBeforeBody":
+            case "D.MacroAfterBody":
+            case "D.DRule":
             case "D.ModuleDeclaration":
             case "D.ImportDeclaration":
             case "D.ImportList":
@@ -1299,7 +1614,7 @@ struct GenericD(TParseTree)
             case "D.StringLiteral":
             case "D.WysiwygString":
             case "D.AlternateWysiwygString":
-            case "D.doublequotedString":
+            case "D.DoublequotedString":
             case "D.DQChar":
             case "D.EscapeSequence":
             case "D.StringPostfix":
@@ -1399,7 +1714,7 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, AttributeSpecifier, Spacing), pegged.peg.wrapAround!(Spacing, ImportDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, EnumDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, ClassDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, InterfaceDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, AggregateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, Declaration, Spacing), pegged.peg.wrapAround!(Spacing, Constructor, Spacing), pegged.peg.wrapAround!(Spacing, Destructor, Spacing), pegged.peg.wrapAround!(Spacing, UnitTest, Spacing), pegged.peg.wrapAround!(Spacing, StaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, StaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, ConditionalDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, DebugSpecification, Spacing), pegged.peg.wrapAround!(Spacing, VersionSpecification, Spacing), pegged.peg.wrapAround!(Spacing, StaticAssert, Spacing), pegged.peg.wrapAround!(Spacing, TemplateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixin, Spacing), pegged.peg.wrapAround!(Spacing, MixinDeclaration, Spacing)), "D.DeclDef")(p);
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, AttributeSpecifier, Spacing), pegged.peg.wrapAround!(Spacing, ImportDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, EnumDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, ClassDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, InterfaceDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, AggregateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, Declaration, Spacing), pegged.peg.wrapAround!(Spacing, Constructor, Spacing), pegged.peg.wrapAround!(Spacing, Destructor, Spacing), pegged.peg.wrapAround!(Spacing, UnitTest, Spacing), pegged.peg.wrapAround!(Spacing, StaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, StaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, ConditionalDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, DebugSpecification, Spacing), pegged.peg.wrapAround!(Spacing, VersionSpecification, Spacing), pegged.peg.wrapAround!(Spacing, StaticAssert, Spacing), pegged.peg.wrapAround!(Spacing, TemplateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixin, Spacing), pegged.peg.wrapAround!(Spacing, MixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, MacroDeclaration, Spacing)), "D.DeclDef")(p);
         }
         else
         {
@@ -1407,7 +1722,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, AttributeSpecifier, Spacing), pegged.peg.wrapAround!(Spacing, ImportDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, EnumDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, ClassDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, InterfaceDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, AggregateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, Declaration, Spacing), pegged.peg.wrapAround!(Spacing, Constructor, Spacing), pegged.peg.wrapAround!(Spacing, Destructor, Spacing), pegged.peg.wrapAround!(Spacing, UnitTest, Spacing), pegged.peg.wrapAround!(Spacing, StaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, StaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, ConditionalDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, DebugSpecification, Spacing), pegged.peg.wrapAround!(Spacing, VersionSpecification, Spacing), pegged.peg.wrapAround!(Spacing, StaticAssert, Spacing), pegged.peg.wrapAround!(Spacing, TemplateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixin, Spacing), pegged.peg.wrapAround!(Spacing, MixinDeclaration, Spacing)), "D.DeclDef")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, AttributeSpecifier, Spacing), pegged.peg.wrapAround!(Spacing, ImportDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, EnumDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, ClassDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, InterfaceDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, AggregateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, Declaration, Spacing), pegged.peg.wrapAround!(Spacing, Constructor, Spacing), pegged.peg.wrapAround!(Spacing, Destructor, Spacing), pegged.peg.wrapAround!(Spacing, UnitTest, Spacing), pegged.peg.wrapAround!(Spacing, StaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, StaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, ConditionalDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, DebugSpecification, Spacing), pegged.peg.wrapAround!(Spacing, VersionSpecification, Spacing), pegged.peg.wrapAround!(Spacing, StaticAssert, Spacing), pegged.peg.wrapAround!(Spacing, TemplateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixin, Spacing), pegged.peg.wrapAround!(Spacing, MixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, MacroDeclaration, Spacing)), "D.DeclDef")(p);
                 memo[tuple(`DeclDef`,p.end)] = result;
                 return result;
             }
@@ -1418,17 +1733,233 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, AttributeSpecifier, Spacing), pegged.peg.wrapAround!(Spacing, ImportDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, EnumDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, ClassDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, InterfaceDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, AggregateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, Declaration, Spacing), pegged.peg.wrapAround!(Spacing, Constructor, Spacing), pegged.peg.wrapAround!(Spacing, Destructor, Spacing), pegged.peg.wrapAround!(Spacing, UnitTest, Spacing), pegged.peg.wrapAround!(Spacing, StaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, StaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, ConditionalDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, DebugSpecification, Spacing), pegged.peg.wrapAround!(Spacing, VersionSpecification, Spacing), pegged.peg.wrapAround!(Spacing, StaticAssert, Spacing), pegged.peg.wrapAround!(Spacing, TemplateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixin, Spacing), pegged.peg.wrapAround!(Spacing, MixinDeclaration, Spacing)), "D.DeclDef")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, AttributeSpecifier, Spacing), pegged.peg.wrapAround!(Spacing, ImportDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, EnumDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, ClassDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, InterfaceDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, AggregateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, Declaration, Spacing), pegged.peg.wrapAround!(Spacing, Constructor, Spacing), pegged.peg.wrapAround!(Spacing, Destructor, Spacing), pegged.peg.wrapAround!(Spacing, UnitTest, Spacing), pegged.peg.wrapAround!(Spacing, StaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, StaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, ConditionalDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, DebugSpecification, Spacing), pegged.peg.wrapAround!(Spacing, VersionSpecification, Spacing), pegged.peg.wrapAround!(Spacing, StaticAssert, Spacing), pegged.peg.wrapAround!(Spacing, TemplateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixin, Spacing), pegged.peg.wrapAround!(Spacing, MixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, MacroDeclaration, Spacing)), "D.DeclDef")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, AttributeSpecifier, Spacing), pegged.peg.wrapAround!(Spacing, ImportDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, EnumDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, ClassDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, InterfaceDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, AggregateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, Declaration, Spacing), pegged.peg.wrapAround!(Spacing, Constructor, Spacing), pegged.peg.wrapAround!(Spacing, Destructor, Spacing), pegged.peg.wrapAround!(Spacing, UnitTest, Spacing), pegged.peg.wrapAround!(Spacing, StaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, StaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, ConditionalDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, DebugSpecification, Spacing), pegged.peg.wrapAround!(Spacing, VersionSpecification, Spacing), pegged.peg.wrapAround!(Spacing, StaticAssert, Spacing), pegged.peg.wrapAround!(Spacing, TemplateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixin, Spacing), pegged.peg.wrapAround!(Spacing, MixinDeclaration, Spacing)), "D.DeclDef")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, AttributeSpecifier, Spacing), pegged.peg.wrapAround!(Spacing, ImportDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, EnumDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, ClassDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, InterfaceDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, AggregateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, Declaration, Spacing), pegged.peg.wrapAround!(Spacing, Constructor, Spacing), pegged.peg.wrapAround!(Spacing, Destructor, Spacing), pegged.peg.wrapAround!(Spacing, UnitTest, Spacing), pegged.peg.wrapAround!(Spacing, StaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, StaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticConstructor, Spacing), pegged.peg.wrapAround!(Spacing, SharedStaticDestructor, Spacing), pegged.peg.wrapAround!(Spacing, ConditionalDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, DebugSpecification, Spacing), pegged.peg.wrapAround!(Spacing, VersionSpecification, Spacing), pegged.peg.wrapAround!(Spacing, StaticAssert, Spacing), pegged.peg.wrapAround!(Spacing, TemplateDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, TemplateMixin, Spacing), pegged.peg.wrapAround!(Spacing, MixinDeclaration, Spacing), pegged.peg.wrapAround!(Spacing, MacroDeclaration, Spacing)), "D.DeclDef")(TParseTree("", false,[], s));
         }
     }
     static string DeclDef(GetName g)
     {
         return "D.DeclDef";
+    }
+
+    static TParseTree MacroDeclaration(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`MacroDeclaration`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(p);
+                memo[tuple(`MacroDeclaration`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree MacroDeclaration(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(TParseTree("", false,[], s));
+        }
+    }
+    static string MacroDeclaration(GetName g)
+    {
+        return "D.MacroDeclaration";
+    }
+
+    static TParseTree MacroParameterList(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing)), "D.MacroParameterList")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`MacroParameterList`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing)), "D.MacroParameterList")(p);
+                memo[tuple(`MacroParameterList`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree MacroParameterList(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing)), "D.MacroParameterList")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing)), "D.MacroParameterList")(TParseTree("", false,[], s));
+        }
+    }
+    static string MacroParameterList(GetName g)
+    {
+        return "D.MacroParameterList";
+    }
+
+    static TParseTree MacroParameter(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, DRule, Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), "D.MacroParameter")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`MacroParameter`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, DRule, Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), "D.MacroParameter")(p);
+                memo[tuple(`MacroParameter`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree MacroParameter(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, DRule, Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), "D.MacroParameter")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, DRule, Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), "D.MacroParameter")(TParseTree("", false,[], s));
+        }
+    }
+    static string MacroParameter(GetName g)
+    {
+        return "D.MacroParameter";
+    }
+
+    static TParseTree MacroBeforeBody(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), endOfLine, pegged.peg.literal!("}")), "D.MacroBeforeBody")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`MacroBeforeBody`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), endOfLine, pegged.peg.literal!("}")), "D.MacroBeforeBody")(p);
+                memo[tuple(`MacroBeforeBody`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree MacroBeforeBody(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), endOfLine, pegged.peg.literal!("}")), "D.MacroBeforeBody")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), endOfLine, pegged.peg.literal!("}")), "D.MacroBeforeBody")(TParseTree("", false,[], s));
+        }
+    }
+    static string MacroBeforeBody(GetName g)
+    {
+        return "D.MacroBeforeBody";
+    }
+
+    static TParseTree MacroAfterBody(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing)), "D.MacroAfterBody")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`MacroAfterBody`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing)), "D.MacroAfterBody")(p);
+                memo[tuple(`MacroAfterBody`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree MacroAfterBody(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing)), "D.MacroAfterBody")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing)), "D.MacroAfterBody")(TParseTree("", false,[], s));
+        }
+    }
+    static string MacroAfterBody(GetName g)
+    {
+        return "D.MacroAfterBody";
+    }
+
+    static TParseTree DRule(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.keywords!("AddExpression", "AggregateDeclaration", "Aggregate", "AliasDeclaration", "AliasThisDeclaration", "AliasThis", "AlignAttribute", "AllocatorArguments", "AlternateWysiwygString", "AndAndExpression", "AndExpression", "ArgumentList", "ArrayInitializer", "ArrayLiteral", "ArrayMemberInitializations", "ArrayMemberInitialization", "AsmAddExp", "AsmAndExp", "AsmBrExp", "AsmEqualExp", "AsmExp", "AsmInstructionList", "AsmInstruction", "AsmLogAndExp", "AsmLogOrExp", "AsmMulExp", "AsmOrExp", "AsmPrimaryExp", "AsmRelExp", "AsmShiftExp", "AsmStatement", "AsmTypePrefix", "AsmUnaExp", "AsmXorExp", "AssertExpression", "AssignExpression", "AssocArrayLiteral", "AttributeSpecifier", "Attribute", "AutoDeclarationX", "AutoDeclaration", "BaseClassList", "BaseInterfaceList", "BasicType2", "BasicTypeX", "BasicType", "BinaryInteger", "BlockComment", "BlockStatement", "BodyStatement", "BreakStatement", "CaseRangeStatement", "CaseStatement", "CastEqual", "CastExpression", "Catches", "CatchParameter", "Catch", "CatExpression", "CCDeclarationBlock", "CharacterLiteral", "ClassAllocator", "ClassArguments", "ClassBodyDeclarations", "ClassBodyDeclaration", "ClassBody", "ClassDeallocator", "ClassDeclaration", "ClassTemplateDeclaration", "CmpExpression", "Comment", "ComplementExpression", "ConditionalDeclaration", "ConditionalExpression", "ConditionalStatement", "Condition", "Constraint", "Constructor", "ContinueStatement", "DebugCondition", "DebugSpecification", "DecimalInteger", "DeclarationStatement", "DeclarationBlock", "Declarations", "Declaration", "DeclaratorIdentifier", "DeclaratorInitializer", "DeclaratorSuffixes", "DeclaratorSuffix", "Declarators", "Declarator2", "Declarator", "DeclDefs", "DeclDef", "Decl", "DefaultInitializerExpression", "DefaultStatement", "DeleteExpression", "Destructor", "DoStatement", "DotIdentifier", "DoublequotedString", "DQChar", "ElseStatement", "EnumBaseType", "EnumBody", "EnumDeclaration", "EnumMember", "EnumTag", "EqualExpression", "EscapeSequence", "ExpressionStatement", "Expression", "FinallyStatement", "FinalSwitchStatement", "FloatLiteral", "ForeachRangeStatement", "ForeachStatement", "ForeachType", "ForStatement", "FunctionAttributes", "FunctionAttribute", "FunctionBody", "FunctionLiteral", "GotoStatement", "HexadecimalInteger", "HexDigit", "IdentifierList", "Identifier", "IdentityExpression", "IfCondition", "IfStatement", "ImportBindings", "ImportBind", "ImportDeclaration", "ImportExpression", "ImportList", "Import", "Increment", "IndexExpression", "InExpression", "Initializer", "Initialize", "InOutX", "InOut", "InStatement", "IntegerExpression", "IntegerLiteral", "IntegerSuffix", "Integer", "InterfaceBody", "InterfaceDeclaration", "InterfaceTemplateDeclaration", "Invariant", "IsExpression", "KeyValuePair", "Keyword", "LabeledStatement", "Lambda", "LastCatch", "LineComment", "LinkageAttribute", "LinkageType", "MacroAfterBody", "MacroBeforeBody", "MacroDeclaration", "MacroParameter", "MacroParameterList", "MemberFunctionAttributes", "MemberFunctionAttribute", "MixinDeclaration", "MixinExpression", "MixinIdentifier", "MixinStatement", "ModuleDeclaration", "Module", "MulExpression", "NestingBlockComment", "NewAnonClassExpression", "NewExpression", "NonEmptyOrScopeBlockStatement", "NonEmptyStatementNoCaseNoDefault", "NonEmptyStatement", "NonVoidInitializer", "NoScopeNonEmptyStatement", "NoScopeStatement", "OpCode", "Operand", "Op", "OrExpression", "OrOrExpression", "OutStatement", "ParameterAttributes", "ParameterList", "Parameters", "Parameter", "PostfixExpression", "PowExpression", "PragmaStatement", "Pragma", "PrimaryExpression", "Property", "ProtectionAttribute", "Register", "RelExpression", "RelOp", "ReturnStatement", "ScopeBlockStatement", "ScopeGuardStatement", "ScopeStatementList", "ScopeStatement", "SharedStaticConstructor", "SharedStaticDestructor", "ShiftExpression", "Sign", "SliceExpression", "StatementList", "StatementListNoCaseNoDefault", "StatementNoCaseNoDefault", "Statement", "StaticAssert", "StaticConstructor", "StaticDestructor", "StaticIfCondition", "StorageClasses", "StorageClass", "StringLiterals", "StringLiteral", "StringPostfix", "StructAllocator", "StructBodyDeclarations", "StructBodyDeclaration", "StructBody", "StructDeallocator", "StructInitializer", "StructMemberInitializer", "StructMemberInitializers", "StructPostblit", "StructTemplateDeclaration", "SwitchStatement", "SymbolTail", "Symbol", "SynchronizedStatement", "TAPDefault", "TAPSpecialization", "TemplateAliasParameter", "TemplateArgument", "TemplatedConstructor", "TemplateDeclaration", "TemplateIdentifier", "TemplateInstance", "TemplateMixinDeclaration", "TemplateMixin", "TemplateParameterList", "TemplateParameter", "TemplateSingleArgument", "TemplateThisParameter", "TemplateTupleParameter", "TemplateTypeParameter", "TemplateValueParameter", "Test", "ThenStatement", "ThrowStatement", "TokenString", "TraitsArgument", "TraitsExpression", "TraitsKeyword", "TryStatement", "TTPDefault", "TTPSpecialization", "TVPDefault", "TVPSpecialization", "TypeidExpression", "Typeof", "TypeSpecialization", "Type", "UnaryExpression", "UnaryOp", "UnionTemplateDeclaration", "UnitTest", "VersionCondition", "VersionSpecification", "VoidInitializer", "WhileStatement", "WithStatement", "WysiwygString", "XorExpression"), "D.DRule")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`DRule`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.keywords!("AddExpression", "AggregateDeclaration", "Aggregate", "AliasDeclaration", "AliasThisDeclaration", "AliasThis", "AlignAttribute", "AllocatorArguments", "AlternateWysiwygString", "AndAndExpression", "AndExpression", "ArgumentList", "ArrayInitializer", "ArrayLiteral", "ArrayMemberInitializations", "ArrayMemberInitialization", "AsmAddExp", "AsmAndExp", "AsmBrExp", "AsmEqualExp", "AsmExp", "AsmInstructionList", "AsmInstruction", "AsmLogAndExp", "AsmLogOrExp", "AsmMulExp", "AsmOrExp", "AsmPrimaryExp", "AsmRelExp", "AsmShiftExp", "AsmStatement", "AsmTypePrefix", "AsmUnaExp", "AsmXorExp", "AssertExpression", "AssignExpression", "AssocArrayLiteral", "AttributeSpecifier", "Attribute", "AutoDeclarationX", "AutoDeclaration", "BaseClassList", "BaseInterfaceList", "BasicType2", "BasicTypeX", "BasicType", "BinaryInteger", "BlockComment", "BlockStatement", "BodyStatement", "BreakStatement", "CaseRangeStatement", "CaseStatement", "CastEqual", "CastExpression", "Catches", "CatchParameter", "Catch", "CatExpression", "CCDeclarationBlock", "CharacterLiteral", "ClassAllocator", "ClassArguments", "ClassBodyDeclarations", "ClassBodyDeclaration", "ClassBody", "ClassDeallocator", "ClassDeclaration", "ClassTemplateDeclaration", "CmpExpression", "Comment", "ComplementExpression", "ConditionalDeclaration", "ConditionalExpression", "ConditionalStatement", "Condition", "Constraint", "Constructor", "ContinueStatement", "DebugCondition", "DebugSpecification", "DecimalInteger", "DeclarationStatement", "DeclarationBlock", "Declarations", "Declaration", "DeclaratorIdentifier", "DeclaratorInitializer", "DeclaratorSuffixes", "DeclaratorSuffix", "Declarators", "Declarator2", "Declarator", "DeclDefs", "DeclDef", "Decl", "DefaultInitializerExpression", "DefaultStatement", "DeleteExpression", "Destructor", "DoStatement", "DotIdentifier", "DoublequotedString", "DQChar", "ElseStatement", "EnumBaseType", "EnumBody", "EnumDeclaration", "EnumMember", "EnumTag", "EqualExpression", "EscapeSequence", "ExpressionStatement", "Expression", "FinallyStatement", "FinalSwitchStatement", "FloatLiteral", "ForeachRangeStatement", "ForeachStatement", "ForeachType", "ForStatement", "FunctionAttributes", "FunctionAttribute", "FunctionBody", "FunctionLiteral", "GotoStatement", "HexadecimalInteger", "HexDigit", "IdentifierList", "Identifier", "IdentityExpression", "IfCondition", "IfStatement", "ImportBindings", "ImportBind", "ImportDeclaration", "ImportExpression", "ImportList", "Import", "Increment", "IndexExpression", "InExpression", "Initializer", "Initialize", "InOutX", "InOut", "InStatement", "IntegerExpression", "IntegerLiteral", "IntegerSuffix", "Integer", "InterfaceBody", "InterfaceDeclaration", "InterfaceTemplateDeclaration", "Invariant", "IsExpression", "KeyValuePair", "Keyword", "LabeledStatement", "Lambda", "LastCatch", "LineComment", "LinkageAttribute", "LinkageType", "MacroAfterBody", "MacroBeforeBody", "MacroDeclaration", "MacroParameter", "MacroParameterList", "MemberFunctionAttributes", "MemberFunctionAttribute", "MixinDeclaration", "MixinExpression", "MixinIdentifier", "MixinStatement", "ModuleDeclaration", "Module", "MulExpression", "NestingBlockComment", "NewAnonClassExpression", "NewExpression", "NonEmptyOrScopeBlockStatement", "NonEmptyStatementNoCaseNoDefault", "NonEmptyStatement", "NonVoidInitializer", "NoScopeNonEmptyStatement", "NoScopeStatement", "OpCode", "Operand", "Op", "OrExpression", "OrOrExpression", "OutStatement", "ParameterAttributes", "ParameterList", "Parameters", "Parameter", "PostfixExpression", "PowExpression", "PragmaStatement", "Pragma", "PrimaryExpression", "Property", "ProtectionAttribute", "Register", "RelExpression", "RelOp", "ReturnStatement", "ScopeBlockStatement", "ScopeGuardStatement", "ScopeStatementList", "ScopeStatement", "SharedStaticConstructor", "SharedStaticDestructor", "ShiftExpression", "Sign", "SliceExpression", "StatementList", "StatementListNoCaseNoDefault", "StatementNoCaseNoDefault", "Statement", "StaticAssert", "StaticConstructor", "StaticDestructor", "StaticIfCondition", "StorageClasses", "StorageClass", "StringLiterals", "StringLiteral", "StringPostfix", "StructAllocator", "StructBodyDeclarations", "StructBodyDeclaration", "StructBody", "StructDeallocator", "StructInitializer", "StructMemberInitializer", "StructMemberInitializers", "StructPostblit", "StructTemplateDeclaration", "SwitchStatement", "SymbolTail", "Symbol", "SynchronizedStatement", "TAPDefault", "TAPSpecialization", "TemplateAliasParameter", "TemplateArgument", "TemplatedConstructor", "TemplateDeclaration", "TemplateIdentifier", "TemplateInstance", "TemplateMixinDeclaration", "TemplateMixin", "TemplateParameterList", "TemplateParameter", "TemplateSingleArgument", "TemplateThisParameter", "TemplateTupleParameter", "TemplateTypeParameter", "TemplateValueParameter", "Test", "ThenStatement", "ThrowStatement", "TokenString", "TraitsArgument", "TraitsExpression", "TraitsKeyword", "TryStatement", "TTPDefault", "TTPSpecialization", "TVPDefault", "TVPSpecialization", "TypeidExpression", "Typeof", "TypeSpecialization", "Type", "UnaryExpression", "UnaryOp", "UnionTemplateDeclaration", "UnitTest", "VersionCondition", "VersionSpecification", "VoidInitializer", "WhileStatement", "WithStatement", "WysiwygString", "XorExpression"), "D.DRule")(p);
+                memo[tuple(`DRule`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree DRule(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.keywords!("AddExpression", "AggregateDeclaration", "Aggregate", "AliasDeclaration", "AliasThisDeclaration", "AliasThis", "AlignAttribute", "AllocatorArguments", "AlternateWysiwygString", "AndAndExpression", "AndExpression", "ArgumentList", "ArrayInitializer", "ArrayLiteral", "ArrayMemberInitializations", "ArrayMemberInitialization", "AsmAddExp", "AsmAndExp", "AsmBrExp", "AsmEqualExp", "AsmExp", "AsmInstructionList", "AsmInstruction", "AsmLogAndExp", "AsmLogOrExp", "AsmMulExp", "AsmOrExp", "AsmPrimaryExp", "AsmRelExp", "AsmShiftExp", "AsmStatement", "AsmTypePrefix", "AsmUnaExp", "AsmXorExp", "AssertExpression", "AssignExpression", "AssocArrayLiteral", "AttributeSpecifier", "Attribute", "AutoDeclarationX", "AutoDeclaration", "BaseClassList", "BaseInterfaceList", "BasicType2", "BasicTypeX", "BasicType", "BinaryInteger", "BlockComment", "BlockStatement", "BodyStatement", "BreakStatement", "CaseRangeStatement", "CaseStatement", "CastEqual", "CastExpression", "Catches", "CatchParameter", "Catch", "CatExpression", "CCDeclarationBlock", "CharacterLiteral", "ClassAllocator", "ClassArguments", "ClassBodyDeclarations", "ClassBodyDeclaration", "ClassBody", "ClassDeallocator", "ClassDeclaration", "ClassTemplateDeclaration", "CmpExpression", "Comment", "ComplementExpression", "ConditionalDeclaration", "ConditionalExpression", "ConditionalStatement", "Condition", "Constraint", "Constructor", "ContinueStatement", "DebugCondition", "DebugSpecification", "DecimalInteger", "DeclarationStatement", "DeclarationBlock", "Declarations", "Declaration", "DeclaratorIdentifier", "DeclaratorInitializer", "DeclaratorSuffixes", "DeclaratorSuffix", "Declarators", "Declarator2", "Declarator", "DeclDefs", "DeclDef", "Decl", "DefaultInitializerExpression", "DefaultStatement", "DeleteExpression", "Destructor", "DoStatement", "DotIdentifier", "DoublequotedString", "DQChar", "ElseStatement", "EnumBaseType", "EnumBody", "EnumDeclaration", "EnumMember", "EnumTag", "EqualExpression", "EscapeSequence", "ExpressionStatement", "Expression", "FinallyStatement", "FinalSwitchStatement", "FloatLiteral", "ForeachRangeStatement", "ForeachStatement", "ForeachType", "ForStatement", "FunctionAttributes", "FunctionAttribute", "FunctionBody", "FunctionLiteral", "GotoStatement", "HexadecimalInteger", "HexDigit", "IdentifierList", "Identifier", "IdentityExpression", "IfCondition", "IfStatement", "ImportBindings", "ImportBind", "ImportDeclaration", "ImportExpression", "ImportList", "Import", "Increment", "IndexExpression", "InExpression", "Initializer", "Initialize", "InOutX", "InOut", "InStatement", "IntegerExpression", "IntegerLiteral", "IntegerSuffix", "Integer", "InterfaceBody", "InterfaceDeclaration", "InterfaceTemplateDeclaration", "Invariant", "IsExpression", "KeyValuePair", "Keyword", "LabeledStatement", "Lambda", "LastCatch", "LineComment", "LinkageAttribute", "LinkageType", "MacroAfterBody", "MacroBeforeBody", "MacroDeclaration", "MacroParameter", "MacroParameterList", "MemberFunctionAttributes", "MemberFunctionAttribute", "MixinDeclaration", "MixinExpression", "MixinIdentifier", "MixinStatement", "ModuleDeclaration", "Module", "MulExpression", "NestingBlockComment", "NewAnonClassExpression", "NewExpression", "NonEmptyOrScopeBlockStatement", "NonEmptyStatementNoCaseNoDefault", "NonEmptyStatement", "NonVoidInitializer", "NoScopeNonEmptyStatement", "NoScopeStatement", "OpCode", "Operand", "Op", "OrExpression", "OrOrExpression", "OutStatement", "ParameterAttributes", "ParameterList", "Parameters", "Parameter", "PostfixExpression", "PowExpression", "PragmaStatement", "Pragma", "PrimaryExpression", "Property", "ProtectionAttribute", "Register", "RelExpression", "RelOp", "ReturnStatement", "ScopeBlockStatement", "ScopeGuardStatement", "ScopeStatementList", "ScopeStatement", "SharedStaticConstructor", "SharedStaticDestructor", "ShiftExpression", "Sign", "SliceExpression", "StatementList", "StatementListNoCaseNoDefault", "StatementNoCaseNoDefault", "Statement", "StaticAssert", "StaticConstructor", "StaticDestructor", "StaticIfCondition", "StorageClasses", "StorageClass", "StringLiterals", "StringLiteral", "StringPostfix", "StructAllocator", "StructBodyDeclarations", "StructBodyDeclaration", "StructBody", "StructDeallocator", "StructInitializer", "StructMemberInitializer", "StructMemberInitializers", "StructPostblit", "StructTemplateDeclaration", "SwitchStatement", "SymbolTail", "Symbol", "SynchronizedStatement", "TAPDefault", "TAPSpecialization", "TemplateAliasParameter", "TemplateArgument", "TemplatedConstructor", "TemplateDeclaration", "TemplateIdentifier", "TemplateInstance", "TemplateMixinDeclaration", "TemplateMixin", "TemplateParameterList", "TemplateParameter", "TemplateSingleArgument", "TemplateThisParameter", "TemplateTupleParameter", "TemplateTypeParameter", "TemplateValueParameter", "Test", "ThenStatement", "ThrowStatement", "TokenString", "TraitsArgument", "TraitsExpression", "TraitsKeyword", "TryStatement", "TTPDefault", "TTPSpecialization", "TVPDefault", "TVPSpecialization", "TypeidExpression", "Typeof", "TypeSpecialization", "Type", "UnaryExpression", "UnaryOp", "UnionTemplateDeclaration", "UnitTest", "VersionCondition", "VersionSpecification", "VoidInitializer", "WhileStatement", "WithStatement", "WysiwygString", "XorExpression"), "D.DRule")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.keywords!("AddExpression", "AggregateDeclaration", "Aggregate", "AliasDeclaration", "AliasThisDeclaration", "AliasThis", "AlignAttribute", "AllocatorArguments", "AlternateWysiwygString", "AndAndExpression", "AndExpression", "ArgumentList", "ArrayInitializer", "ArrayLiteral", "ArrayMemberInitializations", "ArrayMemberInitialization", "AsmAddExp", "AsmAndExp", "AsmBrExp", "AsmEqualExp", "AsmExp", "AsmInstructionList", "AsmInstruction", "AsmLogAndExp", "AsmLogOrExp", "AsmMulExp", "AsmOrExp", "AsmPrimaryExp", "AsmRelExp", "AsmShiftExp", "AsmStatement", "AsmTypePrefix", "AsmUnaExp", "AsmXorExp", "AssertExpression", "AssignExpression", "AssocArrayLiteral", "AttributeSpecifier", "Attribute", "AutoDeclarationX", "AutoDeclaration", "BaseClassList", "BaseInterfaceList", "BasicType2", "BasicTypeX", "BasicType", "BinaryInteger", "BlockComment", "BlockStatement", "BodyStatement", "BreakStatement", "CaseRangeStatement", "CaseStatement", "CastEqual", "CastExpression", "Catches", "CatchParameter", "Catch", "CatExpression", "CCDeclarationBlock", "CharacterLiteral", "ClassAllocator", "ClassArguments", "ClassBodyDeclarations", "ClassBodyDeclaration", "ClassBody", "ClassDeallocator", "ClassDeclaration", "ClassTemplateDeclaration", "CmpExpression", "Comment", "ComplementExpression", "ConditionalDeclaration", "ConditionalExpression", "ConditionalStatement", "Condition", "Constraint", "Constructor", "ContinueStatement", "DebugCondition", "DebugSpecification", "DecimalInteger", "DeclarationStatement", "DeclarationBlock", "Declarations", "Declaration", "DeclaratorIdentifier", "DeclaratorInitializer", "DeclaratorSuffixes", "DeclaratorSuffix", "Declarators", "Declarator2", "Declarator", "DeclDefs", "DeclDef", "Decl", "DefaultInitializerExpression", "DefaultStatement", "DeleteExpression", "Destructor", "DoStatement", "DotIdentifier", "DoublequotedString", "DQChar", "ElseStatement", "EnumBaseType", "EnumBody", "EnumDeclaration", "EnumMember", "EnumTag", "EqualExpression", "EscapeSequence", "ExpressionStatement", "Expression", "FinallyStatement", "FinalSwitchStatement", "FloatLiteral", "ForeachRangeStatement", "ForeachStatement", "ForeachType", "ForStatement", "FunctionAttributes", "FunctionAttribute", "FunctionBody", "FunctionLiteral", "GotoStatement", "HexadecimalInteger", "HexDigit", "IdentifierList", "Identifier", "IdentityExpression", "IfCondition", "IfStatement", "ImportBindings", "ImportBind", "ImportDeclaration", "ImportExpression", "ImportList", "Import", "Increment", "IndexExpression", "InExpression", "Initializer", "Initialize", "InOutX", "InOut", "InStatement", "IntegerExpression", "IntegerLiteral", "IntegerSuffix", "Integer", "InterfaceBody", "InterfaceDeclaration", "InterfaceTemplateDeclaration", "Invariant", "IsExpression", "KeyValuePair", "Keyword", "LabeledStatement", "Lambda", "LastCatch", "LineComment", "LinkageAttribute", "LinkageType", "MacroAfterBody", "MacroBeforeBody", "MacroDeclaration", "MacroParameter", "MacroParameterList", "MemberFunctionAttributes", "MemberFunctionAttribute", "MixinDeclaration", "MixinExpression", "MixinIdentifier", "MixinStatement", "ModuleDeclaration", "Module", "MulExpression", "NestingBlockComment", "NewAnonClassExpression", "NewExpression", "NonEmptyOrScopeBlockStatement", "NonEmptyStatementNoCaseNoDefault", "NonEmptyStatement", "NonVoidInitializer", "NoScopeNonEmptyStatement", "NoScopeStatement", "OpCode", "Operand", "Op", "OrExpression", "OrOrExpression", "OutStatement", "ParameterAttributes", "ParameterList", "Parameters", "Parameter", "PostfixExpression", "PowExpression", "PragmaStatement", "Pragma", "PrimaryExpression", "Property", "ProtectionAttribute", "Register", "RelExpression", "RelOp", "ReturnStatement", "ScopeBlockStatement", "ScopeGuardStatement", "ScopeStatementList", "ScopeStatement", "SharedStaticConstructor", "SharedStaticDestructor", "ShiftExpression", "Sign", "SliceExpression", "StatementList", "StatementListNoCaseNoDefault", "StatementNoCaseNoDefault", "Statement", "StaticAssert", "StaticConstructor", "StaticDestructor", "StaticIfCondition", "StorageClasses", "StorageClass", "StringLiterals", "StringLiteral", "StringPostfix", "StructAllocator", "StructBodyDeclarations", "StructBodyDeclaration", "StructBody", "StructDeallocator", "StructInitializer", "StructMemberInitializer", "StructMemberInitializers", "StructPostblit", "StructTemplateDeclaration", "SwitchStatement", "SymbolTail", "Symbol", "SynchronizedStatement", "TAPDefault", "TAPSpecialization", "TemplateAliasParameter", "TemplateArgument", "TemplatedConstructor", "TemplateDeclaration", "TemplateIdentifier", "TemplateInstance", "TemplateMixinDeclaration", "TemplateMixin", "TemplateParameterList", "TemplateParameter", "TemplateSingleArgument", "TemplateThisParameter", "TemplateTupleParameter", "TemplateTypeParameter", "TemplateValueParameter", "Test", "ThenStatement", "ThrowStatement", "TokenString", "TraitsArgument", "TraitsExpression", "TraitsKeyword", "TryStatement", "TTPDefault", "TTPSpecialization", "TVPDefault", "TVPSpecialization", "TypeidExpression", "Typeof", "TypeSpecialization", "Type", "UnaryExpression", "UnaryOp", "UnionTemplateDeclaration", "UnitTest", "VersionCondition", "VersionSpecification", "VoidInitializer", "WhileStatement", "WithStatement", "WysiwygString", "XorExpression"), "D.DRule")(TParseTree("", false,[], s));
+        }
+    }
+    static string DRule(GetName g)
+    {
+        return "D.DRule";
     }
 
     static TParseTree ModuleDeclaration(TParseTree p)
@@ -3670,7 +4201,7 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("if"), Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.wrapAround!(Spacing, IfCondition, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing), pegged.peg.wrapAround!(Spacing, ThenStatement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("else"), Spacing), pegged.peg.wrapAround!(Spacing, ElseStatement, Spacing)), "D.IfStatement")(p);
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("if"), Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.wrapAround!(Spacing, IfCondition, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing), pegged.peg.wrapAround!(Spacing, ThenStatement, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("else"), Spacing), pegged.peg.wrapAround!(Spacing, ElseStatement, Spacing)), Spacing))), "D.IfStatement")(p);
         }
         else
         {
@@ -3678,7 +4209,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("if"), Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.wrapAround!(Spacing, IfCondition, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing), pegged.peg.wrapAround!(Spacing, ThenStatement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("else"), Spacing), pegged.peg.wrapAround!(Spacing, ElseStatement, Spacing)), "D.IfStatement")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("if"), Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.wrapAround!(Spacing, IfCondition, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing), pegged.peg.wrapAround!(Spacing, ThenStatement, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("else"), Spacing), pegged.peg.wrapAround!(Spacing, ElseStatement, Spacing)), Spacing))), "D.IfStatement")(p);
                 memo[tuple(`IfStatement`,p.end)] = result;
                 return result;
             }
@@ -3689,12 +4220,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("if"), Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.wrapAround!(Spacing, IfCondition, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing), pegged.peg.wrapAround!(Spacing, ThenStatement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("else"), Spacing), pegged.peg.wrapAround!(Spacing, ElseStatement, Spacing)), "D.IfStatement")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("if"), Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.wrapAround!(Spacing, IfCondition, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing), pegged.peg.wrapAround!(Spacing, ThenStatement, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("else"), Spacing), pegged.peg.wrapAround!(Spacing, ElseStatement, Spacing)), Spacing))), "D.IfStatement")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("if"), Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.wrapAround!(Spacing, IfCondition, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing), pegged.peg.wrapAround!(Spacing, ThenStatement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("else"), Spacing), pegged.peg.wrapAround!(Spacing, ElseStatement, Spacing)), "D.IfStatement")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("if"), Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.wrapAround!(Spacing, IfCondition, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing), pegged.peg.wrapAround!(Spacing, ThenStatement, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("else"), Spacing), pegged.peg.wrapAround!(Spacing, ElseStatement, Spacing)), Spacing))), "D.IfStatement")(TParseTree("", false,[], s));
         }
     }
     static string IfStatement(GetName g)
@@ -10906,7 +11437,7 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, WysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, AlternateWysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, doublequotedString, Spacing), pegged.peg.wrapAround!(Spacing, TokenString, Spacing)), "D.StringLiteral")(p);
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, WysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, AlternateWysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, DoublequotedString, Spacing), pegged.peg.wrapAround!(Spacing, TokenString, Spacing)), "D.StringLiteral")(p);
         }
         else
         {
@@ -10914,7 +11445,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, WysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, AlternateWysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, doublequotedString, Spacing), pegged.peg.wrapAround!(Spacing, TokenString, Spacing)), "D.StringLiteral")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, WysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, AlternateWysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, DoublequotedString, Spacing), pegged.peg.wrapAround!(Spacing, TokenString, Spacing)), "D.StringLiteral")(p);
                 memo[tuple(`StringLiteral`,p.end)] = result;
                 return result;
             }
@@ -10925,12 +11456,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, WysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, AlternateWysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, doublequotedString, Spacing), pegged.peg.wrapAround!(Spacing, TokenString, Spacing)), "D.StringLiteral")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, WysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, AlternateWysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, DoublequotedString, Spacing), pegged.peg.wrapAround!(Spacing, TokenString, Spacing)), "D.StringLiteral")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, WysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, AlternateWysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, doublequotedString, Spacing), pegged.peg.wrapAround!(Spacing, TokenString, Spacing)), "D.StringLiteral")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, WysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, AlternateWysiwygString, Spacing), pegged.peg.wrapAround!(Spacing, DoublequotedString, Spacing), pegged.peg.wrapAround!(Spacing, TokenString, Spacing)), "D.StringLiteral")(TParseTree("", false,[], s));
         }
     }
     static string StringLiteral(GetName g)
@@ -11010,40 +11541,40 @@ struct GenericD(TParseTree)
         return "D.AlternateWysiwygString";
     }
 
-    static TParseTree doublequotedString(TParseTree p)
+    static TParseTree DoublequotedString(TParseTree p)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(DQChar), doublequote, pegged.peg.option!(StringPostfix)), "D.doublequotedString")(p);
+            return pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(DQChar), doublequote, pegged.peg.option!(StringPostfix)), "D.DoublequotedString")(p);
         }
         else
         {
-            if(auto m = tuple(`doublequotedString`,p.end) in memo)
+            if(auto m = tuple(`DoublequotedString`,p.end) in memo)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(DQChar), doublequote, pegged.peg.option!(StringPostfix)), "D.doublequotedString")(p);
-                memo[tuple(`doublequotedString`,p.end)] = result;
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(DQChar), doublequote, pegged.peg.option!(StringPostfix)), "D.DoublequotedString")(p);
+                memo[tuple(`DoublequotedString`,p.end)] = result;
                 return result;
             }
         }
     }
 
-    static TParseTree doublequotedString(string s)
+    static TParseTree DoublequotedString(string s)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(DQChar), doublequote, pegged.peg.option!(StringPostfix)), "D.doublequotedString")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(DQChar), doublequote, pegged.peg.option!(StringPostfix)), "D.DoublequotedString")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(DQChar), doublequote, pegged.peg.option!(StringPostfix)), "D.doublequotedString")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(doublequote, pegged.peg.zeroOrMore!(DQChar), doublequote, pegged.peg.option!(StringPostfix)), "D.DoublequotedString")(TParseTree("", false,[], s));
         }
     }
-    static string doublequotedString(GetName g)
+    static string DoublequotedString(GetName g)
     {
-        return "D.doublequotedString";
+        return "D.DoublequotedString";
     }
 
     static TParseTree DQChar(TParseTree p)
