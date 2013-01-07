@@ -282,7 +282,7 @@ ExpressionStatement < Expression ";"
 
 DeclarationStatement < Declaration
 
-IfStatement < "if" "(" IfCondition ")" ThenStatement "else" ElseStatement
+IfStatement < "if" "(" IfCondition ")" ThenStatement ("else" ElseStatement)?
 
 IfCondition < Expression
              / "auto" Identifier "=" Expression
@@ -964,7 +964,7 @@ NestingBlockComment <~ "/+" (!("/+"/"+/") .)* NestingBlockComment? (!("/+"/"+/")
 
 StringLiteral < WysiwygString
                / AlternateWysiwygString
-               / doublequotedString
+               / DoublequotedString
                # No HexString
                # No DelimitedString
                / TokenString
@@ -973,7 +973,7 @@ WysiwygString <- 'r' doublequote (!doublequote .)* doublequote StringPostfix?
 
 AlternateWysiwygString <- backquote (!backquote .)* backquote StringPostfix?
 
-doublequotedString <- doublequote (DQChar)* doublequote StringPostfix?
+DoublequotedString <- doublequote (DQChar)* doublequote StringPostfix?
 
 DQChar <- EscapeSequence
         / !doublequote .
