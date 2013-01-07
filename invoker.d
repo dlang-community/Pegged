@@ -1,18 +1,23 @@
 module invoker;
 
-import std.stdio;
 
+import std.stdio;
 import dparser;
 
 void main(string[] args)
 {
 
-    string res = D.decimateTree(D(q{
-
-module foo;
-double d;
-int foo(string[] args) { return args;}
-
+    string res = D.decimateTree(D.MacroDeclaration(q{
+macro foo(IfCondition cond, ThenStatement then)
+{
+    unless (cond)
+        then;
+}
+return
+{
+    if (!cond)
+        then;
+}
     })).toString();
     //result.write(res);
     writeln(res);
