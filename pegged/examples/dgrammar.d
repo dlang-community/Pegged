@@ -31,6 +31,25 @@ DeclDef < AttributeSpecifier
         / TemplateMixinDeclaration
         / TemplateMixin
         / MixinDeclaration
+        / MacroDeclaration
+
+### MACROS ADDITION TO THE D GRAMMAR ###
+
+MacroDeclaration < "macro" identifier MacroParameterList
+                   MacroBeforeBody "return" MacroAfterBody
+
+MacroParameterList < "(" List(MacroParameter)? ")"
+
+MacroParameter < identifier identifier
+
+#Mind the '<-' arrow!
+MacroBeforeBody <- "{"
+                   ~(!(endOfLine "}") .)*
+                   endOfLine "}"
+
+MacroAfterBody < "{" Statement "}"
+
+###
 
 ModuleDeclaration < "module" qualifiedIdentifier ";"
 
