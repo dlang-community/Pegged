@@ -4,7 +4,7 @@ This module was automatically generated from the following grammar:
 
 D:
 
-Module < Spacing ModuleDeclaration? DeclDefs?
+Module <- ModuleDeclaration? DeclDefs?
 
 DeclDefs < DeclDef+
 
@@ -34,20 +34,24 @@ DeclDef < AttributeSpecifier
 
 ### MACROS ADDITION TO THE D GRAMMAR ###
 
-MacroDeclaration < "macro" identifier MacroParameterList
-                   (":" identifier)?
+MacroDeclaration < "macro" MacroName MacroParameterList
+                   MacroLevel?
                    MacroBeforeBody "return" MacroAfterBody
 
-MacroParameterList < "(" List(MacroParameter)? ")"
+MacroName < identifier
+
+MacroParameterList < :"(" List(MacroParameter)? :")"
 
 MacroParameter < identifier identifier
 
-#Mind the '<-' arrow!
-MacroBeforeBody <- "{"
-                   ~(!(endOfLine "}") .)*
-                   endOfLine "}"
+MacroLevel < :":" identifier
 
-MacroAfterBody < "{" Statement "}"
+#Mind the '<-' arrow!
+MacroBeforeBody <- :"{"
+                   ~(!(endOfLine "}") .)*
+                   :endOfLine :"}"
+
+MacroAfterBody < :"{" Statement :"}"
 
 
 ###
@@ -972,18 +976,20 @@ Keyword < "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / 
 
 ## file lex.html
 
-Comment < BlockComment
+Spacing <- (blank / Comment)*
+
+Comment <- BlockComment
          / LineComment
          / NestingBlockComment
 
-BlockComment < '/ *' (!'* /' .)* '* /'
+BlockComment <~ :'/ *' (!'* /' .)* :'* /'
 
-LineComment < '//' (!endOfLine .)* endOfLine
+LineComment <~ :'//' (!endOfLine .)* :endOfLine
 
-#NestingBlockComment < '/ +' (NestingBlockComment / Text) '+ /'
+#NestingBlockComment < :'/ +' (NestingBlockComment / Text) :'+ /'
 # / + (please, don't delete this line, it opens a nested block comment in generated module which is closed on the next line
 #Text < (!'+ /' .)*
-NestingBlockComment <~ "/+" (!("/+"/"+/") .)* NestingBlockComment? (!("/+"/"+/") .)* "+/"
+NestingBlockComment <~ :"/+" (!("/+"/"+/") .)* NestingBlockComment? (!("/+"/"+/") .)* :"+/"
 
 StringLiteral < WysiwygString
                / AlternateWysiwygString
@@ -1059,8 +1065,10 @@ struct GenericD(TParseTree)
             case "D.DeclDefs":
             case "D.DeclDef":
             case "D.MacroDeclaration":
+            case "D.MacroName":
             case "D.MacroParameterList":
             case "D.MacroParameter":
+            case "D.MacroLevel":
             case "D.MacroBeforeBody":
             case "D.MacroAfterBody":
             case "D.ModuleDeclaration":
@@ -1322,6 +1330,7 @@ struct GenericD(TParseTree)
             case "D.StaticAssert":
             case "D.Identifier":
             case "D.Keyword":
+            case "D.Spacing":
             case "D.Comment":
             case "D.BlockComment":
             case "D.LineComment":
@@ -1351,13 +1360,11 @@ struct GenericD(TParseTree)
         }
     }
     mixin decimateTree;
-    alias spacing Spacing;
-
     static TParseTree Module(TParseTree p)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, Spacing, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, ModuleDeclaration, Spacing)), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, DeclDefs, Spacing))), "D.Module")(p);
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.option!(ModuleDeclaration), pegged.peg.option!(DeclDefs)), "D.Module")(p);
         }
         else
         {
@@ -1365,7 +1372,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, Spacing, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, ModuleDeclaration, Spacing)), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, DeclDefs, Spacing))), "D.Module")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.option!(ModuleDeclaration), pegged.peg.option!(DeclDefs)), "D.Module")(p);
                 memo[tuple(`Module`,p.end)] = result;
                 return result;
             }
@@ -1376,12 +1383,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, Spacing, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, ModuleDeclaration, Spacing)), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, DeclDefs, Spacing))), "D.Module")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.option!(ModuleDeclaration), pegged.peg.option!(DeclDefs)), "D.Module")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, Spacing, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, ModuleDeclaration, Spacing)), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, DeclDefs, Spacing))), "D.Module")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.option!(ModuleDeclaration), pegged.peg.option!(DeclDefs)), "D.Module")(TParseTree("", false,[], s));
         }
     }
     static string Module(GetName g)
@@ -1465,7 +1472,7 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(":"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(p);
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, MacroName, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, MacroLevel, Spacing)), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(p);
         }
         else
         {
@@ -1473,7 +1480,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(":"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, MacroName, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, MacroLevel, Spacing)), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(p);
                 memo[tuple(`MacroDeclaration`,p.end)] = result;
                 return result;
             }
@@ -1484,12 +1491,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(":"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, MacroName, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, MacroLevel, Spacing)), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(":"), Spacing), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("macro"), Spacing), pegged.peg.wrapAround!(Spacing, MacroName, Spacing), pegged.peg.wrapAround!(Spacing, MacroParameterList, Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, MacroLevel, Spacing)), pegged.peg.wrapAround!(Spacing, MacroBeforeBody, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("return"), Spacing), pegged.peg.wrapAround!(Spacing, MacroAfterBody, Spacing)), "D.MacroDeclaration")(TParseTree("", false,[], s));
         }
     }
     static string MacroDeclaration(GetName g)
@@ -1497,11 +1504,47 @@ struct GenericD(TParseTree)
         return "D.MacroDeclaration";
     }
 
+    static TParseTree MacroName(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.wrapAround!(Spacing, identifier, Spacing), "D.MacroName")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`MacroName`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.wrapAround!(Spacing, identifier, Spacing), "D.MacroName")(p);
+                memo[tuple(`MacroName`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree MacroName(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.wrapAround!(Spacing, identifier, Spacing), "D.MacroName")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.wrapAround!(Spacing, identifier, Spacing), "D.MacroName")(TParseTree("", false,[], s));
+        }
+    }
+    static string MacroName(GetName g)
+    {
+        return "D.MacroName";
+    }
+
     static TParseTree MacroParameterList(TParseTree p)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing)), "D.MacroParameterList")(p);
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing)), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing))), "D.MacroParameterList")(p);
         }
         else
         {
@@ -1509,7 +1552,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing)), "D.MacroParameterList")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing)), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing))), "D.MacroParameterList")(p);
                 memo[tuple(`MacroParameterList`,p.end)] = result;
                 return result;
             }
@@ -1520,12 +1563,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing)), "D.MacroParameterList")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing)), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing))), "D.MacroParameterList")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing)), "D.MacroParameterList")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("("), Spacing)), pegged.peg.option!(pegged.peg.wrapAround!(Spacing, List!(pegged.peg.wrapAround!(Spacing, MacroParameter, Spacing)), Spacing)), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(")"), Spacing))), "D.MacroParameterList")(TParseTree("", false,[], s));
         }
     }
     static string MacroParameterList(GetName g)
@@ -1569,11 +1612,47 @@ struct GenericD(TParseTree)
         return "D.MacroParameter";
     }
 
+    static TParseTree MacroLevel(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(":"), Spacing)), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), "D.MacroLevel")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`MacroLevel`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(":"), Spacing)), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), "D.MacroLevel")(p);
+                memo[tuple(`MacroLevel`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree MacroLevel(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(":"), Spacing)), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), "D.MacroLevel")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!(":"), Spacing)), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), "D.MacroLevel")(TParseTree("", false,[], s));
+        }
+    }
+    static string MacroLevel(GetName g)
+    {
+        return "D.MacroLevel";
+    }
+
     static TParseTree MacroBeforeBody(TParseTree p)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), endOfLine, pegged.peg.literal!("}")), "D.MacroBeforeBody")(p);
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("{")), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), pegged.peg.discard!(endOfLine), pegged.peg.discard!(pegged.peg.literal!("}"))), "D.MacroBeforeBody")(p);
         }
         else
         {
@@ -1581,7 +1660,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), endOfLine, pegged.peg.literal!("}")), "D.MacroBeforeBody")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("{")), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), pegged.peg.discard!(endOfLine), pegged.peg.discard!(pegged.peg.literal!("}"))), "D.MacroBeforeBody")(p);
                 memo[tuple(`MacroBeforeBody`,p.end)] = result;
                 return result;
             }
@@ -1592,12 +1671,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), endOfLine, pegged.peg.literal!("}")), "D.MacroBeforeBody")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("{")), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), pegged.peg.discard!(endOfLine), pegged.peg.discard!(pegged.peg.literal!("}"))), "D.MacroBeforeBody")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("{"), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), endOfLine, pegged.peg.literal!("}")), "D.MacroBeforeBody")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("{")), pegged.peg.fuse!(pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.and!(endOfLine, pegged.peg.literal!("}"))), pegged.peg.any))), pegged.peg.discard!(endOfLine), pegged.peg.discard!(pegged.peg.literal!("}"))), "D.MacroBeforeBody")(TParseTree("", false,[], s));
         }
     }
     static string MacroBeforeBody(GetName g)
@@ -1609,7 +1688,7 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing)), "D.MacroAfterBody")(p);
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing)), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing))), "D.MacroAfterBody")(p);
         }
         else
         {
@@ -1617,7 +1696,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing)), "D.MacroAfterBody")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing)), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing))), "D.MacroAfterBody")(p);
                 memo[tuple(`MacroAfterBody`,p.end)] = result;
                 return result;
             }
@@ -1628,12 +1707,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing)), "D.MacroAfterBody")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing)), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing))), "D.MacroAfterBody")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing)), "D.MacroAfterBody")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("{"), Spacing)), pegged.peg.wrapAround!(Spacing, Statement, Spacing), pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("}"), Spacing))), "D.MacroAfterBody")(TParseTree("", false,[], s));
         }
     }
     static string MacroAfterBody(GetName g)
@@ -11004,11 +11083,47 @@ struct GenericD(TParseTree)
         return "D.Keyword";
     }
 
+    static TParseTree Spacing(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment)), "D.Spacing")(p);
+        }
+        else
+        {
+            if(auto m = tuple(`Spacing`,p.end) in memo)
+                return *m;
+            else
+            {
+                TParseTree result = pegged.peg.named!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment)), "D.Spacing")(p);
+                memo[tuple(`Spacing`,p.end)] = result;
+                return result;
+            }
+        }
+    }
+
+    static TParseTree Spacing(string s)
+    {
+        if(__ctfe)
+        {
+            return pegged.peg.named!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment)), "D.Spacing")(TParseTree("", false,[], s));
+        }
+        else
+        {
+            memo = null;
+            return pegged.peg.named!(pegged.peg.zeroOrMore!(pegged.peg.or!(blank, Comment)), "D.Spacing")(TParseTree("", false,[], s));
+        }
+    }
+    static string Spacing(GetName g)
+    {
+        return "D.Spacing";
+    }
+
     static TParseTree Comment(TParseTree p)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, BlockComment, Spacing), pegged.peg.wrapAround!(Spacing, LineComment, Spacing), pegged.peg.wrapAround!(Spacing, NestingBlockComment, Spacing)), "D.Comment")(p);
+            return pegged.peg.named!(pegged.peg.or!(BlockComment, LineComment, NestingBlockComment), "D.Comment")(p);
         }
         else
         {
@@ -11016,7 +11131,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, BlockComment, Spacing), pegged.peg.wrapAround!(Spacing, LineComment, Spacing), pegged.peg.wrapAround!(Spacing, NestingBlockComment, Spacing)), "D.Comment")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.or!(BlockComment, LineComment, NestingBlockComment), "D.Comment")(p);
                 memo[tuple(`Comment`,p.end)] = result;
                 return result;
             }
@@ -11027,12 +11142,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, BlockComment, Spacing), pegged.peg.wrapAround!(Spacing, LineComment, Spacing), pegged.peg.wrapAround!(Spacing, NestingBlockComment, Spacing)), "D.Comment")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.or!(BlockComment, LineComment, NestingBlockComment), "D.Comment")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.or!(pegged.peg.wrapAround!(Spacing, BlockComment, Spacing), pegged.peg.wrapAround!(Spacing, LineComment, Spacing), pegged.peg.wrapAround!(Spacing, NestingBlockComment, Spacing)), "D.Comment")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.or!(BlockComment, LineComment, NestingBlockComment), "D.Comment")(TParseTree("", false,[], s));
         }
     }
     static string Comment(GetName g)
@@ -11044,7 +11159,7 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("/ *"), Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("* /"), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.any, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("* /"), Spacing)), "D.BlockComment")(p);
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("/ *")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!("* /")), pegged.peg.any)), pegged.peg.discard!(pegged.peg.literal!("* /")))), "D.BlockComment")(p);
         }
         else
         {
@@ -11052,7 +11167,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("/ *"), Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("* /"), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.any, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("* /"), Spacing)), "D.BlockComment")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("/ *")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!("* /")), pegged.peg.any)), pegged.peg.discard!(pegged.peg.literal!("* /")))), "D.BlockComment")(p);
                 memo[tuple(`BlockComment`,p.end)] = result;
                 return result;
             }
@@ -11063,12 +11178,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("/ *"), Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("* /"), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.any, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("* /"), Spacing)), "D.BlockComment")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("/ *")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!("* /")), pegged.peg.any)), pegged.peg.discard!(pegged.peg.literal!("* /")))), "D.BlockComment")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("/ *"), Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("* /"), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.any, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("* /"), Spacing)), "D.BlockComment")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("/ *")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.literal!("* /")), pegged.peg.any)), pegged.peg.discard!(pegged.peg.literal!("* /")))), "D.BlockComment")(TParseTree("", false,[], s));
         }
     }
     static string BlockComment(GetName g)
@@ -11080,7 +11195,7 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("//"), Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.wrapAround!(Spacing, endOfLine, Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.any, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, endOfLine, Spacing)), "D.LineComment")(p);
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("//")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(endOfLine), pegged.peg.any)), pegged.peg.discard!(endOfLine))), "D.LineComment")(p);
         }
         else
         {
@@ -11088,7 +11203,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("//"), Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.wrapAround!(Spacing, endOfLine, Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.any, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, endOfLine, Spacing)), "D.LineComment")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("//")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(endOfLine), pegged.peg.any)), pegged.peg.discard!(endOfLine))), "D.LineComment")(p);
                 memo[tuple(`LineComment`,p.end)] = result;
                 return result;
             }
@@ -11099,12 +11214,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("//"), Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.wrapAround!(Spacing, endOfLine, Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.any, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, endOfLine, Spacing)), "D.LineComment")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("//")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(endOfLine), pegged.peg.any)), pegged.peg.discard!(endOfLine))), "D.LineComment")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.and!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("//"), Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.wrapAround!(Spacing, endOfLine, Spacing)), pegged.peg.wrapAround!(Spacing, pegged.peg.any, Spacing)), Spacing)), pegged.peg.wrapAround!(Spacing, endOfLine, Spacing)), "D.LineComment")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("//")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(endOfLine), pegged.peg.any)), pegged.peg.discard!(endOfLine))), "D.LineComment")(TParseTree("", false,[], s));
         }
     }
     static string LineComment(GetName g)
@@ -11116,7 +11231,7 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.literal!("/+"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.option!(NestingBlockComment), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.literal!("+/"))), "D.NestingBlockComment")(p);
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("/+")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.option!(NestingBlockComment), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.discard!(pegged.peg.literal!("+/")))), "D.NestingBlockComment")(p);
         }
         else
         {
@@ -11124,7 +11239,7 @@ struct GenericD(TParseTree)
                 return *m;
             else
             {
-                TParseTree result = pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.literal!("/+"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.option!(NestingBlockComment), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.literal!("+/"))), "D.NestingBlockComment")(p);
+                TParseTree result = pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("/+")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.option!(NestingBlockComment), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.discard!(pegged.peg.literal!("+/")))), "D.NestingBlockComment")(p);
                 memo[tuple(`NestingBlockComment`,p.end)] = result;
                 return result;
             }
@@ -11135,12 +11250,12 @@ struct GenericD(TParseTree)
     {
         if(__ctfe)
         {
-            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.literal!("/+"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.option!(NestingBlockComment), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.literal!("+/"))), "D.NestingBlockComment")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("/+")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.option!(NestingBlockComment), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.discard!(pegged.peg.literal!("+/")))), "D.NestingBlockComment")(TParseTree("", false,[], s));
         }
         else
         {
             memo = null;
-            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.literal!("/+"), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.option!(NestingBlockComment), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.literal!("+/"))), "D.NestingBlockComment")(TParseTree("", false,[], s));
+            return pegged.peg.named!(pegged.peg.fuse!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.literal!("/+")), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.option!(NestingBlockComment), pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.negLookahead!(pegged.peg.keywords!("/+", "+/")), pegged.peg.any)), pegged.peg.discard!(pegged.peg.literal!("+/")))), "D.NestingBlockComment")(TParseTree("", false,[], s));
         }
     }
     static string NestingBlockComment(GetName g)
