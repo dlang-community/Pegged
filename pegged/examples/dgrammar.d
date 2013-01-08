@@ -5,7 +5,7 @@ import pegged.grammar;
 enum Dgrammar = `
 D:
 
-Module < Spacing ModuleDeclaration? DeclDefs?
+Module <- ModuleDeclaration? DeclDefs?
 
 DeclDefs < DeclDef+
 
@@ -35,20 +35,24 @@ DeclDef < AttributeSpecifier
 
 ### MACROS ADDITION TO THE D GRAMMAR ###
 
-MacroDeclaration < "macro" identifier MacroParameterList
-                   (":" identifier)?
+MacroDeclaration < "macro" MacroName MacroParameterList
+                   MacroLevel?
                    MacroBeforeBody "return" MacroAfterBody
 
-MacroParameterList < "(" List(MacroParameter)? ")"
+MacroName < identifier
+
+MacroParameterList < :"(" List(MacroParameter)? :")"
 
 MacroParameter < identifier identifier
 
-#Mind the '<-' arrow!
-MacroBeforeBody <- "{"
-                   ~(!(endOfLine "}") .)*
-                   endOfLine "}"
+MacroLevel < :":" identifier
 
-MacroAfterBody < "{" Statement "}"
+#Mind the '<-' arrow!
+MacroBeforeBody <- :"{"
+                   ~(!(endOfLine "}") .)*
+                   :endOfLine :"}"
+
+MacroAfterBody < :"{" Statement :"}"
 
 
 ###
@@ -973,18 +977,20 @@ Keyword < "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / 
 
 ## file lex.html
 
-Comment < BlockComment
+Spacing <- (blank / Comment)*
+
+Comment <- BlockComment
          / LineComment
          / NestingBlockComment
 
-BlockComment < '/ *' (!'* /' .)* '* /'
+BlockComment <~ :'/ *' (!'* /' .)* :'* /'
 
-LineComment < '//' (!endOfLine .)* endOfLine
+LineComment <~ :'//' (!endOfLine .)* :endOfLine
 
-#NestingBlockComment < '/ +' (NestingBlockComment / Text) '+ /'
+#NestingBlockComment < :'/ +' (NestingBlockComment / Text) :'+ /'
 # / + (please, don't delete this line, it opens a nested block comment in generated module which is closed on the next line
 #Text < (!'+ /' .)*
-NestingBlockComment <~ "/+" (!("/+"/"+/") .)* NestingBlockComment? (!("/+"/"+/") .)* "+/"
+NestingBlockComment <~ :"/+" (!("/+"/"+/") .)* NestingBlockComment? (!("/+"/"+/") .)* :"+/"
 
 StringLiteral < WysiwygString
                / AlternateWysiwygString
