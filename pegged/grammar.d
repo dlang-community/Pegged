@@ -56,7 +56,7 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File fi
     asModule!(withMemo)(moduleName, grammarDefinition, optHeader);
 }
 
-// Helper to insert ':Spacing*' before and after Primaries
+// Helper to insert 'Spacing' before and after Primaries
 ParseTree spaceArrow(ParseTree input)
 {
     ParseTree wrapInSpaces(ParseTree p)
