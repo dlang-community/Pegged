@@ -53,6 +53,7 @@ DRule <- "AddExpression"
        / "AggregateDeclaration"
        / "Aggregate"
        / "AliasDeclaration"
+       / "AliasInitializer"
        / "AliasThisDeclaration"
        / "AliasThis"
        / "AlignAttribute"
@@ -366,10 +367,13 @@ Declaration < AliasDeclaration
              / AliasThisDeclaration
              / Decl
 
-# Why so limited? This disallow things like: alias __traits(allMembers, C) result;
-AliasDeclaration < "alias" BasicType Declarator
+AliasDeclaration < "alias" ( BasicType Declarator
+                           / List(AliasInitializer))
 
-AliasThisDeclaration < "alias" Identifier "this"  # no ";"?
+AliasInitializer < Identifier "=" Type
+
+AliasThisDeclaration < "alias" ( Identifier "this"
+                               / "this" "=" Identifier)
 
 Decl < BasicType Declarators ";"
       / BasicType Declarator FunctionBody
