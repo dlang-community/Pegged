@@ -2540,7 +2540,7 @@ unittest // 'keep' unit test
 
 /* ****************** predefined rules ******************** */
 
-alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOfLine; /// predefined end-of-line parser
+alias named!(keywords!("\r\n", "\n", "\r"), "endOfLine") endOfLine; /// predefined end-of-line parser
 alias endOfLine eol; /// helper alias.
 
 alias or!(literal!(" "), literal!("\t")) space; /// predefined space-recognizing parser (space or tabulation).
