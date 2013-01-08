@@ -36,6 +36,7 @@ DeclDef < AttributeSpecifier
 ### MACROS ADDITION TO THE D GRAMMAR ###
 
 MacroDeclaration < "macro" identifier MacroParameterList
+                   (":" DRule)?
                    MacroBeforeBody "return" MacroAfterBody
 
 MacroParameterList < "(" List(MacroParameter)? ")"
