@@ -2,6 +2,7 @@
 / "AggregateDeclaration"
 / "Aggregate"
 / "AliasDeclaration"
+/ "AliasInitializer"
 / "AliasThisDeclaration"
 / "AliasThis"
 / "AlignAttribute"
