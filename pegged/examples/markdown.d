@@ -8,10 +8,11 @@ enum MarkdownGrammar= `
 
 Markdown:
 
-Doc <- BOM?  Block*
+Doc <- BOM?  (%Block)*
 
 Block <-     BlankLine*
             ( BlockQuote
+            / Code
             / Verbatim
             / Note
             / Reference
@@ -22,43 +23,41 @@ Block <-     BlankLine*
             / HtmlBlock
             / StyleBlock
             / Para
-            / Inlines )
+            / %Inlines )
 
-Para <~      NonindentSpace Inlines BlankLine+
+Para <- NonindentSpace %Inlines BlankLine+
 
-#Plain <~     Inlines
-
-AtxInline <- !Newline !(Sp? "#"* Sp Newline) Inline
-
-AtxStart <-  ( "######" / "#####" / "####" / "###" / "##" / "#" )
-
-AtxHeading <- AtxStart Sp?  ~(AtxInline+) (Sp? "#"* Sp)?  Newline
-
-SetextHeading <- SetextHeading1 / SetextHeading2
-
-SetextBottom1 <- "<-<-<-" "<-"* Newline
-
-SetextBottom2 <- "---" "-"* Newline
-
-SetextHeading1 <-  &(Line SetextBottom1)
-                   ( !Endline Inline )+ Sp? Newline
-                  SetextBottom1
-
-SetextHeading2 <-  &(Line SetextBottom2)
-                   ( !Endline Inline)+ Sp? Newline
-                  SetextBottom2
+#Plain <~ %Inlines
 
 Heading <- SetextHeading / AtxHeading
 
-BlockQuote <- BlockQuoteRaw
+SetextHeading <- SetextHeading1 / SetextHeading2
 
-BlockQuoteRaw <- ( ">" " "? Line ( !">" !BlankLine Line )* BlankLine* )+
+SetextHeading1 <~ &(Line SetextBottom1)
+                  ( !Endline Inline )+ Sp? :Newline
+                  :SetextBottom1
+
+SetextHeading2 <~ &(Line SetextBottom2)
+                  ( !Endline Inline)+ Sp? :Newline
+                  :SetextBottom2
+
+SetextBottom1 <~ "===" "="* Newline
+
+SetextBottom2 <~ "---" "-"* Newline
+
+AtxHeading <- AtxStart ~(Sp? AtxInline+ Sp? ("#"* Sp)?  Newline)
+
+AtxInline <- !Newline !(Sp? "#"* Sp Newline) Inline
+
+AtxStart <- ( "######" / "#####" / "####" / "###" / "##" / "#" )
+
+BlockQuote <- ( ">" " "? Line ( !">" !BlankLine Line )* BlankLine* )+
 
 NonblankIndentedLine <~ !BlankLine IndentedLine
 
-VerbatimChunk <-  BlankLine* NonblankIndentedLine+
+VerbatimChunk <- BlankLine* NonblankIndentedLine+
 
-Verbatim <-      VerbatimChunk+
+Verbatim <- VerbatimChunk+
 
 HorizontalRule <- NonindentSpace
                  ( "*" Sp "*" Sp "*" (Sp "*")*
@@ -66,34 +65,39 @@ HorizontalRule <- NonindentSpace
                  / "_" Sp "_" Sp "_" (Sp "_")*)
                  Sp Newline BlankLine+
 
-Bullet <- !HorizontalRule NonindentSpace ("+" / "*" / "-") Spacechar+
+BulletList <- &Bullet (%BulletListTight / %BulletListLoose)
 
-BulletList <- &Bullet (ListTight / ListLoose)
+BulletListTight <- (%BulletListItemTight)+ :BlankLine* !Bullet
 
-ListTight <-  ListItemTight+ BlankLine* !(Bullet / Enumerator)
+BulletListItemTight <- Bullet ListBlock
+                       (!BlankLine ListContinuationBlock)*
+                       #!ListContinuationBlock
 
-ListLoose <-  (ListItem BlankLine*)+
+BulletListLoose <- (%BulletListItem :BlankLine*)+
 
-ListItem <- ( Bullet / Enumerator )
-            ListBlock
-            ListContinuationBlock*
+BulletListItem <- Bullet ListBlock ListContinuationBlock*
 
-ListItemTight <- ( Bullet / Enumerator ) ListBlock
-                ( !BlankLine ListContinuationBlock )*
-                !ListContinuationBlock # Is it necessary?
+Bullet <: !HorizontalRule NonindentSpace ("+" / "*" / "-") Spacechar+
 
-ListBlock <- !BlankLine Line ListBlockLine*
+OrderedList <- &Enumerator (OrderedListTight / OrderedListLoose)
 
-ListContinuationBlock <- BlankLine* ( Indent ListBlock )+
+OrderedListTight <- (%OrderedListItemTight)+ :BlankLine* !Enumerator
 
-Enumerator <- NonindentSpace [0-9]+ "." Spacechar+
+OrderedListItemTight <- Enumerator ListBlock
+                        (!BlankLine ListContinuationBlock)*
+                        #!ListContinuationBlock # Is it necessary?
 
-OrderedList <- &Enumerator (ListTight / ListLoose)
+OrderedListLoose <- (%OrderedListItem :BlankLine*)+
 
-ListBlockLine <- !BlankLine
-                !( Indent? (Bullet / Enumerator) )
-                !HorizontalRule
-                OptionallyIndentedLine
+OrderedListItem <- Enumerator ListBlock ListContinuationBlock*
+
+Enumerator <: NonindentSpace ~[0-9]+ "." Spacechar+
+
+ListBlock <- !BlankLine %Inlines ListBlockLine*
+
+ListContinuationBlock <- BlankLine* (Indent ListBlock)+
+
+ListBlockLine <- !BlankLine !( Indent? (Bullet / Enumerator)) !HorizontalRule Indent? %Inlines
 
 # Parsers for different kinds of block-level HTML content.
 # This is repetitive due to constraints of PEG grammar.
@@ -281,9 +285,9 @@ StyleClose <-    "<" Spnl "/" ("style" / "STYLE") Spnl ">"
 InStyleTags <-   StyleOpen (!StyleClose .)* StyleClose
 StyleBlock <-   InStyleTags BlankLine*
 
-Inlines  <-  ( !Endline Inline )+ Endline?
+Inlines  <- (!Endline %Inline )+ Endline?
 
-Inline  <- Str
+Inline <- Str
         / Endline
         / UlOrStarLine
         / Space
@@ -302,62 +306,62 @@ Inline  <- Str
 
 Space <~ Spacechar+
 
-Str <~  NormalChar+ StrChunk*
+Str <~ NormalChar+ StrChunk*
 
 StrChunk <~ (NormalChar / "_"+ &Alphanumeric)+ / AposChunk
 
 AposChunk <- quote &Alphanumeric
 
-EscapedChar <-   backslash (backquote / backslash / [-/_*{}[\]()#+.!><])
+EscapedChar <- backslash (backquote / backslash / [-/_*{}[\]()#+.!><])
 
 Entity <- HexEntity / DecEntity / CharEntity
 
-Endline <-   LineBreak / TerminalEndline / NormalEndline
+Endline <~ LineBreak / TerminalEndline / NormalEndline
 
-NormalEndline <-   Sp Newline !BlankLine !">" !AtxStart
-                  !(Line ("<-<-<-" "<-"* / "---" "-"*) Newline)
+NormalEndline <- Sp Newline !BlankLine !">" !AtxStart
+                 !(Line ("<-<-<-" "<-"* / "---" "-"*) Newline)
 
 TerminalEndline <- Sp Newline eoi
 
-LineBreak <- "  " NormalEndline
+LineBreak <~ "  " NormalEndline
 
-Symbol <- SpecialChar
+Symbol <~ SpecialChar
 
-UlOrStarLine <- UlLine / StarLine
+UlOrStarLine <~ UlLine / StarLine
 StarLine <- "****" "*"* / Spacechar "*"+ &Spacechar
 UlLine   <- "____" "_"* / Spacechar "_"+ &Spacechar
 
-Emph <- EmphStar / EmphUl
+Emph <~ EmphStar / EmphUl
 
-OneStarOpen  <-  !StarLine "*" !Spacechar !Newline
-OneStarClose <-  !Spacechar !Newline Inline "*"
+OneStarOpen  <- !StarLine "*" !Spacechar !Newline
+OneStarClose <- !Spacechar !Newline Inline :"*"
 
-EmphStar <-  OneStarOpen
+EmphStar <- :OneStarOpen
             ( !OneStarClose Inline )*
             OneStarClose
 
-OneUlOpen  <-  !UlLine "_" !Spacechar !Newline
-OneUlClose <-  !Spacechar !Newline Inline "_" !Alphanumeric
+OneUlOpen  <- !UlLine "_" !Spacechar !Newline
+OneUlClose <- !Spacechar !Newline Inline :"_" !Alphanumeric
 
-EmphUl <-    OneUlOpen
-            ( !OneUlClose Inline )*
-            OneUlClose
+EmphUl <- :OneUlOpen
+          ( !OneUlClose Inline )*
+          OneUlClose
 
-Strong <- StrongStar / StrongUl
+Strong <~ StrongStar / StrongUl
 
-TwoStarOpen <-   !StarLine "**" !Spacechar !Newline
-TwoStarClose <-  !Spacechar !Newline Inline "**"
+TwoStarOpen <-  !StarLine "**" !Spacechar !Newline
+TwoStarClose <- !Spacechar !Newline Inline :"**"
 
-StrongStar <-    TwoStarOpen
-                ( !TwoStarClose Inline )*
-                TwoStarClose
+StrongStar <- :TwoStarOpen
+              ( !TwoStarClose Inline )*
+              TwoStarClose
 
-TwoUlOpen <-     !UlLine "__" !Spacechar !Newline
-TwoUlClose <-    !Spacechar !Newline Inline "__" !Alphanumeric
+TwoUlOpen <- !UlLine "__" !Spacechar !Newline
+TwoUlClose <- !Spacechar !Newline Inline :"__" !Alphanumeric
 
-StrongUl <-  TwoUlOpen
+StrongUl <- :TwoUlOpen
             ( !TwoUlClose Inline )*
-            TwoUlClose
+            :TwoUlClose
 
 Image <- "!" ( ExplicitLink / ReferenceLink )
 
@@ -369,28 +373,28 @@ ReferenceLinkDouble <-  Label Spnl !"[]" Label
 
 ReferenceLinkSingle <-  Label (Spnl "[]")?
 
-ExplicitLink <-  Label Spnl "(" Sp Source Spnl Title Sp ")"
+ExplicitLink <-  Label Spnl :"(" Sp Source Spnl Title? Sp :")"
 
-Source  <- "<" SourceContents ">"
+Source  <~ :"<" SourceContents :">"
          / SourceContents
 
 SourceContents <- ( ( !"(" !")" !">" Nonspacechar )+ / "(" SourceContents ")")*
 
-Title <- (TitleSingle / TitleDouble)
+Title <~ (TitleSingle / TitleDouble)
 
-TitleSingle <- quote ( !( quote Sp ( ")" / Newline ) ) . )*  quote
+TitleSingle <- :quote ( !( quote Sp ( ")" / Newline ) ) . )*  :quote
 
-TitleDouble <- doublequote ( !( doublequote Sp ( ")" / Newline ) ) . )* doublequote
+TitleDouble <- :doublequote ( !( doublequote Sp ( ")" / Newline ) ) . )* :doublequote
 
 AutoLink <- AutoLinkUrl / AutoLinkEmail
 
-AutoLinkUrl <-   "<" [A-Za-z]+ "://" ( !Newline !">" . )+ ">"
+AutoLinkUrl <- :"<" ~([A-Za-z]+ "://" ( !Newline !">" . )+) :">"
 
-AutoLinkEmail <- "<" ( "mailto:" )? [-A-Za-z0-9+_./!%~$]+ "@" ( !Newline !">" . )+ ">"
+AutoLinkEmail <- :"<" ( "mailto:" )? ~([-A-Za-z0-9+_./!%~$]+ "@" ( !Newline !">" . )+) :">"
 
 Reference <- NonindentSpace !"[]" Label ":" Spnl RefSrc RefTitle BlankLine+
 
-Label <- "[" (!"]" Inline  )* "]"
+Label <~ :"[" (!"]" Inline )* :"]"
 
 RefSrc <- Nonspacechar+
 
@@ -412,25 +416,30 @@ Ticks3 <- backquote backquote backquote !backquote
 Ticks4 <- backquote backquote backquote backquote !backquote
 Ticks5 <- backquote backquote backquote backquote backquote !backquote
 
-Code <~ ( :Ticks1 Sp ( ( !backquote Nonspacechar )+ / !Ticks1 backquote+ / !( Sp Ticks1 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks1
-       / :Ticks2 Sp  ( ( !backquote Nonspacechar )+ / !Ticks2 backquote+ / !( Sp Ticks2 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks2
-       / :Ticks3 Sp  ( ( !backquote Nonspacechar )+ / !Ticks3 backquote+ / !( Sp Ticks3 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks3
-       / :Ticks4 Sp  ( ( !backquote Nonspacechar )+ / !Ticks4 backquote+ / !( Sp Ticks4 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks4
-       / :Ticks5 Sp  ( ( !backquote Nonspacechar )+ / !Ticks5 backquote+ / !( Sp Ticks5 ) ( Spacechar / Newline !BlankLine ) )+  Sp :Ticks5
-       )
+Code <- ( :Ticks5 (CodeOptions :Newline)? ~(!Ticks5 .)+ :Ticks5 CodeOptions?
+        / :Ticks4 (CodeOptions :Newline)? ~(!Ticks4 .)+ :Ticks4 CodeOptions?
+        / :Ticks3 (CodeOptions :Newline)? ~(!Ticks3 .)+ :Ticks3 CodeOptions?
+        / :Ticks2 (CodeOptions :Newline)? ~(!Ticks2 .)+ :Ticks2 CodeOptions?
+        / :Ticks1 (CodeOptions :Newline)? ~(!Ticks1 .)+ :Ticks1 CodeOptions?
+        )
 
-RawHtml <- HtmlComment / HtmlBlockScript / HtmlTag
+CodeOptions <- :"{" :Sp (;Option :Sp)* :Sp :"}"
+             / ;Option
+
+Option <~ "."? identifier
+
+RawHtml <~ HtmlComment / HtmlBlockScript / HtmlTag
 
 BlankLine <~ Sp Newline
 
 Quoted <-        doublequote (!doublequote .)* doublequote / quote (!quote .)* quote
-HtmlAttribute <- (AlphanumericAscii / "-")+ Spnl ("<-" Spnl (Quoted / (!">" Nonspacechar)+))? Spnl
+HtmlAttribute <- (AlphanumericAscii / "-")+ Spnl ("=" Spnl (Quoted / (!">" Nonspacechar)+))? Spnl
 HtmlComment <-   "<!--" (!"-->" .)* "-->"
 HtmlTag <-       "<" Spnl "/"? AlphanumericAscii+ Spnl HtmlAttribute* "/"? Spnl ">"
 
 Spacechar <-     " " / "\t"
 Nonspacechar <-  !Spacechar !Newline .
-Newline <-       "\n" / "\r" "\n"?
+Newline <-       endOfLine
 Sp <-            Spacechar*
 Spnl <-          Sp (Newline Sp)?
 
@@ -464,22 +473,22 @@ AlphanumericAscii <- [A-Za-z0-9]
 Digit <- [0-9]
 BOM <- "\357\273\277"
 
-HexEntity <-     "&" "#" [Xx] [0-9a-fA-F]+
-DecEntity <-     "&" "#" [0-9]+
-CharEntity <-    "&" [A-Za-z0-9]+
+HexEntity <-  "&" "#" [Xx] [0-9a-fA-F]+
+DecEntity <-  "&" "#" [0-9]+
+CharEntity <- "&" [A-Za-z0-9]+
 
-NonindentSpace <-    "   " / "  " / " " / eps
-Indent <-            "\t" / "    "
-IndentedLine <-      :Indent Line
+NonindentSpace <: ("   " / "  " / " ")?
+Indent <- "\t" / "    "
+IndentedLine <- :Indent Line
 OptionallyIndentedLine <- Indent? Line
 
-Line <~  (!"\r" !"\n" .)* Newline
-         / .+ eoi
+Line <~ (!Newline .)* Newline
+        / .+ eoi
 
 SkipBlock <- HtmlBlock
-          / ( !"#" !SetextBottom1 !SetextBottom2 !BlankLine Line )+ BlankLine*
-          / BlankLine+
-          / Line
+           / ( !"#" !SetextBottom1 !SetextBottom2 !BlankLine Line )+ BlankLine*
+           / BlankLine+
+           / Line
 
 ExtendedSpecialChar <- "." / "-" / quote / doublequote / "^"
 
