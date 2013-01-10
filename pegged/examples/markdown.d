@@ -142,174 +142,49 @@ Definition <- ( Spacechar Spacechar :(":"/"~") Spacechar Spacechar
 # Parsers for different kinds of block-level HTML content.
 # This is repetitive due to constraints of PEG grammar.
 
-HtmlBlockOpenAddress <- "<" Spnl ("address" / "ADDRESS") Spnl HtmlAttribute* ">"
-HtmlBlockCloseAddress <- "<" Spnl "/" ("address" / "ADDRESS") Spnl ">"
-HtmlBlockAddress <- HtmlBlockOpenAddress (HtmlBlockAddress / !HtmlBlockCloseAddress .)* HtmlBlockCloseAddress
+HtmlBlockOpen(Type) <- :"<" :Spnl Type :Spnl HtmlAttribute* :">" :(Spnl*)
+HtmlBlockClose(Type) <- :"<" :Spnl :"/" Type :Spnl :">" :(Spnl*)
+HtmlBlockT(Type) <- ;HtmlBlockOpen(Type)
+                    (%HtmlBlockInTags / NonHtml)*
+                    ;HtmlBlockClose(Type)
+# Hack. This should use a HtmlBlockClose(every possibility)
+NonHtml <- (!("<" Spnl "/") Inline)*
 
-HtmlBlockOpenBlockquote <- "<" Spnl ("blockquote" / "BLOCKQUOTE") Spnl HtmlAttribute* ">"
-HtmlBlockCloseBlockquote <- "<" Spnl "/" ("blockquote" / "BLOCKQUOTE") Spnl ">"
-HtmlBlockBlockquote <- HtmlBlockOpenBlockquote (HtmlBlockBlockquote / !HtmlBlockCloseBlockquote .)* HtmlBlockCloseBlockquote
+HtmlBlockInTags <- HtmlBlockT("address" / "ADDRESS")
+                 / HtmlBlockT("blockquote" / "BLOCKQUOTE")
+                 / HtmlBlockT("center" / "CENTER")
+                 / HtmlBlockT("dir" / "DIR")
+                 / HtmlBlockT("div" / "DIV")
+                 / HtmlBlockT("dl" / "DL")
+                 / HtmlBlockT("fieldset" / "FIELDSET")
+                 / HtmlBlockT("form" / "FORM")
+                 / HtmlBlockT("h1" / "H1")
+                 / HtmlBlockT("h2" / "H2")
+                 / HtmlBlockT("h3" / "H3")
+                 / HtmlBlockT("h4" / "H4")
+                 / HtmlBlockT("h5" / "H5")
+                 / HtmlBlockT("h6" / "H6")
+                 / HtmlBlockT("menu" / "MENU")
+                 / HtmlBlockT("noframes" / "NOFRAMES")
+                 / HtmlBlockT("noscript" / "NOSCRIPT")
+                 / HtmlBlockT("ol" / "OL")
+                 / HtmlBlockT("p" / "P")
+                 / HtmlBlockT("pre" / "PRE")
+                 / HtmlBlockT("table" / "TABLE")
+                 / HtmlBlockT("ul" / "UL")
+                 / HtmlBlockT("dd" / "DD")
+                 / HtmlBlockT("dt" / "DT")
+                 / HtmlBlockT("frameset" / "FRAMESET")
+                 / HtmlBlockT("li" / "LI")
+                 / HtmlBlockT("tbody" / "TBODY")
+                 / HtmlBlockT("td" / "TD")
+                 / HtmlBlockT("tfoot" / "TFOOT")
+                 / HtmlBlockT("th" / "TH")
+                 / HtmlBlockT("thead" / "THEAD")
+                 / HtmlBlockT("tr" / "TR")
+                 / HtmlBlockT("script" / "SCRIPT")
 
-HtmlBlockOpenCenter <- "<" Spnl ("center" / "CENTER") Spnl HtmlAttribute* ">"
-HtmlBlockCloseCenter <- "<" Spnl "/" ("center" / "CENTER") Spnl ">"
-HtmlBlockCenter <- HtmlBlockOpenCenter (HtmlBlockCenter / !HtmlBlockCloseCenter .)* HtmlBlockCloseCenter
-
-HtmlBlockOpenDir <- "<" Spnl ("dir" / "DIR") Spnl HtmlAttribute* ">"
-HtmlBlockCloseDir <- "<" Spnl "/" ("dir" / "DIR") Spnl ">"
-HtmlBlockDir <- HtmlBlockOpenDir (HtmlBlockDir / !HtmlBlockCloseDir .)* HtmlBlockCloseDir
-
-HtmlBlockOpenDiv <- "<" Spnl ("div" / "DIV") Spnl HtmlAttribute* ">"
-HtmlBlockCloseDiv <- "<" Spnl "/" ("div" / "DIV") Spnl ">"
-HtmlBlockDiv <- HtmlBlockOpenDiv (HtmlBlockDiv / !HtmlBlockCloseDiv .)* HtmlBlockCloseDiv
-
-HtmlBlockOpenDl <- "<" Spnl ("dl" / "DL") Spnl HtmlAttribute* ">"
-HtmlBlockCloseDl <- "<" Spnl "/" ("dl" / "DL") Spnl ">"
-HtmlBlockDl <- HtmlBlockOpenDl (HtmlBlockDl / !HtmlBlockCloseDl .)* HtmlBlockCloseDl
-
-HtmlBlockOpenFieldset <- "<" Spnl ("fieldset" / "FIELDSET") Spnl HtmlAttribute* ">"
-HtmlBlockCloseFieldset <- "<" Spnl "/" ("fieldset" / "FIELDSET") Spnl ">"
-HtmlBlockFieldset <- HtmlBlockOpenFieldset (HtmlBlockFieldset / !HtmlBlockCloseFieldset .)* HtmlBlockCloseFieldset
-
-HtmlBlockOpenForm <- "<" Spnl ("form" / "FORM") Spnl HtmlAttribute* ">"
-HtmlBlockCloseForm <- "<" Spnl "/" ("form" / "FORM") Spnl ">"
-HtmlBlockForm <- HtmlBlockOpenForm (HtmlBlockForm / !HtmlBlockCloseForm .)* HtmlBlockCloseForm
-
-HtmlBlockOpenH1 <- "<" Spnl ("h1" / "H1") Spnl HtmlAttribute* ">"
-HtmlBlockCloseH1 <- "<" Spnl "/" ("h1" / "H1") Spnl ">"
-HtmlBlockH1 <- HtmlBlockOpenH1 (HtmlBlockH1 / !HtmlBlockCloseH1 .)* HtmlBlockCloseH1
-
-HtmlBlockOpenH2 <- "<" Spnl ("h2" / "H2") Spnl HtmlAttribute* ">"
-HtmlBlockCloseH2 <- "<" Spnl "/" ("h2" / "H2") Spnl ">"
-HtmlBlockH2 <- HtmlBlockOpenH2 (HtmlBlockH2 / !HtmlBlockCloseH2 .)* HtmlBlockCloseH2
-
-HtmlBlockOpenH3 <- "<" Spnl ("h3" / "H3") Spnl HtmlAttribute* ">"
-HtmlBlockCloseH3 <- "<" Spnl "/" ("h3" / "H3") Spnl ">"
-HtmlBlockH3 <- HtmlBlockOpenH3 (HtmlBlockH3 / !HtmlBlockCloseH3 .)* HtmlBlockCloseH3
-
-HtmlBlockOpenH4 <- "<" Spnl ("h4" / "H4") Spnl HtmlAttribute* ">"
-HtmlBlockCloseH4 <- "<" Spnl "/" ("h4" / "H4") Spnl ">"
-HtmlBlockH4 <- HtmlBlockOpenH4 (HtmlBlockH4 / !HtmlBlockCloseH4 .)* HtmlBlockCloseH4
-
-HtmlBlockOpenH5 <- "<" Spnl ("h5" / "H5") Spnl HtmlAttribute* ">"
-HtmlBlockCloseH5 <- "<" Spnl "/" ("h5" / "H5") Spnl ">"
-HtmlBlockH5 <- HtmlBlockOpenH5 (HtmlBlockH5 / !HtmlBlockCloseH5 .)* HtmlBlockCloseH5
-
-HtmlBlockOpenH6 <- "<" Spnl ("h6" / "H6") Spnl HtmlAttribute* ">"
-HtmlBlockCloseH6 <- "<" Spnl "/" ("h6" / "H6") Spnl ">"
-HtmlBlockH6 <- HtmlBlockOpenH6 (HtmlBlockH6 / !HtmlBlockCloseH6 .)* HtmlBlockCloseH6
-
-HtmlBlockOpenMenu <- "<" Spnl ("menu" / "MENU") Spnl HtmlAttribute* ">"
-HtmlBlockCloseMenu <- "<" Spnl "/" ("menu" / "MENU") Spnl ">"
-HtmlBlockMenu <- HtmlBlockOpenMenu (HtmlBlockMenu / !HtmlBlockCloseMenu .)* HtmlBlockCloseMenu
-
-HtmlBlockOpenNoframes <- "<" Spnl ("noframes" / "NOFRAMES") Spnl HtmlAttribute* ">"
-HtmlBlockCloseNoframes <- "<" Spnl "/" ("noframes" / "NOFRAMES") Spnl ">"
-HtmlBlockNoframes <- HtmlBlockOpenNoframes (HtmlBlockNoframes / !HtmlBlockCloseNoframes .)* HtmlBlockCloseNoframes
-
-HtmlBlockOpenNoscript <- "<" Spnl ("noscript" / "NOSCRIPT") Spnl HtmlAttribute* ">"
-HtmlBlockCloseNoscript <- "<" Spnl "/" ("noscript" / "NOSCRIPT") Spnl ">"
-HtmlBlockNoscript <- HtmlBlockOpenNoscript (HtmlBlockNoscript / !HtmlBlockCloseNoscript .)* HtmlBlockCloseNoscript
-
-HtmlBlockOpenOl <- "<" Spnl ("ol" / "OL") Spnl HtmlAttribute* ">"
-HtmlBlockClosendOfLine <- "<" Spnl "/" ("ol" / "OL") Spnl ">"
-HtmlBlockOl <- HtmlBlockOpenOl (HtmlBlockOl / !HtmlBlockClosendOfLine .)* HtmlBlockClosendOfLine
-
-HtmlBlockOpenP <- "<" Spnl ("p" / "P") Spnl HtmlAttribute* ">"
-HtmlBlockCloseP <- "<" Spnl "/" ("p" / "P") Spnl ">"
-HtmlBlockP <- HtmlBlockOpenP (HtmlBlockP / !HtmlBlockCloseP .)* HtmlBlockCloseP
-
-HtmlBlockOpenPre <- "<" Spnl ("pre" / "PRE") Spnl HtmlAttribute* ">"
-HtmlBlockClosePre <- "<" Spnl "/" ("pre" / "PRE") Spnl ">"
-HtmlBlockPre <- HtmlBlockOpenPre (HtmlBlockPre / !HtmlBlockClosePre .)* HtmlBlockClosePre
-
-HtmlBlockOpenTable <- "<" Spnl ("table" / "TABLE") Spnl HtmlAttribute* ">"
-HtmlBlockCloseTable <- "<" Spnl "/" ("table" / "TABLE") Spnl ">"
-HtmlBlockTable <- HtmlBlockOpenTable (HtmlBlockTable / !HtmlBlockCloseTable .)* HtmlBlockCloseTable
-
-HtmlBlockOpenUl <- "<" Spnl ("ul" / "UL") Spnl HtmlAttribute* ">"
-HtmlBlockCloseUl <- "<" Spnl "/" ("ul" / "UL") Spnl ">"
-HtmlBlockUl <- HtmlBlockOpenUl (HtmlBlockUl / !HtmlBlockCloseUl .)* HtmlBlockCloseUl
-
-HtmlBlockOpenDd <- "<" Spnl ("dd" / "DD") Spnl HtmlAttribute* ">"
-HtmlBlockCloseDd <- "<" Spnl "/" ("dd" / "DD") Spnl ">"
-HtmlBlockDd <- HtmlBlockOpenDd (HtmlBlockDd / !HtmlBlockCloseDd .)* HtmlBlockCloseDd
-
-HtmlBlockOpenDt <- "<" Spnl ("dt" / "DT") Spnl HtmlAttribute* ">"
-HtmlBlockCloseDt <- "<" Spnl "/" ("dt" / "DT") Spnl ">"
-HtmlBlockDt <- HtmlBlockOpenDt (HtmlBlockDt / !HtmlBlockCloseDt .)* HtmlBlockCloseDt
-
-HtmlBlockOpenFrameset <- "<" Spnl ("frameset" / "FRAMESET") Spnl HtmlAttribute* ">"
-HtmlBlockCloseFrameset <- "<" Spnl "/" ("frameset" / "FRAMESET") Spnl ">"
-HtmlBlockFrameset <- HtmlBlockOpenFrameset (HtmlBlockFrameset / !HtmlBlockCloseFrameset .)* HtmlBlockCloseFrameset
-
-HtmlBlockOpenLi <- "<" Spnl ("li" / "LI") Spnl HtmlAttribute* ">"
-HtmlBlockCloseLi <- "<" Spnl "/" ("li" / "LI") Spnl ">"
-HtmlBlockLi <- HtmlBlockOpenLi (HtmlBlockLi / !HtmlBlockCloseLi .)* HtmlBlockCloseLi
-
-HtmlBlockOpenTbody <- "<" Spnl ("tbody" / "TBODY") Spnl HtmlAttribute* ">"
-HtmlBlockCloseTbody <- "<" Spnl "/" ("tbody" / "TBODY") Spnl ">"
-HtmlBlockTbody <- HtmlBlockOpenTbody (HtmlBlockTbody / !HtmlBlockCloseTbody .)* HtmlBlockCloseTbody
-
-HtmlBlockOpenTd <- "<" Spnl ("td" / "TD") Spnl HtmlAttribute* ">"
-HtmlBlockCloseTd <- "<" Spnl "/" ("td" / "TD") Spnl ">"
-HtmlBlockTd <- HtmlBlockOpenTd (HtmlBlockTd / !HtmlBlockCloseTd .)* HtmlBlockCloseTd
-
-HtmlBlockOpenTfoot <- "<" Spnl ("tfoot" / "TFOOT") Spnl HtmlAttribute* ">"
-HtmlBlockCloseTfoot <- "<" Spnl "/" ("tfoot" / "TFOOT") Spnl ">"
-HtmlBlockTfoot <- HtmlBlockOpenTfoot (HtmlBlockTfoot / !HtmlBlockCloseTfoot .)* HtmlBlockCloseTfoot
-
-HtmlBlockOpenTh <- "<" Spnl ("th" / "TH") Spnl HtmlAttribute* ">"
-HtmlBlockCloseTh <- "<" Spnl "/" ("th" / "TH") Spnl ">"
-HtmlBlockTh <- HtmlBlockOpenTh (HtmlBlockTh / !HtmlBlockCloseTh .)* HtmlBlockCloseTh
-
-HtmlBlockOpenThead <- "<" Spnl ("thead" / "THEAD") Spnl HtmlAttribute* ">"
-HtmlBlockCloseThead <- "<" Spnl "/" ("thead" / "THEAD") Spnl ">"
-HtmlBlockThead <- HtmlBlockOpenThead (HtmlBlockThead / !HtmlBlockCloseThead .)* HtmlBlockCloseThead
-
-HtmlBlockOpenTr <- "<" Spnl ("tr" / "TR") Spnl HtmlAttribute* ">"
-HtmlBlockCloseTr <- "<" Spnl "/" ("tr" / "TR") Spnl ">"
-HtmlBlockTr <- HtmlBlockOpenTr (HtmlBlockTr / !HtmlBlockCloseTr .)* HtmlBlockCloseTr
-
-HtmlBlockOpenScript <- "<" Spnl ("script" / "SCRIPT") Spnl HtmlAttribute* ">"
-HtmlBlockCloseScript <- "<" Spnl "/" ("script" / "SCRIPT") Spnl ">"
-HtmlBlockScript <- HtmlBlockOpenScript (!HtmlBlockCloseScript .)* HtmlBlockCloseScript
-
-
-HtmlBlockInTags <- HtmlBlockAddress
-                / HtmlBlockBlockquote
-                / HtmlBlockCenter
-                / HtmlBlockDir
-                / HtmlBlockDiv
-                / HtmlBlockDl
-                / HtmlBlockFieldset
-                / HtmlBlockForm
-                / HtmlBlockH1
-                / HtmlBlockH2
-                / HtmlBlockH3
-                / HtmlBlockH4
-                / HtmlBlockH5
-                / HtmlBlockH6
-                / HtmlBlockMenu
-                / HtmlBlockNoframes
-                / HtmlBlockNoscript
-                / HtmlBlockOl
-                / HtmlBlockP
-                / HtmlBlockPre
-                / HtmlBlockTable
-                / HtmlBlockUl
-                / HtmlBlockDd
-                / HtmlBlockDt
-                / HtmlBlockFrameset
-                / HtmlBlockLi
-                / HtmlBlockTbody
-                / HtmlBlockTd
-                / HtmlBlockTfoot
-                / HtmlBlockTh
-                / HtmlBlockThead
-                / HtmlBlockTr
-                / HtmlBlockScript
-
-HtmlBlock <- ( HtmlBlockInTags / HtmlComment / HtmlBlockSelfClosing ) BlankLine+
+HtmlBlock <- (%HtmlBlockInTags / HtmlComment / HtmlBlockSelfClosing) BlankLine+
 
 HtmlBlockSelfClosing <- "<" Spnl HtmlBlockType Spnl HtmlAttribute* "/" Spnl ">"
 
@@ -320,12 +195,12 @@ HtmlBlockType <- "address" / "blockquote" / "center" / "dir" / "div" / "dl" / "f
                 "H4" / "H5" / "H6" / "HR" / "ISINDEX" / "MENU" / "NOFRAMES" / "NOSCRIPT" / "OL" / "P" / "PRE" / "TABLE" /
                 "UL" / "DD" / "DT" / "FRAMESET" / "LI" / "TBODY" / "TD" / "TFOOT" / "TH" / "THEAD" / "TR" / "SCRIPT"
 
-StyleOpen <-     "<" Spnl ("style" / "STYLE") Spnl HtmlAttribute* ">"
-StyleClose <-    "<" Spnl "/" ("style" / "STYLE") Spnl ">"
-InStyleTags <-   StyleOpen (!StyleClose .)* StyleClose
-StyleBlock <-   InStyleTags BlankLine*
+StyleOpen <- "<" Spnl ("style" / "STYLE") Spnl HtmlAttribute* ">"
+StyleClose <- "<" Spnl "/" ("style" / "STYLE") Spnl ">"
+InStyleTags <- StyleOpen (!StyleClose .)* StyleClose
+StyleBlock <- InStyleTags BlankLine*
 
-Inlines  <- (!Endline %Inline )+ Endline?
+Inlines <- (!Endline %Inline )+ Endline?
 
 Inline <- Str
         / Endline
@@ -497,22 +372,22 @@ FootnoteReference <- :"[^" FootnoteName :"]" !":"
 FootnoteDefinition <- :"[^" FootnoteName :"]:" Line (BlankLine / Indent Line)*
 FootnoteName <- (digit+ / identifier)
 
-RawHtml <~ HtmlComment / HtmlBlockScript / HtmlTag
+RawHtml <- HtmlComment / HtmlBlockT("script" / "SCRIPT") / HtmlTag
 
 BlankLine <~ Sp Newline
 
-Quoted <-        doublequote (!doublequote .)* doublequote / quote (!quote .)* quote
+Quoted <- doublequote (!doublequote .)* doublequote / quote (!quote .)* quote
 HtmlAttribute <- (AlphanumericAscii / "-")+ Spnl ("=" Spnl (Quoted / (!">" Nonspacechar)+))? Spnl
-HtmlComment <-   "<!--" (!"-->" .)* "-->"
-HtmlTag <-       "<" Spnl "/"? AlphanumericAscii+ Spnl HtmlAttribute* "/"? Spnl ">"
+HtmlComment <- "<!--" (!"-->" .)* "-->"
+HtmlTag <- "<" Spnl "/"? AlphanumericAscii+ Spnl HtmlAttribute* "/"? Spnl ">"
 
-Spacechar <-     " " / "\t"
-Nonspacechar <-  !Spacechar !Newline .
-Newline <-       endOfLine
-Sp <-            Spacechar*
-Spnl <-          Sp (Newline Sp)?
+Spacechar <- " " / "\t"
+Nonspacechar <- !Spacechar !Newline .
+Newline <- endOfLine
+Sp <- Spacechar*
+Spnl <- Sp (Newline Sp)?
 
-SpecialChar <-   "*" / "_" / backquote / "&" / "[" / "]" / "(" / ")" / "<" / "!" / "#" / backslash / quote / doublequote / ExtendedSpecialChar
+SpecialChar <- "*" / "_" / backquote / "&" / "[" / "]" / "(" / ")" / "<" / "!" / "#" / backslash / quote / doublequote / ExtendedSpecialChar
 NormalChar <-    !( SpecialChar / Spacechar / Newline ) .
 NonAlphanumeric <- !Alphanumeric . #[\001-\057] / [\072-\100] / [\133-\140] / [\173-\177]
 Alphanumeric <- [0-9A-Za-z] / "\200" / "\201" / "\202" / "\203" / "\204"
