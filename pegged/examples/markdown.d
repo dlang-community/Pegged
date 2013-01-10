@@ -8,24 +8,36 @@ enum MarkdownGrammar= `
 
 Markdown:
 
-Doc <- BOM?  (%Block)*
+Doc <- BOM?  TitleBlock? (%Block)*
 
-Block <-     BlankLine*
-            ( BlockQuote
-            / Code
-            / Verbatim
-            / Note
-            / Reference
-            / HorizontalRule
-            / Heading
-            / OrderedList
-            / BulletList
-            / HtmlBlock
-            / StyleBlock
-            / Para
-            / %Inlines )
+#### Pandoc Extension #### Partially implemented
+TitleBlock <- :"%" TitleText
+              :"%" Date
+              :"%" Authors
+TitleText <~ Line (:Spacechar Line)*
+Date      <- ;Line
+Authors   <- Author ((:";" (:Newline :Spacechar)? / :Newline :Spacechar) Author)*
+Author    <- (!";" !Newline %Inlines)+
 
-Para <- NonindentSpace %Inlines BlankLine+
+Block <- BlankLine*
+         ( BlockQuote
+         / FootnoteDefinition #### Pandoc Extension
+         / CodeBlock
+         / Verbatim
+         / Note
+         / Reference
+         / HorizontalRule
+         / Heading
+         / Table #### Pandoc Extension
+         / DefinitionList #### Pandoc Extension
+         / OrderedList
+         / BulletList
+         / HtmlBlock
+         / StyleBlock
+         / Para
+         / %Inlines )
+
+Para <- :NonindentSpace %Inlines BlankLine+
 
 #Plain <~ %Inlines
 
@@ -51,13 +63,31 @@ AtxInline <- !Newline !(Sp? "#"* Sp Newline) Inline
 
 AtxStart <- ( "######" / "#####" / "####" / "###" / "##" / "#" )
 
+#### Pandoc Extension ####
+# A semantic function must find the columns, based on the dashes
+Table <- SimpleTable # For further extension (multiline tables and grid tables)
+
+SimpleTable <- TableHeaders
+               TableLine+
+               :(BlankLine / "-"+ Newline BlankLine)
+               TableCaption?
+
+TableHeaders <- ;Line?
+                ~("-"+) ~(Spacechar+) ~("-"+) (~(Spacechar+) ~("-"+))* :Newline
+
+# ;Line makes all the inlines disappear. Is that wanted or not?
+TableLine <- !(BlankLine / "-"+ Newline BlankLine) ;Line
+
+TableCaption <- :"Table:" ;Line
+              / :":" ;Line
+
 BlockQuote <- ( ">" " "? Line ( !">" !BlankLine Line )* BlankLine* )+
 
 NonblankIndentedLine <~ !BlankLine IndentedLine
 
 VerbatimChunk <- BlankLine* NonblankIndentedLine+
 
-Verbatim <- VerbatimChunk+
+Verbatim <~ VerbatimChunk+
 
 HorizontalRule <- NonindentSpace
                  ( "*" Sp "*" Sp "*" (Sp "*")*
@@ -98,6 +128,16 @@ ListBlock <- !BlankLine %Inlines ListBlockLine*
 ListContinuationBlock <- BlankLine* (Indent ListBlock)+
 
 ListBlockLine <- !BlankLine !( Indent? (Bullet / Enumerator)) !HorizontalRule Indent? %Inlines
+
+DefinitionList <- Term :(BlankLine?) Definition+
+
+Term <- (!Newline .)+ :Newline
+
+Definition <- ( Spacechar Spacechar :(":"/"~") Spacechar Spacechar
+              / Spacechar :(":"/"~") Spacechar Spacechar Spacechar
+              / :(":"/"~") Spacechar Spacechar Spacechar Spacechar)
+              Inlines :Newline
+              IndentedLine*
 
 # Parsers for different kinds of block-level HTML content.
 # This is repetitive due to constraints of PEG grammar.
@@ -293,6 +333,11 @@ Inline <- Str
         / Space
         / Strong
         / Emph
+        / Strikeout          #### Pandoc Extension
+        / Superscript        #### Pandoc Extension
+        / Subscript          #### Pandoc Extension
+        / Math               #### Pandoc Extension
+        / FootnoteReference  #### Pandoc Extension
         / Image
         / Link
         / NoteReference
@@ -363,6 +408,18 @@ StrongUl <- :TwoUlOpen
             ( !TwoUlClose Inline )*
             :TwoUlClose
 
+#### Pandoc Extension ####
+Strikeout <- :"~~" Inline :"~~"
+
+#### Pandoc Extension ####
+Superscript <- :"^" Inline :"^"
+
+#### Pandoc Extension ####
+Subscript <- :"~" Inline :"~"
+
+#### Pandoc Extension ####
+Math <- :"$" !Spacechar (!(Spacechar "$") .)* :"$"
+
 Image <- "!" ( ExplicitLink / ReferenceLink )
 
 Link <-  ExplicitLink / ReferenceLink / AutoLink
@@ -375,10 +432,13 @@ ReferenceLinkSingle <-  Label (Spnl "[]")?
 
 ExplicitLink <-  Label Spnl :"(" Sp Source Spnl Title? Sp :")"
 
-Source  <~ :"<" SourceContents :">"
+Source  <- HeaderIdentifier #### Pandoc extension ####
+         / :"<" SourceContents :">"
          / SourceContents
 
-SourceContents <- ( ( !"(" !")" !">" Nonspacechar )+ / "(" SourceContents ")")*
+HeaderIdentifier <~ :"#" [a-z][-_.a-z0-9]*
+
+SourceContents <~ ( ( !"(" !")" !">" Nonspacechar )+ / :"(" SourceContents :")")*
 
 Title <~ (TitleSingle / TitleDouble)
 
@@ -406,7 +466,7 @@ RefTitleSingle <- Spnl quote ( !( quote Sp Newline / Newline ) . )* quote
 
 RefTitleDouble <- Spnl doublequote ( !(doublequote Sp Newline / Newline) . )* doublequote
 
-RefTitleParens <- Spnl "(" ( !(")" Sp Newline / Newline) . )*  ")"
+RefTitleParens <- Spnl "(" ( !(")" Sp Newline / Newline) .)* ")"
 
 References <- ( Reference / SkipBlock )*
 
@@ -416,17 +476,26 @@ Ticks3 <- backquote backquote backquote !backquote
 Ticks4 <- backquote backquote backquote backquote !backquote
 Ticks5 <- backquote backquote backquote backquote backquote !backquote
 
-Code <- ( :Ticks5 (CodeOptions :Newline)? ~(!Ticks5 .)+ :Ticks5 CodeOptions?
-        / :Ticks4 (CodeOptions :Newline)? ~(!Ticks4 .)+ :Ticks4 CodeOptions?
-        / :Ticks3 (CodeOptions :Newline)? ~(!Ticks3 .)+ :Ticks3 CodeOptions?
-        / :Ticks2 (CodeOptions :Newline)? ~(!Ticks2 .)+ :Ticks2 CodeOptions?
-        / :Ticks1 (CodeOptions :Newline)? ~(!Ticks1 .)+ :Ticks1 CodeOptions?
-        )
+Tildes <- "~~~" "~"*
+
+### Standard extension. Covers both Github Markdown and Pandoc Markdown
+CodeBlock <- ( :Ticks5 CodeOptions? :Newline ~(!Ticks5 .)+ :Ticks5 :Newline
+             / :Ticks4 CodeOptions? :Newline ~(!Ticks4 .)+ :Ticks4 :Newline
+             / :Ticks3 CodeOptions? :Newline ~(!Ticks3 .)+ :Ticks3 :Newline
+             / :Tildes CodeOptions? :Newline ~(!Tildes .)+ :Tildes :Newline)
+
+Code <- ( :Ticks1 ~(!Ticks1 .)+ :Ticks1 CodeOptions?
+        / :Ticks2 ~(!Ticks2 .)+ :Ticks2 CodeOptions?)
 
 CodeOptions <- :"{" :Sp (;Option :Sp)* :Sp :"}"
              / ;Option
 
-Option <~ "."? identifier
+Option <~ "."? identifier (:"=" (digit+ / identifier))?
+
+#### Pandoc Extension #### Partially implemented (multiline footnotes)
+FootnoteReference <- :"[^" FootnoteName :"]" !":"
+FootnoteDefinition <- :"[^" FootnoteName :"]:" Line (BlankLine / Indent Line)*
+FootnoteName <- (digit+ / identifier)
 
 RawHtml <~ HtmlComment / HtmlBlockScript / HtmlTag
 
@@ -482,8 +551,8 @@ Indent <- "\t" / "    "
 IndentedLine <- :Indent Line
 OptionallyIndentedLine <- Indent? Line
 
-Line <~ (!Newline .)* Newline
-        / .+ eoi
+Line <~ (!Newline .)* :Newline
+      / .+ :eoi
 
 SkipBlock <- HtmlBlock
            / ( !"#" !SetextBottom1 !SetextBottom2 !BlankLine Line )+ BlankLine*
@@ -518,15 +587,15 @@ DoubleQuoted <-  DoubleQuoteStart ( !DoubleQuoteEnd Inline )+ DoubleQuoteEnd
 
 NoteReference <- RawNoteReference
 
-RawNoteReference <- "[^"  ( !Newline !"]" . )+  "]"
+RawNoteReference <~ :"[^"  ( !Newline !"]" . )+  :"]" !":"
 
-Note <- NonindentSpace RawNoteReference ":" Sp
+Note <- :NonindentSpace RawNoteReference :":" :Sp
         RawNoteBlock
         ( &Indent RawNoteBlock  )*
 
-InlineNote <-    "^[" ( !"]" Inline  )+ "]"
+InlineNote <- :"^[" ( !"]" Inline)+ :"]"
 
-Notes <-  ( Note / SkipBlock )*
+Notes <- (Note / SkipBlock)*
 
-RawNoteBlock <-  ( !BlankLine OptionallyIndentedLine )+ BlankLine*
+RawNoteBlock <- ( !BlankLine OptionallyIndentedLine )+ BlankLine*
 `;
