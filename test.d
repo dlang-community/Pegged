@@ -5,27 +5,31 @@ import std.algorithm;
 import std.array;
 import std.conv;
 import std.datetime;
+import std.functional;
 import std.range;
 import std.stdio;
 import std.typecons;
 import std.typetuple;
 
 import pegged.grammar;
-import pegged.examples.markdown;
-//import md;
 
+enum g = (grammar(`
+    Parameterized:
+        # Different arities
+        Root <- Rule1('a', 'b') 'c'
+        Rule1(A)     <- A+
+        Rule1(A,B)   <- (A B)+
+        Rule1(A,B,C) <- (A B C)+
+    `));
+
+/// TODO: add a number after a param rule, for the number of parameters
+///       *or* make param rules non hooked
 void main()
 {
-    asModule("md", "md", MarkdownGrammar);
+    mixin(g);
 
-    writeln(Markdown.decimateTree(Markdown.HtmlBlockInTags(
-q{<table>
-    <tr>
-        <td>*one*</td>
-        <td>[a link](http://google.com)</td>
-    </tr>
-</table>
-    })));
-
+    alias A = Parameterized;
+    enum e = A("abababc");
+    writeln(e);
 }
 
