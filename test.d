@@ -13,15 +13,23 @@ import std.typetuple;
 
 import pegged.grammar;
 
-enum g = grammar("Test:
-    A <- 'a'
-");
+enum g = (grammar(`
+    Parameterized:
+        # Different arities
+        Root <- Rule1('a', 'b') 'c'
+        Rule1(A)     <- A+
+        Rule1(A,B)   <- (A B)+
+        Rule1(A,B,C) <- (A B C)+
+    `));
 
+/// TODO: add a number after a param rule, for the number of parameters
+///       *or* make param rules non hooked
 void main()
 {
     mixin(g);
-    writeln(Test("b"));
-    Test.ABefore = &literal!"b";
-    writeln(Test("b"));
+
+    alias A = Parameterized;
+    enum e = A("abababc");
+    writeln(e);
 }
 
