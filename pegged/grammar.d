@@ -131,12 +131,50 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     result ~= "    import std.typecons:Tuple, tuple;\n"
                             ~ "    static TParseTree[Tuple!(string, size_t)] memo;\n";
 
+                ParseTree[] definitions = p.children[1 .. $];
+
+                foreach(i,def; definitions)
+                {
+                    result ~= "    static ParseTree function(ParseTree) " ~ def.matches[0] ~ "Before = &fail;\n"
+                            ~ "    static ParseTree function(ParseTree) " ~ def.matches[0] ~ "After = &fail;\n";
+                }
+
+                result ~=
+`
+    static ParseTree hooked(alias r, string name)(ParseTree p)
+    {
+        mixin("ParseTree result = " ~ name ~ "Before(p);
+        if (result.successful)
+        {
+            result.name = name;
+            return result;
+        }
+        else
+        {
+            result = r(p);
+            if (result.successful || " ~ name ~ "After == &fail)
+            {
+                result.name = name;
+                return result;
+            }
+            result = " ~ name ~ "After(p);
+            result.name = name;
+            return result;
+        }");
+    }
+
+    static ParseTree hooked(alias r, string name)(string input)
+    {
+        return .hooked!(r, name)(ParseTree("",false,[],input));
+    }
+
+`;
+
                 result ~= "    static bool isRule(string s)\n"
                         ~ "    {\n"
                         ~ "        switch(s)\n"
                         ~ "        {\n";
 
-                ParseTree[] definitions = p.children[1 .. $];
                 bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
                 string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
                 bool userDefinedSpacing = false;
@@ -223,7 +261,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 // children[1]: arrow (arrow type as first child)
                 // children[2]: description
 
-                string code = "pegged.peg.named!(";
+                string code = "hooked!(";
 
                 switch(p.children[1].children[0].name)
                 {

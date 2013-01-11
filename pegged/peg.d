@@ -2538,7 +2538,7 @@ unittest // 'keep' unit test
     assert(result.children == [literal!("b")(literal!("a")("abc"))], "'b' node was kept.");
 }
 
-/* pre-defined rules */
+/* ****************** predefined rules ******************** */
 
 alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOfLine; /// predefined end-of-line parser
 alias endOfLine eol; /// helper alias.
