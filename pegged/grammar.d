@@ -135,39 +135,39 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 foreach(i,def; definitions)
                 {
-                    result ~= "    static ParseTree function(ParseTree) " ~ def.matches[0] ~ "Before = &fail;\n"
-                            ~ "    static ParseTree function(ParseTree) " ~ def.matches[0] ~ "After = &fail;\n";
+                    string numParam = (def.children[0].children.length > 1) ? ("_" ~ to!string(def.children[0].children[1].children.length)) : "";
+                    result ~= "    static ParseTree function(ParseTree) before" ~ def.matches[0] ~ numParam ~ " = &fail;\n"
+                            ~ "    static ParseTree function(ParseTree) after"  ~ def.matches[0] ~ numParam ~ " = &fail;\n";
                 }
 
                 result ~=
 `
-    static ParseTree hooked(alias r, string name)(ParseTree p)
+    template hooked(alias r, string name)
     {
-        mixin("ParseTree result = " ~ name ~ "Before(p);
-        if (result.successful)
+        static ParseTree hooked(ParseTree p)
         {
-            result.name = name;
-            return result;
-        }
-        else
-        {
-            result = r(p);
-            if (result.successful || " ~ name ~ "After == &fail)
+            mixin("ParseTree result = before" ~ name ~ "(p);
+            if (result.successful)
             {
-                result.name = name;
                 return result;
             }
-            result = " ~ name ~ "After(p);
-            result.name = name;
-            return result;
-        }");
-    }
+            else
+            {
+                result = r(p);
+                if (result.successful || after" ~ name ~ " == &fail)
+                {
+                    return result;
+                }
+                result = after" ~ name ~ "(p);
+                return result;
+            }");
+        }
 
-    static ParseTree hooked(alias r, string name)(string input)
-    {
-        return .hooked!(r, name)(ParseTree("",false,[],input));
+        static ParseTree hooked(string input)
+        {
+            return hooked!(r, name)(ParseTree("",false,[],input));
+        }
     }
-
 `;
 
                 result ~= "    static bool isRule(string s)\n"
@@ -192,7 +192,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     {
                         ruleNames[def.matches[0]] = true;
 
-                        if (def.children[0].children.length > 1)
+                        if (def.children[0].children.length > 1) // Parameterized rule
                             parameterizedRulesSpecialCode ~= "                " ~ paramRuleHandler(def.matches[0])~ "\n";
                         else
                             result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
@@ -261,7 +261,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 // children[1]: arrow (arrow type as first child)
                 // children[2]: description
 
-                string code = "hooked!(";
+                string code;
 
                 switch(p.children[1].children[0].name)
                 {
@@ -301,12 +301,14 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 string completeName = generateCode(p.children[0]);
                 string shortName = p.matches[0];
                 string innerName;
+                string hookedName = p.matches[0];
 
                 if (parameterizedRule)
                 {
                     result =  "    template " ~ completeName ~ "\n"
                             ~ "    {\n";
                     innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
+                    hookedName ~= "_" ~ to!string(p.children[0].children[1].children.length);
                     foreach(i,param; p.children[0].children[1].children)
                         innerName ~= "pegged.peg.getName!("~ param.children[0].matches[0]
                                     ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ \", \" ~ "
@@ -318,23 +320,30 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     innerName ~= "`" ~ completeName ~ "`";
                 }
 
-                code ~= ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+                string ctfeCode = "pegged.peg.named!("         ~ code                          ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+                code =            "pegged.peg.named!(hooked!(" ~ code ~ ", \"" ~ hookedName ~ "\"), \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
 
                 if (withMemo == Memoization.no)
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                            ~  "    {\n"
-                           ~  "         return " ~ code ~ "(p);\n"
+                           ~  "        if(__ctfe)\n"
+                           ~  "            return " ~ ctfeCode ~ "(p);\n"
+                           ~  "        else\n"
+                           ~  "             return " ~ code ~ "(p);\n"
                            ~  "    }\n"
                            ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
                            ~  "    {\n"
-                           ~  "        return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                           ~  "        if(__ctfe)\n"
+                           ~  "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
+                           ~  "        else\n"
+                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
                            ~  "    }\n";
                 else
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                            ~  "    {\n"
                            ~  "        if(__ctfe)\n"
                            ~  "        {\n"
-                           ~  "            return " ~ code ~ "(p);\n"
+                           ~  "            return " ~ ctfeCode ~ "(p);\n"
                            ~  "        }\n"
                            ~  "        else\n"
                            ~  "        {\n"
@@ -352,7 +361,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "    {\n"
                            ~  "        if(__ctfe)\n"
                            ~  "        {\n"
-                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                           ~  "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
                            ~  "        }\n"
                            ~  "        else\n"
                            ~  "        {\n"
@@ -2080,7 +2089,6 @@ Here is another line.
     assert(result.children[2].matches is null);
     assert(result.children[3].matches == ["    And the last one."]);
 
-
     // Parameterized grammar test
     mixin(grammar(`
     Arithmetic(Atom) :
@@ -2172,7 +2180,8 @@ version(unittest)
     }
 }
 
-/+ Failed (commit 4cd177a), DMD crashed.
+
+/+ Failed (commit 4cd177a), DMD crashed. Too many grammar istantiations, I guess.
 unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
 {
     // No grammar
