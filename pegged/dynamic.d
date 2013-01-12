@@ -308,3 +308,51 @@ Dynamic dynamicFuse(Dynamic r)
         return p;
     };
 }
+
+Dynamic dynamicDiscardChildren(Dynamic r)
+{
+    return ParseTree p)
+    {
+        p = r(p);
+        p.children = null;
+        return p;
+    };
+}
+
+Dynamic dynamicDiscardMatches(Dynamic r)
+{
+    return (ParseTree p)
+    {
+        p = r(p);
+        if (p.successful)
+            p.matches = null;
+        return p;
+    };
+}
+
+Dynamic dynamicDiscard(Dynamic r)
+{
+    return (ParseTree p)
+    {
+        ParseTree result = r(p);
+        result.name = "discard";
+        //result.begin = result.end;
+        result.children = null;
+        if (result.successful)
+            result.matches = null;//to keep error messages, if any
+
+        return result;
+    };
+}
+
+Dynamic dynamicDrop(Dynamic r)
+{
+    return (ParseTree p)
+    {
+        ParseTree result = r(p);
+        result.children = null;
+        if (result.successful)
+            result.name = "drop";
+        return result;
+    }
+}
