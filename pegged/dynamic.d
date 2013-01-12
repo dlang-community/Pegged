@@ -61,6 +61,50 @@ ParseTree delegate(ParseTree) dynamicEps()
     };
 }
 
+ParseTree delegate(ParseTree) dynamicWrapAround( ParseTree delegate(ParseTree) before
+                                               , ParseTree delegate(ParseTree) middle
+                                               , ParseTree delegate(ParseTree) after)
+{
+    return(ParseTree p)
+    {
+        ParseTree temp = before(p);
+        if (!temp.successful)
+            return temp;
+
+        ParseTree result = middle(temp);
+        if (!result.successful)
+            return result;
+        result.begin = temp.begin;
+
+        temp = after(result);
+        if (!temp.successful)
+            return temp;
+
+        result.end = temp.end;
+        return result;
+    };
+}
+
+ParseTree delegate(ParseTree) dynamicOneOrMore(ParseTree delegate(ParseTree) r)
+{
+    return (ParseTree p)
+    {
+        auto result = ParseTree("oneOrMore", true, [], p.input, p.end, p.end);
+        auto temp = r(result);
+        while(temp.successful
+            && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
+            || temp.name.startsWith("discard!(")))
+        {
+            result.matches ~= temp.matches;
+            result.children ~= temp;
+            result.end = temp.end;
+            temp = r(result);
+        }
+        result.successful = true;
+        return result;
+    };
+}
+
 ParseTree delegate(ParseTree) dynamicAnd(ParseTree delegate(ParseTree)[] rules...)
 {
     return (ParseTree p)
