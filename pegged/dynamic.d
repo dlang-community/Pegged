@@ -311,7 +311,7 @@ Dynamic dynamicFuse(Dynamic r)
 
 Dynamic dynamicDiscardChildren(Dynamic r)
 {
-    return ParseTree p)
+    return (ParseTree p)
     {
         p = r(p);
         p.children = null;
@@ -354,5 +354,31 @@ Dynamic dynamicDrop(Dynamic r)
         if (result.successful)
             result.name = "drop";
         return result;
-    }
+    };
 }
+
+Dynamic dynamicPropagate(Dynamic r)
+{
+    return (ParseTree p)
+    {
+        ParseTree result = r(p);
+        if (result.successful)
+            result.name = "propagate";
+        return result;
+    };
+}
+
+Dynamic dynamicKeep(Dynamic r)
+{
+    return (ParseTree p)
+    {
+        ParseTree result = r(p);
+        if (result.successful)
+        {
+            result.children = [result];
+            result.name = "keep";
+        }
+        return result;
+    };
+}
+
