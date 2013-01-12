@@ -85,11 +85,11 @@ ParseTree delegate(ParseTree) dynamicWrapAround( ParseTree delegate(ParseTree) b
     };
 }
 
-ParseTree delegate(ParseTree) dynamicOneOrMore(ParseTree delegate(ParseTree) r)
+ParseTree delegate(ParseTree) dynamicZeroOrMore(ParseTree delegate(ParseTree) r)
 {
     return (ParseTree p)
     {
-        auto result = ParseTree("oneOrMore", true, [], p.input, p.end, p.end);
+        auto result = ParseTree("zeroOrMore", true, [], p.input, p.end, p.end);
         auto temp = r(result);
         while(temp.successful
             && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
@@ -105,6 +105,35 @@ ParseTree delegate(ParseTree) dynamicOneOrMore(ParseTree delegate(ParseTree) r)
     };
 }
 
+ParseTree delegate(ParseTree) dynamicOneOrMore(ParseTree delegate(ParseTree) r)
+{
+    return(ParseTree p)
+    {
+        auto result = ParseTree("oneOrMore", false, [], p.input, p.end, p.end);
+        auto temp = r(result);
+
+        if (!temp.successful)
+        {
+            result.matches = temp.matches;
+            result.children = [temp];
+            result.end = temp.end;
+        }
+        else
+        {
+            while(  temp.successful
+                && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
+            || temp.name.startsWith("discard!(")))
+            {
+                result.matches ~= temp.matches;
+                result.children ~= temp;
+                result.end = temp.end;
+                temp = r(result);
+            }
+            result.successful = true;
+        }
+        return result;
+    };
+}
 ParseTree delegate(ParseTree) dynamicAnd(ParseTree delegate(ParseTree)[] rules...)
 {
     return (ParseTree p)
