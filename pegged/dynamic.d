@@ -134,6 +134,19 @@ ParseTree delegate(ParseTree) dynamicOneOrMore(ParseTree delegate(ParseTree) r)
         return result;
     };
 }
+
+ParseTree delegate(ParseTree) dynamicOption(ParseTree delegate(ParseTree) r)
+{
+    return (ParseTree p)
+    {
+        ParseTree result = r(p);
+        if (result.successful)
+            return ParseTree("option", true, result.matches, result.input, result.begin, result.end, [result]);
+        else
+            return ParseTree("option", true, [], p.input, p.end, p.end, null);
+    };
+}
+
 ParseTree delegate(ParseTree) dynamicAnd(ParseTree delegate(ParseTree)[] rules...)
 {
     return (ParseTree p)
@@ -235,3 +248,36 @@ ParseTree delegate(ParseTree) dynamicOr(ParseTree delegate(ParseTree)[] rules...
         return longestFail;
     };
 }
+
+ParseTree delegate(ParseTree) dynamicPosLookahead(ParseTree delegate(ParseTree) r)
+{
+    return (ParseTree p)
+    {
+        ParseTree temp = r(p);
+        if (temp.successful)
+            return ParseTree("posLookahead", temp.successful, [], p.input, p.end, p.end);
+        else
+            return ParseTree("posLookahead", temp.successful, [temp.matches[$-1]], p.input, p.end, p.end);
+    };
+}
+
+ParseTree delegate(ParseTree) dynamicNegLookahead(ParseTree delegate(ParseTree) r)
+{
+    return (ParseTree p)
+    {
+        ParseTree temp = r(p);
+        if (temp.successful)
+            return ParseTree("negLookahead", false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
+        else
+            return ParseTree("negLookahead", true, [], p.input, p.end, p.end);
+    };
+}
+
+ParseTree delegate(ParseTree) dynamicNamed(ParseTree delegate(ParseTree) r)
+{
+    return (ParseTree p)
+    {
+        ParseTree result = r(p);
+        result.name = name;
+        return result;
+    }
