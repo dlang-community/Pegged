@@ -5,8 +5,9 @@ import std.conv: to;
 
 import pegged.peg;
 
+alias ParseTree delegate(ParseTree) Dynamic;
 
-ParseTree delegate(ParseTree) dynamicEoi()
+Dynamic dynamicEoi()
 {
     return (ParseTree p)
     {
@@ -18,7 +19,7 @@ ParseTree delegate(ParseTree) dynamicEoi()
 }
 
 
-ParseTree delegate(ParseTree) dynamicAny()
+Dynamic dynamicAny()
 {
     return(ParseTree p)
     {
@@ -29,7 +30,7 @@ ParseTree delegate(ParseTree) dynamicAny()
     };
 }
 
-ParseTree delegate(ParseTree) dynamicLiteral(string s)
+Dynamic dynamicLiteral(string s)
 {
     return (ParseTree p)
     {
@@ -41,7 +42,7 @@ ParseTree delegate(ParseTree) dynamicLiteral(string s)
     };
 }
 
-ParseTree delegate(ParseTree) dynamicCharRange(char begin, char end)
+Dynamic dynamicCharRange(char begin, char end)
 {
     return (ParseTree p)
     {
@@ -54,7 +55,7 @@ ParseTree delegate(ParseTree) dynamicCharRange(char begin, char end)
 
 }
 
-ParseTree delegate(ParseTree) dynamicEps()
+Dynamic dynamicEps()
 {
     return (ParseTree p)
     {
@@ -62,9 +63,9 @@ ParseTree delegate(ParseTree) dynamicEps()
     };
 }
 
-ParseTree delegate(ParseTree) dynamicWrapAround( ParseTree delegate(ParseTree) before
-                                               , ParseTree delegate(ParseTree) middle
-                                               , ParseTree delegate(ParseTree) after)
+Dynamic dynamicWrapAround( Dynamic before
+                                               , Dynamic middle
+                                               , Dynamic after)
 {
     return(ParseTree p)
     {
@@ -86,7 +87,7 @@ ParseTree delegate(ParseTree) dynamicWrapAround( ParseTree delegate(ParseTree) b
     };
 }
 
-ParseTree delegate(ParseTree) dynamicZeroOrMore(ParseTree delegate(ParseTree) r)
+Dynamic dynamicZeroOrMore(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -106,7 +107,7 @@ ParseTree delegate(ParseTree) dynamicZeroOrMore(ParseTree delegate(ParseTree) r)
     };
 }
 
-ParseTree delegate(ParseTree) dynamicOneOrMore(ParseTree delegate(ParseTree) r)
+Dynamic dynamicOneOrMore(Dynamic r)
 {
     return(ParseTree p)
     {
@@ -136,7 +137,7 @@ ParseTree delegate(ParseTree) dynamicOneOrMore(ParseTree delegate(ParseTree) r)
     };
 }
 
-ParseTree delegate(ParseTree) dynamicOption(ParseTree delegate(ParseTree) r)
+Dynamic dynamicOption(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -148,7 +149,7 @@ ParseTree delegate(ParseTree) dynamicOption(ParseTree delegate(ParseTree) r)
     };
 }
 
-ParseTree delegate(ParseTree) dynamicAnd(ParseTree delegate(ParseTree)[] rules...)
+Dynamic dynamicAnd(Dynamic[] rules...)
 {
     return (ParseTree p)
     {
@@ -176,7 +177,7 @@ ParseTree delegate(ParseTree) dynamicAnd(ParseTree delegate(ParseTree)[] rules..
     };
 }
 
-ParseTree delegate(ParseTree) dynamicOr(ParseTree delegate(ParseTree)[] rules...)
+Dynamic dynamicOr(Dynamic[] rules...)
 {
     return (ParseTree p)
     {
@@ -250,7 +251,7 @@ ParseTree delegate(ParseTree) dynamicOr(ParseTree delegate(ParseTree)[] rules...
     };
 }
 
-ParseTree delegate(ParseTree) dynamicPosLookahead(ParseTree delegate(ParseTree) r)
+Dynamic dynamicPosLookahead(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -262,7 +263,7 @@ ParseTree delegate(ParseTree) dynamicPosLookahead(ParseTree delegate(ParseTree) 
     };
 }
 
-ParseTree delegate(ParseTree) dynamicNegLookahead(ParseTree delegate(ParseTree) r)
+Dynamic dynamicNegLookahead(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -274,7 +275,7 @@ ParseTree delegate(ParseTree) dynamicNegLookahead(ParseTree delegate(ParseTree) 
     };
 }
 
-ParseTree delegate(ParseTree) dynamicNamed(ParseTree delegate(ParseTree) r, string name)
+Dynamic dynamicNamed(Dynamic r, string name)
 {
     return (ParseTree p)
     {
@@ -284,7 +285,7 @@ ParseTree delegate(ParseTree) dynamicNamed(ParseTree delegate(ParseTree) r, stri
     };
 }
 
-ParseTree delegate(ParseTree) dynamicAction(ParseTree delegate(ParseTree) r, ParseTree delegate(ParseTree) act)
+Dynamic dynamicAction(Dynamic r, Dynamic act)
 {
     return (ParseTree p)
     {
@@ -292,7 +293,7 @@ ParseTree delegate(ParseTree) dynamicAction(ParseTree delegate(ParseTree) r, Par
     };
 }
 
-ParseTree delegate(ParseTree) dynamicFuse(ParseTree delegate(ParseTree) r)
+Dynamic dynamicFuse(Dynamic r)
 {
     return(ParseTree p)
     {
