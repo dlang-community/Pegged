@@ -1780,7 +1780,7 @@ template option(alias r)
 
     ParseTree option(ParseTree p)
     {
-        auto result = r(p);
+        ParseTree result = r(p);
         if (result.successful)
             return ParseTree(name, true, result.matches, result.input, result.begin, result.end, [result]);
         else
@@ -1869,7 +1869,7 @@ template posLookahead(alias r)
 
     ParseTree posLookahead(ParseTree p)
     {
-        auto temp = r(p);
+        ParseTree temp = r(p);
         if (temp.successful)
             return ParseTree(name, temp.successful, [], p.input, p.end, p.end);
         else
@@ -1955,7 +1955,7 @@ template negLookahead(alias r)
 
     ParseTree negLookahead(ParseTree p)
     {
-        auto temp = r(p);
+        ParseTree temp = r(p);
         if (temp.successful)
             return ParseTree(name, false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
         else
