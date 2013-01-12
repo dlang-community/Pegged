@@ -1,5 +1,7 @@
 module pegged.dynamic;
 
+import std.conv: to;
+
 import pegged.peg;
 
 
@@ -11,6 +13,18 @@ ParseTree delegate(ParseTree) dynamicEoi()
             return ParseTree("eoi", true, [], p.input, p.end, p.end);
         else
             return ParseTree("eoi", false, ["end of input"], p.input, p.end, p.end);
+    };
+}
+
+
+ParseTree delegate(ParseTree) dynamicAny()
+{
+    return(ParseTree p)
+    {
+        if (p.end < p.input.length)
+            return ParseTree("any", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
+        else
+            return ParseTree("any", false, ["any char"], p.input, p.end, p.end);
     };
 }
 
@@ -26,11 +40,23 @@ ParseTree delegate(ParseTree) dynamicLiteral(string s)
     };
 }
 
+ParseTree delegate(ParseTree) dynamicCharRange(char begin, char end)
+{
+    return (ParseTree p)
+    {
+        string longName = "a char between '"~to!string(begin)~"' and '"~to!string(end)~"'";
+        if (p.end < p.input.length && p.input[p.end] >= begin && p.input[p.end] <= end)
+           return ParseTree("charRange", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
+        else
+            return ParseTree("charRange", false, [longName], p.input, p.end, p.end);
+    };
+
+}
 ParseTree delegate(ParseTree) dynamicAnd(ParseTree delegate(ParseTree)[] rules...)
 {
     return (ParseTree p)
     {
-        ParseTree result = ParseTree("and   ", false, [], p.input, p.end, p.end, []);
+        ParseTree result = ParseTree("and", false, [], p.input, p.end, p.end, []);
 
         foreach(i,r; rules)
         {
@@ -59,7 +85,7 @@ ParseTree delegate(ParseTree) dynamicOr(ParseTree delegate(ParseTree)[] rules...
     return (ParseTree p)
     {
         // error-management
-        ParseTree longestFail = ParseTree("dynamicOr", false, [], p.input, p.end, 0);
+        ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, 0);
         string[] errorStrings;
         size_t errorStringChars;
         string orErrorString;
@@ -76,12 +102,12 @@ ParseTree delegate(ParseTree) dynamicOr(ParseTree delegate(ParseTree)[] rules...
             if (temp.successful)
             {
                 temp.children = [temp];
-                temp.name = "dynamicOr";
+                temp.name = "or";
                 return temp;
             }
             else
             {
-                enum errName = " (" ~ getName!(r)() ~")";
+                string errName = " (dynamic or: longest error)";
                 failedLength ~= temp.end;
                 if (temp.end >= longestFail.end)
                 {
@@ -122,7 +148,7 @@ ParseTree delegate(ParseTree) dynamicOr(ParseTree delegate(ParseTree)[] rules...
 
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
-        longestFail.name = "dynamicOr";
+        longestFail.name = "or";
         longestFail.begin = p.end;
         return longestFail;
     };
