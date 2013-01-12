@@ -1,5 +1,6 @@
 module pegged.dynamic;
 
+import std.array: join;
 import std.conv: to;
 
 import pegged.peg;
@@ -273,11 +274,36 @@ ParseTree delegate(ParseTree) dynamicNegLookahead(ParseTree delegate(ParseTree) 
     };
 }
 
-ParseTree delegate(ParseTree) dynamicNamed(ParseTree delegate(ParseTree) r)
+ParseTree delegate(ParseTree) dynamicNamed(ParseTree delegate(ParseTree) r, string name)
 {
     return (ParseTree p)
     {
         ParseTree result = r(p);
         result.name = name;
         return result;
-    }
+    };
+}
+
+ParseTree delegate(ParseTree) dynamicAction(ParseTree delegate(ParseTree) r, ParseTree delegate(ParseTree) act)
+{
+    return (ParseTree p)
+    {
+        return act(r(p));
+    };
+}
+
+ParseTree delegate(ParseTree) dynamicFuse(ParseTree delegate(ParseTree) r)
+{
+    return(ParseTree p)
+    {
+        p = r(p);
+        if (p.successful)
+        {
+            if (p.matches.length != 0)
+                p.matches = [std.array.join(p.matches)];
+
+            p.children = null; // also discard children
+        }
+        return p;
+    };
+}
