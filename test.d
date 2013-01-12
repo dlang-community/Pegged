@@ -12,24 +12,25 @@ import std.typecons;
 import std.typetuple;
 
 import pegged.grammar;
+import pegged.dynamic;
 
-enum g = (grammar(`
-    Parameterized:
-        # Different arities
-        Root <- Rule1('a', 'b') 'c'
-        Rule1(A)     <- A+
-        Rule1(A,B)   <- (A B)+
-        Rule1(A,B,C) <- (A B C)+
-    `));
+//import pegged.examples.dgrammar;
+//import dparser;
 
-/// TODO: add a number after a param rule, for the number of parameters
-///       *or* make param rules non hooked
+enum g = (grammar("Test:
+    A <- 'a'
+"));
+
+mixin(g);
+
 void main()
 {
-    mixin(g);
-
-    alias A = Parameterized;
-    enum e = A("abababc");
-    writeln(e);
+    //writeln(g);
+    ParseTree delegate(ParseTree) first = p => literal!"b"(p);
+    ParseTree delegate(ParseTree) second = p => literal!"c"(p);
+    
+    Test.beforeA = dynamicOr(dynamicLiteral("b"), dynamicLiteral("c"), p => oneOrMore!(p => dynamicLiteral("d")(p))(p));
+    writeln(Test("e"));
+    //writeln(Test("b"));
 }
 
