@@ -52,6 +52,15 @@ ParseTree delegate(ParseTree) dynamicCharRange(char begin, char end)
     };
 
 }
+
+ParseTree delegate(ParseTree) dynamicEps()
+{
+    return (ParseTree p)
+    {
+        return ParseTree("eps", true, [""], p.input, p.end, p.end);
+    };
+}
+
 ParseTree delegate(ParseTree) dynamicAnd(ParseTree delegate(ParseTree)[] rules...)
 {
     return (ParseTree p)
