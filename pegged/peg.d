@@ -1004,10 +1004,6 @@ unittest // 'and' unit test
 
 template wrapAround(alias before, alias target, alias after)
 {
-    enum name = "wrapAround!(" ~ getName!(before)() ~
-                ", " ~ getName!(target)() ~
-                ", " ~ getName!(after)() ~ ")";
-
     ParseTree wrapAround(ParseTree p)
     {
         ParseTree temp = before(p);
@@ -1034,7 +1030,9 @@ template wrapAround(alias before, alias target, alias after)
 
     string wrapAround(GetName g)
     {
-        return name;
+        return "wrapAround!(" ~ getName!(before)() ~
+                ", " ~ getName!(target)() ~
+                ", " ~ getName!(after)() ~ ")";
     }
 }
 
