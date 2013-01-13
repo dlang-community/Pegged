@@ -148,11 +148,10 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         {
             mixin("ParseTree result;
             if (before" ~ name ~ " !is null)
-            {
                 result = before" ~ name ~ "(p);
-                if (result.successful)
+
+            if (result.successful)
                     return result;
-            }
             else
             {
                 result = r(p);
