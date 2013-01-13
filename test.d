@@ -19,39 +19,32 @@ import pegged.dynamic;
 
 
 enum g = grammar(`Test:
-    A <~ 'a'* B*
+    Root <~ A* B C
+    A <- 'a'
     B <- 'b'
+    C <- 'c'
 `);
 
 mixin(g);
 
 struct Test2
 {
-    static ParseTree delegate(ParseTree) A;// = named(literal("b"), "Test.B"); //named(and(zeroOrMore(literal("a")), zeroOrMore(B)), "Test.A");
-    static ParseTree delegate(ParseTree) B;// = named(literal("b"), "Test.B");
+    static ParseTree delegate(ParseTree) Root;
+    static ParseTree delegate(ParseTree) A;
+    static ParseTree delegate(ParseTree) B;
+    static ParseTree delegate(ParseTree) C;
 
     static this()
     {
-        A = fuse(named(and(zeroOrMore(literal("a")), zeroOrMore(B)), "Test.A"));
+        Root = named(fuse(pegged.dynamic.and( zeroOrMore(p=>A(p)), (ParseTree p)=>B(p), (ParseTree p)=>C(p))), "Test");
+        A = named(literal("a"), "Test.A");
         B = named(literal("b"), "Test.B");
+        C = named(literal("c"), "Test.C");
     }
-    static bool isRule(string s)
-    {
-        switch(s)
-        {
-            case "Test.A":
-            case "Test.B":
-                return true;
-            default:
-                return false;
-        }
-    }
-    mixin decimateTree;
-    alias spacing Spacing;
 
     static ParseTree opCall(ParseTree p)
     {
-        ParseTree result = decimateTree(A(p));
+        ParseTree result = Root(p);
         result.children = [result];
         result.name = "Test";
         return result;
@@ -59,27 +52,25 @@ struct Test2
 
     static ParseTree opCall(string input)
     {
-        return Test(ParseTree(``, false, [], input, 0, 0));
+        return Root(ParseTree(``, false, [], input, 0, 0));
     }
-
 }
 
 
 void main()
 {
     string input = "";
-    int N = 1_000;
-    writeln(Test2(input));
-    foreach(n;0..100)
+    int N = 1000;
+
+    writeln(Test2(ParseTree("", true, [], input)));
+    foreach(n;0..20)
     {
         auto b = benchmark!(()=> Test(input), ()=> Test2(input))(N);
         auto t1 = b[0].to!("usecs", float)/N;
         auto t2 = b[1].to!("usecs", float)/N;
         writefln("%s: %.1f and %.1f => %.1f times faster", input.length, t1, t2, t1/t2);
-        input = "a" ~ input ~ "b";
+        input = "aaaaaaaaaaaa" ~ input ~ "b";
     }
-    // Dynamically changing the rules
-    writeln(Test2(input));
-    
+    //writeln(Test2(input));
 }
 
