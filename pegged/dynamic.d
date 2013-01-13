@@ -9,17 +9,11 @@ import pegged.peg;
 
 alias ParseTree delegate(ParseTree) Dynamic;
 
-string getName(Dynamic rule)
-{
-    ParseTree result = rule(ParseTree());
-    return result.name;
-}
-
-string getName(Dynamic[] rules)
+string getName(T...)(T rules) if (T.length)
 {
     string result;
     foreach(i,r; rules)
-        result ~= getName(r) ~ (i < rules.length -1 ? ", " : "");
+        result ~= r(ParseTree()).name ~ (i < rules.length -1 ? ", " : "");
     return result;
 }
 
@@ -176,7 +170,7 @@ Dynamic option(Dynamic r)
     };
 }
 
-Dynamic and(Dynamic[] rules...)
+Dynamic and(T...)(T rules)
 {
     return (ParseTree p)
     {
@@ -222,7 +216,7 @@ Dynamic and(Dynamic[] rules...)
     };
 }
 
-Dynamic or(Dynamic[] rules...)
+Dynamic or(T...)(T rules)
 {
     return (ParseTree p)
     {
