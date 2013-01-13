@@ -14,23 +14,46 @@ import std.typetuple;
 import pegged.grammar;
 import pegged.dynamic;
 
-//import pegged.examples.dgrammar;
-//import dparser;
+import pegged.examples.dgrammar;
+import dparser;
 
-enum g = (grammar("Test:
+/+
+ParseTree foo(ParseTree p)
+{
+    writeln("called!");
+    writeln("[", p.input, "] ", p.begin, " ", p.end);
+    return p;
+}
+
+enum g = (grammar!(Memoization.no)(`Test:
     A <- 'a'
-"));
+    B <- eps {foo} 'b' { foo }
+`));
 
 mixin(g);
-
++/
 void main()
 {
+    //asModule!(Memoization.no)("dparser", "dparser", Dgrammar);
     //writeln(g);
-    ParseTree delegate(ParseTree) first = p => literal!"b"(p);
-    ParseTree delegate(ParseTree) second = p => literal!"c"(p);
-    
-    Test.beforeA = dynamicOr(dynamicLiteral("b"), dynamicLiteral("c"), p => oneOrMore!(p => dynamicLiteral("d")(p))(p));
-    writeln(Test("e"));
-    //writeln(Test("b"));
+    Dynamic sp = named(discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n")))), "sp");
+    //writeln(getName(sp));
+    Dynamic identifier = fuse(oneOrMore(charRange('a', 'z')));
+    Dynamic unless = and( sp, literal("unless")
+                        , sp, literal("("), sp, p => D.IfCondition(p), sp, literal(")")
+                        , sp, p => D.ThenStatement(p));
+
+
+    writeln(unless(ParseTree("", true, [], "unless (expr) {}")));
+    //D.beforeIfStatement = unless;
+    ParseTree result = D("
+void main()
+{
+    if (expr) {}
+}");
+    writeln(result);
+    /+Test.afterA = pegged.dynamic.zeroOrMore(toDelegate(&Test.B));
+    auto e = Test("bbba");
+    writeln(e);+/
 }
 
