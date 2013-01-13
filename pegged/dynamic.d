@@ -3,6 +3,8 @@ module pegged.dynamic;
 import std.array: join;
 import std.conv: to;
 
+import std.stdio;
+
 import pegged.peg;
 
 alias ParseTree delegate(ParseTree) Dynamic;
@@ -21,7 +23,7 @@ string getName(Dynamic[] rules)
     return result;
 }
 
-Dynamic dynamicFail()
+Dynamic fail()
 {
     return (ParseTree p)
     {
@@ -29,7 +31,7 @@ Dynamic dynamicFail()
     };
 }
 
-Dynamic dynamicEoi()
+Dynamic eoi()
 {
     return (ParseTree p)
     {
@@ -40,7 +42,7 @@ Dynamic dynamicEoi()
     };
 }
 
-Dynamic dynamicAny()
+Dynamic any()
 {
     return(ParseTree p)
     {
@@ -51,7 +53,7 @@ Dynamic dynamicAny()
     };
 }
 
-Dynamic dynamicLiteral(string s)
+Dynamic literal(string s)
 {
     return (ParseTree p)
     {
@@ -63,7 +65,7 @@ Dynamic dynamicLiteral(string s)
     };
 }
 
-Dynamic dynamicCharRange(char begin, char end)
+Dynamic charRange(char begin, char end)
 {
     return (ParseTree p)
     {
@@ -76,7 +78,7 @@ Dynamic dynamicCharRange(char begin, char end)
 
 }
 
-Dynamic dynamicEps()
+Dynamic eps()
 {
     return (ParseTree p)
     {
@@ -84,7 +86,7 @@ Dynamic dynamicEps()
     };
 }
 
-Dynamic dynamicWrapAround(Dynamic before, Dynamic middle, Dynamic after)
+Dynamic wrapAround(Dynamic before, Dynamic middle, Dynamic after)
 {
     return(ParseTree p)
     {
@@ -106,12 +108,18 @@ Dynamic dynamicWrapAround(Dynamic before, Dynamic middle, Dynamic after)
     };
 }
 
-Dynamic dynamicZeroOrMore(Dynamic r)
+Dynamic zeroOrMore(Dynamic r)
 {
     return (ParseTree p)
     {
-        auto result = ParseTree("zeroOrMore!(" ~ getName(r) ~ ")", true, [], p.input, p.end, p.end);
-        auto temp = r(result);
+        //r = literal("b");
+        //writeln("Entering *: ", p.input);
+        ParseTree result = ParseTree("zeroOrMore!(" ~ getName(r) ~ ")", true, [], p.input, p.end, p.end);
+        //writeln("Calling r");
+        ParseTree temp = r(result);
+        //writeln("result.input: ", result.input, " result.end: ", result.end);
+        //writeln("name: ", getName(r));
+        //writeln("r(result): ", r(result));
         while(temp.successful
             && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
             || temp.name.startsWith("discard!(")))
@@ -126,7 +134,7 @@ Dynamic dynamicZeroOrMore(Dynamic r)
     };
 }
 
-Dynamic dynamicOneOrMore(Dynamic r)
+Dynamic oneOrMore(Dynamic r)
 {
     return(ParseTree p)
     {
@@ -156,7 +164,7 @@ Dynamic dynamicOneOrMore(Dynamic r)
     };
 }
 
-Dynamic dynamicOption(Dynamic r)
+Dynamic option(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -168,10 +176,20 @@ Dynamic dynamicOption(Dynamic r)
     };
 }
 
-Dynamic dynamicAnd(Dynamic[] rules...)
+Dynamic and(Dynamic[] rules...)
 {
     return (ParseTree p)
     {
+        bool keepNode(ParseTree node)
+        {
+            return    node.name.startsWith("keep!(")
+                || (  !node.name.startsWith("discard!(")
+                   //&& !node.name.startsWith("drop!(")
+                   && node.matches !is null
+                   //&& node.begin != node.end
+                   );
+        }
+
         ParseTree result = ParseTree("and!(" ~ getName(rules) ~ ")", false, [], p.input, p.end, p.end, []);
 
         foreach(i,r; rules)
@@ -180,8 +198,16 @@ Dynamic dynamicAnd(Dynamic[] rules...)
             result.end = temp.end;
             if (temp.successful)
             {
-                result.matches ~= temp.matches;
-                result.children ~= temp;
+                if (keepNode(temp))
+                {
+                    result.matches ~= temp.matches;
+                    if (temp.name.startsWith("drop!("))
+                    {}
+                    else if (temp.name.startsWith("propagate!("))
+                        result.children ~= temp.children;
+                    else
+                        result.children ~= temp;
+                }
             }
             else
             {
@@ -196,7 +222,7 @@ Dynamic dynamicAnd(Dynamic[] rules...)
     };
 }
 
-Dynamic dynamicOr(Dynamic[] rules...)
+Dynamic or(Dynamic[] rules...)
 {
     return (ParseTree p)
     {
@@ -270,7 +296,7 @@ Dynamic dynamicOr(Dynamic[] rules...)
     };
 }
 
-Dynamic dynamicPosLookahead(Dynamic r)
+Dynamic posLookahead(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -282,7 +308,7 @@ Dynamic dynamicPosLookahead(Dynamic r)
     };
 }
 
-Dynamic dynamicNegLookahead(Dynamic r)
+Dynamic negLookahead(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -294,7 +320,7 @@ Dynamic dynamicNegLookahead(Dynamic r)
     };
 }
 
-Dynamic dynamicNamed(Dynamic r, string name)
+Dynamic named(Dynamic r, string name)
 {
     return (ParseTree p)
     {
@@ -304,7 +330,7 @@ Dynamic dynamicNamed(Dynamic r, string name)
     };
 }
 
-Dynamic dynamicAction(Dynamic r, Dynamic act)
+Dynamic action(Dynamic r, Dynamic act)
 {
     return (ParseTree p)
     {
@@ -312,7 +338,7 @@ Dynamic dynamicAction(Dynamic r, Dynamic act)
     };
 }
 
-Dynamic dynamicFuse(Dynamic r)
+Dynamic fuse(Dynamic r)
 {
     return(ParseTree p)
     {
@@ -328,7 +354,7 @@ Dynamic dynamicFuse(Dynamic r)
     };
 }
 
-Dynamic dynamicDiscardChildren(Dynamic r)
+Dynamic discardChildren(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -338,7 +364,7 @@ Dynamic dynamicDiscardChildren(Dynamic r)
     };
 }
 
-Dynamic dynamicDiscardMatches(Dynamic r)
+Dynamic discardMatches(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -349,7 +375,7 @@ Dynamic dynamicDiscardMatches(Dynamic r)
     };
 }
 
-Dynamic dynamicDiscard(Dynamic r)
+Dynamic discard(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -364,7 +390,7 @@ Dynamic dynamicDiscard(Dynamic r)
     };
 }
 
-Dynamic dynamicDrop(Dynamic r)
+Dynamic drop(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -376,7 +402,7 @@ Dynamic dynamicDrop(Dynamic r)
     };
 }
 
-Dynamic dynamicPropagate(Dynamic r)
+Dynamic propagate(Dynamic r)
 {
     return (ParseTree p)
     {
@@ -387,7 +413,7 @@ Dynamic dynamicPropagate(Dynamic r)
     };
 }
 
-Dynamic dynamicKeep(Dynamic r)
+Dynamic keep(Dynamic r)
 {
     return (ParseTree p)
     {
