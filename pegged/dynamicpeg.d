@@ -184,7 +184,7 @@ Dynamic option(D)(D d)
     };
 }
 
-Dynamic and(T...)(T rules)
+Dynamic and(T...)(T rules) if (T.length > 1)
 {
     return (ParseTree p)
     {
