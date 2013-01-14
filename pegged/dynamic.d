@@ -16,24 +16,24 @@ string getName(D)(D rule)
 
 ParseTree callDynamic(D)(D d, string s)
 {
-	static if (is(typeof(d) == Dynamic))
-		return d(ParseTree("",false,[], s));
-	else static if (is(typeof(d) : Dynamic delegate()) || is(typeof(d) : Dynamic function()))
-		return d()(ParseTree("",false,[], s));
-	else
-		static assert(false, "Bad callDynamic, with type " ~ D.stringof);
+    static if (is(typeof(d) == Dynamic))
+        return d(ParseTree("",false,[], s));
+    else static if (is(typeof(d) : Dynamic delegate()) || is(typeof(d) : Dynamic function()))
+        return d()(ParseTree("",false,[], s));
+    else
+        static assert(false, "Bad callDynamic, with type " ~ D.stringof);
 }
 
 ParseTree callDynamic(D)(D d, ParseTree p)
 {
-	static if (is(typeof(d) == Dynamic))
-		return d(p);
-	else static if (is(typeof(d) : Dynamic delegate()) || is(typeof(d) : Dynamic function()))
-		return d()(p);
-	else
-		static assert(false, "Bad callDynamic, with type " ~ D.stringof);
+    static if (is(typeof(d) == Dynamic))
+        return d(p);
+    else static if (is(typeof(d) : Dynamic delegate()) || is(typeof(d) : Dynamic function()))
+        return d()(p);
+    else
+        static assert(false, "Bad callDynamic, with type " ~ D.stringof);
 }
-	
+    
 Dynamic fail()
 {
     return (ParseTree p)
@@ -123,7 +123,7 @@ Dynamic zeroOrMore(D)(D d)
 {
     return (ParseTree p)
     {
-		string name = "zeroOrMore!(" ~ getName(d) ~ ")";
+        string name = "zeroOrMore!(" ~ getName(d) ~ ")";
         ParseTree result = ParseTree(name, true, [], p.input, p.end, p.end);
         ParseTree temp = callDynamic(d,result);
         while(temp.successful
@@ -144,7 +144,7 @@ Dynamic oneOrMore(D)(D d)
 {
     return(ParseTree p)
     {
-		string name = "oneOrMore!(" ~ getName(d) ~ ")";
+        string name = "oneOrMore!(" ~ getName(d) ~ ")";
         ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end);
         ParseTree temp = callDynamic(d, result);
 
@@ -175,7 +175,7 @@ Dynamic option(D)(D d)
 {
     return (ParseTree p)
     {
-		string name = "option!(" ~ getName(d) ~ ")";
+        string name = "option!(" ~ getName(d) ~ ")";
         ParseTree result = callDynamic(d, p);
         if (result.successful)
             return ParseTree(name, true, result.matches, result.input, result.begin, result.end, [result]);
@@ -198,15 +198,15 @@ Dynamic and(T...)(T rules)
                    );
         }
 
-		
-		string name = "and!(" ~ ")";
-		
+    
+        string name = "and!(" ~ ")";
+    
         ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end, []);
 
         foreach(i,r; rules)
         {
-			ParseTree temp = callDynamic(r, result);
-			
+            ParseTree temp = callDynamic(r, result);
+    
             result.end = temp.end;
             if (temp.successful)
             {
@@ -229,7 +229,7 @@ Dynamic and(T...)(T rules)
                 return result; // and end the parsing attempt right there
             }
         }
-		result.successful = true;
+        result.successful = true;
         return result;
     };
 }
@@ -249,8 +249,8 @@ Dynamic or(T...)(T rules)
         size_t[rules.length] failedLength;
         size_t maxFailedLength;
 
-		// Real 'or' loop
-		foreach(i,r; rules)
+        // Real 'or' loop
+        foreach(i,r; rules)
         {
             ParseTree temp = callDynamic(r, p);
             if (temp.successful)
@@ -305,7 +305,7 @@ Dynamic or(T...)(T rules)
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
         longestFail.name = "or";
-		longestFail.begin = p.end;
+        longestFail.begin = p.end;
         return longestFail;
     };
 }
@@ -314,7 +314,7 @@ Dynamic posLookahead(D)(D d)
 {
     return (ParseTree p)
     {
-		string name = "posLookahead!(" ~ getName(d) ~ ")";
+        string name = "posLookahead!(" ~ getName(d) ~ ")";
         ParseTree temp = callDynamic(d,p);
         if (temp.successful)
             return ParseTree(name, temp.successful, [], p.input, p.end, p.end);
@@ -327,7 +327,7 @@ Dynamic negLookahead(D)(D d)
 {
     return (ParseTree p)
     {
-		string name = "negLookahead!(" ~ getName(d) ~ ")";
+        string name = "negLookahead!(" ~ getName(d) ~ ")";
         ParseTree temp = callDynamic(r,p);
         if (temp.successful)
             return ParseTree(name, false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
@@ -340,7 +340,7 @@ Dynamic named(D)(D d, string name)
 {
     return (ParseTree p)
     {
-		ParseTree result = callDynamic(d,p);
+        ParseTree result = callDynamic(d,p);
         result.name = name;
         return result;
     };
