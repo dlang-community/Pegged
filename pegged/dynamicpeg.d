@@ -1,4 +1,4 @@
-module pegged.dynamic;
+module pegged.dynamicpeg;
 
 import std.array: join;
 import std.conv: to;
@@ -33,7 +33,7 @@ ParseTree callDynamic(D)(D d, ParseTree p)
     else
         static assert(false, "Bad callDynamic, with type " ~ D.stringof);
 }
-    
+
 Dynamic fail()
 {
     return (ParseTree p)
@@ -198,15 +198,15 @@ Dynamic and(T...)(T rules)
                    );
         }
 
-    
+
         string name = "and!(" ~ ")";
-    
+
         ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end, []);
 
         foreach(i,r; rules)
         {
             ParseTree temp = callDynamic(r, result);
-    
+
             result.end = temp.end;
             if (temp.successful)
             {
