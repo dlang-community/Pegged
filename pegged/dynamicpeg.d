@@ -184,7 +184,7 @@ Dynamic option(D)(D d)
     };
 }
 
-Dynamic and(T...)(T rules) if (T.length > 1)
+Dynamic and(T...)(T rules) if (T.length)
 {
     return (ParseTree p)
     {
@@ -255,7 +255,7 @@ Dynamic or(T...)(T rules)
             ParseTree temp = callDynamic(r, p);
             if (temp.successful)
             {
-                temp.children = [temp];
+				temp.children = [temp];
                 temp.name = "or";
                 return temp;
             }

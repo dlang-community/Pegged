@@ -63,10 +63,10 @@ ParameterizedRule parameterizedRule(size_t n, Dynamic delegate(Dynamic[] d) code
 
 struct DynamicGrammar
 {
-    Dynamic[string] rules;
-    string startingRule;
-    ParameterizedRule[string] paramRules;
     string grammarName;
+    string startingRule;
+    Dynamic delegate()[string] rules;
+    ParameterizedRule[string] paramRules;
 
     ParseTree decimateTree(ParseTree p)
     {
@@ -101,27 +101,32 @@ struct DynamicGrammar
 
     ParseTree opCall(ParseTree p)
     {
-        ParseTree result = decimateTree(rules[startingRule](p));
-        result.children = [result];
+        return decimateTree(rules[startingRule]()(p));
+        /+
+		result.children = [result];
         result.name = grammarName;
         return result;
+		+/
     }
 
     ParseTree opCall(string input)
     {
-        ParseTree result = decimateTree(rules[startingRule](ParseTree(``, false, [], input, 0, 0)));
-        result.children = [result];
+        return decimateTree(rules[startingRule]()(ParseTree(``, false, [], input, 0, 0)));
+        /+
+		result.children = [result];
         result.name = grammarName;
         return result;
+		+/
     }
 
     void opIndexAssign(D)(D code, string s)
     {
-        rules[s]= named(code, "Test." ~ s);
+        rules[s]= ()=>named(code, grammarName ~ "." ~ s);
     }
+	
     Dynamic opIndex(string s)
     {
-        return rules[s];
+		return rules[s]();
     }
 }
 
@@ -161,9 +166,11 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
     }
 
     DynamicGrammar gram;
-    foreach(k,v; context)
-        gram[k] = v;
-
+    foreach(name, rule; context)
+   {
+	   gram.rules[name] = ()=>rule;
+	}
+		
     ParseTree p = defAsParseTree.children[0];
 
     string grammarName = p.children[0].matches[0];//generateCode(p.children[0]);
@@ -175,16 +182,16 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
     /// string getName(ParseTree p)? => called for grammar, rules...
 
     // Predefined spacing
-    gram.rules["Spacing"] = discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))));
+    gram.rules["Spacing"] = ()=>discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))));
 
     ParseTree[] definitions = p.children[1 .. $];
 
-    foreach(i,def; definitions)
+	foreach(i,def; definitions)
     {
-        gram[def.matches[0]] = ()=>fail;
+        gram[def.matches[0]] = fail;
     }
-
-    Dynamic getDyn(string name)
+	
+    Dynamic delegate() getDyn(string name)
     {
         if (name in gram.rules)
             return gram.rules[name];
@@ -195,7 +202,7 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
     foreach(i,def; definitions)
     {
         string shortName = def.matches[0];
-        writeln("Creating rule ", shortName);
+        //writeln("Creating rule ", shortName);
 
         if (i == 0)
             gram.startingRule = shortName;
@@ -204,18 +211,18 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
         // children[1]: arrow (arrow type as first child)
         // children[2]: description
 
-        Dynamic code;
+        Dynamic delegate() code;
 
-        Dynamic ruleFromTree(ParseTree p)
+        Dynamic delegate() ruleFromTree(ParseTree p)
         {
             //writeln("rfT: ", p.name, " ", p.matches);
-            Dynamic result;
+            Dynamic delegate() result;
             switch(p.name)
             {
                 case "Pegged.Expression":
                     if (p.children.length > 1) // OR expression
                     {
-                        Dynamic[] children;
+                        Dynamic delegate()[] children;
                         foreach(seq; p.children)
                             children ~= ruleFromTree(seq);
                         return distribute!(or)(children);
@@ -226,84 +233,52 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
                     }
                     break;
                 case "Pegged.Sequence":
-                    if (p.children.length > 1) // real sequence
-                    {
-                        Dynamic[] children;
+                    //if (p.children.length > 1) // real sequence
+                    //{
+                        Dynamic delegate()[] children;
                         foreach(seq; p.children)
                             children ~= ruleFromTree(seq);
                         return distribute!(pegged.dynamicpeg.and)(children);
-                    }
+                    /+}
                     else // One child -> just a Suffix, no need for a and!( , )
                     {
                         return ruleFromTree(p.children[0]);
                     }
-                    break;
+                    +/
                 case "Pegged.Prefix":
-                    foreach(i,ref child; p.children[0..$-1]) // transforming a list into a linear tree
-                        child.children[0] = p.children[i+1];
-                    return ruleFromTree(p.children[0]);
+					ParseTree temp;
+                    foreach_reverse(i,child; p.children[0..$-1]) // transforming a list into a linear tree
+                    {
+						temp  = p.children[$-1];
+						p.children[$-1] = child;
+						p.children[$-1].children = [temp];
+					}
+                    return ruleFromTree(p.children[$-1]);
                 case "Pegged.Suffix":
-                    result = ruleFromTree(p.children[0]);
                     foreach(child; p.children[1..$])
                     {
-                        switch (child.name)
-                        {
-                            case "Pegged.OPTION":
-                                result = option(result);
-                                break;
-                            case "Pegged.ZEROORMORE":
-                                result =zeroOrMore(result);
-                                break;
-                            case "Pegged.ONEORMORE":
-                                result= oneOrMore(result);
-                                break;
-                            /+ Action is not implemented
-                            case "Pegged.Action":
-                                foreach(action; child.matches)
-                                    result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
-                                break;
-                            +/
-                            default:
-                                throw new Exception("Bad suffix: " ~ child.name);
-                        }
-                    }
-                    return result;
-                case "Pegged.Primary":
+						ParseTree temp = p.children[0];
+						p.children[0] = child;
+						p.children[0].children = [temp];
+					}
+					return ruleFromTree(p.children[0]);
+				case "Pegged.Primary":
                     return ruleFromTree(p.children[0]);
                 case "Pegged.RhsName":
                     return ruleFromTree(p.children[0]);
-                /+
-                result = "";
-                    foreach(i,child; p.children)
-                        result ~= generateCode(child);
-                    break;
-                +/
-                /+
-                case "Pegged.ArgList":
-                    result = "!(";
-                    foreach(child; p.children)
-                        result ~= generateCode(child) ~ ", "; // Allow  A <- List('A'*,',')
-                    result = result[0..$-2] ~ ")";
-                    break;
-                +/
                 case "Pegged.Identifier":
-                    writeln("Identifier: ", p.matches[0], " ", getDyn(p.matches[0])(ParseTree()).name);
-                    return getDyn(p.matches[0]);
-                /+
-                case "Pegged.NAMESEP":
-                    result = ".";
-                    break;
-                +/
+                    //writeln("Identifier: ", p.matches[0], " ");//, getDyn(p.matches[0])()(ParseTree()).name);
+                    return ()=>getDyn(p.matches[0])();
                 case "Pegged.Literal":
-                    writeln("Literal: ", p.matches);
+                    //writeln("Literal: ", p.matches);
                     if(p.matches.length == 3) // standard case
-                        return literal(p.matches[1]);
+                        return ()=>literal(p.matches[1]);
                     else // only two children -> empty literal
-                        return eps;
+                        return ()=>eps;
                 case "Pegged.CharClass":
                     if (p.children.length > 1)
                     {
-                        Dynamic[] children;
+                        Dynamic delegate()[] children;
                         foreach(seq; p.children)
                             children ~= ruleFromTree(seq);
                         return distribute!(pegged.dynamicpeg.or)(children);
@@ -317,7 +292,7 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
                     /// Make the generation at the Char level: directly what is needed, be it `` or "" or whatever
                     if (p.children.length > 1) // a-b range
                     {
-                        return charRange(p.matches[0].front, p.matches[1].front);
+                        return ()=>charRange(p.matches[0].front, p.matches[2].front);
                     }
                     else // lone char
                     {
@@ -328,23 +303,23 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
                             case "\\[":
                             case "\\]":
                             case "\\-":
-                                return literal(ch[0..1]);
+                                return ()=>literal(ch[0..1]);
                             case "\\\'":
-                                return literal("\'");
+                                return ()=>literal("\'");
                             case "\\`":
-                                return literal("`");
+                                return ()=>literal("`");
                             case "\\":
                             case "\\\\":
-                                return literal("\\");
+                                return ()=>literal("\\");
                             case "\"":
                             case "\\\"":
-                                return literal("\"");
+                                return ()=>literal("\"");
                             case "\n":
                             case "\r":
                             case "\t":
-                                return literal(ch);
+                                return ()=>literal(ch);
                             default:
-                                return literal(ch);
+                                return ()=>literal(ch);
                         }
                     }
                 case "Pegged.Char":
@@ -359,46 +334,46 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
                         case "\\\"":
                         case "\\`":
                         case "\\\\":
-                            return literal(ch[1..$]);
+                            return ()=>literal(ch[1..$]);
                         case "\n":
                         case "\r":
                         case "\t":
-                            return literal(ch);
+                            return ()=>literal(ch);
                         default:
-                            return literal(ch);
+                            return ()=>literal(ch);
                     }
                     break;
                 case "Pegged.POS":
-                    return posLookahead(ruleFromTree(p.children[0]));
+                    return ()=>posLookahead(ruleFromTree(p.children[0]));
                 case "Pegged.NEG":
-                    return negLookahead(ruleFromTree(p.children[0]));
+                    return ()=>negLookahead(ruleFromTree(p.children[0]));
                 case "Pegged.FUSE":
-                    return fuse(ruleFromTree(p.children[0]));
+                    return ()=>fuse(ruleFromTree(p.children[0]));
                 case "Pegged.DISCARD":
-                    return discard(ruleFromTree(p.children[0]));
+                    return ()=>discard(ruleFromTree(p.children[0]));
                 case "Pegged.KEEP":
-                    return keep(ruleFromTree(p.children[0]));
+                    return ()=>keep(ruleFromTree(p.children[0]));
                 case "Pegged.DROP":
-                    return drop(ruleFromTree(p.children[0]));
+                    return ()=>drop(ruleFromTree(p.children[0]));
                 case "Pegged.PROPAGATE":
-                    return propagate(ruleFromTree(p.children[0]));
+                    return ()=>propagate(ruleFromTree(p.children[0]));
                 case "Pegged.OPTION":
-                    return option(ruleFromTree(p.children[0]));
+                    return ()=>option(ruleFromTree(p.children[0]));
                 case "Pegged.ZEROORMORE":
-                    return zeroOrMore(ruleFromTree(p.children[0]));
+                    return ()=>zeroOrMore(ruleFromTree(p.children[0]));
                 case "Pegged.ONEORMORE":
-                    return zeroOrMore(ruleFromTree(p.children[0]));
+                    return ()=>oneOrMore(ruleFromTree(p.children[0]));
                 case "Pegged.Action":
                     result = ruleFromTree(p.children[0]);
                     foreach(act; p.matches[1..$])
-                        result = action(result, getDyn(act));
+                        result = ()=>action(result, ()=>getDyn(act)());
                     return result;
                 case "Pegged.ANY":
-                    return any();
+                    return ()=>any();
                 case "Pegged.WrapAround":
-                    return wrapAround( ruleFromTree(p.children[0])
-                                    , ruleFromTree(p.children[1])
-                                    , ruleFromTree(p.children[2]));
+                    return ()=>wrapAround( ruleFromTree(p.children[0])
+                                         , ruleFromTree(p.children[1])
+                                         , ruleFromTree(p.children[2]));
                 default:
                     throw new Exception("Bad tree: " ~ p.toString());
             }
@@ -410,29 +385,29 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
                 gram[shortName] = ruleFromTree(def.children[2]);
                 break;
             case "Pegged.FUSEARROW":
-                gram[shortName] = ()=> fuse(ruleFromTree(def.children[2]));
+                gram[shortName] = fuse(ruleFromTree(def.children[2]));
                 break;
             case "Pegged.DISCARDARROW":
-                gram[shortName] = ()=> discard(ruleFromTree(def.children[2]));
+                gram[shortName] = discard(ruleFromTree(def.children[2]));
                 break;
             case "Pegged.KEEPARROW":
-                gram[shortName] = ()=>keep(ruleFromTree(def.children[2]));
+                gram[shortName] = keep(ruleFromTree(def.children[2]));
                 break;
             case "Pegged.DROPARROW":
-                gram[shortName] = ()=>drop(ruleFromTree(def.children[2]));
+                gram[shortName] = drop(ruleFromTree(def.children[2]));
                 break;
             case "Pegged.PROPAGATEARROW":
-                gram[shortName] = ()=>propagate(ruleFromTree(def.children[2]));
+                gram[shortName] = propagate(ruleFromTree(def.children[2]));
                 break;
             case "Pegged.SPACEARROW":
                 ParseTree modified = spaceArrow(def.children[2]);
-                gram[shortName] = ()=>ruleFromTree(modified);
+                gram[shortName] = ruleFromTree(modified);
                 break;
             case "Pegged.ACTIONARROW":
-                Dynamic actionResult = ruleFromTree(def.children[2]);
+                Dynamic delegate() actionResult = ruleFromTree(def.children[2]);
                 foreach(act; def.children[1].matches[1..$])
-                    actionResult = action(actionResult, getDyn(act));
-                gram[shortName] = ()=>actionResult;
+                    actionResult = ()=>action(actionResult, ()=>getDyn(act)());
+                gram[shortName] = actionResult;
                 break;
             default:
                 throw new Exception("Unknow arrow: " ~ p.children[1].children[0].name);
@@ -440,31 +415,126 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
         }
     }
 
+	/+
+	foreach(name,rule; gram.rules)
+	{
+		rule();
+		//writeln(name, ": ", rule()(ParseTree()));
+	}
+	
+		foreach(name,rule; gram.rules)
+	{
+		rule();
+		writeln(name, ": ", rule()(ParseTree()));
+	}
+	+/
     return gram;
 }
 
-Dynamic distribute(alias fun)(Dynamic[] args)
+string makeCase(size_t n)
 {
-    writeln("Entering distribute for " ~ fun.stringof);
+    string result = "    case " ~ to!string(n) ~ ":\n        return ()=>fun(";
+    foreach(i; 0..n)
+        result ~= "args[" ~ to!string(i) ~ "]" ~ ((i<n-1) ? ", " : "");
+    result ~= ");\n";
+    return result;
+}
+
+string makeSwitch(size_t n)
+{
+    string result = "switch(args.length)\n{\n";
+    foreach(i; 1..n)
+        result ~= makeCase(i);
+    result ~= "    default:
+        throw new Exception(`Unimplemented distribute for more than " ~ to!string(n) ~ " arguments: ` ~ to!string(args.length));\n}";
+    return result;
+}
+
+
+Dynamic delegate() distribute(alias fun)(Dynamic delegate()[] args)
+{
+    //mixin(makeSwitch(40));
     switch(args.length)
     {
+        case 1:
+            return ()=>fun(args[0]);
         case 2:
-            return fun(args[0], args[1]);
+            return ()=>fun(args[0], args[1]);
         case 3:
-            return fun(args[0], args[1], args[2]);
+            return ()=>fun(args[0], args[1], args[2]);
         case 4:
-            return fun(args[0], args[1], args[2], args[3]);
+            return ()=>fun(args[0], args[1], args[2], args[3]);
         case 5:
-            return fun(args[0], args[1], args[2], args[3], args[4]);
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4]);
         case 6:
-            return fun(args[0], args[1], args[2], args[3], args[4], args[5]);
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5]);
         case 7:
-            return fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
         case 8:
-            return fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
         case 9:
-            return fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
+        case 10:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9]);
+        case 11:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]);
+        case 12:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11]);
+        case 13:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12]);
+        case 14:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13]);
+        case 15:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]);
+        case 16:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15]);
+        case 17:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16]);
+        case 18:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17]);
+        case 19:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18]);
+        case 20:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19]);
+        case 21:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20]);
+        case 22:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21]);
+        case 23:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22]);
+        case 24:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23]);
+        case 25:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24]);
+        case 26:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25]);
+        case 27:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26]);
+        case 28:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27]);
+        case 29:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28]);
+        case 30:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29]);
+        case 31:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30]);
+        case 32:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31]);
+        case 33:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31], args[32]);
+        case 34:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31], args[32], args[33]);
+        case 35:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31], args[32], args[33], args[34]);
+        case 36:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31], args[32], args[33], args[34], args[35]);
+        case 37:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31], args[32], args[33], args[34], args[35], args[36]);
+        case 38:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31], args[32], args[33], args[34], args[35], args[36], args[37]);
+        case 39:
+            return ()=>fun(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29], args[30], args[31], args[32], args[33], args[34], args[35], args[36], args[37], args[38]);
         default:
-            throw new Exception("Unimplemented distribute for more than 7 arguments.");
+            throw new Exception(`Unimplemented distribute for more than 40 arguments: ` ~ to!string(args.length));
     }
 }
