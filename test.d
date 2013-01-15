@@ -12,10 +12,12 @@ import std.stdio;
 //import std.typetuple;
 
 import pegged.grammar;
+
+import pegged.examples.dgrammar;
+
 import pegged.dynamicpeg;
 import pegged.dynamicgrammar;
 
-import pegged.examples.c;
 
 void main()
 {
@@ -36,7 +38,7 @@ void main()
     StopWatch sw;
     writeln("Generating C dynamic parser...");
     sw.start();
-    DynamicGrammar dg = pegged.dynamicgrammar.grammar(Cgrammar, predefined);
+    DynamicGrammar dg = pegged.dynamicgrammar.grammar(Dgrammar, predefined);
     sw.stop(); 
     auto last = sw.peek().msecs;
     writeln("Done. Parser generated in ", last, " ms.");
@@ -46,39 +48,8 @@ void main()
     dg["Statement"] = or(dg["UnlessStatement"], dg["Statement"]);
     writeln("Parsing...");
     sw.start();
-    auto result  = (dg(
-`
-main()
-{
-   int n, i = 3, count, c;
-
-   printf("Enter the number of prime numbers required\n");
-   scanf("%d",&n);
-
-   if ( n >= 1 )
-   {
-      printf("First %d prime numbers are :\n",n);
-      printf("2\n");
-   }
-
-   for ( count = 2 ; count <= n ;  )
-   {
-      for ( c = 2 ; c <= i - 1 ; c++ )
-      {
-         if ( i%c == 0 )
-            break;
-      }
-      if ( c == i )
-      {
-         printf("%d\n",i);
-         count++;
-      }
-      i++;
-   }
-
-   return 0;
-}
-`));
+    auto result  = dg["Declaration"](ParseTree("", true, [],
+`int i;`));
     sw.stop();
     writeln("Done. Parsing in ", sw.peek().msecs - last, " ms.");
     writeln(result);
