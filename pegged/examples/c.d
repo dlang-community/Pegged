@@ -238,7 +238,7 @@ Keyword <- "auto" / "break" / "case" / "char" / "const" / "continue"
          / "unsigned" / "void" / "volatile" / "while"
          / "_Bool" / "_Complex" / "_Imaginary"
 
-Spacing <~ (space / blank / endOfLine / Comment)*
+Spacing <~ (space / endOfLine / Comment)*
 
 Comment <~ "//" (!endOfLine .)* endOfLine
 
