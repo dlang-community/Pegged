@@ -41,7 +41,7 @@ MacroDeclaration < "macro" MacroName MacroParameterList
 
 MacroName < identifier
 
-MacroParameterList < :"(" List(MacroParameter)? :")"
+MacroParameterList < :"(" (MacroParameter ("," MacroParameter)*)? :")"
 
 MacroParameter < identifier identifier
 
@@ -69,9 +69,9 @@ Import < qualifiedIdentifier "=" qualifiedIdentifier
         / qualifiedIdentifier
 
 ###### Also a space-sep list is needed ##
-List(Elem) < Elem (',' Elem)*
+#List(Elem) < Elem (',' Elem)*
 
-ImportBindings < Import ":" List(ImportBind)
+ImportBindings < Import ":" ImportBind ("," ImportBind)*
 
 ImportBind < Identifier ("=" Identifier)?
 
@@ -83,7 +83,7 @@ Declaration < AliasDeclaration
              / Decl
 
 AliasDeclaration < "alias" ( BasicType Declarator
-                           / List(AliasInitializer))
+                           / AliasInitializer ("," AliasInitializer)*)
 
 AliasInitializer < Identifier "=" Type
 
@@ -95,7 +95,7 @@ Decl < BasicType Declarators ";"
       / AutoDeclaration
       / StorageClasses Decl
 
-Declarators < DeclaratorInitializer ("," List(DeclaratorIdentifier))?
+Declarators < DeclaratorInitializer ("," DeclaratorIdentifier ("," DeclaratorIdentifier)*)?
 
 DeclaratorInitializer < Declarator ("=" Initializer)?
 
@@ -239,7 +239,7 @@ StructMemberInitializer < NonVoidInitializer
 
 AutoDeclaration < StorageClasses AutoDeclarationX ";"
 
-AutoDeclarationX < List(Identifier "=" Initializer)
+AutoDeclarationX < Identifier "=" Initializer ("," Identifier "=" Initializer)*
 
 Typeof < "typeof" "(" Expression ")"
         / "typeof" "(" "return" ")"
@@ -333,7 +333,7 @@ Test < Expression
 Increment < Expression
 
 ForeachStatement < ("foreach" / "foreach_reverse")
-                    "(" List(ForeachType) ";" Aggregate ")"
+                    "(" ForeachType ("," ForeachType)* ";" Aggregate ")"
                      NoScopeNonEmptyStatement
 
 ForeachType < "ref"? BasicType Declarator
@@ -551,7 +551,7 @@ StringLiterals < StringLiteral+
 
 ArrayLiteral < "[" ArgumentList? "]"
 
-AssocArrayLiteral < "[" List(KeyValuePair) "]"
+AssocArrayLiteral < "[" KeyValuePair ("," KeyValuePair)* "]"
 
 KeyValuePair < AssignExpression ":" AssignExpression
 
@@ -641,7 +641,7 @@ ClassDeclaration < "class" Identifier BaseClassList? ClassBody
 
 ### I don't why the grammar distinguish SuperClass and Interface
 ### They cannot be differentiated at this step
-BaseClassList < ":" List(Identifier)
+BaseClassList < ":" Identifier ("," Identifier)*
 
 ClassBody < "{" ClassBodyDeclarations? "}"
 
@@ -673,7 +673,7 @@ ClassDeallocator < "delete" Parameters FunctionBody
 
 AliasThis < "alias" Identifier "this" ";"
 
-NewAnonClassExpression < "new" AllocatorArguments? "class" ClassArguments? Identifier List(Identifier)? ClassBody
+NewAnonClassExpression < "new" AllocatorArguments? "class" ClassArguments? Identifier ("," Identifier)* ClassBody
 
 ClassArguments < "(" ArgumentList? ")"
 
@@ -685,7 +685,7 @@ EnumTag < Identifier
 
 EnumBaseType < Type
 
-EnumBody < ";" / "{" List(EnumMember) "}"
+EnumBody < ";" / "{" EnumMember ("," EnumMember)* "}"
 
 EnumMember < Type "=" AssignExpression
             / Identifier ("=" AssignExpression)?
@@ -710,10 +710,10 @@ BodyStatement < "body" BlockStatement
 AsmInstruction < "align" IntegerExpression
                 / "even"
                 / "naked"
-                / ("db" / "ds" / "di" / "dl" / "df" / "dd" / "de") List(Operand)
+                / ("db" / "ds" / "di" / "dl" / "df" / "dd" / "de") Operand ("," Operand)*
                 / Identifier ":" AsmInstruction
                 / OpCode
-                / OpCode List(Operand)
+                / OpCode Operand ("," Operand)*
 
 IntegerExpression < IntegerLiteral / Identifier
 
@@ -778,7 +778,7 @@ OpCode < Identifier
 InterfaceDeclaration < "interface" Identifier BaseInterfaceList? InterfaceBody
                       / InterfaceTemplateDeclaration
 
-BaseInterfaceList < ":" List(Identifier)
+BaseInterfaceList < ":" Identifier ("," Identifier)*
 
 InterfaceBody < "{" DeclDefs? "}"
 
@@ -814,7 +814,7 @@ TemplateDeclaration < "template" TemplateIdentifier "(" TemplateParameterList ")
 
 TemplateIdentifier < Identifier
 
-TemplateParameterList < List(TemplateParameter)
+TemplateParameterList < TemplateParameter ("," TemplateParameter)*
 
 TemplateParameter < TemplateTypeParameter
                    / TemplateValueParameter
@@ -822,7 +822,7 @@ TemplateParameter < TemplateTypeParameter
                    / TemplateTupleParameter
                    / TemplateThisParameter
 
-TemplateInstance < TemplateIdentifier ( "!(" List(TemplateArgument) ")"
+TemplateInstance < TemplateIdentifier ( "!(" TemplateArgument ("," TemplateArgument)* ")"
                                        / "!" TemplateSingleArgument)
 
 TemplateArgument < Type
@@ -884,13 +884,13 @@ Constraint < "if" "(" Expression ")"
 
 TemplateMixinDeclaration < "mixin" "template" TemplateIdentifier "(" TemplateParameterList ")" Constraint? "{" DeclDefs "}"
 
-TemplateMixin < "mixin" TemplateIdentifier (("!(" List(TemplateArgument) ")")? MixinIdentifier?) ";"
+TemplateMixin < "mixin" TemplateIdentifier (("!(" TemplateArgument ("," TemplateArgument)* ")")? MixinIdentifier?) ";"
 
 MixinIdentifier < Identifier
 
 ### traits.html
 
-TraitsExpression < "__traits" "(" TraitsKeyword "," List(TraitsArgument) ")"
+TraitsExpression < "__traits" "(" TraitsKeyword "," TraitsArgument ("," TraitsArgument)* ")"
 
 TraitsKeyword < "isAbstractClass"
                / "isArithmetic"
@@ -977,7 +977,7 @@ Keyword < "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / 
 
 ## file lex.html
 
-Spacing <- (blank / Comment)*
+Spacing <- (space / Comment)*
 
 Comment <- BlockComment
          / LineComment
