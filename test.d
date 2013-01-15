@@ -1,35 +1,102 @@
 /// Testing Pegged modifications.
 module test;
 
-import std.algorithm;
-import std.array;
-import std.conv;
+//import std.algorithm;
+//import std.array;
+//import std.conv;
 import std.datetime;
-import std.functional;
-import std.range;
+//import std.functional;
+//import std.range;
 import std.stdio;
-import std.typecons;
-import std.typetuple;
+//import std.typecons;
+//import std.typetuple;
 
 import pegged.grammar;
+import pegged.dynamicpeg;
+import pegged.dynamicgrammar;
 
-enum g = (grammar(`
-    Parameterized:
-        # Different arities
-        Root <- Rule1('a', 'b') 'c'
-        Rule1(A)     <- A+
-        Rule1(A,B)   <- (A B)+
-        Rule1(A,B,C) <- (A B C)+
-    `));
+import pegged.examples.c;
 
-/// TODO: add a number after a param rule, for the number of parameters
-///       *or* make param rules non hooked
 void main()
 {
-    mixin(g);
+    //writeln(makeSwitch(40));
+    Dynamic[string] predefined =
+    [ "quote":      (ParseTree p) => literal("'")(p)
+    , "doublequote":(ParseTree p) => literal("\"")(p)
+    , "backquote":  (ParseTree p) => literal("`")(p)
+    , "slash":      (ParseTree p) => literal("/")(p)
+    , "backslash":  (ParseTree p) => literal("\\")(p)
+    , "endOfLine":  (ParseTree p) => or(literal("\n"), literal("\r\n"), literal("\r"))(p)
+    , "space":      (ParseTree p) => or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r"))(p)
+    , "digit":      (ParseTree p) => charRange('0', '9')(p)
+    , "identifier": (ParseTree p) => fuse(and( or(charRange('a','z'), charRange('A','Z'), literal("_"))
+                                             , oneOrMore(or(charRange('a','z'), charRange('A','Z'), literal("_"), charRange('0', '9')))))(p)
+    ];
 
-    alias A = Parameterized;
-    enum e = A("abababc");
-    writeln(e);
+    StopWatch sw;
+    writeln("Generating C dynamic parser...");
+    sw.start();
+    DynamicGrammar dg = pegged.dynamicgrammar.grammar(Cgrammar, predefined);
+    sw.stop(); 
+    auto last = sw.peek().msecs;
+    writeln("Done. Parser generated in ", last, " ms.");
+    auto space = zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r")));
+
+    dg["UnlessStatement"] = and(literal("unless"), space, literal("("), space, dg["Expression"], space, literal(")"), dg["Statement"]);
+    dg["Statement"] = or(dg["UnlessStatement"], dg["Statement"]);
+    writeln("Parsing...");
+    sw.start();
+    auto result  = (dg(
+`
+main()
+{
+   int n, i = 3, count, c;
+
+   printf("Enter the number of prime numbers required\n");
+   scanf("%d",&n);
+
+   if ( n >= 1 )
+   {
+      printf("First %d prime numbers are :\n",n);
+      printf("2\n");
+   }
+
+   for ( count = 2 ; count <= n ;  )
+   {
+      for ( c = 2 ; c <= i - 1 ; c++ )
+      {
+         if ( i%c == 0 )
+            break;
+      }
+      if ( c == i )
+      {
+         printf("%d\n",i);
+         count++;
+      }
+      i++;
+   }
+
+   return 0;
+}
+`));
+    sw.stop();
+    writeln("Done. Parsing in ", sw.peek().msecs - last, " ms.");
+    writeln(result);
+    //writeln(makeSwitch(10));
+    /+
+    string input = "1";
+	writeln(dg(input));
+    writeln(Arithmetic(input));
+
+    int N = 100;
+    foreach(n; 0..50)
+    {
+        auto b = benchmark!(()=> Arithmetic(input), ()=>dg(input))(N);
+        auto t1 = b[0].to!("usecs", float)/N;
+        auto t2 = b[1].to!("usecs", float)/N;
+        writefln("%d: %.1f %.1f => %.2f", input.length, t1, t2, t2/t1);
+        input ~= "+1";
+    }
+    +/
 }
 

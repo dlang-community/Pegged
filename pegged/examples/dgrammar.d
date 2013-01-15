@@ -5,7 +5,7 @@ import pegged.grammar;
 enum Dgrammar = `
 D:
 
-Module < Spacing ModuleDeclaration? DeclDefs?
+Module <- ModuleDeclaration? DeclDefs?
 
 DeclDefs < DeclDef+
 
@@ -31,6 +31,31 @@ DeclDef < AttributeSpecifier
         / TemplateMixinDeclaration
         / TemplateMixin
         / MixinDeclaration
+        / MacroDeclaration
+
+### MACROS ADDITION TO THE D GRAMMAR ###
+
+MacroDeclaration < "macro" MacroName MacroParameterList
+                   MacroLevel?
+                   MacroBeforeBody "return" MacroAfterBody
+
+MacroName < identifier
+
+MacroParameterList < :"(" (MacroParameter ("," MacroParameter)*)? :")"
+
+MacroParameter < identifier identifier
+
+MacroLevel < :":" identifier
+
+#Mind the '<-' arrow!
+MacroBeforeBody <- :"{"
+                   ~(!(endOfLine "}") .)*
+                   :endOfLine :"}"
+
+MacroAfterBody < :"{" Statement :"}"
+
+
+###
 
 ModuleDeclaration < "module" qualifiedIdentifier ";"
 
@@ -44,9 +69,9 @@ Import < qualifiedIdentifier "=" qualifiedIdentifier
         / qualifiedIdentifier
 
 ###### Also a space-sep list is needed ##
-List(Elem) < Elem (',' Elem)*
+#List(Elem) < Elem (',' Elem)*
 
-ImportBindings < Import ":" List(ImportBind)
+ImportBindings < Import ":" ImportBind ("," ImportBind)*
 
 ImportBind < Identifier ("=" Identifier)?
 
@@ -57,17 +82,20 @@ Declaration < AliasDeclaration
              / AliasThisDeclaration
              / Decl
 
-# Why so limited? This disallow things like: alias __traits(allMembers, C) result;
-AliasDeclaration < "alias" BasicType Declarator
+AliasDeclaration < "alias" ( BasicType Declarator
+                           / AliasInitializer ("," AliasInitializer)*)
 
-AliasThisDeclaration < "alias" Identifier "this"  # no ";"?
+AliasInitializer < Identifier "=" Type
+
+AliasThisDeclaration < "alias" ( Identifier "this"
+                               / "this" "=" Identifier)
 
 Decl < BasicType Declarators ";"
       / BasicType Declarator FunctionBody
       / AutoDeclaration
       / StorageClasses Decl
 
-Declarators < DeclaratorInitializer ("," List(DeclaratorIdentifier))?
+Declarators < DeclaratorInitializer ("," DeclaratorIdentifier ("," DeclaratorIdentifier)*)?
 
 DeclaratorInitializer < Declarator ("=" Initializer)?
 
@@ -211,7 +239,7 @@ StructMemberInitializer < NonVoidInitializer
 
 AutoDeclaration < StorageClasses AutoDeclarationX ";"
 
-AutoDeclarationX < List(Identifier "=" Initializer)
+AutoDeclarationX < Identifier "=" Initializer ("," Identifier "=" Initializer)*
 
 Typeof < "typeof" "(" Expression ")"
         / "typeof" "(" "return" ")"
@@ -282,7 +310,7 @@ ExpressionStatement < Expression ";"
 
 DeclarationStatement < Declaration
 
-IfStatement < "if" "(" IfCondition ")" ThenStatement "else" ElseStatement
+IfStatement < "if" "(" IfCondition ")" ThenStatement ("else" ElseStatement)?
 
 IfCondition < Expression
              / "auto" Identifier "=" Expression
@@ -305,7 +333,7 @@ Test < Expression
 Increment < Expression
 
 ForeachStatement < ("foreach" / "foreach_reverse")
-                    "(" List(ForeachType) ";" Aggregate ")"
+                    "(" ForeachType ("," ForeachType)* ";" Aggregate ")"
                      NoScopeNonEmptyStatement
 
 ForeachType < "ref"? BasicType Declarator
@@ -523,7 +551,7 @@ StringLiterals < StringLiteral+
 
 ArrayLiteral < "[" ArgumentList? "]"
 
-AssocArrayLiteral < "[" List(KeyValuePair) "]"
+AssocArrayLiteral < "[" KeyValuePair ("," KeyValuePair)* "]"
 
 KeyValuePair < AssignExpression ":" AssignExpression
 
@@ -613,7 +641,7 @@ ClassDeclaration < "class" Identifier BaseClassList? ClassBody
 
 ### I don't why the grammar distinguish SuperClass and Interface
 ### They cannot be differentiated at this step
-BaseClassList < ":" List(Identifier)
+BaseClassList < ":" Identifier ("," Identifier)*
 
 ClassBody < "{" ClassBodyDeclarations? "}"
 
@@ -645,7 +673,7 @@ ClassDeallocator < "delete" Parameters FunctionBody
 
 AliasThis < "alias" Identifier "this" ";"
 
-NewAnonClassExpression < "new" AllocatorArguments? "class" ClassArguments? Identifier List(Identifier)? ClassBody
+NewAnonClassExpression < "new" AllocatorArguments? "class" ClassArguments? Identifier ("," Identifier)* ClassBody
 
 ClassArguments < "(" ArgumentList? ")"
 
@@ -657,7 +685,7 @@ EnumTag < Identifier
 
 EnumBaseType < Type
 
-EnumBody < ";" / "{" List(EnumMember) "}"
+EnumBody < ";" / "{" EnumMember ("," EnumMember)* "}"
 
 EnumMember < Type "=" AssignExpression
             / Identifier ("=" AssignExpression)?
@@ -682,10 +710,10 @@ BodyStatement < "body" BlockStatement
 AsmInstruction < "align" IntegerExpression
                 / "even"
                 / "naked"
-                / ("db" / "ds" / "di" / "dl" / "df" / "dd" / "de") List(Operand)
+                / ("db" / "ds" / "di" / "dl" / "df" / "dd" / "de") Operand ("," Operand)*
                 / Identifier ":" AsmInstruction
                 / OpCode
-                / OpCode List(Operand)
+                / OpCode Operand ("," Operand)*
 
 IntegerExpression < IntegerLiteral / Identifier
 
@@ -750,7 +778,7 @@ OpCode < Identifier
 InterfaceDeclaration < "interface" Identifier BaseInterfaceList? InterfaceBody
                       / InterfaceTemplateDeclaration
 
-BaseInterfaceList < ":" List(Identifier)
+BaseInterfaceList < ":" Identifier ("," Identifier)*
 
 InterfaceBody < "{" DeclDefs? "}"
 
@@ -786,7 +814,7 @@ TemplateDeclaration < "template" TemplateIdentifier "(" TemplateParameterList ")
 
 TemplateIdentifier < Identifier
 
-TemplateParameterList < List(TemplateParameter)
+TemplateParameterList < TemplateParameter ("," TemplateParameter)*
 
 TemplateParameter < TemplateTypeParameter
                    / TemplateValueParameter
@@ -794,7 +822,7 @@ TemplateParameter < TemplateTypeParameter
                    / TemplateTupleParameter
                    / TemplateThisParameter
 
-TemplateInstance < TemplateIdentifier ( "!(" List(TemplateArgument) ")"
+TemplateInstance < TemplateIdentifier ( "!(" TemplateArgument ("," TemplateArgument)* ")"
                                        / "!" TemplateSingleArgument)
 
 TemplateArgument < Type
@@ -856,13 +884,13 @@ Constraint < "if" "(" Expression ")"
 
 TemplateMixinDeclaration < "mixin" "template" TemplateIdentifier "(" TemplateParameterList ")" Constraint? "{" DeclDefs "}"
 
-TemplateMixin < "mixin" TemplateIdentifier (("!(" List(TemplateArgument) ")")? MixinIdentifier?) ";"
+TemplateMixin < "mixin" TemplateIdentifier (("!(" TemplateArgument ("," TemplateArgument)* ")")? MixinIdentifier?) ";"
 
 MixinIdentifier < Identifier
 
 ### traits.html
 
-TraitsExpression < "__traits" "(" TraitsKeyword "," List(TraitsArgument) ")"
+TraitsExpression < "__traits" "(" TraitsKeyword "," TraitsArgument ("," TraitsArgument)* ")"
 
 TraitsKeyword < "isAbstractClass"
                / "isArithmetic"
@@ -949,22 +977,24 @@ Keyword < "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "body" / 
 
 ## file lex.html
 
-Comment < BlockComment
+Spacing <- (space / Comment)*
+
+Comment <- BlockComment
          / LineComment
          / NestingBlockComment
 
-BlockComment < '/ *' (!'* /' .)* '* /'
+BlockComment <~ :'/ *' (!'* /' .)* :'* /'
 
-LineComment < '//' (!endOfLine .)* endOfLine
+LineComment <~ :'//' (!endOfLine .)* :endOfLine
 
-#NestingBlockComment < '/ +' (NestingBlockComment / Text) '+ /'
+#NestingBlockComment < :'/ +' (NestingBlockComment / Text) :'+ /'
 # / + (please, don't delete this line, it opens a nested block comment in generated module which is closed on the next line
 #Text < (!'+ /' .)*
-NestingBlockComment <~ "/+" (!("/+"/"+/") .)* NestingBlockComment? (!("/+"/"+/") .)* "+/"
+NestingBlockComment <~ :"/+" (!("/+"/"+/") .)* NestingBlockComment? (!("/+"/"+/") .)* :"+/"
 
 StringLiteral < WysiwygString
                / AlternateWysiwygString
-               / doublequotedString
+               / DoublequotedString
                # No HexString
                # No DelimitedString
                / TokenString
@@ -973,7 +1003,7 @@ WysiwygString <- 'r' doublequote (!doublequote .)* doublequote StringPostfix?
 
 AlternateWysiwygString <- backquote (!backquote .)* backquote StringPostfix?
 
-doublequotedString <- doublequote (DQChar)* doublequote StringPostfix?
+DoublequotedString <- doublequote (DQChar)* doublequote StringPostfix?
 
 DQChar <- EscapeSequence
         / !doublequote .

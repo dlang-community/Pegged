@@ -56,7 +56,7 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File fi
     asModule!(withMemo)(moduleName, grammarDefinition, optHeader);
 }
 
-// Helper to insert ':Spacing*' before and after Primaries
+// Helper to insert 'Spacing' before and after Primaries
 ParseTree spaceArrow(ParseTree input)
 {
     ParseTree wrapInSpaces(ParseTree p)
@@ -136,8 +136,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 foreach(i,def; definitions)
                 {
                     string numParam = (def.children[0].children.length > 1) ? ("_" ~ to!string(def.children[0].children[1].children.length)) : "";
-                    result ~= "    static ParseTree function(ParseTree) before" ~ def.matches[0] ~ numParam ~ " = &fail;\n"
-                            ~ "    static ParseTree function(ParseTree) after"  ~ def.matches[0] ~ numParam ~ " = &fail;\n";
+                    result ~= "    static ParseTree delegate(ParseTree) before" ~ def.matches[0] ~ numParam ~ ";\n"
+                            ~ "    static ParseTree delegate(ParseTree) after"  ~ def.matches[0] ~ numParam ~ ";\n";
                 }
 
                 result ~=
@@ -146,21 +146,21 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     {
         static ParseTree hooked(ParseTree p)
         {
-            mixin("ParseTree result = before" ~ name ~ "(p);
+            mixin("ParseTree result;
+            if (before" ~ name ~ " !is null)
+                result = before" ~ name ~ "(p);
+
             if (result.successful)
-            {
-                return result;
-            }
+                    return result;
             else
             {
                 result = r(p);
-                if (result.successful || after" ~ name ~ " == &fail)
-                {
+                if (result.successful || after" ~ name ~ " is null)
                     return result;
-                }
+
                 result = after" ~ name ~ "(p);
-                return result;
-            }");
+            }
+            return result;");
         }
 
         static ParseTree hooked(string input)

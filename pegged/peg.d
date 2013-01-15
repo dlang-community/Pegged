@@ -1004,10 +1004,6 @@ unittest // 'and' unit test
 
 template wrapAround(alias before, alias target, alias after)
 {
-    enum name = "wrapAround!(" ~ getName!(before)() ~
-                ", " ~ getName!(target)() ~
-                ", " ~ getName!(after)() ~ ")";
-
     ParseTree wrapAround(ParseTree p)
     {
         ParseTree temp = before(p);
@@ -1034,7 +1030,9 @@ template wrapAround(alias before, alias target, alias after)
 
     string wrapAround(GetName g)
     {
-        return name;
+        return "wrapAround!(" ~ getName!(before)() ~
+                ", " ~ getName!(target)() ~
+                ", " ~ getName!(after)() ~ ")";
     }
 }
 
@@ -1782,7 +1780,7 @@ template option(alias r)
 
     ParseTree option(ParseTree p)
     {
-        auto result = r(p);
+        ParseTree result = r(p);
         if (result.successful)
             return ParseTree(name, true, result.matches, result.input, result.begin, result.end, [result]);
         else
@@ -1871,7 +1869,7 @@ template posLookahead(alias r)
 
     ParseTree posLookahead(ParseTree p)
     {
-        auto temp = r(p);
+        ParseTree temp = r(p);
         if (temp.successful)
             return ParseTree(name, temp.successful, [], p.input, p.end, p.end);
         else
@@ -1957,7 +1955,7 @@ template negLookahead(alias r)
 
     ParseTree negLookahead(ParseTree p)
     {
-        auto temp = r(p);
+        ParseTree temp = r(p);
         if (temp.successful)
             return ParseTree(name, false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
         else
@@ -2540,7 +2538,7 @@ unittest // 'keep' unit test
 
 /* ****************** predefined rules ******************** */
 
-alias named!(or!(literal!"\r\n", literal!"\n", literal!"\r"), "endOfLine") endOfLine; /// predefined end-of-line parser
+alias named!(keywords!("\r\n", "\n", "\r"), "endOfLine") endOfLine; /// predefined end-of-line parser
 alias endOfLine eol; /// helper alias.
 
 alias or!(literal!(" "), literal!("\t")) space; /// predefined space-recognizing parser (space or tabulation).
