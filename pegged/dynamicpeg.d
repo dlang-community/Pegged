@@ -84,7 +84,7 @@ Dynamic literal(string s)
     };
 }
 
-Dynamic charRange(char begin, char end)
+Dynamic charRange(dchar begin, dchar end)
 {
     return (ParseTree p)
     {
@@ -328,7 +328,7 @@ Dynamic negLookahead(D)(D d)
     return (ParseTree p)
     {
         string name = "negLookahead!(" ~ getName(d) ~ ")";
-        ParseTree temp = callDynamic(r,p);
+        ParseTree temp = callDynamic(d,p);
         if (temp.successful)
             return ParseTree(name, false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
         else
