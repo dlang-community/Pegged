@@ -16,20 +16,28 @@ string getName(D)(D rule)
 
 ParseTree callDynamic(D)(D d, string s)
 {
-    static if (is(typeof(d) == Dynamic))
+    static if (is(typeof(d) : ParseTree delegate(ParseTree)) || is(typeof(d) : ParseTree function(ParseTree)))
         return d(ParseTree("",false,[], s));
-    else static if (is(typeof(d) : Dynamic delegate()) || is(typeof(d) : Dynamic function()))
+    else static if (is(typeof(d) : ParseTree delegate(ParseTree) delegate()) || is(typeof(d) : ParseTree function(ParseTree) delegate()))
         return d()(ParseTree("",false,[], s));
+    else static if (is(typeof(d) : ParseTree delegate(string)) || is(typeof(d) : ParseTree function(string)))
+        return d(s);
+    else static if (is(typeof(d) : ParseTree delegate(string) delegate()) || is(typeof(d) : ParseTree function(string) delegate()))
+        return d()(s);
     else
         static assert(false, "Bad callDynamic, with type " ~ D.stringof);
 }
 
 ParseTree callDynamic(D)(D d, ParseTree p)
 {
-    static if (is(typeof(d) == Dynamic))
+    static if (is(typeof(d) : ParseTree delegate(ParseTree)) || is(typeof(d) : ParseTree function(ParseTree)))
         return d(p);
-    else static if (is(typeof(d) : Dynamic delegate()) || is(typeof(d) : Dynamic function()))
+    else static if (is(typeof(d) : ParseTree delegate(ParseTree) delegate()) || is(typeof(d) : ParseTree function(ParseTree) delegate()))
         return d()(p);
+    else static if (is(typeof(d) : ParseTree delegate(string)) || is(typeof(d) : ParseTree function(string)))
+        return d(p.input[p.end..$]);
+    else static if (is(typeof(d) : ParseTree delegate(string) delegate()) || is(typeof(d) : ParseTree function(string) delegate()))
+        return d()(p.input[p.end..$]);
     else
         static assert(false, "Bad callDynamic, with type " ~ D.stringof);
 }
