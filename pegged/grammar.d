@@ -320,8 +320,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     innerName ~= "`" ~ completeName ~ "`";
                 }
 
-                string ctfeCode = "pegged.peg.named!("         ~ code                          ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
-                code =            "pegged.peg.named!(hooked!(" ~ code ~ ", \"" ~ hookedName ~ "\"), \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+                string ctfeCode = "        pegged.peg.named!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+                code =            "hooked!(pegged.peg.named!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
 
                 if (withMemo == Memoization.no)
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
