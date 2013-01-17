@@ -13,83 +13,34 @@ import std.stdio;
 
 import pegged.grammar;
 
-import pegged.examples.arithmetic;
-
+//import pegged.examples.dgrammar;
+//import dparser;
 import pegged.dynamicpeg;
 import pegged.dynamicgrammar;
 
 struct Hook
 {
     ParseTree delegate(string)[string] rules;
-    /+
-    ParseTree opCall(string name, string s)
-    {
-        switch(name)
-        {
-            case "Term": return Arithmetic.Term(s);
-            default: return fail(s);
-        }
-    }
-
-    ParseTree opCall(string name, ParseTree p)
-    {
-        switch(name)
-        {
-            case "Term": return Arithmetic.Term(p);
-            default: return fail(p);
-        }
-    }
-    +/
 }
 
 void main()
 {
+    mixin(pegged.grammar.grammar!(Memoization.no)("Test: A<-B B <- 'b'/'c'"));
+    //asModule("dparser", "dparser", Dgrammar);
     //writeln(pegged.grammar.grammar("Test: A <- 'a'"));
     //writeln(makeSwitch(40));
-    Dynamic[string] predefined =
-    [ "quote":      (ParseTree p) => literal("'")(p)
-    , "doublequote":(ParseTree p) => literal("\"")(p)
-    , "backquote":  (ParseTree p) => literal("`")(p)
-    , "slash":      (ParseTree p) => literal("/")(p)
-    , "backslash":  (ParseTree p) => literal("\\")(p)
-    , "endOfLine":  (ParseTree p) => or(literal("\n"), literal("\r\n"), literal("\r"))(p)
-    , "space":      (ParseTree p) => or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r"))(p)
-    , "digit":      (ParseTree p) => charRange('0', '9')(p)
-    , "identifier": (ParseTree p) =>pegged.peg.identifier(p)
-    ];
 
-    StopWatch sw;
-    writeln("Generating the dynamic parser...");
-    sw.start();
-    DynamicGrammar dg = pegged.dynamicgrammar.grammar("
-Arithmetic:
-    Term     < Factor (Add / Sub)*
-    Add      < '+' Factor
-    Sub      < '-' Factor
-    Factor   < Primary (Mul / Div)*
-    Mul      < '*' Primary
-    Div      < '/' Primary
-    Primary  < Parens / Neg / Number / Variable
-    Parens   < :'(' Term :')'
-    Neg      < '-' Primary
-    Number   <~ [0-9]+
-    Variable <- identifier
+    auto space = zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r")));
 
-    ", predefined);
-    sw.stop();
-    auto last = sw.peek().msecs;
-    writeln("Done, generated in ", last, " ms.");
-
-    ///////////// I have to write dynamicpeg overloads for strings
-    Hook dg2;
-    dg2.rules["Factor"] = (string s) => Arithmetic.Factor(s);
-    dg2.rules["Add"] = (string s) => and(literal("+"), dg2.rules["Factor"])(ParseTree("",false,null,s));
-    dg2.rules["Sub"] = (string s) => and(literal("-"), dg2.rules["Factor"])(ParseTree("",false,null,s));
-    dg2.rules["Term"] = (string s) => and(dg2.rules["Factor"], zeroOrMore(or(dg2.rules["Add"], dg2.rules["Sub"])))(ParseTree("",false,null,s));
-    dg2.rules["Arithmetic"] = (string s) => Arithmetic(s);
-
-    string input = "1";
-
+    writeln(Test("b"));
+    Test.beforeA = named(oneOrMore(&Test.B), "Test.Addon");
+    writeln(Test("bcbc"));
+    Test.beforeB = named(literal("d"), "Test.B");
+    writeln(Test("bcbc"));
+    writeln(Test("dddd"));
+    //D.beforeStatement = and(named(and(literal("unless"), space, literal("("),space, &D.IfCondition, space, literal(")"), space, &D.BlockStatement), "D.UnlessStatement"));
+    //writeln(D("int main() { unless(e) {} }"));
+/+
     foreach(n; 0..6)
     {
         int N = 100;
@@ -104,22 +55,6 @@ Arithmetic:
         //writeln(Arithmetic.Term(input));
         input = input ~ "+" ~ input;
     }
-    
-    //writeln(makeSwitch(10));
-    /+
-    string input = "1";
-	writeln(dg(input));
-    writeln(Arithmetic(input));
-
-    int N = 100;
-    foreach(n; 0..50)
-    {
-        auto b = benchmark!(()=> Arithmetic(input), ()=>dg(input))(N);
-        auto t1 = b[0].to!("usecs", float)/N;
-        auto t2 = b[1].to!("usecs", float)/N;
-        writefln("%d: %.1f %.1f => %.2f", input.length, t1, t2, t2/t1);
-        input ~= "+1";
-    }
-    +/
++/
 }
 
