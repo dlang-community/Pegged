@@ -13,33 +13,30 @@ import std.stdio;
 
 import pegged.grammar;
 
-//import pegged.examples.dgrammar;
-//import dparser;
+import pegged.examples.dgrammar;
+import dparser;
 import pegged.dynamicpeg;
 import pegged.dynamicgrammar;
 
-struct Hook
-{
-    ParseTree delegate(string)[string] rules;
-}
+//import ab;
 
 void main()
 {
-    mixin(pegged.grammar.grammar!(Memoization.no)("Test: A<-B B <- 'b'/'c'"));
-    //asModule("dparser", "dparser", Dgrammar);
-    //writeln(pegged.grammar.grammar("Test: A <- 'a'"));
-    //writeln(makeSwitch(40));
+    //asModule!(Memoization.no)("ab", "ab", "Test: A<-B B <- 'b'/'c'");
+    //Test.before["B"]= named(oneOrMore(literal("b")), "Test.Addon");
+    //writeln(Test("bbbc"));
 
+    //asModule!(Memoization.no)("dparser", "dparser", Dgrammar);
     auto space = zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r")));
 
-    writeln(Test("b"));
-    Test.beforeA = named(oneOrMore(&Test.B), "Test.Addon");
-    writeln(Test("bcbc"));
-    Test.beforeB = named(literal("d"), "Test.B");
-    writeln(Test("bcbc"));
-    writeln(Test("dddd"));
-    //D.beforeStatement = and(named(and(literal("unless"), space, literal("("),space, &D.IfCondition, space, literal(")"), space, &D.BlockStatement), "D.UnlessStatement"));
-    //writeln(D("int main() { unless(e) {} }"));
+    writeln(D("int main() { if(e) {} }"));
+
+    // Adding a new statement
+    D.before["Statement"] =
+        named( and(literal("unless"), space, literal("("),space, &D.IfCondition, space, literal(")"),
+                   space, &D.BlockStatement)
+             , "D.UnlessStatement");
+    writeln(D("int main() { unless(e) {} }"));
 /+
     foreach(n; 0..6)
     {
