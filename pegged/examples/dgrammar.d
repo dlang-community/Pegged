@@ -144,7 +144,8 @@ IdentifierList <  TemplateInstance ("." IdentifierList)?
 
 StorageClasses < StorageClass+
 
-StorageClass < "abstract"
+StorageClass < UserDefinedAttribute /
+              ( "abstract"
               / "auto"
               / "const"
               / "deprecated"
@@ -161,7 +162,10 @@ StorageClass < "abstract"
               / Property
               / "scope"
               / "static"
-              / "synchronized"
+              / "synchronized")
+
+UserDefinedAttribute < "@(" ArgumentList ")"
+                     / "@" Expression  # The online grammar says CallExpression, but this does not exist
 
 Property < "@" ( "property"
                / "safe"
