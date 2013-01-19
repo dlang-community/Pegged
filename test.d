@@ -14,29 +14,33 @@ import std.stdio;
 import pegged.grammar;
 
 import pegged.examples.dgrammar;
-import dparser;
+//import dparser;
 import pegged.dynamicpeg;
 import pegged.dynamicgrammar;
 
-//import ab;
+import ab2;
 
 void main()
 {
-    //asModule!(Memoization.no)("ab", "ab", "Test: A<-B B <- 'b'/'c'");
+    //asModule!(Memoization.no)("ab2", "ab2", "Test: A<-B B <- 'b'/'c'");
     //Test.before["B"]= named(oneOrMore(literal("b")), "Test.Addon");
-    //writeln(Test("bbbc"));
-
     //asModule!(Memoization.no)("dparser", "dparser", Dgrammar);
     auto space = zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r")));
-
-    writeln(D("int main() { if(e) {} }"));
+    Test.addRuleAfter("B", "Root < 'd'*");
+    writeln(Test.rules.keys);
+    writeln(Test.before.keys);
+    writeln(Test.after.keys);
+    writeln(Test("d d d "));
+    //writeln(D("int main() { if(e) {} }"));
 
     // Adding a new statement
+    /+
     D.before["Statement"] =
         named( and(literal("unless"), space, literal("("),space, &D.IfCondition, space, literal(")"),
                    space, &D.BlockStatement)
              , "D.UnlessStatement");
     writeln(D("int main() { unless(e) {} }"));
+    +/
 /+
     foreach(n; 0..6)
     {
