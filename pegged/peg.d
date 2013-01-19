@@ -1289,6 +1289,7 @@ string printCaseStatements(V)(TrieNode!(V) node, string indentString)
 		{
             case '\n': append("\\n"); break;
             case '\t': append("\\t"); break;
+            case '\r': append("\\r"); break;
             case 92:   append("\\");  break;
             default:   append(to!string(k));
 		}
