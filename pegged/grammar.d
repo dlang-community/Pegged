@@ -123,33 +123,36 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 //string invokedGrammarName = generateCode(transformName(p.children[0]));
                 string firstRuleName = generateCode(p.children[1].children[0]);
 
-                result = "struct Generic" ~ shortGrammarName ~ "(TParseTree)\n"
-                       ~ "{\n"
-                       ~ "    struct " ~ grammarName ~ "\n    {\n"
-                       ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n"
-                       ~ "    static ParseTree delegate(ParseTree)[string] before;\n"
-                       ~ "    static ParseTree delegate(ParseTree)[string] after;\n";
+                result =
+"struct Generic" ~ shortGrammarName ~ "(TParseTree)
+{
+    import pegged.dynamicgrammar;
+    struct " ~ grammarName ~ "\n    {
+    enum name = \"" ~ shortGrammarName ~ "\";
+    static ParseTree delegate(ParseTree)[string] before;
+    static ParseTree delegate(ParseTree)[string] after;
+    static ParseTree delegate(ParseTree)[string] rules;
 
-                if (withMemo == Memoization.yes)
-                    result ~= "    import std.typecons:Tuple, tuple;\n"
-                            ~ "    static TParseTree[Tuple!(string, size_t)] memo;\n";
+    static this()\n    {\n";
 
                 ParseTree[] definitions = p.children[1 .. $];
-
-                /+
-                result ~=  "    static this()\n"
-                        ~  "    {\n";
+                bool userDefinedSpacing;
                 foreach(i,def; definitions)
                 {
-                    //string numParam = (def.children[0].children.length > 1) ? ("_" ~ to!string(def.children[0].children[1].children.length)) : "";
-                    result ~= "    before[" ~ def.matches[0] ~ "] = toDelegate(&fail);\n"
-                            ~ "    after[" ~ def.matches[0] ~ "] = toDelegate(&fail);\n";
+                    result ~= "        rules[\"" ~ def.matches[0] ~ "\"] = toDelegate(&" ~ shortGrammarName ~ "." ~ def.matches[0] ~ ");\n";
+                    if (def.matches[0] == "Spacing") // user-defined spacing
+                    {
+                        userDefinedSpacing = true;
+                        break;
+                    }
                 }
+                if(!userDefinedSpacing)
+                    result ~= "        rules[\"Spacing\"] = toDelegate(&" ~ shortGrammarName ~ ".Spacing);\n";
 
-                result ~= "    }\n\n";
-`               +/
                 result ~=
-"    template hooked(alias r, string name)
+"   }
+
+    template hooked(alias r, string name)
     {
         static ParseTree hooked(ParseTree p)
         {
@@ -175,13 +178,39 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
             return hooked!(r, name)(ParseTree(\"\",false,[],input));
         }
     }
-";
-                
 
-                result ~= "    static bool isRule(string s)\n"
-                        ~ "    {\n"
-                        ~ "        return s.startsWith(\"" ~ shortGrammarName ~ ".\");\n"
-                        ~ "    }\n";
+    static void addRuleBefore(string parentRule, string ruleSyntax)
+    {
+        // enum name is the current grammar name
+        DynamicGrammar dg = pegged.dynamicgrammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
+        foreach(ruleName,rule; dg.rules)
+            if (ruleName != \"Spacing\") // Keep the local Spacing rule, do not overwrite it
+                rules[ruleName] = rule;
+        before[parentRule] = rules[dg.startingRule];
+    }
+
+    static void addRuleAfter(string parentRule, string ruleSyntax)
+    {
+        // enum name is the current grammar named
+        DynamicGrammar dg = pegged.dynamicgrammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
+        foreach(name,rule; dg.rules)
+        {
+            if (name != \"Spacing\")
+                rules[name] = rule;
+        }
+        after[parentRule] = rules[dg.startingRule];
+    }
+
+    static bool isRule(string s)
+    {
+        return s.startsWith(\"" ~ shortGrammarName ~ ".\");
+    }
+";
+
+                    if (withMemo == Memoization.yes)
+                    result ~=
+"    import std.typecons:Tuple, tuple;
+    static TParseTree[Tuple!(string, size_t)] memo;\n";
 
                 /+
                         ~ "        switch(s)\n"
@@ -189,7 +218,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
                 string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
-                
 
                 string paramRuleHandler(string target)
                 {
@@ -197,8 +225,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                           ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""
                           ~shortGrammarName ~ "." ~ target~"!(\") return true;";
                 }
-                +/
-                bool userDefinedSpacing = false;
+
                 foreach(i,def; definitions)
                 {
                     /+
@@ -218,7 +245,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         break;
                     }
                 }
-                /+
                 result ~= "                return true;\n"
                         ~ "            default:\n"
                         ~ parameterizedRulesSpecialCode
@@ -348,7 +374,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        if(__ctfe)\n"
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
                            ~  "        else\n"
-                           ~  "             return " ~ code ~ "(p);\n"
+                           ~  "            return " ~ code ~ "(p);\n"
                            ~  "    }\n"
                            ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
                            ~  "    {\n"
