@@ -1030,9 +1030,9 @@ template wrapAround(alias before, alias target, alias after)
 
     string wrapAround(GetName g)
     {
-        return "wrapAround!(" ~ getName!(before)() ~
+        return "wrapAround!(" /+~ getName!(before)() ~
                 ", " ~ getName!(target)() ~
-                ", " ~ getName!(after)() ~ ")";
+                ", " ~ getName!(after)()+/ ~ ")";
     }
 }
 
@@ -1084,8 +1084,8 @@ template or(rules...) if (rules.length > 0)
     {
         string name = "or!(";
         foreach(i,rule; rules)
-            name ~= getName!(rule)
-                    ~ (i < rules.length -1 ? ", " : "");
+            name ~= /+getName!(rule)
+                    ~+/ (i < rules.length -1 ? ", " : "");
         name ~= ")";
         return name;
     }
@@ -1117,7 +1117,7 @@ template or(rules...) if (rules.length > 0)
             }
             else
             {
-                enum errName = " (" ~ getName!(r)() ~")";
+                enum errName = " (" /+~ getName!(r)() +/ ~")";
                 failedLength[i] = temp.end;
                 if (temp.end >= longestFail.end)
                 {
@@ -1518,7 +1518,7 @@ assert(result.children.length == 0);
 */
 template zeroOrMore(alias r)
 {
-    enum name = "zeroOrMore!(" ~ getName!(r) ~ ")";
+    enum name = "zeroOrMore!(" /+~ getName!(r)+/ ~ ")";
 
     ParseTree zeroOrMore(ParseTree p)
     {
@@ -1654,7 +1654,7 @@ assert(!result.successful); // fails, since it failed on the first try.
 */
 template oneOrMore(alias r)
 {
-    enum name = "oneOrMore!(" ~ getName!(r) ~ ")";
+    enum name = "oneOrMore!(" /+~ getName!(r)+/ ~ ")";
 
     ParseTree oneOrMore(ParseTree p)
     {
@@ -1777,7 +1777,7 @@ assert(result.children[0] == literal!"abc"(input));
 */
 template option(alias r)
 {
-    enum name = "option!(" ~ getName!(r) ~ ")";
+    enum name = "option!(" /+~ getName!(r)+/ ~ ")";
 
     ParseTree option(ParseTree p)
     {
@@ -1866,7 +1866,7 @@ If 'r' fails, then posLookahead!r also fails. Low-level implementation of '&r'.
 */
 template posLookahead(alias r)
 {
-    enum name = "posLookahead!(" ~ getName!(r) ~ ")";
+    enum name = "posLookahead!(" /+~ getName!(r)+/ ~ ")";
 
     ParseTree posLookahead(ParseTree p)
     {
@@ -1952,7 +1952,7 @@ If 'r' succeeds, then negLookahead!r fails. Low-level implementation of '!r'.
 */
 template negLookahead(alias r)
 {
-    enum name = "negLookahead!(" ~ getName!(r) ~ ")";
+    enum name = "negLookahead!(" /+~ getName!(r)+/ ~ ")";
 
     ParseTree negLookahead(ParseTree p)
     {
@@ -2116,7 +2116,7 @@ template action(alias r, alias act)
 
     string action(GetName g)
     {
-        enum name = "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
+        enum name = "action!("/+~ getName!(r)() +/ ~ ", " ~ __traits(identifier, act) ~ ")";
         return name;
     }
 }
@@ -2182,7 +2182,7 @@ template fuse(alias r)
 
     string fuse(GetName g)
     {
-        enum name = "fuse!(" ~ getName!(r)() ~ ")";
+        enum name = "fuse!(" /+~ getName!(r)() +/ ~ ")";
         return name;
     }
 }
@@ -2249,7 +2249,7 @@ template discardChildren(alias r)
 
     string discardChildren(GetName g)
     {
-        enum name = "discardChildren!(" ~ getName!(r)() ~ ")";
+        enum name = "discardChildren!(" /+~ getName!(r)() +/ ~ ")";
         return name;
     }
 }
@@ -2274,7 +2274,7 @@ template discardMatches(alias r)
 
     string discardMatches(GetName g)
     {
-        enum name = "discardMatches!(" ~ getName!(r)() ~ ")";
+        enum name = "discardMatches!(" /+~ getName!(r)() +/ ~ ")";
         return name;
     }
 }
@@ -2288,7 +2288,7 @@ template discard(alias r)
     ParseTree discard(ParseTree p)
     {
         ParseTree result = r(p);
-        result.name = "discard!(" ~ getName!(r)() ~ ")";
+        result.name = "discard!(" /+~ getName!(r)() +/ ~ ")";
         //result.begin = result.end;
         result.children = null;
         if (result.successful)
@@ -2304,7 +2304,7 @@ template discard(alias r)
 
     string discard(GetName g)
     {
-        return "discard!(" ~ getName!(r)() ~ ")";
+        return "discard!(" /+~ getName!(r)() +/ ~ ")";
     }
 }
 
@@ -2373,7 +2373,7 @@ template drop(alias r)
         //result.begin = result.end;
         result.children = null;
         if (result.successful)
-            result.name = "drop!(" ~ getName!(r)() ~ ")";
+            result.name = "drop!(" /+~ getName!(r)() +/ ~ ")";
         return result;
     }
 
@@ -2384,7 +2384,7 @@ template drop(alias r)
 
     string drop(GetName g)
     {
-        return "drop!(" ~ getName!(r)() ~ ")";
+        return "drop!(" /+~ getName!(r)() +/ ~ ")";
     }
 }
 
@@ -2452,7 +2452,7 @@ template propagate(alias r)
     {
         ParseTree result = r(p);
         if (result.successful)
-            result.name = "propagate!(" ~ getName!(r)() ~ ")";
+            result.name = "propagate!(" /+~ getName!(r)() +/ ~ ")";
         return result;
     }
 
@@ -2463,7 +2463,7 @@ template propagate(alias r)
 
     string propagate(GetName g)
     {
-        return "propagate!(" ~ getName!(r)() ~ ")";
+        return "propagate!(" /+~ getName!(r)() +/ ~ ")";
     }
 }
 
@@ -2479,7 +2479,7 @@ template keep(alias r)
         if (result.successful)
         {
             result.children = [result];
-            result.name = "keep!(" ~ getName!(r)() ~ ")";
+            result.name = "keep!(" /+~ getName!(r)() +/ ~ ")";
         }
         return result;
     }
@@ -2491,7 +2491,7 @@ template keep(alias r)
 
     string keep(GetName g)
     {
-        return "keep!(" ~ getName!(r)() ~ ")";
+        return "keep!(" /+~ getName!(r)() +/ ~ ")";
     }
 }
 
