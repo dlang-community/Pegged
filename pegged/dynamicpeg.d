@@ -16,28 +16,20 @@ string getName(D)(D rule)
 
 ParseTree callDynamic(D)(D d, string s)
 {
-    static if (is(typeof(d) : ParseTree delegate(ParseTree)) || is(typeof(d) : ParseTree function(ParseTree)))
+    static if (is(typeof(d) == Dynamic))
         return d(ParseTree("",false,[], s));
-    else static if (is(typeof(d) : ParseTree delegate(ParseTree) delegate()) || is(typeof(d) : ParseTree function(ParseTree) delegate()))
+    else static if (is(typeof(d) : Dynamic delegate()) || is(typeof(d) : Dynamic function()))
         return d()(ParseTree("",false,[], s));
-    else static if (is(typeof(d) : ParseTree delegate(string)) || is(typeof(d) : ParseTree function(string)))
-        return d(s);
-    else static if (is(typeof(d) : ParseTree delegate(string) delegate()) || is(typeof(d) : ParseTree function(string) delegate()))
-        return d()(s);
     else
         static assert(false, "Bad callDynamic, with type " ~ D.stringof);
 }
 
 ParseTree callDynamic(D)(D d, ParseTree p)
 {
-    static if (is(typeof(d) : ParseTree delegate(ParseTree)) || is(typeof(d) : ParseTree function(ParseTree)))
+    static if (is(typeof(d) == Dynamic))
         return d(p);
-    else static if (is(typeof(d) : ParseTree delegate(ParseTree) delegate()) || is(typeof(d) : ParseTree function(ParseTree) delegate()))
+    else static if (is(typeof(d) : Dynamic delegate()) || is(typeof(d) : Dynamic function()))
         return d()(p);
-    else static if (is(typeof(d) : ParseTree delegate(string)) || is(typeof(d) : ParseTree function(string)))
-        return d(p.input[p.end..$]);
-    else static if (is(typeof(d) : ParseTree delegate(string) delegate()) || is(typeof(d) : ParseTree function(string) delegate()))
-        return d()(p.input[p.end..$]);
     else
         static assert(false, "Bad callDynamic, with type " ~ D.stringof);
 }
@@ -451,16 +443,3 @@ Dynamic keep(D)(D d)
     };
 }
 
-/+
-Dynamic[string] predefined =
-[ "quote":      (ParseTree p) => literal("'")(p)
-, "doublequote":(ParseTree p) => literal("\"")(p)
-, "backquote":  (ParseTree p) => literal("`")(p)
-, "slash":      (ParseTree p) => literal("/")(p)
-, "backslash":  (ParseTree p) => literal("\\")(p)
-, "endOfLine":  (ParseTree p) => or(literal("\n"), literal("\r\n"), literal("\r"))(p)
-, "space":      (ParseTree p) => or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r"))(p)
-, "digit":      (ParseTree p) => charRange('0', '9')(p)
-, "identifier": (ParseTree p) =>pegged.peg.identifier(p)
-];
-+/

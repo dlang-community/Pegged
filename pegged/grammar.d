@@ -6,16 +6,17 @@ The documentation is in the /docs directory.
 */
 module pegged.grammar;
 
-import std.algorithm: startsWith;
 import std.conv: to;
-import std.functional: toDelegate;
 import std.stdio;
 
 public import pegged.peg;
-//public import pegged.introspection;
+public import pegged.introspection;
 import pegged.parser;
 
-
+version(unittest)
+{
+    import std.stdio;
+}
 
 /**
 Option enum to get internal memoization (parse results storing).
@@ -41,8 +42,6 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
         f.write(optHeader ~ "\n\n");
 
     f.write("public import pegged.peg;\n");
-    f.write("import std.algorithm: startsWith;\n");
-    f.write("import std.functional: toDelegate;\n\n");
     f.write(grammar!(withMemo)(grammarString));
 }
 
@@ -123,101 +122,62 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 //string invokedGrammarName = generateCode(transformName(p.children[0]));
                 string firstRuleName = generateCode(p.children[1].children[0]);
 
-                result =
-"struct Generic" ~ shortGrammarName ~ "(TParseTree)
-{
-    import pegged.dynamicgrammar;
-    struct " ~ grammarName ~ "\n    {
-    enum name = \"" ~ shortGrammarName ~ "\";
-    static ParseTree delegate(ParseTree)[string] before;
-    static ParseTree delegate(ParseTree)[string] after;
-    static ParseTree delegate(ParseTree)[string] rules;
+                result =  "struct Generic" ~ shortGrammarName ~ "(TParseTree)\n"
+                        ~ "{\n"
+                        ~ "    struct " ~ grammarName ~ "\n    {\n"
+                        ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n";
 
-    static this()\n    {\n";
+                if (withMemo == Memoization.yes)
+                    result ~= "    import std.typecons:Tuple, tuple;\n"
+                            ~ "    static TParseTree[Tuple!(string, size_t)] memo;\n";
 
                 ParseTree[] definitions = p.children[1 .. $];
-                bool userDefinedSpacing;
+
                 foreach(i,def; definitions)
                 {
-                    result ~= "        rules[\"" ~ def.matches[0] ~ "\"] = toDelegate(&" ~ shortGrammarName ~ "." ~ def.matches[0] ~ ");\n";
-                    if (def.matches[0] == "Spacing") // user-defined spacing
-                    {
-                        userDefinedSpacing = true;
-                        break;
-                    }
+                    string numParam = (def.children[0].children.length > 1) ? ("_" ~ to!string(def.children[0].children[1].children.length)) : "";
+                    result ~= "    static ParseTree delegate(ParseTree) before" ~ def.matches[0] ~ numParam ~ ";\n"
+                            ~ "    static ParseTree delegate(ParseTree) after"  ~ def.matches[0] ~ numParam ~ ";\n";
                 }
-                if(!userDefinedSpacing)
-                    result ~= "        rules[\"Spacing\"] = toDelegate(&" ~ shortGrammarName ~ ".Spacing);\n";
 
                 result ~=
-"   }
-
+`
     template hooked(alias r, string name)
     {
         static ParseTree hooked(ParseTree p)
         {
-            ParseTree result;
+            mixin("ParseTree result;
+            if (before" ~ name ~ " !is null)
+                result = before" ~ name ~ "(p);
 
-            if (name in before)
-            {
-                result = before[name](p);
-                if (result.successful)
+            if (result.successful)
                     return result;
+            else
+            {
+                result = r(p);
+                if (result.successful || after" ~ name ~ " is null)
+                    return result;
+
+                result = after" ~ name ~ "(p);
             }
-
-            result = r(p);
-            if (result.successful || name !in after)
-                return result;
-
-            result = after[name](p);
-            return result;
+            return result;");
         }
 
         static ParseTree hooked(string input)
         {
-            return hooked!(r, name)(ParseTree(\"\",false,[],input));
+            return hooked!(r, name)(ParseTree("",false,[],input));
         }
     }
+`;
 
-    static void addRuleBefore(string parentRule, string ruleSyntax)
-    {
-        // enum name is the current grammar name
-        DynamicGrammar dg = pegged.dynamicgrammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
-        foreach(ruleName,rule; dg.rules)
-            if (ruleName != \"Spacing\") // Keep the local Spacing rule, do not overwrite it
-                rules[ruleName] = rule;
-        before[parentRule] = rules[dg.startingRule];
-    }
-
-    static void addRuleAfter(string parentRule, string ruleSyntax)
-    {
-        // enum name is the current grammar named
-        DynamicGrammar dg = pegged.dynamicgrammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
-        foreach(name,rule; dg.rules)
-        {
-            if (name != \"Spacing\")
-                rules[name] = rule;
-        }
-        after[parentRule] = rules[dg.startingRule];
-    }
-
-    static bool isRule(string s)
-    {
-        return s.startsWith(\"" ~ shortGrammarName ~ ".\");
-    }
-";
-
-                    if (withMemo == Memoization.yes)
-                    result ~=
-"    import std.typecons:Tuple, tuple;
-    static TParseTree[Tuple!(string, size_t)] memo;\n";
-
-                /+
+                result ~= "    static bool isRule(string s)\n"
+                        ~ "    {\n"
                         ~ "        switch(s)\n"
                         ~ "        {\n";
 
                 bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
                 string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
+                bool userDefinedSpacing = false;
 
                 string paramRuleHandler(string target)
                 {
@@ -228,7 +188,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 foreach(i,def; definitions)
                 {
-                    /+
                     if (def.matches[0] !in ruleNames)
                     {
                         ruleNames[def.matches[0]] = true;
@@ -238,18 +197,14 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         else
                             result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
                     }
-                    +/
                     if (def.matches[0] == "Spacing") // user-defined spacing
-                    {
                         userDefinedSpacing = true;
-                        break;
-                    }
                 }
                 result ~= "                return true;\n"
                         ~ "            default:\n"
                         ~ parameterizedRulesSpecialCode
                         ~ "                return false;\n        }\n    }\n";
-                +/
+
                 result ~= "    mixin decimateTree;\n";
 
                 // If the grammar provides a Spacing rule, then this will be used.
@@ -365,8 +320,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     innerName ~= "`" ~ completeName ~ "`";
                 }
 
-                string ctfeCode = "        pegged.peg.named!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
-                code =            "hooked!(pegged.peg.named!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
+                string ctfeCode = "pegged.peg.named!("         ~ code                          ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+                code =            "pegged.peg.named!(hooked!(" ~ code ~ ", \"" ~ hookedName ~ "\"), \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
 
                 if (withMemo == Memoization.no)
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
@@ -374,7 +329,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        if(__ctfe)\n"
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
                            ~  "        else\n"
-                           ~  "            return " ~ code ~ "(p);\n"
+                           ~  "             return " ~ code ~ "(p);\n"
                            ~  "    }\n"
                            ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
                            ~  "    {\n"
@@ -450,8 +405,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result = p.matches[0] ~ " = " ~ generateCode(p.children[1]);
                 break;
             case "Pegged.Expression":
-                //if (p.children.length > 1) // OR expression
-                //{
+                if (p.children.length > 1) // OR expression
+                {
                     // Keyword list detection: "abstract"/"alias"/...
                     bool isLiteral(ParseTree p)
                     {
@@ -484,15 +439,15 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             result ~= generateCode(seq) ~ ", ";
                         result = result[0..$-2] ~ ")";
                     }
-                //}
-                //else // One child -> just a sequence, no need for a or!( , )
-                //{
-                //    result = generateCode(p.children[0]);
-                //}
+                }
+                else // One child -> just a sequence, no need for a or!( , )
+                {
+                    result = generateCode(p.children[0]);
+                }
                 break;
             case "Pegged.Sequence":
-                //if (p.children.length > 1) // real sequence
-                //{
+                if (p.children.length > 1) // real sequence
+                {
                     result = "pegged.peg.and!(";
                     foreach(seq; p.children)
                     {
@@ -503,11 +458,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         result ~= elementCode ~ ", ";
                     }
                     result = result[0..$-2] ~ ")";
-                //}
-                //else // One child -> just a Suffix, no need for a and!( , )
-                //{
-                //    result = generateCode(p.children[0]);
-                //}
+                }
+                else // One child -> just a Suffix, no need for a and!( , )
+                {
+                    result = generateCode(p.children[0]);
+                }
                 break;
             case "Pegged.Prefix":
                 result = generateCode(p.children[$-1]);

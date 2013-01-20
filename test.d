@@ -5,57 +5,98 @@ module test;
 //import std.array;
 //import std.conv;
 import std.datetime;
-import std.functional;
+//import std.functional;
 //import std.range;
 import std.stdio;
 //import std.typecons;
 //import std.typetuple;
 
 import pegged.grammar;
-
-import pegged.examples.dgrammar;
-//import dparser;
 import pegged.dynamicpeg;
 import pegged.dynamicgrammar;
 
-import ab2;
+import pegged.examples.c;
 
 void main()
 {
-    //asModule!(Memoization.no)("ab2", "ab2", "Test: A<-B B <- 'b'/'c'");
-    //Test.before["B"]= named(oneOrMore(literal("b")), "Test.Addon");
-    //asModule!(Memoization.no)("dparser", "dparser", Dgrammar);
+    //writeln(makeSwitch(40));
+    Dynamic[string] predefined =
+    [ "quote":      (ParseTree p) => literal("'")(p)
+    , "doublequote":(ParseTree p) => literal("\"")(p)
+    , "backquote":  (ParseTree p) => literal("`")(p)
+    , "slash":      (ParseTree p) => literal("/")(p)
+    , "backslash":  (ParseTree p) => literal("\\")(p)
+    , "endOfLine":  (ParseTree p) => or(literal("\n"), literal("\r\n"), literal("\r"))(p)
+    , "space":      (ParseTree p) => or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r"))(p)
+    , "digit":      (ParseTree p) => charRange('0', '9')(p)
+    , "identifier": (ParseTree p) => fuse(and( or(charRange('a','z'), charRange('A','Z'), literal("_"))
+                                             , oneOrMore(or(charRange('a','z'), charRange('A','Z'), literal("_"), charRange('0', '9')))))(p)
+    ];
+
+    StopWatch sw;
+    writeln("Generating C dynamic parser...");
+    sw.start();
+    DynamicGrammar dg = pegged.dynamicgrammar.grammar(Cgrammar, predefined);
+    sw.stop(); 
+    auto last = sw.peek().msecs;
+    writeln("Done. Parser generated in ", last, " ms.");
     auto space = zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r")));
-    Test.addRuleAfter("B", "Root < 'd'*");
-    writeln(Test.rules.keys);
-    writeln(Test.before.keys);
-    writeln(Test.after.keys);
-    writeln(Test("d d d "));
-    //writeln(D("int main() { if(e) {} }"));
 
-    // Adding a new statement
+    dg["UnlessStatement"] = and(literal("unless"), space, literal("("), space, dg["Expression"], space, literal(")"), dg["Statement"]);
+    dg["Statement"] = or(dg["UnlessStatement"], dg["Statement"]);
+    writeln("Parsing...");
+    sw.start();
+    auto result  = (dg(
+`
+main()
+{
+   int n, i = 3, count, c;
+
+   printf("Enter the number of prime numbers required\n");
+   scanf("%d",&n);
+
+   if ( n >= 1 )
+   {
+      printf("First %d prime numbers are :\n",n);
+      printf("2\n");
+   }
+
+   for ( count = 2 ; count <= n ;  )
+   {
+      for ( c = 2 ; c <= i - 1 ; c++ )
+      {
+         if ( i%c == 0 )
+            break;
+      }
+      if ( c == i )
+      {
+         printf("%d\n",i);
+         count++;
+      }
+      i++;
+   }
+
+   return 0;
+}
+`));
+    sw.stop();
+    writeln("Done. Parsing in ", sw.peek().msecs - last, " ms.");
+    writeln(result);
+    //writeln(makeSwitch(10));
     /+
-    D.before["Statement"] =
-        named( and(literal("unless"), space, literal("("),space, &D.IfCondition, space, literal(")"),
-                   space, &D.BlockStatement)
-             , "D.UnlessStatement");
-    writeln(D("int main() { unless(e) {} }"));
-    +/
-/+
-    foreach(n; 0..6)
-    {
-        int N = 100;
-        writeln(input.length, ":");
-        auto b = benchmark!(()=> dg(input), ()=>dg2.rules["Arithmetic"](input),()=>Arithmetic(input))(N);
-        auto b0 = b[0].to!("msecs", float)/N;
-        auto b1 = b[1].to!("msecs", float)/N;
-        auto b2 = b[2].to!("msecs", float)/N;
+    string input = "1";
+	writeln(dg(input));
+    writeln(Arithmetic(input));
 
-        writefln("dg1: %.2f    dg2: %.2f    Arithmetic: %.2f    ratio: %.2f and %.2f", b0, b1, b2, b0/b2, b1/b2);
-        //writeln(dg2.rules["Term"](input));
-        //writeln(Arithmetic.Term(input));
-        input = input ~ "+" ~ input;
+    int N = 100;
+    foreach(n; 0..50)
+    {
+        auto b = benchmark!(()=> Arithmetic(input), ()=>dg(input))(N);
+        auto t1 = b[0].to!("usecs", float)/N;
+        auto t2 = b[1].to!("usecs", float)/N;
+        writefln("%d: %.1f %.1f => %.2f", input.length, t1, t2, t2/t1);
+        input ~= "+1";
     }
-+/
+    +/
 }
 
