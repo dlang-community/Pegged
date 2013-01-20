@@ -1,4 +1,4 @@
-module pegged.dynamicpeg;
+module pegged.dynamic.peg;
 
 import std.array: join;
 import std.conv: to;

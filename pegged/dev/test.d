@@ -1,5 +1,5 @@
 /// Testing Pegged modifications.
-module test;
+module pegged.dev.test;
 
 //import std.algorithm;
 //import std.array;
@@ -12,8 +12,8 @@ import std.stdio;
 //import std.typetuple;
 
 import pegged.grammar;
-import pegged.dynamicpeg;
-import pegged.dynamicgrammar;
+import pegged.dynamic.peg;
+import pegged.dynamic.grammar;
 
 import pegged.examples.c;
 
@@ -36,7 +36,7 @@ void main()
     StopWatch sw;
     writeln("Generating C dynamic parser...");
     sw.start();
-    DynamicGrammar dg = pegged.dynamicgrammar.grammar(Cgrammar, predefined);
+    DynamicGrammar dg = pegged.dynamic.grammar.grammar(Cgrammar, predefined);
     sw.stop(); 
     auto last = sw.peek().msecs;
     writeln("Done. Parser generated in ", last, " ms.");

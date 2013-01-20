@@ -10,13 +10,7 @@ import std.conv: to;
 import std.stdio;
 
 public import pegged.peg;
-public import pegged.introspection;
 import pegged.parser;
-
-version(unittest)
-{
-    import std.stdio;
-}
 
 /**
 Option enum to get internal memoization (parse results storing).

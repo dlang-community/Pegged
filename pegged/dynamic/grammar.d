@@ -9,14 +9,14 @@ Dynamic grammars:
 Advantages:
     - fully runtime configurable: change rules, add rules, delete rules.
 */
-module pegged.dynamicgrammar;
+module pegged.dynamic.grammar;
 
 import std.array;
 import std.stdio;
 
 import pegged.peg;
 import pegged.parser;
-import pegged.dynamicpeg;
+import pegged.dynamic.peg;
 
 
 struct ParameterizedRule
@@ -114,30 +114,30 @@ struct DynamicGrammar
     {
         return decimateTree(rules[startingRule]()(p));
         /+
-		result.children = [result];
+        result.children = [result];
         result.name = grammarName;
         return result;
-		+/
+        +/
     }
 
     ParseTree opCall(string input)
     {
         return decimateTree(rules[startingRule]()(ParseTree(``, false, [], input, 0, 0)));
         /+
-		result.children = [result];
+        result.children = [result];
         result.name = grammarName;
         return result;
-		+/
+        +/
     }
 
     void opIndexAssign(D)(D code, string s)
     {
         rules[s]= ()=>named(code, grammarName ~ "." ~ s);
     }
-	
+    
     Dynamic opIndex(string s)
     {
-		return rules[s]();
+        return rules[s]();
     }
 }
 
@@ -179,9 +179,9 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
     DynamicGrammar gram;
     foreach(name, rule; context)
    {
-	   gram.rules[name] = ()=>rule;
-	}
-		
+       gram.rules[name] = ()=>rule;
+    }
+    
     ParseTree p = defAsParseTree.children[0];
 
     string grammarName = p.children[0].matches[0];//generateCode(p.children[0]);
@@ -197,11 +197,11 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
 
     ParseTree[] definitions = p.children[1 .. $];
 
-	foreach(i,def; definitions)
+    foreach(i,def; definitions)
     {
         gram[def.matches[0]] = fail;
     }
-	
+    
     Dynamic delegate() getDyn(string name)
     {
         if (name in gram.rules)
@@ -249,7 +249,7 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
                         Dynamic delegate()[] children;
                         foreach(seq; p.children)
                             children ~= ruleFromTree(seq);
-                        return distribute!(pegged.dynamicpeg.and)(children);
+                        return distribute!(pegged.dynamic.peg.and)(children);
                     /+}
                     else // One child -> just a Suffix, no need for a and!( , )
                     {
@@ -257,23 +257,23 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
                     }
                     +/
                 case "Pegged.Prefix":
-					ParseTree temp;
+                    ParseTree temp;
                     foreach_reverse(i,child; p.children[0..$-1]) // transforming a list into a linear tree
                     {
-						temp  = p.children[$-1];
-						p.children[$-1] = child;
-						p.children[$-1].children = [temp];
-					}
+                        temp  = p.children[$-1];
+                        p.children[$-1] = child;
+                        p.children[$-1].children = [temp];
+                    }
                     return ruleFromTree(p.children[$-1]);
                 case "Pegged.Suffix":
                     foreach(child; p.children[1..$])
                     {
-						ParseTree temp = p.children[0];
-						p.children[0] = child;
-						p.children[0].children = [temp];
-					}
-					return ruleFromTree(p.children[0]);
-				case "Pegged.Primary":
+                        ParseTree temp = p.children[0];
+                        p.children[0] = child;
+                        p.children[0].children = [temp];
+                    }
+                    return ruleFromTree(p.children[0]);
+                case "Pegged.Primary":
                     return ruleFromTree(p.children[0]);
                 case "Pegged.RhsName":
                     return ruleFromTree(p.children[0]);
@@ -292,7 +292,7 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
                         Dynamic delegate()[] children;
                         foreach(seq; p.children)
                             children ~= ruleFromTree(seq);
-                        return distribute!(pegged.dynamicpeg.or)(children);
+                        return distribute!(pegged.dynamic.peg.or)(children);
                     }
                     else // One child -> just a sequence, no need for a or!( , )
                     {
@@ -426,19 +426,19 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
         }
     }
 
-	/+
-	foreach(name,rule; gram.rules)
-	{
-		rule();
-		//writeln(name, ": ", rule()(ParseTree()));
-	}
-	
-		foreach(name,rule; gram.rules)
-	{
-		rule();
-		writeln(name, ": ", rule()(ParseTree()));
-	}
-	+/
+    /+
+    foreach(name,rule; gram.rules)
+    {
+        rule();
+        //writeln(name, ": ", rule()(ParseTree()));
+    }
+    
+        foreach(name,rule; gram.rules)
+    {
+        rule();
+        writeln(name, ": ", rule()(ParseTree()));
+    }
+    +/
     return gram;
 }
 

@@ -36,7 +36,7 @@ NestedCommentEnd <- '+/'
 
 
 +/
-module pegged.testerparser;
+module pegged.tester.testerparser;
 
 public import pegged.peg;
 struct GenericTesterGrammar(TParseTree)

@@ -2,7 +2,7 @@
 Grammar testing module for Pegged.
 
 */
-module pegged.grammartester;
+module pegged.tester.grammartester;
 
 import std.stdio;
 import std.array;
