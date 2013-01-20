@@ -17,6 +17,9 @@ import pegged.dynamic.grammar;
 
 import pegged.examples.c;
 
+mixin(pegged.grammar.grammar("Test2:
+A <- 'ab'"));
+
 void main()
 {
     //writeln(makeSwitch(40));
@@ -98,5 +101,6 @@ main()
         input ~= "+1";
     }
     +/
+    writeln(Test2("ab"));
 }
 

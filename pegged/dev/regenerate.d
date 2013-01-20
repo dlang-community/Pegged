@@ -10,5 +10,4 @@ import pegged.examples.testergrammar;
 void main()
 {
     asModule!(Memoization.no)("pegged.parser", "../parser", PEGGEDgrammar);
-    asModule!(Memoization.no)("pegged.tester.testerparser", "../tester/testerparser", testerGrammar);
 }
