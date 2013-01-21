@@ -12,7 +12,7 @@ import std.algorithm : max, splitter;
 import std.string : xformat, stripRight, removechars, squeeze;
 
 import pegged.examples.arithmetic;
-import pegged.testerparser;
+import pegged.tester.testerparser;
 import pegged.grammar;
 
 class GrammarTester(grammar, string startSymbol)
