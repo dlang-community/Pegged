@@ -206,7 +206,7 @@ Dynamic makeRule(ParseTree def, Dynamic[string] context)
                     Dynamic[] children;
                     foreach(seq; p.children)
                         children ~= ruleFromTree(seq);
-                    return distribute!(pegged.dynamicpeg.and)(children);
+                    return distribute!(pegged.dynamic.peg.and)(children);
                 /+}
                 else // One child -> just a Suffix, no need for a and!( , )
                 {
@@ -249,7 +249,7 @@ Dynamic makeRule(ParseTree def, Dynamic[string] context)
                     Dynamic[] children;
                     foreach(seq; p.children)
                         children ~= ruleFromTree(seq);
-                    return distribute!(pegged.dynamicpeg.or)(children);
+                    return distribute!(pegged.dynamic.peg.or)(children);
                 }
                 else // One child -> just a sequence, no need for a or!( , )
                 {
@@ -426,31 +426,11 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
             gram.startingRule = shortName;
         // prepending the global grammar name, to get a qualified-name rule 'Gram.Rule'
         def.matches[0] = shortGrammarName ~ "." ~ def.matches[0];
-        gram.rules[shortName] = makeRule(def, context);
+        gram.rules[shortName] = makeRule(def, gram.rules);
     }
 
     return gram;
 }
-
-string makeCase(size_t n)
-{
-    string result = "    case " ~ to!string(n) ~ ":\n        return fun(";
-    foreach(i; 0..n)
-        result ~= "args[" ~ to!string(i) ~ "]" ~ ((i<n-1) ? ", " : "");
-    result ~= ");\n";
-    return result;
-}
-
-string makeSwitch(size_t n)
-{
-    string result = "switch(args.length)\n{\n";
-    foreach(i; 1..n)
-        result ~= makeCase(i);
-    result ~= "    default:
-        throw new Exception(`Unimplemented distribute for more than " ~ to!string(n) ~ " arguments: ` ~ to!string(args.length));\n}";
-    return result;
-}
-
 
 Dynamic distribute(alias fun)(Dynamic[] args)
 {

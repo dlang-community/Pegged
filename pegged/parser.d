@@ -99,7 +99,7 @@ import std.functional: toDelegate;
 
 struct GenericPegged(TParseTree)
 {
-    import pegged.dynamicgrammar;
+    import pegged.dynamic.grammar;
     struct Pegged
     {
     enum name = "Pegged";
@@ -190,7 +190,7 @@ struct GenericPegged(TParseTree)
     static void addRuleBefore(string parentRule, string ruleSyntax)
     {
         // enum name is the current grammar name
-        DynamicGrammar dg = pegged.dynamicgrammar.grammar(name ~ ": " ~ ruleSyntax, rules);
+        DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ ": " ~ ruleSyntax, rules);
         foreach(ruleName,rule; dg.rules)
             if (ruleName != "Spacing") // Keep the local Spacing rule, do not overwrite it
                 rules[ruleName] = rule;
@@ -200,7 +200,7 @@ struct GenericPegged(TParseTree)
     static void addRuleAfter(string parentRule, string ruleSyntax)
     {
         // enum name is the current grammar named
-        DynamicGrammar dg = pegged.dynamicgrammar.grammar(name ~ ": " ~ ruleSyntax, rules);
+        DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ ": " ~ ruleSyntax, rules);
         foreach(name,rule; dg.rules)
         {
             if (name != "Spacing")
@@ -585,9 +585,11 @@ struct GenericPegged(TParseTree)
     static TParseTree Char(string s)
     {
         if(__ctfe)
-            return         pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(backslash, pegged.peg.or!(pegged.peg.and!(quote), pegged.peg.and!(doublequote), pegged.peg.and!(backquote), pegged.peg.and!(backslash), pegged.peg.and!(pegged.peg.literal!("-")), pegged.peg.and!(pegged.peg.literal!("[")), pegged.peg.and!(pegged.peg.literal!("]")), pegged.peg.and!(pegged.peg.or!(pegged.peg.literal!("n"), pegged.peg.literal!("r"), pegged.peg.literal!("t"))), pegged.peg.and!(pegged.peg.charRange!('0', '2'), pegged.peg.charRange!('0', '7'), pegged.peg.charRange!('0', '7')), pegged.peg.and!(pegged.peg.charRange!('0', '7'), pegged.peg.option!(pegged.peg.charRange!('0', '7'))), pegged.peg.and!(pegged.peg.literal!("x"), hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("u"), hexDigit, hexDigit, hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("U"), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), pegged.peg.and!(pegged.peg.any))), "Pegged.Char")(TParseTree("", false,[], s));
+            return         pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(backslash, pegged.peg.or!(pegged.peg.and!(quote), pegged.peg.and!(doublequote), pegged.peg.and!(backquote), pegged.peg.and!(backslash), pegged.peg.and!(pegged.peg.literal!("-")), pegged.peg.and!(pegged.peg.literal!("[")), pegged.peg.and!(pegged.peg.literal!("]")), pegged.peg.and!(pegged.peg.or!(pegged.peg.literal!("n"), pegged.peg.literal!("r"), pegged.peg.literal!("t"))), pegged.peg.and!(pegged.peg.charRange!('0', '2'), pegged.peg.charRange!('0', '7'), pegged.peg.charRange!('0', '7')), pegged.peg.and!(pegged.peg.charRange!('0', '7'), pegged.peg.option!(pegged.peg.charRange!('0', '7'))), pegged.peg.and!(pegged.peg.literal!("x"), hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("u"), hexDigit, hexDigit, hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("U"), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), pegged.peg.and!(pegged.peg.any))), "Pegged.Char")(TParseTree("",
+false,[], s));
         else
-            return hooked!(pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(backslash, pegged.peg.or!(pegged.peg.and!(quote), pegged.peg.and!(doublequote), pegged.peg.and!(backquote), pegged.peg.and!(backslash), pegged.peg.and!(pegged.peg.literal!("-")), pegged.peg.and!(pegged.peg.literal!("[")), pegged.peg.and!(pegged.peg.literal!("]")), pegged.peg.and!(pegged.peg.or!(pegged.peg.literal!("n"), pegged.peg.literal!("r"), pegged.peg.literal!("t"))), pegged.peg.and!(pegged.peg.charRange!('0', '2'), pegged.peg.charRange!('0', '7'), pegged.peg.charRange!('0', '7')), pegged.peg.and!(pegged.peg.charRange!('0', '7'), pegged.peg.option!(pegged.peg.charRange!('0', '7'))), pegged.peg.and!(pegged.peg.literal!("x"), hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("u"), hexDigit, hexDigit, hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("U"), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), pegged.peg.and!(pegged.peg.any))), "Pegged.Char"), "Char")(TParseTree("", false,[], s));
+            return hooked!(pegged.peg.named!(pegged.peg.fuse!(pegged.peg.or!(pegged.peg.and!(backslash, pegged.peg.or!(pegged.peg.and!(quote), pegged.peg.and!(doublequote), pegged.peg.and!(backquote), pegged.peg.and!(backslash), pegged.peg.and!(pegged.peg.literal!("-")), pegged.peg.and!(pegged.peg.literal!("[")), pegged.peg.and!(pegged.peg.literal!("]")), pegged.peg.and!(pegged.peg.or!(pegged.peg.literal!("n"), pegged.peg.literal!("r"), pegged.peg.literal!("t"))), pegged.peg.and!(pegged.peg.charRange!('0', '2'), pegged.peg.charRange!('0', '7'), pegged.peg.charRange!('0', '7')), pegged.peg.and!(pegged.peg.charRange!('0', '7'), pegged.peg.option!(pegged.peg.charRange!('0', '7'))), pegged.peg.and!(pegged.peg.literal!("x"), hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("u"), hexDigit, hexDigit, hexDigit, hexDigit), pegged.peg.and!(pegged.peg.literal!("U"), hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit, hexDigit))), pegged.peg.and!(pegged.peg.any))), "Pegged.Char"), "Char")(
+TParseTree("", false,[], s));
     }
     static string Char(GetName g)
     {

@@ -450,17 +450,3 @@ Dynamic keep(D)(D d)
         return result;
     };
 }
-
-/+
-Dynamic[string] predefined =
-[ "quote":      (ParseTree p) => literal("'")(p)
-, "doublequote":(ParseTree p) => literal("\"")(p)
-, "backquote":  (ParseTree p) => literal("`")(p)
-, "slash":      (ParseTree p) => literal("/")(p)
-, "backslash":  (ParseTree p) => literal("\\")(p)
-, "endOfLine":  (ParseTree p) => or(literal("\n"), literal("\r\n"), literal("\r"))(p)
-, "space":      (ParseTree p) => or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r"))(p)
-, "digit":      (ParseTree p) => charRange('0', '9')(p)
-, "identifier": (ParseTree p) =>pegged.peg.identifier(p)
-];
-+/

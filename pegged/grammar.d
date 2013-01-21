@@ -126,7 +126,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result =
 "struct Generic" ~ shortGrammarName ~ "(TParseTree)
 {
-    import pegged.dynamicgrammar;
+    import pegged.dynamic.grammar;
     struct " ~ grammarName ~ "\n    {
     enum name = \"" ~ shortGrammarName ~ "\";
     static ParseTree delegate(ParseTree)[string] before;
@@ -182,7 +182,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     static void addRuleBefore(string parentRule, string ruleSyntax)
     {
         // enum name is the current grammar name
-        DynamicGrammar dg = pegged.dynamicgrammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
+        DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
         foreach(ruleName,rule; dg.rules)
             if (ruleName != \"Spacing\") // Keep the local Spacing rule, do not overwrite it
                 rules[ruleName] = rule;
@@ -192,7 +192,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     static void addRuleAfter(string parentRule, string ruleSyntax)
     {
         // enum name is the current grammar named
-        DynamicGrammar dg = pegged.dynamicgrammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
+        DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
         foreach(name,rule; dg.rules)
         {
             if (name != \"Spacing\")
