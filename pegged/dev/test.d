@@ -17,6 +17,12 @@ import pegged.dynamic.grammar;
 
 import pegged.examples.arithmetic;
 
+ParseTree foo(ParseTree p)
+{
+    writeln("got ", p.name);
+    return p;
+}
+
 void main()
 {
     writeln(Arithmetic("1+2*x"));
@@ -27,5 +33,9 @@ void main()
     writeln(Arithmetic("1+2*__"));
     writeln(Arithmetic("1+2*&&"));
     writeln(Arithmetic("1+2*x"));
+
+
+    mixin(pegged.grammar.grammar("Test: A<- 'a' {foo}"));
+    writeln(Test("a"));
 }
 
