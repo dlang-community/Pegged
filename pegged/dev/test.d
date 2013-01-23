@@ -26,10 +26,10 @@ ParseTree foo(ParseTree p)
 void main()
 {
     writeln(Arithmetic("1+2*x"));
-    Arithmetic.addRuleBefore("Variable", "Variable <- '&&'");
+    Arithmetic.addRuleBefore("Variable", "Boo <- '&&'");
     writeln(Arithmetic("1+2*&&"));
     writeln(Arithmetic("1+2*x"));
-    Arithmetic.addRuleBefore("Variable", "Variable <- '__'");
+    Arithmetic.addRuleBefore("Variable", "Foo <- '__'");
     writeln(Arithmetic("1+2*__"));
     writeln(Arithmetic("1+2*&&"));
     writeln(Arithmetic("1+2*x"));
