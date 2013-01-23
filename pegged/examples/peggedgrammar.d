@@ -88,5 +88,39 @@ Comment      <- '#' (!eol .)* :eol
 Space        <- spacing / "\\t" / "\\n" / "\\r"
 
 # Action Rule
-Action      <- :ACTIONOPEN Spacing qualifiedIdentifier (:SEPARATOR qualifiedIdentifier)* Spacing :ACTIONCLOSE
+Action      <- :ACTIONOPEN Spacing ((Lambda / qualifiedIdentifier)
+(:SEPARATOR (Lambda / qualifiedIdentifier))*) Spacing :ACTIONCLOSE
+Lambda      <~ (!(ACTIONCLOSE/SEPARATOR) (LambdaItems / NestedList('{',LambdaItems,'}') / .))*
+
+LambdaItems <- ~DComment / ~DString / ~DParamList
+DString     <- WYSString / DBQString / TKNString / DLMString
+
+WYSString   <- 'r' doublequote (!doublequote .)* doublequote /
+               backquote (!backquote .)* backquote
+
+DBQString   <- doublequote (!doublequote Char)* doublequote
+
+TKNString   <- (&'q{' ('q' NestedList('{',DString,'}')))
+
+DLMString   <- ('q' doublequote) ( (&'{' NestedList('{',DString,'}'))
+                                 / (&'[' NestedList('[',DString,']'))
+                                 / (&'(' NestedList('(',DString,')'))
+                                 / (&'<' NestedList('<',DString,'>'))
+                                 ) doublequote
+
+DComment             <- DLineComment / DBlockComment / DNestingBlockComment
+
+DLineComment         <- "//" (!endOfLine .)* endOfLine
+DBlockComment        <- "/*" (!"*/" .)* "*/"
+DNestingBlockComment <- NestedList("/+","+/")
+
+DParamList <- NestedList('(',')')
+
+# Linear nested lists with and without special items
+NestedList(L,Items,R)   <- ^L ( !(L/R/Items) . )* ( Items
+                                                  / NestedList(L,Items,R)
+                                                  / ( !(L/R/Items) . )*
+                                                  )* ( !(L/R/Items) . )* ^R
+
+NestedList(L,R) <- ^L ( !(L/R) . )* (NestedList(L,R) / ( !(L/R) . )*)* ( !(L/R) . )* ^R
 `;

@@ -450,8 +450,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result = p.matches[0] ~ " = " ~ generateCode(p.children[1]);
                 break;
             case "Pegged.Expression":
-                //if (p.children.length > 1) // OR expression
-                //{
+                if (p.children.length > 1) // OR expression
+                {
                     // Keyword list detection: "abstract"/"alias"/...
                     bool isLiteral(ParseTree p)
                     {
@@ -484,15 +484,15 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             result ~= generateCode(seq) ~ ", ";
                         result = result[0..$-2] ~ ")";
                     }
-                //}
-                //else // One child -> just a sequence, no need for a or!( , )
-                //{
-                //    result = generateCode(p.children[0]);
-                //}
+                }
+                else // One child -> just a sequence, no need for a or!( , )
+                {
+                    result = generateCode(p.children[0]);
+                }
                 break;
             case "Pegged.Sequence":
-                //if (p.children.length > 1) // real sequence
-                //{
+                if (p.children.length > 1) // real sequence
+                {
                     result = "pegged.peg.and!(";
                     foreach(seq; p.children)
                     {
@@ -503,11 +503,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         result ~= elementCode ~ ", ";
                     }
                     result = result[0..$-2] ~ ")";
-                //}
-                //else // One child -> just a Suffix, no need for a and!( , )
-                //{
-                //    result = generateCode(p.children[0]);
-                //}
+                }
+                else // One child -> just a Suffix, no need for a and!( , )
+                {
+                    result = generateCode(p.children[0]);
+                }
                 break;
             case "Pegged.Prefix":
                 result = generateCode(p.children[$-1]);
