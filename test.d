@@ -33,9 +33,9 @@ void main()
     auto space = zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r\n"), literal("\r")));
 
     writeln(Test("b"));
-    Test.beforeA = named(oneOrMore(&Test.B), "Test.Addon");
+    Test.before["A"] = named(oneOrMore(&Test.B), "Test.Addon");
     writeln(Test("bcbc"));
-    Test.beforeB = named(literal("d"), "Test.B");
+    Test.before["B"] = named(literal("d"), "Test.B");
     writeln(Test("bcbc"));
     writeln(Test("dddd"));
     //D.beforeStatement = and(named(and(literal("unless"), space, literal("("),space, &D.IfCondition, space, literal(")"), space, &D.BlockStatement), "D.UnlessStatement"));
