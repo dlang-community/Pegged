@@ -6,11 +6,13 @@ The documentation is in the /docs directory.
 */
 module pegged.grammar;
 
+import std.algorithm: startsWith;
 import std.conv: to;
+import std.functional: toDelegate;
 import std.stdio;
 
 public import pegged.peg;
-public import pegged.introspection;
+//public import pegged.introspection;
 import pegged.parser;
 
 version(unittest)
@@ -42,6 +44,8 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
         f.write(optHeader ~ "\n\n");
 
     f.write("public import pegged.peg;\n");
+    f.write("import std.algorithm: startsWith;\n");
+    f.write("import std.functional: toDelegate;\n\n");
     f.write(grammar!(withMemo)(grammarString));
 }
 
@@ -125,7 +129,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result =  "struct Generic" ~ shortGrammarName ~ "(TParseTree)\n"
                         ~ "{\n"
                         ~ "    struct " ~ grammarName ~ "\n    {\n"
-                        ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n";
+                        ~ "    enum name = \"" ~ shortGrammarName ~ "\";\n"
+                        ~ "    static ParseTree delegate(ParseTree)[string] before;\n"
+                        ~ "    static ParseTree delegate(ParseTree)[string] after;\n";
 
                 if (withMemo == Memoization.yes)
                     result ~= "    import std.typecons:Tuple, tuple;\n"
@@ -133,43 +139,48 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 ParseTree[] definitions = p.children[1 .. $];
 
+                /+
                 foreach(i,def; definitions)
                 {
                     string numParam = (def.children[0].children.length > 1) ? ("_" ~ to!string(def.children[0].children[1].children.length)) : "";
                     result ~= "    static ParseTree delegate(ParseTree) before" ~ def.matches[0] ~ numParam ~ ";\n"
                             ~ "    static ParseTree delegate(ParseTree) after"  ~ def.matches[0] ~ numParam ~ ";\n";
                 }
-
+                +/
                 result ~=
-`
-    template hooked(alias r, string name)
+"    template hooked(alias r, string name)
     {
         static ParseTree hooked(ParseTree p)
         {
-            mixin("ParseTree result;
-            if (before" ~ name ~ " !is null)
-                result = before" ~ name ~ "(p);
+            ParseTree result;
 
-            if (result.successful)
-                    return result;
-            else
+            if (name in before)
             {
-                result = r(p);
-                if (result.successful || after" ~ name ~ " is null)
+                result = before[name](p);
+                if (result.successful)
                     return result;
-
-                result = after" ~ name ~ "(p);
             }
-            return result;");
+
+            result = r(p);
+            if (result.successful || name !in after)
+                return result;
+
+            result = after[name](p);
+            return result;
         }
 
         static ParseTree hooked(string input)
         {
-            return hooked!(r, name)(ParseTree("",false,[],input));
+            return hooked!(r, name)(ParseTree(\"\",false,[],input));
         }
     }
-`;
+";
 
+                result ~= "    static bool isRule(string s)\n"
+                        ~ "    {\n"
+                        ~ "        return s.startsWith(\"" ~ shortGrammarName ~ ".\");\n"
+                        ~ "    }\n";
+                /+
                 result ~= "    static bool isRule(string s)\n"
                         ~ "    {\n"
                         ~ "        switch(s)\n"
@@ -177,7 +188,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
                 string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
-                bool userDefinedSpacing = false;
+                
 
                 string paramRuleHandler(string target)
                 {
@@ -185,9 +196,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                           ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""
                           ~shortGrammarName ~ "." ~ target~"!(\") return true;";
                 }
-
+                +/
+                bool userDefinedSpacing = false;
                 foreach(i,def; definitions)
                 {
+                    /+
                     if (def.matches[0] !in ruleNames)
                     {
                         ruleNames[def.matches[0]] = true;
@@ -197,14 +210,16 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         else
                             result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
                     }
+                    +/
                     if (def.matches[0] == "Spacing") // user-defined spacing
                         userDefinedSpacing = true;
                 }
+                /+
                 result ~= "                return true;\n"
                         ~ "            default:\n"
                         ~ parameterizedRulesSpecialCode
                         ~ "                return false;\n        }\n    }\n";
-
+                +/
                 result ~= "    mixin decimateTree;\n";
 
                 // If the grammar provides a Spacing rule, then this will be used.
