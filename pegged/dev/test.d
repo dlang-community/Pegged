@@ -12,30 +12,16 @@ import std.stdio;
 //import std.typetuple;
 
 import pegged.grammar;
-import pegged.dynamic.peg;
-import pegged.dynamic.grammar;
 
-import pegged.examples.arithmetic;
-
-ParseTree foo(ParseTree p)
-{
-    writeln("got ", p.name);
-    return p;
-}
+mixin(grammar("
+Test:
+    Start <- Until('a')
+    Until(T) <- (!(T/eoi) .)*
+"));
 
 void main()
 {
-    writeln(Arithmetic("1+2*x"));
-    Arithmetic.addRuleBefore("Variable", "Boo <- '&&'");
-    writeln(Arithmetic("1+2*&&"));
-    writeln(Arithmetic("1+2*x"));
-    Arithmetic.addRuleBefore("Variable", "Foo <- '__'");
-    writeln(Arithmetic("1+2*__"));
-    writeln(Arithmetic("1+2*&&"));
-    writeln(Arithmetic("1+2*x"));
+    writeln(Test("bcdefgabcde"));
 
-
-    mixin(pegged.grammar.grammar("Test: A<- 'a' {foo}"));
-    writeln(Test("a"));
 }
 

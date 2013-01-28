@@ -139,7 +139,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 bool userDefinedSpacing;
                 foreach(i,def; definitions)
                 {
-                    result ~= "        rules[\"" ~ def.matches[0] ~ "\"] = toDelegate(&" ~ shortGrammarName ~ "." ~ def.matches[0] ~ ");\n";
+                    if (def.children[0].children.length == 1) // Non-parameterized ruleName
+                        result ~= "        rules[\"" ~ def.matches[0] ~ "\"] = toDelegate(&" ~ shortGrammarName ~ "." ~ def.matches[0] ~ ");\n";
                     if (def.matches[0] == "Spacing") // user-defined spacing
                     {
                         userDefinedSpacing = true;
