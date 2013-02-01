@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, shutil, sys, tarfile, tempfile
+import os, shutil, sys, subprocess, tarfile, tempfile
 from waflib import Build, Context, Scripting, Utils
 
 APPNAME = 'libpegged'
@@ -14,9 +14,15 @@ def options(opt):
 
     opt.add_option('--lp64', action = 'store', default = 'true', help = 'compile for 64-bit CPUs (true/false)')
     opt.add_option('--mode', action = 'store', default = 'debug', help = 'the mode to compile in (debug/release)')
+    opt.add_option('--valgrind', action = 'store', default = 'false', help = 'use Valgrind for unit tests')
 
 def configure(conf):
     conf.load('compiler_d')
+
+    if conf.options.valgrind != 'true' and conf.options.valgrind != 'false':
+        conf.fatal('--valgrind must be either true or false.')
+
+    conf.env.VALGRIND = conf.options.valgrind
 
     def add_option(option, flags = 'DFLAGS'):
         if option not in conf.env[flags]:
@@ -80,9 +86,60 @@ def configure(conf):
         conf.fatal('--lp64 must be either true or false.')
 
 def build(bld):
-    bld.stlib(source = bld.path.ant_glob(os.path.join('pegged', '*.d')),
+    bld.stlib(source = bld.path.ant_glob([os.path.join('pegged', '*.d'),
+                                          os.path.join('pegged', 'dynamic', '*.d')]),
               target = 'pegged',
               includes = [TOP])
+
+    if bld.env.COMPILER_D == 'dmd':
+        unittest = '-unittest'
+    elif bld.env.COMPILER_D == 'gdc':
+        unittest = '-funittest'
+    elif bld.env.COMPILER_D == 'ldc2':
+        unittest = '-unittest'
+    else:
+        bld.fatal('Unsupported D compiler.')
+
+    bld.program(source = bld.path.ant_glob(os.path.join('pegged', 'test', '*.d')),
+                target = 'pegged.tester',
+                use = ['pegged'],
+                includes = [TOP],
+                install_path = None,
+                dflags = unittest)
+
+def _run_shell(dir, ctx, args):
+    cwd = os.getcwd()
+    os.chdir(dir)
+
+    code = subprocess.Popen(args, shell = True).wait()
+
+    if code != 0:
+        ctx.fatal(str(args) + ' exited with: ' + str(code))
+
+    os.chdir(cwd)
+
+def unittest(ctx):
+    '''runs the unit test suite'''
+
+    if ctx.env.VALGRIND == 'true':
+        cmd = 'valgrind'
+        cmd += ' --suppressions=' + os.path.join(os.pardir, 'pegged.valgrind')
+        cmd += ' --leak-check=full'
+        cmd += ' --track-fds=yes'
+        cmd += ' --num-callers=50'
+        cmd += ' --show-reachable=yes'
+        cmd += ' --undef-value-errors=no'
+        cmd += ' --error-exitcode=1'
+        cmd += ' --gen-suppressions=all'
+        cmd += ' ' + os.path.join(os.curdir, 'pegged.tester')
+
+        _run_shell(OUT, ctx, cmd)
+    else:
+        _run_shell(OUT, ctx, './pegged.tester')
+
+class UnitTestContext(Build.BuildContext):
+    cmd = 'unittest'
+    fun = 'unittest'
 
 def dist(dst):
     '''makes a tarball for redistributing the sources'''
