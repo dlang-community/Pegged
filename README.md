@@ -80,7 +80,6 @@ Tutorial and docs
 
 The **Pegged** wiki is [here](https://github.com/PhilippeSigaud/Pegged/wiki/). It contains a growing [tutorial](https://github.com/PhilippeSigaud/Pegged/wiki/Pegged-Tutorial). All the wiki pages are also present (as Markdown files) in the `docs` directory.
 
-
 Features
 --------
 
@@ -100,6 +99,11 @@ More advanced features, outside the standard PEG perimeter are there to bring mo
 * **Parametrized rules**: `"List(E, Sep) <- E (Sep E)*"` is possible. The previous rule defines a parametrized parser taking two other parsers (namely, `E` and `Sep`) to match a `Sep`-separated list of `E`'s.  Entire grammars can be parametrized, too. See [Parametrized Rules](https://github.com/PhilippeSigaud/Pegged/wiki/Parametrized-Rules) to see what's possible.
 * **Semantic actions** can be added to any rule in a grammar. Once a rule has matched, its associated action is called on the rule output and passed as final result to other parsers further up the grammar. Do what you want to the parse tree. If the passed actions are delegates, they can access external variables. See [Semantic Actions](https://github.com/PhilippeSigaud/Pegged/wiki/Semantic-Actions).
 
+Continuous Integration
+----------------------
+
+The CI server at <http://ci.lycus.org> runs builds of Pegged whenever they pull from <https://github.com/PhilippeSigaud/Pegged> to <https://github.com/lycus/libpegged>.
+The build status can be viewed here: <http://ci.lycus.org/job/libpegged/>
 
 Limitations
 -----------
