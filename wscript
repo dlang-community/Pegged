@@ -19,6 +19,11 @@ def options(opt):
 def configure(conf):
     conf.load('compiler_d')
 
+    if conf.options.valgrind != 'true' and conf.options.valgrind != 'false':
+        conf.fatal('--valgrind must be either true or false.')
+
+    conf.env.VALGRIND = conf.options.valgrind
+
     def add_option(option, flags = 'DFLAGS'):
         if option not in conf.env[flags]:
             conf.env.append_value(flags, option)

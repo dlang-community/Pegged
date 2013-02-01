@@ -1,0 +1,51 @@
+{
+   <druntime_leak_1>
+   Memcheck:Leak
+   fun:malloc
+   fun:thread_attachThis
+   fun:thread_init
+   fun:gc_init
+   fun:_D2rt6dmain24mainUiPPaZi6runAllMFZv
+   fun:_D2rt6dmain24mainUiPPaZi7tryExecMFMDFZvZv
+   fun:main
+}
+
+{
+   <druntime_leak_2>
+   Memcheck:Leak
+   fun:malloc
+   fun:_D4core6thread6Thread5slockFNdZC4core4sync5mutex5Mutex
+   fun:_D4core6thread6Thread3addFC4core6thread6ThreadZv
+   fun:thread_attachThis
+   fun:thread_init
+   fun:gc_init
+   fun:_D2rt6dmain24mainUiPPaZi6runAllMFZv
+   fun:_D2rt6dmain24mainUiPPaZi7tryExecMFMDFZvZv
+   fun:main
+}
+
+{
+   <druntime_leak_3>
+   Memcheck:Leak
+   fun:calloc
+   fun:_d_monitor_create
+   fun:_d_monitorenter
+   fun:_D4core6thread6Thread8isDaemonMFNdZb
+   fun:_D4core6thread14thread_joinAllUZv16__foreachbody333MFKC4core6thread6ThreadZi
+   fun:_D4core6thread6Thread7opApplyFMDFKC4core6thread6ThreadZiZi
+   fun:thread_joinAll
+   fun:_D2rt6dmain24mainUiPPaZi6runAllMFZv
+   fun:_D2rt6dmain24mainUiPPaZi7tryExecMFMDFZvZv
+   fun:main
+}
+
+{
+   <druntime_leak_4>
+   Memcheck:Leak
+   fun:malloc
+   fun:_D2rt5minfo14getModuleInfosFZAPS6object10ModuleInfo
+   fun:rt_moduleCtor
+   fun:_D2rt6dmain24mainUiPPaZi6runAllMFZv
+   fun:_D2rt6dmain24mainUiPPaZi7tryExecMFMDFZvZv
+   fun:main
+}
