@@ -452,7 +452,7 @@ unittest // word boundary
 {
     ParseTree input = ParseTree("", false, [], "This is a word.");
     auto wb = [// "This"
-               0:true, 1:false, 2:false, 3:false, 4: true,
+               cast(size_t)(0):true, 1:false, 2:false, 3:false, 4: true,
                // "is"
                5: true, 6:false, 7: true,
                // "a"
