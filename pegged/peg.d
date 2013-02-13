@@ -106,6 +106,39 @@ struct ParseTree
         return result ~ childrenString;
     }
 
+    @property string failMsg()
+    {
+        foreach(i, child; children)
+        {
+            if (!child.successful)
+                return child.failMsg;
+        }
+
+        if (!successful)
+        {
+            Position pos = position(this);
+            string left, right;
+
+            if (pos.index < 10)
+                left = input[0 .. pos.index];
+            else
+                left = input[pos.index - 10 .. pos.index];
+            left = left.replace("\n", `\n`).replace("\t", `\t`);
+
+            if (pos.index + 10 < input.length)
+                right = input[pos.index .. pos.index + 10];
+            else
+                right = input[pos.index .. $];
+            right = right.replace("\n", `\n`).replace("\t", `\t`);
+
+            return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
+                ~ (left.length > 0 ? "after \"" ~ left ~ "\" " : "")
+                ~ "expected " ~ (matches.length > 0 ? matches[$ - 1] : "NO MATCH")
+                ~ `, but got "` ~ right ~ `"`;
+        }
+
+        return "Success";
+    }
 
     /**
     Comparing ParseTree's.
