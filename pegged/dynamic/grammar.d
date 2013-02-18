@@ -199,7 +199,7 @@ Dynamic makeRule(ParseTree def, Dynamic[string] context)
                 //{
                 //    return ruleFromTree(p.children[0]);
                 //}
-                break;
+                //break;
             case "Pegged.Sequence":
                 //if (p.children.length > 1) // real sequence
                 //{
@@ -255,7 +255,7 @@ Dynamic makeRule(ParseTree def, Dynamic[string] context)
                 {
                     return ruleFromTree(p.children[0]);
                 }
-                break;
+                //break;
             case "Pegged.CharRange":
                 /// Make the generation at the Char level: directly what is needed, be it `` or "" or whatever
                 if (p.children.length > 1) // a-b range
@@ -310,7 +310,7 @@ Dynamic makeRule(ParseTree def, Dynamic[string] context)
                     default:
                         return literal(ch);
                 }
-                break;
+                //break;
             case "Pegged.POS":
                 return posLookahead(ruleFromTree(p.children[0]));
             case "Pegged.NEG":
@@ -379,7 +379,7 @@ Dynamic makeRule(ParseTree def, Dynamic[string] context)
             break;
         default:
             throw new Exception("Unknow arrow: " ~ def.children[1].children[0].name);
-            break;
+            //break;
     }
 
     return named(code, def.matches[0]);
