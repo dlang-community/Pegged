@@ -1,0 +1,18 @@
+{
+    "name": "pegged",
+    "description": "Parsing Expression Grammar (PEG) generator",
+    "copyright": "Copyright © 2012-2013, Philippe Sigaud",
+    "license": "Boost",
+    "authors": [ "Philippe Sigaud" ],
+    "sourceFiles": [
+        "pegged/peg.d",
+        "pegged/grammar.d",
+        "pegged/parser.d",
+        "pegged/dynamic/grammar.d",
+        "pegged/dynamic/peg.d"
+    ],
+    "importPaths": ["."],
+    "dflags": ["-wi", "-ignore", "-property"],
+    "dflags-gdc": ["-ggdb"],
+    "dflags-ldc": ["-check-printf-calls"],
+}
