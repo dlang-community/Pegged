@@ -14,14 +14,26 @@ import std.stdio;
 import pegged.grammar;
 
 mixin(grammar("
-Test:
-    Start <- Until('a')
-    Until(T) <- (!(T/eoi) .)*
-"));
+    TOML:
+    Element <  Key* :eoi
+    Key < ^identifier :'=' Var
+    Var < Integer
+    Integer <~ '-'? digits
+ 
+    # These two are predefined by Pegged
+    spacing <~ blank+
+    blank   <- space / endOfLine
+    Spacing <: ( spacing / Comment )* # s/spacing/blank/ and it works.  Why?
+    Comment <- '#' (!eol .)* :eol # Cribbed directly from the Pegged grammar
+    "));
 
 void main()
 {
-    writeln(Test("bcdefgabcde"));
+    enum input = `
+    int1 = 40
+    # It bails here.
+    int2 = 51`;
+    writeln(TOML(input));
 
 }
 
