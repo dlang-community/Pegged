@@ -302,8 +302,8 @@ Dynamic or(T...)(T rules)
                 auto temp = results[i];
                 auto len = temp.matches[$-1].length;
                 auto nlen = names[i].length;
-                errString[start .. start+len] = temp.matches[$-1];
-                errString[start+len .. start+len+names[i].length] = names[i];
+                errString[start .. start+len] = temp.matches[$-1][];
+                errString[start+len .. start+len+names[i].length] = names[i][];
                 errString[start+len+nlen .. start+len+nlen+4] = " or ";
                 start += len + names[i].length + 4;
             }
