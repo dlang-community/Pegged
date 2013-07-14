@@ -2575,7 +2575,7 @@ unittest // 'keep' unit test
 alias named!(keywords!("\r\n", "\n", "\r"), "endOfLine") endOfLine; /// predefined end-of-line parser
 alias endOfLine eol; /// helper alias.
 
-alias or!(literal!(" "), literal!("\t")) space; /// predefined space-recognizing parser (space or tabulation).
+alias or!(literal!(" "), literal!("\t"), literal!("\v")) space; /// predefined space-recognizing parser (space or tabulation).
 alias named!(literal!"\t", "tab") tab; /// A parser recognizing \t (tabulation)
 alias named!(fuse!(discardChildren!(oneOrMore!space)),
              "spaces") spaces; /// aka '~space+'
