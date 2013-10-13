@@ -9,7 +9,10 @@
         "pegged/grammar.d",
         "pegged/parser.d",
         "pegged/dynamic/grammar.d",
-        "pegged/dynamic/peg.d"
+        "pegged/dynamic/peg.d",
+        "pegged/tester/grammartester.d",
+        "pegged/tester/testerparser.d",
+        "pegged/examples/arithmetic.d"
     ],
     "importPaths": ["."],
     "dflags": ["-wi", "-ignore", "-property"],
