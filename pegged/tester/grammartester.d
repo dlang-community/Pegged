@@ -9,7 +9,7 @@ import std.array;
 import std.ascii : whitespace;
 import std.range : retro;
 import std.algorithm : max, splitter;
-import std.string : xformat, stripRight, removechars, squeeze;
+import std.string : format, stripRight, removechars, squeeze;
 
 import pegged.examples.arithmetic;
 import pegged.tester.testerparser;
@@ -56,7 +56,7 @@ class GrammarTester(grammar, string startSymbol)
 				numberErrors++;
 				errorTextStream.put("\n");
 				errorTextStream.put(        "---------------------------\n");
-				errorTextStream.put(xformat("Assertion failed at %s(%s):\n",file,lineNo));
+				errorTextStream.put(format("Assertion failed at %s(%s):\n",file,lineNo));
 				errorTextStream.put(diffText);
 			}
 		}
@@ -154,7 +154,7 @@ private struct Differencer(T,P)
 		string[] rcolumn = rightColumn.data;
 		auto diffText = appender!string();
 		for ( size_t i = 0; i < lcolumn.length; i++ )
-			diffText.put(xformat("\n%-*s  %c  %s", max1stColumnWidth,
+			diffText.put(format("\n%-*s  %c  %s", max1stColumnWidth,
 				lcolumn[i], center[i], rcolumn[i]).stripRight());
 		diffText.put("\n");
 		
