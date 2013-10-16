@@ -242,7 +242,7 @@ Dynamic makeRule(ParseTree def, Dynamic[string] context)
                 if(p.matches.length == 3) // standard case
                     return literal(p.matches[1]);
                 else // only two children -> empty literal
-                    return eps;
+                    return eps();
             case "Pegged.CharClass":
                 if (p.children.length > 1)
                 {
@@ -415,7 +415,7 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
 
     foreach(i,def; definitions)
     {
-        gram[def.matches[0]] = fail;
+        gram[def.matches[0]] = fail();
     }
 
     foreach(i,def; definitions)
