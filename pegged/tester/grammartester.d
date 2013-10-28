@@ -122,11 +122,11 @@ class GrammarTester(grammar, string startSymbol)
 	
 private struct Differencer(T,P)
 {
-	int level = 0;
-	int differences = 0;
+	size_t level = 0;
+	size_t differences = 0;
 	const(T)* treeRoot;
 	const(P)* patternRoot;
-	int max1stColumnWidth = 0;
+	size_t max1stColumnWidth = 0;
 	Appender!(string[]) leftColumn;
 	Appender!(char[])   centerLine;
 	Appender!(string[]) rightColumn;
@@ -175,7 +175,7 @@ private struct Differencer(T,P)
 			lineDiff(node,pattern);
 
 			// These will track which node children we have visited.
-			int cursor = 0;
+			size_t cursor = 0;
 			bool[] visited = [];
 			if ( node ) visited = new bool[node.children.length];
 			foreach ( ref flag; visited ) flag = false;
@@ -231,7 +231,7 @@ private struct Differencer(T,P)
 		level--;
 	}
 	
-	private void diffBranch( const(T*) node, const(P*) pattern, bool[] visited, ref int cursor )
+	private void diffBranch( const(T*) node, const(P*) pattern, bool[] visited, ref size_t cursor )
 	{
 		assert(pattern);
 		switch ( pattern.name )
@@ -262,7 +262,7 @@ private struct Differencer(T,P)
 			level++;
 			if ( node ) foreach ( i, patternChild; pattern.children )
 			{
-				int foundIndex = -1;
+				size_t foundIndex = size_t.max;
 				
 				// Cheap hack for now: 0(n^2) scan-in-scan.
 				//
@@ -292,7 +292,7 @@ private struct Differencer(T,P)
 					}
 				}
 			
-				if ( foundIndex < 0 )
+				if ( foundIndex == size_t.max )
 					diffNode(null, &patternChild);
 				else
 				{
