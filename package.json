@@ -15,7 +15,7 @@
         "pegged/examples/arithmetic.d"
     ],
     "importPaths": ["."],
-    "dflags": ["-wi", "-ignore", "-property"],
+    "dflags": ["-ignore"],
     "dflags-gdc": ["-ggdb"],
     "dflags-ldc": ["-check-printf-calls"],
 }
