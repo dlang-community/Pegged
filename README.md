@@ -3,7 +3,7 @@ PEGGED
 
 **Pegged** is a parsing expression grammar (PEG) generator implemented in the D programming language.
 
-The idea is to give the generator a [PEG](en.wikipedia.org/wiki/Parsing_expression_grammar), with the syntax presented in [the reference article ](http://bford.info/pub/lang/peg). From this grammar definition a set of related parsers will be created, to be used at runtime or compile time.
+The idea is to give the generator a [PEG](http://en.wikipedia.org/wiki/Parsing_expression_grammar), with the syntax presented in [the reference article ](http://bford.info/pub/lang/peg). From this grammar definition a set of related parsers will be created, to be used at runtime or compile time.
 
 Usage
 -----
