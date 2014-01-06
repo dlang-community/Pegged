@@ -39,7 +39,7 @@ enum KEYWORDS = IFCHAIN;
 
 /**
 The basic parse tree, as used throughout the project.
-You can defined your own parse tree node, but respect the basic layout.
+You can define your own parse tree node, but respect the basic layout.
 */
 struct ParseTree
 {
@@ -2071,13 +2071,28 @@ Internal helper template, to get a parse tree node with a name. For example, giv
 alias or!(literal!("abc"), charRange!('0','9')) myRule;
 ----
 
-myRule gives nodes named "or", since its the parent rule. If you want nodes to be named "myRule":
+myRule gives nodes named "or", since its the parent rule. If you want nodes to be named "myRule",
+use named. named just overwrites the original root node name, the children are left untouched.
+
+See_Also: defined.
 
 ----
-alias named!(
-             or!(literal!("abc"), charRange!('0','9')),
-             "myRule"
-            ) myRule;
+alias or!(literal!("abc"), charRange!('0','9')) rule;
+alias named!(rule, "myRule") myRule;
+
+auto input = "abc3";
+auto p1 = rule(input);
+auto p2 = myRule(input);
+
+// They are both successful
+assert(p1.successful && p2.successful);
+assert(p1.matches == p2.matches);
+// But the names are different
+assert(p1.name == `or!(literal!("abc"), charRange!('0','9'))`);
+assert(p2.name == `myRule`);
+// Same children:
+assert(p2.children == p1.children);
+
 ----
 */
 template named(alias r, string name)
@@ -2085,7 +2100,6 @@ template named(alias r, string name)
     ParseTree named(ParseTree p)
     {
         ParseTree result = r(p);
-        //result.children = [result];
         result.name = name;
         return result;
     }
@@ -2132,6 +2146,36 @@ unittest // 'named' unit test
     assert(myResult.children == result.children);
 }
 
+/**
+Internal helper template, to get a parse tree node with a name, while keeping the original node (see also named). 
+For example, given:
+----
+alias or!(literal!("abc"), charRange!('0','9')) myRule;
+----
+
+myRule gives nodes named "or", since its the parent rule. If you want nodes to be named "myRule",
+use defined. Contrary to named (see before), the original node is pushed as the child.
+
+See_Also: named.
+
+----
+alias or!(literal!("abc"), charRange!('0','9')) rule;
+alias defined!(rule, "myRule") myRule;
+
+auto input = "abc3";
+auto p1 = rule(input);
+auto p2 = myRule(input);
+
+// They are both successful
+assert(p1.successful && p2.successful);
+assert(p1.matches == p2.matches);
+// But the names are different
+assert(p1.name == `or!(literal!("abc"), charRange!('0','9'))`);
+assert(p2.name == `myRule`);
+// Here the original tree is not discarded:
+assert(p2.children[0] == p1);
+----
+*/
 template defined(alias r, string name)
 {
     ParseTree defined(ParseTree p)
@@ -2151,6 +2195,37 @@ template defined(alias r, string name)
     {
         return name;
     }
+}
+
+unittest // 'defined' unit test
+{
+    alias or!(literal!("abc"), charRange!('0','9')) rule;
+    alias defined!(rule, "myRule") myRule;
+
+    assert(getName!(rule)() == `or!(literal!("abc"), charRange!('0','9'))`);
+    assert(getName!(myRule)() == "myRule");
+
+    // Equality on success (except for the name)
+    ParseTree result = rule("abc0");
+    ParseTree myResult = myRule("abc0");
+
+    assert(myResult.successful && result.successful);
+    assert(myResult.name == "myRule");
+    assert(myResult.matches == result.matches);
+    assert(myResult.begin == result.begin);
+    assert(myResult.end == result.end);
+    assert(myResult.children[0] == result);
+
+    // Equality on failure (except for the name)
+    result = rule("_abc");
+    myResult = myRule("_abc");
+
+    assert(!myResult.successful && !result.successful);
+    assert(myResult.name == "myRule");
+    assert(myResult.matches == result.matches);
+    assert(myResult.begin == result.begin);
+    assert(myResult.end == result.end);
+    assert(myResult.children[0] == result);
 }
 
 /**

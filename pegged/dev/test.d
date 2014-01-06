@@ -16,30 +16,32 @@ import pegged.grammar;
 
 void main()
 {
-    enum gram = `
-    G:
-        A <- B
-        B <- C
-        C <- 'c' D
-        D <- 'd'
-    `;
+    alias or!(literal!("abc"), charRange!('0','9')) rule;
+    alias defined!(rule, "myRule") myRule;
 
-    mixin(grammar(gram));
+    assert(getName!(rule)() == `or!(literal!("abc"), charRange!('0','9'))`);
+    assert(getName!(myRule)() == "myRule");
 
-    string input = "cd";
+    // Equality on success (except for the name)
+    ParseTree result = rule("abc0");
+    ParseTree myResult = myRule("abc0");
 
-    ParseTree p = G(input);
-    writeln(p);
-    assert(p.successful);
-    assert(p.name == "G");
-    assert(p.children.length == 1);
-    assert(p.children[0].name == "G.A");
-    assert(p.children[0].children.length == 1);
-    assert(p.children[0].children[0].name == "G.B");
-    assert(p.children[0].children[0].children.length == 1);
-    assert(p.children[0].children[0].children[0].name == "G.C");
-    assert(p.children[0].children[0].children[0].children.length == 1);
-    assert(p.children[0].children[0].children[0].children[0].name == "G.D");
-    assert(p.children[0].children[0].children[0].children[0].children.length == 0);
+    assert(myResult.successful && result.successful);
+    assert(myResult.name == "myRule");
+    assert(myResult.matches == result.matches);
+    assert(myResult.begin == result.begin);
+    assert(myResult.end == result.end);
+    assert(myResult.children[0] == result);
+
+    // Equality on failure (except for the name)
+    result = rule("_abc");
+    myResult = myRule("_abc");
+
+    assert(!myResult.successful && !result.successful);
+    assert(myResult.name == "myRule");
+    assert(myResult.matches == result.matches);
+    assert(myResult.begin == result.begin);
+    assert(myResult.end == result.end);
+    assert(myResult.children[0] == result);
 }
 
