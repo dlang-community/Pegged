@@ -4,3 +4,4 @@
 *.o
 .lock-*
 build/*
+.directory
