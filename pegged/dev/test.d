@@ -13,27 +13,33 @@ import std.stdio;
 
 import pegged.grammar;
 
-mixin(grammar("
-    TOML:
-    Element <  Key* :eoi
-    Key < ^identifier :'=' Var
-    Var < Integer
-    Integer <~ '-'? digits
- 
-    # These two are predefined by Pegged
-    spacing <~ blank+
-    blank   <- space / endOfLine
-    Spacing <: ( spacing / Comment )* # s/spacing/blank/ and it works.  Why?
-    Comment <- '#' (!eol .)* :eol # Cribbed directly from the Pegged grammar
-    "));
 
 void main()
 {
-    enum input = `
-    int1 = 40
-    # It bails here.
-    int2 = 51`;
-    writeln(TOML(input));
+    enum gram = `
+    G:
+        A <- B
+        B <- C
+        C <- 'c' D
+        D <- 'd'
+    `;
 
+    mixin(grammar(gram));
+
+    string input = "cd";
+
+    ParseTree p = G(input);
+    writeln(p);
+    assert(p.successful);
+    assert(p.name == "G");
+    assert(p.children.length == 1);
+    assert(p.children[0].name == "G.A");
+    assert(p.children[0].children.length == 1);
+    assert(p.children[0].children[0].name == "G.B");
+    assert(p.children[0].children[0].children.length == 1);
+    assert(p.children[0].children[0].children[0].name == "G.C");
+    assert(p.children[0].children[0].children[0].children.length == 1);
+    assert(p.children[0].children[0].children[0].children[0].name == "G.D");
+    assert(p.children[0].children[0].children[0].children[0].children.length == 0);
 }
 

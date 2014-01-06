@@ -366,8 +366,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     innerName ~= "`" ~ completeName ~ "`";
                 }
 
-                string ctfeCode = "        pegged.peg.named!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
-                code =            "hooked!(pegged.peg.named!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
+                string ctfeCode = "        pegged.peg.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+                code =            "hooked!(pegged.peg.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
 
                 if (withMemo == Memoization.no)
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
@@ -1010,7 +1010,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     result = PrefixSuffix.Rule1("def");
     reference = posLookahead!(literal!"abc")("def");
@@ -1018,7 +1018,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
 
     // Verifying !"abc" creates a negative look-ahead construct
@@ -1028,7 +1028,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     result = PrefixSuffix.Rule2("def");
     reference = negLookahead!(literal!"abc")("def");
@@ -1036,7 +1036,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     // Verifying "abc"? creates an optional construct
     result = PrefixSuffix.Rule3("abc");
@@ -1045,7 +1045,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     result = PrefixSuffix.Rule3("def");
     reference = option!(literal!"abc")("def");
@@ -1053,7 +1053,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     // Verifying "abc"* creates a zero or more construct
     result = PrefixSuffix.Rule4("");
@@ -1062,7 +1062,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     result = PrefixSuffix.Rule4("abc");
     reference = zeroOrMore!(literal!"abc")("abc");
@@ -1070,7 +1070,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     result = PrefixSuffix.Rule4("abcabc");
     reference = zeroOrMore!(literal!"abc")("abcabc");
@@ -1078,7 +1078,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     // Verifying "abc"+ creates a one or more construct
     result = PrefixSuffix.Rule5("");
@@ -1087,7 +1087,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     result = PrefixSuffix.Rule5("abc");
     reference = oneOrMore!(literal!"abc")("abc");
@@ -1095,7 +1095,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 
     result = PrefixSuffix.Rule5("abcabc");
     reference = oneOrMore!(literal!"abc")("abcabc");
@@ -1103,7 +1103,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.matches == reference.matches);
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
-    assert(result.children == reference.children);
+    assert(result.children[0].children == reference.children);
 }
 
 unittest // Multilines rules
@@ -1286,7 +1286,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.begin == 0);
     assert(result.end == "abcdef".length, "The entire input is parsed.");
     assert(result.matches == ["abc", "def"]);
-    assert(result.children.length == 2);
+    assert(result.children[0].children.length == 2);
 
     // Comparing <- ABC DEF and <; ABC DEF
     result = Arrows.decimateTree(Arrows.Rule9("abcdef"));
@@ -1673,28 +1673,28 @@ unittest // Prefix and suffix tests
     assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches is null);
-    assert(result.children is null);
+    assert(result.children.length == 0);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule2("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches is null);
-    assert(result.children is null);
+    assert(result.children.length == 0);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule3("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abc".length);
     assert(result.matches is null);
-    assert(result.children is null);
+    assert(result.children.length == 0);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule4("abcabcabc"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == "abcabcabc".length);
     assert(result.matches == ["abcabcabc"]);
-    assert(result.children is null);
+    assert(result.children.length == 0);
 
     // +* and +?
     result = MoreThanOne.decimateTree(MoreThanOne.Rule5("abcabcabc"));
@@ -1717,14 +1717,14 @@ unittest // Prefix and suffix tests
     assert(result.begin == 0);
     assert(result.end == 0);
     assert(result.matches is null);
-    assert(result.children is null);
+    assert(result.children.length == 0);
 
     result = MoreThanOne.decimateTree(MoreThanOne.Rule8("abc"));
     assert(result.successful);
     assert(result.begin == 0);
     assert(result.end == 0);
     assert(result.matches is null);
-    assert(result.children is null);
+    assert(result.children.length == 0);
 
     // ^^"abc"+*
     result = MoreThanOne.decimateTree(MoreThanOne.Rule9("abcabcabc"));
@@ -1733,13 +1733,16 @@ unittest // Prefix and suffix tests
     assert(result.end == 9);
     assert(result.matches == ["abc", "abc", "abc"]);
     assert(result.children.length == 1);
-    assert(result.children[0].name == `zeroOrMore!(oneOrMore!(literal!("abc")))`);
+    assert(result.name == `MoreThanOne.Rule9`);
+    assert(result.children[0].name == `keep!(zeroOrMore!(oneOrMore!(literal!("abc"))))`);
     assert(result.children[0].children.length == 1);
-    assert(result.children[0].children[0].name == `oneOrMore!(literal!("abc"))`);
-    assert(result.children[0].children[0].children.length == 3);
-    assert(result.children[0].children[0].children[0].name == `literal!("abc")`);
-    assert(result.children[0].children[0].children[1].name == `literal!("abc")`);
-    assert(result.children[0].children[0].children[2].name == `literal!("abc")`);
+    assert(result.children[0].children[0].name == `zeroOrMore!(oneOrMore!(literal!("abc")))`);
+    assert(result.children[0].children[0].children.length == 1);
+    assert(result.children[0].children[0].children[0].name == `oneOrMore!(literal!("abc"))`);
+    assert(result.children[0].children[0].children[0].children.length == 3);
+    assert(result.children[0].children[0].children[0].children[0].name == `literal!("abc")`);
+    assert(result.children[0].children[0].children[0].children[1].name == `literal!("abc")`);
+    assert(result.children[0].children[0].children[0].children[2].name == `literal!("abc")`);
 }
 
 unittest // Issue #88 unit test
@@ -2556,4 +2559,32 @@ unittest
     
     pt = TestGrammar.Bar("AB");
     assert(!pt.successful);
+}
+
+unittest // Issue #129 unit test
+{
+    enum gram = `
+    G:
+        A <- B
+        B <- C
+        C <- 'c' D
+        D <- 'd'
+    `;
+
+    mixin(grammar(gram));
+
+    string input = "cd";
+
+    ParseTree p = G(input);
+    assert(p.successful);
+    assert(p.name == "G");
+    assert(p.children.length == 1);
+    assert(p.children[0].name == "G.A");
+    assert(p.children[0].children.length == 1);
+    assert(p.children[0].children[0].name == "G.B");
+    assert(p.children[0].children[0].children.length == 1);
+    assert(p.children[0].children[0].children[0].name == "G.C");
+    assert(p.children[0].children[0].children[0].children.length == 1);
+    assert(p.children[0].children[0].children[0].children[0].name == "G.D");
+    assert(p.children[0].children[0].children[0].children[0].children.length == 0);
 }

@@ -2085,6 +2085,7 @@ template named(alias r, string name)
     ParseTree named(ParseTree p)
     {
         ParseTree result = r(p);
+        //result.children = [result];
         result.name = name;
         return result;
     }
@@ -2129,6 +2130,27 @@ unittest // 'named' unit test
     assert(myResult.begin == result.begin);
     assert(myResult.end == result.end);
     assert(myResult.children == result.children);
+}
+
+template defined(alias r, string name)
+{
+    ParseTree defined(ParseTree p)
+    {
+        ParseTree result = r(p);
+        result.children = [result];
+        result.name = name;
+        return result;
+    }
+
+    ParseTree defined(string input)
+    {
+        return .defined!(r,name)(ParseTree("",false,[],input));
+    }
+
+    string defined(GetName g)
+    {
+        return name;
+    }
 }
 
 /**
