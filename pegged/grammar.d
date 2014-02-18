@@ -140,7 +140,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 foreach(i,def; definitions)
                 {
                     if (def.children[0].children.length == 1) // Non-parameterized ruleName
-                        result ~= "        rules[\"" ~ def.matches[0] ~ "\"] = toDelegate(&" ~ shortGrammarName ~ "." ~ def.matches[0] ~ ");\n";
+                        result ~= "        rules[\"" ~ def.matches[0] ~ "\"] = toDelegate(&" ~ def.matches[0] ~ ");\n";
                     if (def.matches[0] == "Spacing") // user-defined spacing
                     {
                         userDefinedSpacing = true;
@@ -148,7 +148,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     }
                 }
                 if(!userDefinedSpacing)
-                    result ~= "        rules[\"Spacing\"] = toDelegate(&" ~ shortGrammarName ~ ".Spacing);\n";
+                    result ~= "        rules[\"Spacing\"] = toDelegate(&Spacing);\n";
 
                 result ~=
 "   }
@@ -2539,7 +2539,7 @@ unittest
         Foo < '{' 'X' '}'
         Bar < 'A' 'B'
 
-        Spacing <: 
+        Spacing <:
             / blank+
             / blank* wordBoundary
             / wordBoundary blank*
@@ -2550,13 +2550,13 @@ unittest
 
     auto pt = TestGrammar.Foo("{ X }");
     assert(pt.successful);
-    
+
     pt = TestGrammar.Foo("{X}");
     assert(pt.successful);
-    
+
     pt = TestGrammar.Bar("A B");
     assert(pt.successful);
-    
+
     pt = TestGrammar.Bar("AB");
     assert(!pt.successful);
 }
