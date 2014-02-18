@@ -1,7 +1,7 @@
 {
     "name": "pegged",
     "description": "Parsing Expression Grammar (PEG) generator",
-    "copyright": "Copyright © 2012-2013, Philippe Sigaud",
+    "copyright": "Copyright © 2012-2014, Philippe Sigaud",
     "license": "Boost",
     "authors": [ "Philippe Sigaud" ],
     "sourceFiles": [
@@ -11,8 +11,7 @@
         "pegged/dynamic/grammar.d",
         "pegged/dynamic/peg.d",
         "pegged/tester/grammartester.d",
-        "pegged/tester/testerparser.d",
-        "pegged/examples/arithmetic.d"
+        "pegged/tester/testerparser.d"
     ],
     "importPaths": ["."],
     "dflags": ["-ignore"],
