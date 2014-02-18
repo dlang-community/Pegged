@@ -5,3 +5,4 @@
 .lock-*
 build/*
 .directory
+.dub
