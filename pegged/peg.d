@@ -140,26 +140,6 @@ struct ParseTree
         return "Success";
     }
 
-    /**
-    Comparing ParseTree's.
-
-    This function is templated so that the compiler can automatically choose a
-    const ref or plain const version for the 'p' parameter.
-    See this for more details: http://goo.gl/vfKKG
-    */
-
-    bool opEquals(T)(auto ref T p) const
-    {
-        return ( p.name       == name
-              && p.successful == successful
-              && p.matches    == matches
-              && p.input      == input
-              && p.begin      == begin
-              && p.end        == end
-              && (p.children == children) );
-    }
-
-
     ParseTree dup() @property
     {
         ParseTree result = this;
