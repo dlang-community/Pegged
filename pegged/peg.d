@@ -55,7 +55,7 @@ struct ParseTree
     /**
     Basic toString for easy pretty-printing.
     */
-    string toString(string tabs = "")
+    string toString(string tabs = "") const
     {
         string result = name;
 
@@ -262,7 +262,7 @@ Position position(string s)
 /**
 Same as previous overload, but from the begin of P.input to p.end
 */
-Position position(ParseTree p)
+Position position(const ParseTree p)
 {
     return position(p.input[0..p.end]);
 }
