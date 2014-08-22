@@ -16,5 +16,5 @@
     "importPaths": ["."],
     "dflags": ["-ignore"],
     "dflags-gdc": ["-ggdb"],
-    "dflags-ldc": ["-check-printf-calls"],
+    "dflags-ldc": ["-check-printf-calls"]
 }
