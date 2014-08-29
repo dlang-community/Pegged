@@ -14,6 +14,5 @@ import std.stdio;
 import pegged.grammar;
 
 
-void main()
-{
+void main() {
 }
