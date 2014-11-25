@@ -18,11 +18,10 @@ Writing tests the long way is preferred here, as it will avoid the circular
 dependency.
 */
 
-import std.algorithm: map, startsWith;
+import std.algorithm: equal, map, startsWith;
 import std.uni : isAlpha;
 import std.array;
 import std.conv;
-import std.range: equal;
 import std.string: strip;
 import std.typetuple;
 import std.uni: isAlpha;
