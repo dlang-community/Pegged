@@ -13,6 +13,14 @@ import std.stdio;
 
 import pegged.grammar;
 
+mixin(grammar(`
+Test:
+    A <- B* C
+    B <- 'b'
+    C <- 'c'
+`));
+
 
 void main() {
+  writeln(Test("bbbbc"));
 }
