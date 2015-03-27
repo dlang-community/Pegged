@@ -8,6 +8,10 @@
         "pegged/peg.d",
         "pegged/grammar.d",
         "pegged/parser.d",
+        "pegged/dynamic/grammar.d",
+        "pegged/dynamic/peg.d",
+        "pegged/tester/grammartester.d",
+        "pegged/tester/testerparser.d"
     ],
     "importPaths": ["."],
     "dflags": ["-ignore"],
