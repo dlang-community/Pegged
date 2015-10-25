@@ -272,7 +272,7 @@ RuleInfo[string] ruleInfo(string grammar)
     {
         switch (p.name)
         {
-            case "Pegged.Expression": // Choices are left-recursive is any choice is left-recursive
+            case "Pegged.Expression": // Choices are left-recursive if any choice is left-recursive
                 foreach(seq; p.children)
                 {
                     auto lr = leftRecursion(seq, target);
