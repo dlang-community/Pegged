@@ -389,7 +389,8 @@ RuleInfo[string] ruleInfo(string grammar)
     return ruleInfo(Pegged(grammar).children[0]);
 }
 
-unittest{
+unittest
+{
     auto info = ruleInfo(`
         Test:
             A <- A 'a'
@@ -412,7 +413,8 @@ unittest{
 }
 
 // Test against infinite recursion in detection of indirect left-recursion.
-unittest{
+unittest
+{
     auto info = ruleInfo(`
         Test:
             A <- B / C 'a'
