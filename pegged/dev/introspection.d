@@ -62,6 +62,7 @@ RuleInfo[string] ruleInfo(string grammar)
 {
     RuleInfo[string] result;
     ParseTree[string] rules;
+    bool[string] maybeLeftRecursive;
 
     /**
     Returns the call graph of a grammar: the list of rules directly called by each rule of the grammar.
@@ -273,12 +274,14 @@ RuleInfo[string] ruleInfo(string grammar)
         switch (p.name)
         {
             case "Pegged.Expression": // Choices are left-recursive if any choice is left-recursive
+                maybeLeftRecursive[target] = true;
                 foreach(seq; p.children)
                 {
                     auto lr = leftRecursion(seq, target);
                     if (lr != LeftRecursive.no)
                         return lr;
                 }
+                maybeLeftRecursive[target] = false;
                 return LeftRecursive.no;
             case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive
                                     // or behind null-matching members
@@ -304,7 +307,8 @@ RuleInfo[string] ruleInfo(string grammar)
             case "Pegged.RhsName":
                 if (p.matches[0] == target) // ?? Or generateCode(p) ?
                     return LeftRecursive.direct;
-                else if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no))
+                else if (((p.matches[0] in maybeLeftRecursive) && (maybeLeftRecursive[p.matches[0]])) ||
+                         ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no)))
                     return LeftRecursive.indirect;
                 else
                     return LeftRecursive.no;
@@ -394,6 +398,17 @@ unittest{
         Test:
             A <- B 'a'
             B <- A
+    `);
+    assert(info["A"].leftRecursion == LeftRecursive.indirect);
+}
+
+// Test against infinite recursion in detection of indirect left-recursion.
+unittest{
+    auto info = ruleInfo(`
+        Test:
+            A <- B / C 'a'
+            B <- A
+            C <- A
     `);
     assert(info["A"].leftRecursion == LeftRecursive.indirect);
 }
