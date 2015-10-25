@@ -58,8 +58,12 @@ Returns for all grammar rule:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-RuleInfo[string] ruleInfo(string grammar)
+RuleInfo[string] ruleInfo(ParseTree p)
 {
+    if (p.name == "Pegged")
+        return ruleInfo(p.children[0]);
+    assert(p.name == "Pegged.Grammar");
+
     RuleInfo[string] result;
     ParseTree[string] rules;
     bool[string] maybeLeftRecursive;
@@ -327,7 +331,6 @@ RuleInfo[string] ruleInfo(string grammar)
         }
     }
 
-    ParseTree p = Pegged(grammar).children[0];
     foreach(definition; p.children)
         if (definition.name == "Pegged.Definition")
         {
@@ -378,6 +381,12 @@ RuleInfo[string] ruleInfo(string grammar)
     }
 
     return result;
+}
+
+/** ditto */
+RuleInfo[string] ruleInfo(string grammar)
+{
+    return ruleInfo(Pegged(grammar).children[0]);
 }
 
 unittest{
