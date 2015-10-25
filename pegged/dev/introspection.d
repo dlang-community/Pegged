@@ -305,7 +305,7 @@ RuleInfo[string] ruleInfo(string grammar)
                 if (p.matches[0] == target) // ?? Or generateCode(p) ?
                     return LeftRecursive.direct;
                 else if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no))
-                    return LeftRecursive.hidden;
+                    return LeftRecursive.indirect;
                 else
                     return LeftRecursive.no;
             case "Pegged.Literal":
@@ -374,6 +374,28 @@ RuleInfo[string] ruleInfo(string grammar)
     }
 
     return result;
+}
+
+unittest{
+    auto info = ruleInfo(`
+        Test:
+            A <- A 'a'
+    `);
+    assert(info["A"].leftRecursion == LeftRecursive.direct);
+
+    info = ruleInfo(`
+        Test:
+            A <- B? A 'a'
+            B <- 'b'
+    `);
+    assert(info["A"].leftRecursion == LeftRecursive.hidden);
+
+    info = ruleInfo(`
+        Test:
+            A <- B 'a'
+            B <- A
+    `);
+    assert(info["A"].leftRecursion == LeftRecursive.indirect);
 }
 
 /**
