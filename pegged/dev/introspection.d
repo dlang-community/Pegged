@@ -58,10 +58,15 @@ Returns for all grammar rule:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-RuleInfo[string] ruleInfo(string grammar)
+RuleInfo[string] ruleInfo(ParseTree p)
 {
+    if (p.name == "Pegged")
+        return ruleInfo(p.children[0]);
+    assert(p.name == "Pegged.Grammar");
+
     RuleInfo[string] result;
     ParseTree[string] rules;
+    bool[string] maybeLeftRecursive;
 
     /**
     Returns the call graph of a grammar: the list of rules directly called by each rule of the grammar.
@@ -272,13 +277,15 @@ RuleInfo[string] ruleInfo(string grammar)
     {
         switch (p.name)
         {
-            case "Pegged.Expression": // Choices are left-recursive is any choice is left-recursive
+            case "Pegged.Expression": // Choices are left-recursive if any choice is left-recursive
+                maybeLeftRecursive[target] = true;
                 foreach(seq; p.children)
                 {
                     auto lr = leftRecursion(seq, target);
                     if (lr != LeftRecursive.no)
                         return lr;
                 }
+                maybeLeftRecursive[target] = false;
                 return LeftRecursive.no;
             case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive
                                     // or behind null-matching members
@@ -304,8 +311,9 @@ RuleInfo[string] ruleInfo(string grammar)
             case "Pegged.RhsName":
                 if (p.matches[0] == target) // ?? Or generateCode(p) ?
                     return LeftRecursive.direct;
-                else if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no))
-                    return LeftRecursive.hidden;
+                else if (((p.matches[0] in maybeLeftRecursive) && (maybeLeftRecursive[p.matches[0]])) ||
+                         ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no)))
+                    return LeftRecursive.indirect;
                 else
                     return LeftRecursive.no;
             case "Pegged.Literal":
@@ -323,7 +331,6 @@ RuleInfo[string] ruleInfo(string grammar)
         }
     }
 
-    ParseTree p = Pegged(grammar).children[0];
     foreach(definition; p.children)
         if (definition.name == "Pegged.Definition")
         {
@@ -374,6 +381,47 @@ RuleInfo[string] ruleInfo(string grammar)
     }
 
     return result;
+}
+
+/** ditto */
+RuleInfo[string] ruleInfo(string grammar)
+{
+    return ruleInfo(Pegged(grammar).children[0]);
+}
+
+unittest
+{
+    auto info = ruleInfo(`
+        Test:
+            A <- A 'a'
+    `);
+    assert(info["A"].leftRecursion == LeftRecursive.direct);
+
+    info = ruleInfo(`
+        Test:
+            A <- B? A 'a'
+            B <- 'b'
+    `);
+    assert(info["A"].leftRecursion == LeftRecursive.hidden);
+
+    info = ruleInfo(`
+        Test:
+            A <- B 'a'
+            B <- A
+    `);
+    assert(info["A"].leftRecursion == LeftRecursive.indirect);
+}
+
+// Test against infinite recursion in detection of indirect left-recursion.
+unittest
+{
+    auto info = ruleInfo(`
+        Test:
+            A <- B / C 'a'
+            B <- A
+            C <- A
+    `);
+    assert(info["A"].leftRecursion == LeftRecursive.indirect);
 }
 
 /**
