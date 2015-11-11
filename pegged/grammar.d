@@ -208,10 +208,12 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     }
 ";
 
+                    result ~= "    import std.typecons:Tuple, tuple;\n";
                     if (withMemo == Memoization.yes)
-                    result ~=
-"    import std.typecons:Tuple, tuple;
-    static TParseTree[Tuple!(string, size_t)] memo;\n";
+                        result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n";
+
+                    // Support left-recursion
+                    result ~= "    static int[Tuple!(string, size_t)] recursions;\n";
 
                 /+
                         ~ "        switch(s)\n"
@@ -374,8 +376,34 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "    {\n"
                            ~  "        if(__ctfe)\n"
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
-                           ~  "        else\n"
-                           ~  "            return " ~ code ~ "(p);\n"
+                           ~  "        else {\n"
+                           ~  "            static int depth = 0;\n"
+                           ~  "            static TParseTree " ~ shortName ~ "(TParseTree p)\n"
+                           ~  "            {\n"
+                           ~  "                auto s = tuple(" ~ innerName ~ ", p.end);\n"
+                           ~  "                if(s in recursions) {\n"
+                           ~  "                    recursions[s] = recursions[s] + 1;\n"
+                           ~  "                    if (recursions[s] > depth) {\n"
+                           ~  "                        recursions[s] = 0;\n"
+                           ~  "                        return fail(p);\n"
+                           ~  "                    }\n"
+                           ~  "                }\n"
+                           ~  "                else\n"
+                           ~  "                    recursions[s] = 0;\n"
+                           ~  "                return " ~ code ~ "(p);\n"
+                           ~  "            }\n"
+                           ~  "            auto seed = fail(p);\n"
+                           ~  "            auto parse = seed;\n"
+                           ~  "            while(true) {\n"
+                           ~  "                parse = " ~ shortName ~ "(p);\n"
+                           ~  "                if (parse.end > seed.end) {\n"
+                           ~  "                    seed = parse;\n"
+                           ~  "                    depth++;\n"
+                           ~  "                } else\n"
+                           ~  "                    break;\n"
+                           ~  "            }"
+                           ~  "            return seed;\n"
+                           ~  "        }\n"
                            ~  "    }\n"
                            ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
                            ~  "    {\n"
@@ -2587,4 +2615,17 @@ unittest // Issue #129 unit test
     assert(p.children[0].children[0].children[0].children.length == 1);
     assert(p.children[0].children[0].children[0].children[0].name == "G.D");
     assert(p.children[0].children[0].children[0].children[0].children.length == 0);
+}
+
+unittest // Direct left-recursion
+{
+    enum LeftGrammar = `
+      Left:
+        S <- E eoi
+        E <- E '+n' / 'n'
+    `;
+    mixin(grammar!(Memoization.no)(LeftGrammar));
+    ParseTree result = Left("n+n+n+n");
+    assert(result.successful);
+    assert(result.matches == ["n", "+n", "+n", "+n"]);
 }

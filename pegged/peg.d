@@ -1139,9 +1139,9 @@ template or(rules...) if (rules.length > 0)
                     results[i] = temp;
 
                     if (temp.end == longestFail.end)
-                        errorStringChars += temp.matches[$-1].length + errName.length + 4;
+                        errorStringChars += (temp.matches.length > 0 ? temp.matches[$-1].length : 0) + errName.length + 4;
                     else
-                        errorStringChars = temp.matches[$-1].length + errName.length + 4;
+                        errorStringChars = (temp.matches.length > 0 ? temp.matches[$-1].length : 0) + errName.length + 4;
                 }
                 // Else, this error parsed less input than another one: we discard it.
             }
