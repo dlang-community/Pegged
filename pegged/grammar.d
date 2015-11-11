@@ -279,7 +279,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                     if (withMemo == Memoization.no)
                         result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "}\n";
+                               ~  "    }\n";
                     else
                         result ~= "        if(__ctfe)\n"
                                ~  "        {\n"
