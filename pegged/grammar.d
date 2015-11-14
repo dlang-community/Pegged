@@ -2631,3 +2631,17 @@ unittest // Indirect left-recursion
     assert(result.successful);
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
 }
+
+unittest // Mutual left-recursion
+{
+    enum LeftGrammar = `
+      Left:
+        M <- L eoi
+        L <- P '.x' / 'x'
+        P <- P '(n)' / L
+    `;
+    mixin(grammar!(Memoization.no)(LeftGrammar));
+    ParseTree result = Left("x(n)(n).x(n).x");
+    assert(result.successful);
+    assert(result.matches == ["x", "(n)", "(n)", ".x", "(n)", ".x"]);
+}
