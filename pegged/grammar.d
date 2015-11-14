@@ -2645,3 +2645,16 @@ unittest // Mutual left-recursion
     assert(result.successful);
     assert(result.matches == ["x", "(n)", "(n)", ".x", "(n)", ".x"]);
 }
+
+unittest // Left- and right-recursion (is right-associative!)
+{
+    enum LeftRightGrammar = `
+      LeftRight:
+        M <- E eoi
+        E <- E '+' E / 'n'
+    `;
+    mixin(grammar!(Memoization.no)(LeftRightGrammar));
+    ParseTree result = LeftRight("n+n+n+n");
+    assert(result.successful);
+    assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
+}
