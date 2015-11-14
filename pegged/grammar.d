@@ -213,8 +213,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n";
 
                     // Support left-recursion
-                    result ~= "    static TParseTree[Tuple!(string /*rule name*/, size_t /*position*/, size_t /*recursion*/)] seed;\n"
-                              "    static size_t[Tuple!(string, size_t)] recursions;\n";
+                    result ~= "    static TParseTree[Tuple!(string /*rule name*/, size_t /*position*/)] seed;\n";
 
                 /+
                         ~ "        switch(s)\n"
@@ -378,46 +377,17 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        if(__ctfe)\n"
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
                            ~  "        else {\n"
-                           ~  "            static size_t depth = 0;\n"
-                           ~  "            static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                           ~  "            {\n"
-                           ~  "                static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                           ~  "                {\n"
-                           ~  "                    auto r = tuple(" ~ innerName ~ ", p.end);\n"
-                           ~  "                    assert(r in recursions);\n"
-                           ~  "                    recursions[r] = recursions[r] + 1;\n"
-                           ~  "                    if (recursions[r] > depth) {\n"
-                           ~  "                        recursions[r] = 0;\n"
-                           ~  "                        return p;\n"
-                           ~  "                    }\n"
-                           ~  "                    assert(tuple(" ~ innerName ~ ", p.end, depth - 1) in seed, \"Expected seed not found.\");\n"
-                           ~  "                    recursions[r] = depth;\n"
-                           ~  "                    return seed[tuple(" ~ innerName ~ ", p.end, depth - 1)];\n"
-                           ~  "                }\n"
-                           ~  "                auto r = tuple(" ~ innerName ~ ", p.end);\n"
-                           ~  "                if(r in recursions) {\n"
-                           ~  "                    recursions[r] = recursions[r] + 1;\n"
-                           ~  "                    if (recursions[r] > depth) {\n"
-                           ~  "                        recursions[r] = 0;\n"
-                           ~  "                        return p;\n"
-                           ~  "                    }\n"
-                           ~  "                }\n"
-                           ~  "                else\n"
-                           ~  "                    recursions[r] = 0;\n"
-                           ~  "                return " ~ code ~ "(p);\n"
-                           ~  "            }\n"
+                           ~  "            if (auto s = tuple(" ~ innerName ~ ", p.end) in seed)\n"
+                           ~  "                return *s;"
                            ~  "            auto current = fail(p);\n"
-                           ~  "            seed[tuple(" ~ innerName ~ ", p.end, depth)] = current;\n"
+                           ~  "            seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
                            ~  "            while(true) {\n"
-                           ~  "                auto result = " ~ shortName ~ "(p);\n"
+                           ~  "                auto result = " ~ code ~ "(p);\n"
                            ~  "                if (result.end > current.end) {\n"
                            ~  "                    current = result;\n"
-                           ~  "                    seed[tuple(" ~ innerName ~ ", p.end, depth)] = current;\n"
-                           ~  "                    depth++;\n"
+                           ~  "                    seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
                            ~  "                } else {\n"
-//                           ~  "                    writeln(\"Cleaning seeds for tuple(" ~ innerName ~ ", \", p.end, \") before returning current.\");\n"
-//                           ~  "                    for (size_t i = 0; i <= depth; i++)\n"
-//                           ~  "                        seed.remove(tuple(" ~ innerName ~ ", p.end, i));\n"
+                           ~  "                    seed.remove(tuple(" ~ innerName ~ ", p.end));\n"
                            ~  "                    return current;\n"
                            ~  "                }\n"
                            ~  "            }\n"
@@ -2646,4 +2616,18 @@ unittest // Direct left-recursion
     ParseTree result = Left("n+n+n+n");
     assert(result.successful);
     assert(result.matches == ["n", "+n", "+n", "+n"]);
+}
+
+unittest // Indirect left-recursion
+{
+    enum LeftGrammar = `
+      Left:
+        S <- E eoi
+        E <- F 'n' / 'n'
+        F <- E '+'
+    `;
+    mixin(grammar!(Memoization.no)(LeftGrammar));
+    ParseTree result = Left("n+n+n+n");
+    assert(result.successful);
+    assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
 }
