@@ -208,10 +208,12 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     }
 ";
 
+                    result ~= "    import std.typecons:Tuple, tuple;\n";
                     if (withMemo == Memoization.yes)
-                    result ~=
-"    import std.typecons:Tuple, tuple;
-    static TParseTree[Tuple!(string, size_t)] memo;\n";
+                        result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n";
+
+                    // Support left-recursion
+                    result ~= "    static TParseTree[Tuple!(string /*rule name*/, size_t /*position*/)] seed;\n";
 
                 /+
                         ~ "        switch(s)\n"
@@ -279,7 +281,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                     if (withMemo == Memoization.no)
                         result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "}\n";
+                               ~  "    }\n";
                     else
                         result ~= "        if(__ctfe)\n"
                                ~  "        {\n"
@@ -374,8 +376,22 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "    {\n"
                            ~  "        if(__ctfe)\n"
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
-                           ~  "        else\n"
-                           ~  "            return " ~ code ~ "(p);\n"
+                           ~  "        else {\n"
+                           ~  "            if (auto s = tuple(" ~ innerName ~ ", p.end) in seed)\n"
+                           ~  "                return *s;"
+                           ~  "            auto current = fail(p);\n"
+                           ~  "            seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
+                           ~  "            while(true) {\n"
+                           ~  "                auto result = " ~ code ~ "(p);\n"
+                           ~  "                if (result.end > current.end) {\n"
+                           ~  "                    current = result;\n"
+                           ~  "                    seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
+                           ~  "                } else {\n"
+                           ~  "                    seed.remove(tuple(" ~ innerName ~ ", p.end));\n"
+                           ~  "                    return current;\n"
+                           ~  "                }\n"
+                           ~  "            }\n"
+                           ~  "        }\n"
                            ~  "    }\n"
                            ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
                            ~  "    {\n"
@@ -2587,4 +2603,58 @@ unittest // Issue #129 unit test
     assert(p.children[0].children[0].children[0].children.length == 1);
     assert(p.children[0].children[0].children[0].children[0].name == "G.D");
     assert(p.children[0].children[0].children[0].children[0].children.length == 0);
+}
+
+unittest // Direct left-recursion
+{
+    enum LeftGrammar = `
+      Left:
+        S <- E eoi
+        E <- E '+n' / 'n'
+    `;
+    mixin(grammar!(Memoization.no)(LeftGrammar));
+    ParseTree result = Left("n+n+n+n");
+    assert(result.successful);
+    assert(result.matches == ["n", "+n", "+n", "+n"]);
+}
+
+unittest // Indirect left-recursion
+{
+    enum LeftGrammar = `
+      Left:
+        S <- E eoi
+        E <- F 'n' / 'n'
+        F <- E '+'
+    `;
+    mixin(grammar!(Memoization.no)(LeftGrammar));
+    ParseTree result = Left("n+n+n+n");
+    assert(result.successful);
+    assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
+}
+
+unittest // Mutual left-recursion
+{
+    enum LeftGrammar = `
+      Left:
+        M <- L eoi
+        L <- P '.x' / 'x'
+        P <- P '(n)' / L
+    `;
+    mixin(grammar!(Memoization.no)(LeftGrammar));
+    ParseTree result = Left("x(n)(n).x(n).x");
+    assert(result.successful);
+    assert(result.matches == ["x", "(n)", "(n)", ".x", "(n)", ".x"]);
+}
+
+unittest // Left- and right-recursion (is right-associative!)
+{
+    enum LeftRightGrammar = `
+      LeftRight:
+        M <- E eoi
+        E <- E '+' E / 'n'
+    `;
+    mixin(grammar!(Memoization.no)(LeftRightGrammar));
+    ParseTree result = LeftRight("n+n+n+n");
+    assert(result.successful);
+    assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
 }
