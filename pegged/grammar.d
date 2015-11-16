@@ -378,7 +378,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
                            ~  "        else {\n"
                            ~  "            if (auto s = tuple(" ~ innerName ~ ", p.end) in seed)\n"
-                           ~  "                return *s;"
+                           ~  "                return *s;\n"
                            ~  "            auto current = fail(p);\n"
                            ~  "            seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
                            ~  "            while(true) {\n"
