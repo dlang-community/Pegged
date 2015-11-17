@@ -378,7 +378,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
                            ~  "        else {\n"
                            ~  "            if (auto s = tuple(" ~ innerName ~ ", p.end) in seed)\n"
-                           ~  "                return *s;"
+                           ~  "                return *s;\n"
                            ~  "            auto current = fail(p);\n"
                            ~  "            seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
                            ~  "            while(true) {\n"
@@ -2657,4 +2657,35 @@ unittest // Left- and right-recursion (is right-associative!)
     ParseTree result = LeftRight("n+n+n+n");
     assert(result.successful);
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
+}
+
+unittest // Hidden left-recursion --- Possibly fails on valid input.
+{
+    enum HiddenLeft = `
+      Test:
+        M <- A eoi
+        A <- B? C
+        B <- 'b'
+        C <-  A 'a' / 'c'
+    `;
+    mixin(grammar!(Memoization.no)(HiddenLeft));
+    assert(Test("caa").successful);
+    assert(Test("bca").successful);
+    assert(Test("bcaa").successful);
+    // The following fails, see https://github.com/norswap/autumn_dev/issues/1 for an explanation.
+    //assert(Test("bbca").successful);
+
+    // Too bad the failing assert above is the only one in this test that really tests hidden left-recursion,
+    // as the other inputs can also be matched when the optional hiding the left-recursion is simply moved
+    // out of the recursive cycle:
+    enum Left = `
+      Test2:
+        M <- B? A eoi
+        A <-  A 'a' / 'c'
+        B <- 'b'
+    `;
+    mixin(grammar!(Memoization.no)(Left));
+    assert(Test2("caa").successful);
+    assert(Test2("bca").successful);
+    assert(Test2("bcaa").successful);
 }
