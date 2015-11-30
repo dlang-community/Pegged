@@ -65,7 +65,6 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
 
     RuleInfo[string] result;
     ParseTree[string] rules;
-    bool[string] maybeLeftRecursive;
 
     /**
     Returns the call graph of a grammar: the list of rules directly called by each rule of the grammar.
@@ -257,25 +256,26 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
         }
     }
 
-    LeftRecursive leftRecursion(ParseTree p, string target)
+    LeftRecursive leftRecursion(ParseTree p, ref string[] cycle)
     {
+        import std.algorithm.searching: canFind;
         switch (p.name)
         {
             case "Pegged.Expression": // Choices are left-recursive if any choice is left-recursive
-                maybeLeftRecursive[target] = true;
+                size_t current = cycle.length;
                 foreach(seq; p.children)
                 {
-                    auto lr = leftRecursion(seq, target);
+                    auto lr = leftRecursion(seq, cycle);
                     if (lr != LeftRecursive.no)
                         return lr;
                 }
-                maybeLeftRecursive[target] = false;
+                cycle = cycle[0..current];
                 return LeftRecursive.no;
             case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive
                                     // or behind null-matching members
                 foreach(i, seq; p.children)
                 {
-                    auto lr = leftRecursion(seq, target);
+                    auto lr = leftRecursion(seq, cycle);
                     if (lr == LeftRecursive.direct)
                         return (i == 0 ? LeftRecursive.direct : LeftRecursive.hidden);
                     if (lr == LeftRecursive.hidden || lr == LeftRecursive.indirect)
@@ -287,15 +287,17 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
                 }
                 return LeftRecursive.no; // found only null-matching rules!
             case "Pegged.Prefix":
-                return leftRecursion(p.children[$-1], target);
+                return leftRecursion(p.children[$-1], cycle);
             case "Pegged.Suffix":
             case "Pegged.Primary":
-                return leftRecursion(p.children[0], target);
+                return leftRecursion(p.children[0], cycle);
             case "Pegged.RhsName":
-                if (p.matches[0] == target) // ?? Or generateCode(p) ?
+                if (p.matches[0] == cycle[0])
                     return LeftRecursive.direct;
-                if (((p.matches[0] in maybeLeftRecursive) && (maybeLeftRecursive[p.matches[0]])) ||
-                    ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no)))
+                if (canFind(cycle, p.matches[0]))
+                    return LeftRecursive.indirect;
+                cycle ~= p.matches[0];
+                if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], cycle) != LeftRecursive.no))
                     return LeftRecursive.indirect;
                 return LeftRecursive.no;
             default:
@@ -320,7 +322,11 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
     // Detect left-recursions.
     foreach(name, tree; rules)
         if (result[name].recursion != Recursive.no)
-            result[name].leftRecursion = leftRecursion(tree, name);
+        {
+            string[] cycle;
+            cycle ~= name;
+            result[name].leftRecursion = leftRecursion(tree, cycle);
+        }
 
     // Detect null matches.
     bool changed = true;
@@ -392,6 +398,52 @@ unittest
             C <- A
     `);
     assert(info["A"].leftRecursion == LeftRecursive.indirect);
+}
+
+// Test against compile-time infinite recursion.
+unittest // Mutual left-recursion
+{
+    enum ct = ruleInfo(`
+      Left:
+        A <- L
+        L <- P
+        P <- P / L
+    `);
+    static assert(ct["A"].leftRecursion == LeftRecursive.no);
+    static assert(ct["L"].leftRecursion == LeftRecursive.indirect);
+    static assert(ct["P"].leftRecursion == LeftRecursive.direct);
+
+    auto rt = ruleInfo(`
+        Left:
+          A <- L
+          L <- P
+          P <- P / L
+    `);
+    assert(rt["A"].leftRecursion == LeftRecursive.no);
+    assert(rt["L"].leftRecursion == LeftRecursive.indirect);
+    assert(rt["P"].leftRecursion == LeftRecursive.direct);
+}
+
+unittest // Intersecting cycles of left-recursion
+{
+    enum ct = ruleInfo(`
+      Left:
+        C <- A
+        A <- B* C
+        B <- A
+    `);
+    static assert(ct["C"].leftRecursion == LeftRecursive.indirect);
+    static assert(ct["A"].leftRecursion == LeftRecursive.indirect);
+    static assert(ct["B"].leftRecursion == LeftRecursive.indirect);
+    auto rt = ruleInfo(`
+      Left:
+        C <- A
+        A <- B* C
+        B <- A
+    `);
+    assert(rt["C"].leftRecursion == LeftRecursive.indirect);
+    assert(rt["A"].leftRecursion == LeftRecursive.indirect);
+    assert(rt["B"].leftRecursion == LeftRecursive.indirect);
 }
 
 /**
