@@ -5,7 +5,6 @@ module pegged.dev.introspection;
 
 import std.typecons;
 
-import pegged.grammar;
 import pegged.parser;
 
 /**
@@ -58,7 +57,7 @@ Returns for all grammar rule:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-RuleInfo[string] ruleInfo(ParseTree p)
+pure RuleInfo[string] ruleInfo(ParseTree p)
 {
     if (p.name == "Pegged")
         return ruleInfo(p.children[0]);
@@ -66,7 +65,6 @@ RuleInfo[string] ruleInfo(ParseTree p)
 
     RuleInfo[string] result;
     ParseTree[string] rules;
-    bool[string] maybeLeftRecursive;
 
     /**
     Returns the call graph of a grammar: the list of rules directly called by each rule of the grammar.
@@ -206,11 +204,9 @@ RuleInfo[string] ruleInfo(ParseTree p)
                 else
                     return NullMatch.no;
             case "Pegged.CharClass":
-                return NullMatch.no;
             case "Pegged.ANY":
                 return NullMatch.no;
             case "eps":
-                return NullMatch.yes;
             case "eoi":
                 return NullMatch.yes;
             default:
@@ -223,15 +219,6 @@ RuleInfo[string] ruleInfo(ParseTree p)
         switch (p.name)
         {
             case "Pegged.Expression": // choice expressions loop whenever one of their components can loop
-                foreach(seq; p.children)
-                {
-                    auto nm = infiniteLooping(seq);
-                    if (nm == InfiniteLoop.yes)
-                        return InfiniteLoop.yes;
-                    if (nm == InfiniteLoop.indeterminate)
-                        return InfiniteLoop.indeterminate;
-                }
-                return InfiniteLoop.no;
             case "Pegged.Sequence": // sequence expressions can loop when one of their components can loop
                 foreach(seq; p.children)
                 {
@@ -259,13 +246,9 @@ RuleInfo[string] ruleInfo(ParseTree p)
                 else
                     return infiniteLooping(p.children[0]);
             case "Pegged.Literal":
-                return InfiniteLoop.no;
             case "Pegged.CharClass":
-                return InfiniteLoop.no;
             case "Pegged.ANY":
-                return InfiniteLoop.no;
             case "eps":
-                return InfiniteLoop.no;
             case "eoi":
                 return InfiniteLoop.no;
             default:
@@ -273,101 +256,94 @@ RuleInfo[string] ruleInfo(ParseTree p)
         }
     }
 
-    LeftRecursive leftRecursion(ParseTree p, string target)
+    LeftRecursive leftRecursion(ParseTree p, ref string[] cycle)
     {
+        import std.algorithm.searching: canFind;
         switch (p.name)
         {
             case "Pegged.Expression": // Choices are left-recursive if any choice is left-recursive
-                maybeLeftRecursive[target] = true;
+                size_t current = cycle.length;
                 foreach(seq; p.children)
                 {
-                    auto lr = leftRecursion(seq, target);
+                    auto lr = leftRecursion(seq, cycle);
                     if (lr != LeftRecursive.no)
                         return lr;
                 }
-                maybeLeftRecursive[target] = false;
+                cycle = cycle[0..current];
                 return LeftRecursive.no;
             case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive
                                     // or behind null-matching members
                 foreach(i, seq; p.children)
                 {
-                    auto lr = leftRecursion(seq, target);
+                    auto lr = leftRecursion(seq, cycle);
                     if (lr == LeftRecursive.direct)
                         return (i == 0 ? LeftRecursive.direct : LeftRecursive.hidden);
-                    else if (lr == LeftRecursive.hidden || lr == LeftRecursive.indirect)
+                    if (lr == LeftRecursive.hidden || lr == LeftRecursive.indirect)
                         return lr;
-                    else if (nullMatching(seq) == NullMatch.yes)
+                    if (nullMatching(seq) == NullMatch.yes)
                         continue;
                     else
                         return LeftRecursive.no;
                 }
                 return LeftRecursive.no; // found only null-matching rules!
             case "Pegged.Prefix":
-                return leftRecursion(p.children[$-1], target);
+                return leftRecursion(p.children[$-1], cycle);
             case "Pegged.Suffix":
-                return leftRecursion(p.children[0], target);
             case "Pegged.Primary":
-                return leftRecursion(p.children[0], target);
+                return leftRecursion(p.children[0], cycle);
             case "Pegged.RhsName":
-                if (p.matches[0] == target) // ?? Or generateCode(p) ?
+                if (p.matches[0] == cycle[0])
                     return LeftRecursive.direct;
-                else if (((p.matches[0] in maybeLeftRecursive) && (maybeLeftRecursive[p.matches[0]])) ||
-                         ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], target) != LeftRecursive.no)))
+                if (canFind(cycle, p.matches[0]))
                     return LeftRecursive.indirect;
-                else
-                    return LeftRecursive.no;
-            case "Pegged.Literal":
-                return LeftRecursive.no;
-            case "Pegged.CharClass":
-                return LeftRecursive.no;
-            case "Pegged.ANY":
-                return LeftRecursive.no;
-            case "eps":
-                return LeftRecursive.no;
-            case "eoi":
+                cycle ~= p.matches[0];
+                if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], cycle) != LeftRecursive.no))
+                    return LeftRecursive.indirect;
                 return LeftRecursive.no;
             default:
                 return LeftRecursive.no;
         }
     }
 
+    // Initialize rules and result.
     foreach(definition; p.children)
         if (definition.name == "Pegged.Definition")
         {
             rules[definition.matches[0]] = definition.children[2];
             result[definition.matches[0]] = RuleInfo(Recursive.no, LeftRecursive.no,
-                                                     NullMatch.indeterminate,InfiniteLoop.indeterminate);
+                                                     NullMatch.indeterminate, InfiniteLoop.indeterminate);
         }
 
-    auto rec = recursions(callGraph(p));
-    foreach(rule, recursionType; rec)
-        if (rule in result) // external rules are in rec, but not in result
+    // Detect recursions.
+    foreach(rule, recursionType; recursions(callGraph(p)))
+        if (rule in result) // external rules are in recursions, but not in result
             result[rule].recursion = recursionType;
 
+    // Detect left-recursions.
     foreach(name, tree; rules)
-    {
         if (result[name].recursion != Recursive.no)
         {
-            result[name].leftRecursion = leftRecursion(tree, name);
+            string[] cycle;
+            cycle ~= name;
+            result[name].leftRecursion = leftRecursion(tree, cycle);
         }
-    }
 
+    // Detect null matches.
     bool changed = true;
-
     while(changed) // while something new happened, the process is not over
     {
         changed = false;
         foreach(name, tree; rules)
             if (result[name].nullMatch == NullMatch.indeterminate) // not done yet
             {
-                result [name].nullMatch = nullMatching(tree); // try to find if it's null-matching
+                result[name].nullMatch = nullMatching(tree); // try to find if it's null-matching
                 if (result[name].nullMatch != NullMatch.indeterminate)
                     changed = true;
             }
     }
 
+    // Detect infinite loops.
     changed = true;
-
     while(changed) // while something new happened, the process is not over
     {
         changed = false;
@@ -422,6 +398,52 @@ unittest
             C <- A
     `);
     assert(info["A"].leftRecursion == LeftRecursive.indirect);
+}
+
+// Test against compile-time infinite recursion.
+unittest // Mutual left-recursion
+{
+    enum ct = ruleInfo(`
+      Left:
+        A <- L
+        L <- P
+        P <- P / L
+    `);
+    static assert(ct["A"].leftRecursion == LeftRecursive.no);
+    static assert(ct["L"].leftRecursion == LeftRecursive.indirect);
+    static assert(ct["P"].leftRecursion == LeftRecursive.direct);
+
+    auto rt = ruleInfo(`
+        Left:
+          A <- L
+          L <- P
+          P <- P / L
+    `);
+    assert(rt["A"].leftRecursion == LeftRecursive.no);
+    assert(rt["L"].leftRecursion == LeftRecursive.indirect);
+    assert(rt["P"].leftRecursion == LeftRecursive.direct);
+}
+
+unittest // Intersecting cycles of left-recursion
+{
+    enum ct = ruleInfo(`
+      Left:
+        C <- A
+        A <- B* C
+        B <- A
+    `);
+    static assert(ct["C"].leftRecursion == LeftRecursive.indirect);
+    static assert(ct["A"].leftRecursion == LeftRecursive.indirect);
+    static assert(ct["B"].leftRecursion == LeftRecursive.indirect);
+    auto rt = ruleInfo(`
+      Left:
+        C <- A
+        A <- B* C
+        B <- A
+    `);
+    assert(rt["C"].leftRecursion == LeftRecursive.indirect);
+    assert(rt["A"].leftRecursion == LeftRecursive.indirect);
+    assert(rt["B"].leftRecursion == LeftRecursive.indirect);
 }
 
 /**
