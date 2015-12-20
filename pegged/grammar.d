@@ -141,7 +141,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
     string[] stoppers = leftRecursionStoppers();
 
-
     string generateCode(ParseTree p, string propagatedName = "")
     {
         string result;
@@ -2699,7 +2698,7 @@ unittest // Left- and right-recursion (is right-associative!)
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
 }
 
-unittest // Hidden left-recursion --- Possibly fails on valid input.
+unittest // Hidden left-recursion
 {
     enum HiddenLeft = `
       Test:
