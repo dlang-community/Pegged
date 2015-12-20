@@ -44,7 +44,8 @@ struct RuleInfo
     Recursive recursion; /// Is the rule recursive?
     LeftRecursive leftRecursion; /// Is the rule left-recursive?
     NullMatch nullMatch; /// Can the rule succeed while consuming nothing?
-    InfiniteLoop infiniteLoop; /// Can the rule loop while indefinitely, while consuming nothing?
+    InfiniteLoop infiniteLoop; /// Can the rule loop indefinitely, while consuming nothing?
+    string[] leftRecursiveCycle; /// The path of rules traversed before indirect left-recursion recurses.
 }
 
 /**
@@ -323,9 +324,8 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
     foreach(name, tree; rules)
         if (result[name].recursion != Recursive.no)
         {
-            string[] cycle;
-            cycle ~= name;
-            result[name].leftRecursion = leftRecursion(tree, cycle);
+            result[name].leftRecursiveCycle ~= name;
+            result[name].leftRecursion = leftRecursion(tree, result[name].leftRecursiveCycle);
         }
 
     // Detect null matches.

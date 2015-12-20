@@ -12,7 +12,6 @@ import std.functional: toDelegate;
 import std.stdio;
 
 public import pegged.peg;
-//public import pegged.introspection;
 import pegged.parser;
 
 
@@ -108,6 +107,41 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         return result;
     }
 
+    string[] leftRecursionStoppers()
+    {
+        import pegged.dev.introspection;
+        import std.algorithm;
+        string[][] leftRecursiveCycles;
+        foreach (info; ruleInfo(defAsParseTree.children[0]))
+        {
+            if (info.leftRecursion != LeftRecursive.no)
+            {
+                // Consider if the cycle is already present with another head.
+                bool unique = true;
+                foreach (cycle; leftRecursiveCycles)
+                {
+                    auto pos = countUntil(cycle, info.leftRecursiveCycle[0]);
+                    if (pos >= 0)
+                        if (equal!equal(cycle[pos .. $] ~ cycle[0 .. pos], info.leftRecursiveCycle))
+                        {
+                            unique = false;
+                            break;
+                        }
+                }
+                if (unique)
+                    leftRecursiveCycles ~= info.leftRecursiveCycle;
+            }
+        }
+
+        string[] stoppers;
+        foreach (cycle; leftRecursiveCycles)
+            stoppers ~= cycle[0];
+        return stoppers;
+    }
+
+    string[] stoppers = leftRecursionStoppers();
+
+
     string generateCode(ParseTree p, string propagatedName = "")
     {
         string result;
@@ -151,7 +185,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     result ~= "        rules[\"Spacing\"] = toDelegate(&Spacing);\n";
 
                 result ~=
-"   }
+"    }
 
     template hooked(alias r, string name)
     {
@@ -371,27 +405,32 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 string ctfeCode = "        pegged.peg.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
                 code =            "hooked!(pegged.peg.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
 
+                import std.algorithm.searching: canFind;
                 if (withMemo == Memoization.no)
+                {
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                            ~  "    {\n"
                            ~  "        if(__ctfe)\n"
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
-                           ~  "        else {\n"
-                           ~  "            if (auto s = tuple(" ~ innerName ~ ", p.end) in seed)\n"
-                           ~  "                return *s;\n"
-                           ~  "            auto current = fail(p);\n"
-                           ~  "            seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
-                           ~  "            while(true) {\n"
-                           ~  "                auto result = " ~ code ~ "(p);\n"
-                           ~  "                if (result.end > current.end) {\n"
-                           ~  "                    current = result;\n"
-                           ~  "                    seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
-                           ~  "                } else {\n"
-                           ~  "                    seed.remove(tuple(" ~ innerName ~ ", p.end));\n"
-                           ~  "                    return current;\n"
-                           ~  "                }\n"
-                           ~  "            }\n"
-                           ~  "        }\n"
+                           ~  "        else {\n";
+                    if (stoppers.canFind(shortName))
+                        result ~= "            if (auto s = tuple(" ~ innerName ~ ", p.end) in seed)\n"
+                               ~  "                return *s;\n"
+                               ~  "            auto current = fail(p);\n"
+                               ~  "            seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
+                               ~  "            while(true) {\n"
+                               ~  "                auto result = " ~ code ~ "(p);\n"
+                               ~  "                if (result.end > current.end) {\n"
+                               ~  "                    current = result;\n"
+                               ~  "                    seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
+                               ~  "                } else {\n"
+                               ~  "                    seed.remove(tuple(" ~ innerName ~ ", p.end));\n"
+                               ~  "                    return current;\n"
+                               ~  "                }\n"
+                               ~  "            }\n";
+                    else
+                        result ~= "            return " ~ code ~ "(p);\n";
+                    result ~= "        }\n"
                            ~  "    }\n"
                            ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
                            ~  "    {\n"
@@ -400,6 +439,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        else\n"
                            ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
                            ~  "    }\n";
+                }
                 else
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                            ~  "    {\n"
@@ -2670,22 +2710,5 @@ unittest // Hidden left-recursion --- Possibly fails on valid input.
     `;
     mixin(grammar!(Memoization.no)(HiddenLeft));
     assert(Test("caa").successful);
-    assert(Test("bca").successful);
-    assert(Test("bcaa").successful);
-    // The following fails, see https://github.com/norswap/autumn_dev/issues/1 for an explanation.
-    //assert(Test("bbca").successful);
-
-    // Too bad the failing assert above is the only one in this test that really tests hidden left-recursion,
-    // as the other inputs can also be matched when the optional hiding the left-recursion is simply moved
-    // out of the recursive cycle:
-    enum Left = `
-      Test2:
-        M <- B? A eoi
-        A <-  A 'a' / 'c'
-        B <- 'b'
-    `;
-    mixin(grammar!(Memoization.no)(Left));
-    assert(Test2("caa").successful);
-    assert(Test2("bca").successful);
-    assert(Test2("bcaa").successful);
+    assert(Test("bbca").successful);
 }
