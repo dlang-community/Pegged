@@ -243,7 +243,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                     result ~= "    import std.typecons:Tuple, tuple;\n";
                     if (withMemo == Memoization.yes)
-                        result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n";
+                        result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n"
+                               ~  "    static bool blockMemo = false;\n";
 
                 /+
                         ~ "        switch(s)\n"
@@ -405,7 +406,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 if (withMemo == Memoization.no)
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                            ~  "    {\n"
-                           ~  "        static TParseTree[size_t /*position*/] seed;\n"
                            ~  "        if(__ctfe)\n"
                            ~  "        {\n"
                            ~  (stoppers.canFind(shortName) ?
@@ -416,21 +416,22 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        else\n"
                            ~  "        {\n"
                            ~  (stoppers.canFind(shortName) ?
-                              "            if (auto s = p.end in seed)\n" ~
-                              "                return *s;\n" ~
-                              "            auto current = fail(p);\n" ~
-                              "            seed[p.end] = current;\n" ~
-                              "            while(true)\n" ~
-                              "            {\n" ~
-                              "                auto result = " ~ code ~ "(p);\n" ~
-                              "                if (result.end > current.end)\n" ~
-                              "                {\n" ~
-                              "                    current = result;\n" ~
-                              "                    seed[p.end] = current;\n" ~
-                              "                } else {\n" ~
-                              "                    seed.remove(p.end);\n" ~
-                              "                    return current;\n" ~
-                              "                }\n" ~
+                              "            static TParseTree[size_t /*position*/] seed;\n"
+                              "            if (auto s = p.end in seed)\n"
+                              "                return *s;\n"
+                              "            auto current = fail(p);\n"
+                              "            seed[p.end] = current;\n"
+                              "            while(true)\n"
+                              "            {\n"
+                              "                auto result = " ~ code ~ "(p);\n"
+                              "                if (result.end > current.end)\n"
+                              "                {\n"
+                              "                    current = result;\n"
+                              "                    seed[p.end] = current;\n"
+                              "                } else {\n"
+                              "                    seed.remove(p.end);\n"
+                              "                    return current;\n"
+                              "                }\n"
                               "            }\n"
                               :
                               "            return " ~ code ~ "(p);\n"
@@ -449,18 +450,48 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "    {\n"
                            ~  "        if(__ctfe)\n"
                            ~  "        {\n"
+                           ~  (stoppers.canFind(shortName) ?
+                              "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
+                                                           "at compile-time. Consider using asModule().\");" : "")
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
                            ~  "        }\n"
                            ~  "        else\n"
                            ~  "        {\n"
-                           ~  "            if(auto m = tuple("~innerName~",p.end) in memo)\n"
-                           ~  "                return *m;\n"
-                           ~  "            else\n"
-                           ~  "            {\n"
-                           ~  "                TParseTree result = " ~ code ~ "(p);\n"
-                           ~  "                memo[tuple("~innerName~",p.end)] = result;\n"
-                           ~  "                return result;\n"
-                           ~  "            }\n"
+                           ~  (stoppers.canFind(shortName) ?
+                              "            static TParseTree[size_t /*position*/] seed;\n"
+                              "            if (auto s = p.end in seed)\n"
+                              "                return *s;\n"
+                              "            auto current = fail(p);\n"
+                              "            seed[p.end] = current;\n"
+                              "            blockMemo = true;\n"
+                              "            while (true)\n"
+                              "            {\n"
+                              "                auto result = " ~ code ~ "(p);\n"
+                              "                if (result.end > current.end)\n"
+                              "                {\n"
+                              "                    current = result;\n"
+                              "                    seed[p.end] = current;\n"
+                              "                } else {\n"
+                              "                    seed.remove(p.end);\n"
+                              "                    blockMemo = false;\n"
+                              "                    return current;\n"
+                              "                }\n"
+                              "            }\n"
+                              :
+                              "            if (blockMemo)\n"
+                              "                return " ~ code ~ "(p);\n"
+                              "            else\n"
+                              "            {\n"
+                              "                if (auto m = tuple(" ~ innerName ~ ", p.end) in memo)\n"
+                              "                    return *m;\n"
+                              "                else\n"
+                              "                {\n"
+                              "                    TParseTree result = " ~ code ~ "(p);\n"
+                              "                    memo[tuple(" ~ innerName ~ ", p.end)] = result;\n"
+                              "                    return result;\n"
+                              "                }\n"
+                              "            }\n"
+                              )
                            ~  "        }\n"
                            ~  "    }\n\n"
                            ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
@@ -2656,7 +2687,7 @@ unittest // Direct left-recursion
         S <- E eoi
         E <- E '+n' / 'n'
     `;
-    mixin(grammar!(Memoization.no)(LeftGrammar));
+    mixin(grammar(LeftGrammar));
     ParseTree result = Left("n+n+n+n");
     assert(result.successful);
     assert(result.matches == ["n", "+n", "+n", "+n"]);
@@ -2670,7 +2701,7 @@ unittest // Indirect left-recursion
         E <- F 'n' / 'n'
         F <- E '+'
     `;
-    mixin(grammar!(Memoization.no)(LeftGrammar));
+    mixin(grammar(LeftGrammar));
     ParseTree result = Left("n+n+n+n");
     assert(result.successful);
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
@@ -2684,7 +2715,7 @@ unittest // Mutual left-recursion
         L <- P '.x' / 'x'
         P <- P '(n)' / L
     `;
-    mixin(grammar!(Memoization.no)(LeftGrammar));
+    mixin(grammar(LeftGrammar));
     ParseTree result = Left("x(n)(n).x(n).x");
     assert(result.successful);
     assert(result.matches == ["x", "(n)", "(n)", ".x", "(n)", ".x"]);
@@ -2697,7 +2728,7 @@ unittest // Left- and right-recursion (is right-associative!)
         M <- E eoi
         E <- E '+' E / 'n'
     `;
-    mixin(grammar!(Memoization.no)(LeftRightGrammar));
+    mixin(grammar(LeftRightGrammar));
     ParseTree result = LeftRight("n+n+n+n");
     assert(result.successful);
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
@@ -2712,7 +2743,7 @@ unittest // Hidden left-recursion
         B <- 'b'
         C <-  A 'a' / 'c'
     `;
-    mixin(grammar!(Memoization.no)(HiddenLeft));
+    mixin(grammar(HiddenLeft));
     assert(Test("caa").successful);
     assert(Test("bbca").successful);
 }
