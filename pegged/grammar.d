@@ -2430,7 +2430,7 @@ unittest // Memoization testing
     assert(!is(typeof(Test2.memo)));
 
     ParseTree result1 = Test1("aaaaaaac");      // Memo + Runtime
-    enum ParseTree result2 = Test1("aaaaaaac"); // Memo + Compile-time
+    enum ParseTree result2 = Test1("aaaaaaac"); // Memo + Compile-time. Note: there is no actual memoization at CT.
     ParseTree result3 = Test2("aaaaaaac");      // No memo + Runtime
     enum ParseTree result4 = Test2("aaaaaaac"); // No memo + Compile-time
 
