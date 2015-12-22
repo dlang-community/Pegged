@@ -245,9 +245,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     if (withMemo == Memoization.yes)
                         result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n";
 
-                    // Support left-recursion
-                    result ~= "    static TParseTree[Tuple!(string /*rule name*/, size_t /*position*/)] seed;\n";
-
                 /+
                         ~ "        switch(s)\n"
                         ~ "        {\n";
@@ -406,30 +403,34 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 import std.algorithm.searching: canFind;
                 if (withMemo == Memoization.no)
-                {
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                            ~  "    {\n"
+                           ~  "        static TParseTree[size_t /*position*/] seed;\n"
                            ~  "        if(__ctfe)\n"
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
-                           ~  "        else {\n";
-                    if (stoppers.canFind(shortName))
-                        result ~= "            if (auto s = tuple(" ~ innerName ~ ", p.end) in seed)\n"
-                               ~  "                return *s;\n"
-                               ~  "            auto current = fail(p);\n"
-                               ~  "            seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
-                               ~  "            while(true) {\n"
-                               ~  "                auto result = " ~ code ~ "(p);\n"
-                               ~  "                if (result.end > current.end) {\n"
-                               ~  "                    current = result;\n"
-                               ~  "                    seed[tuple(" ~ innerName ~ ", p.end)] = current;\n"
-                               ~  "                } else {\n"
-                               ~  "                    seed.remove(tuple(" ~ innerName ~ ", p.end));\n"
-                               ~  "                    return current;\n"
-                               ~  "                }\n"
-                               ~  "            }\n";
-                    else
-                        result ~= "            return " ~ code ~ "(p);\n";
-                    result ~= "        }\n"
+                           ~  "        else\n"
+                           ~  "        {\n"
+                           ~  (stoppers.canFind(shortName) ?
+                              "            if (auto s = p.end in seed)\n" ~
+                              "                return *s;\n" ~
+                              "            auto current = fail(p);\n" ~
+                              "            seed[p.end] = current;\n" ~
+                              "            while(true)\n" ~
+                              "            {\n" ~
+                              "                auto result = " ~ code ~ "(p);\n" ~
+                              "                if (result.end > current.end)\n" ~
+                              "                {\n" ~
+                              "                    current = result;\n" ~
+                              "                    seed[p.end] = current;\n" ~
+                              "                } else {\n" ~
+                              "                    seed.remove(p.end);\n" ~
+                              "                    return current;\n" ~
+                              "                }\n" ~
+                              "            }\n"
+                              :
+                              "            return " ~ code ~ "(p);\n"
+                              )
+                           ~  "        }\n"
                            ~  "    }\n"
                            ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
                            ~  "    {\n"
@@ -438,7 +439,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        else\n"
                            ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
                            ~  "    }\n";
-                }
                 else
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                            ~  "    {\n"
