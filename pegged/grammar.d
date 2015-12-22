@@ -407,7 +407,12 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "    {\n"
                            ~  "        static TParseTree[size_t /*position*/] seed;\n"
                            ~  "        if(__ctfe)\n"
+                           ~  "        {\n"
+                           ~  (stoppers.canFind(shortName) ?
+                              "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
+                                                           "at compile-time. Consider using asModule().\");" : "")
                            ~  "            return " ~ ctfeCode ~ "(p);\n"
+                           ~  "        }\n"
                            ~  "        else\n"
                            ~  "        {\n"
                            ~  (stoppers.canFind(shortName) ?
