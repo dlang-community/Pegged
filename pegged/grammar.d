@@ -241,9 +241,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     }
 ";
 
-                    result ~= "    import std.typecons:Tuple, tuple;\n";
                     if (withMemo == Memoization.yes)
-                        result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n"
+                        result ~= "    import std.typecons:Tuple, tuple;\n"
+                               ~  "    static TParseTree[Tuple!(string, size_t)] memo;\n"
                                ~  "    static bool blockMemo = false;\n";
 
                 /+
@@ -655,6 +655,12 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     result = "pegged.peg.literal!(\"" ~ p.matches[1] ~ "\")";
                 else // only two children -> empty literal
                     result = "pegged.peg.literal!(``)";
+                break;
+            case "Pegged.CILiteral":
+                if(p.matches.length == 3) // standard case
+                    result = "pegged.peg.caseInsensitiveLiteral!(\"" ~ p.matches[1] ~ "\")";
+                else // only two children -> empty literal
+                    result = "pegged.peg.caseInsensitiveLiteral!(``)";
                 break;
             case "Pegged.CharClass":
                 if (p.children.length > 1)
@@ -1195,6 +1201,25 @@ unittest // 'grammar' unit test: PEG syntax
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children[0].children == reference.children);
+
+    // Verifying that the case insensitive literal i suffix does not clash with a rule named i.
+    mixin(grammar(`
+    CaseInsensitive:
+        S  <- CI i
+        CI <- "abc"i
+        i  <- "i"
+    `));
+    assert(CaseInsensitive("aBci").successful);
+
+    // Verifying that ordinary literals are case sensitive.
+    mixin(grammar(`
+    CaseSensitive:
+        S  <- CS i
+        CS <- "abc"
+        i  <- "i"
+    `));
+    assert(!CaseSensitive("aBci").successful);
+    assert(CaseSensitive("abci").successful);
 }
 
 unittest // Multilines rules
