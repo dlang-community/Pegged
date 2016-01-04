@@ -19,12 +19,11 @@ dependency.
 */
 
 import std.algorithm: equal, map, startsWith;
-import std.uni : isAlpha;
+import std.uni : isAlpha, icmp;
 import std.array;
 import std.conv;
 import std.string: strip;
 import std.typetuple;
-import std.uni: isAlpha;
 
 /**
 CT Switch for testing 'keywords' implementations
@@ -630,6 +629,154 @@ unittest // 'literal' unit test
     assert(result.input == input.input, "'' does not change the input.");
     assert(result.end == input.end+0, "'' does not advance the index.");
     assert(result.children is null, "'' has no children.");
+}
+
+/**
+Represents a case insensitive literal in a PEG, like "abc"i or 'abc'i (or even ''i).
+It succeeds if a case insensitive comparison of a prefix of the input and its template
+parameter yields no difference and fails otherwise.
+*/
+template caseInsensitiveLiteral(string s)
+{
+    enum name = "caseInsensitiveLiteral!(\""~s~"\")";
+
+    ParseTree caseInsensitiveLiteral(ParseTree p)
+    {
+        enum lit = "\"" ~ s ~ "\"";
+        if (p.end+s.length <= p.input.length && icmp(p.input[p.end..p.end+s.length], s) == 0)
+            return ParseTree(name, true, [s], p.input, p.end, p.end+s.length);
+        else
+            return ParseTree(name, false, [lit], p.input, p.end, p.end);
+    }
+
+    ParseTree caseInsensitiveLiteral(string input)
+    {
+        return .caseInsensitiveLiteral!(s)(ParseTree("", false, [], input));
+    }
+
+
+    string caseInsensitiveLiteral(GetName g)
+    {
+        return name;
+    }
+
+}
+
+unittest // 'caseInsensitiveLiteral' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "AbCdEf", 0,0, null);
+
+    alias caseInsensitiveLiteral!"a" a;
+    alias caseInsensitiveLiteral!"aBC" abc;
+    alias caseInsensitiveLiteral!"" empty;
+
+    ParseTree result = a(input);
+
+    assert(result.name == `caseInsensitiveLiteral!("a")`, "caseInsensitiveLiteral name test.");
+    assert(result.successful, "'a' succeeds on inputs beginning with 'A'.");
+    assert(result.matches == ["a"], "'a' matches the 'A' at the beginning.");
+    assert(result.input == input.input, "'a' does not change the input.");
+    assert(result.end == input.end+1, "'a' advances the index by one position.");
+    assert(result.children is null, "'a' has no children.");
+
+    result = a("AbCdEf");
+
+    assert(result.successful, "'a' succeeds on inputs beginning with 'A'.");
+    assert(result.matches == ["a"], "'a' matches the 'A' at the beginning.");
+    assert(result.input == input.input, "'a' does not change the input.");
+    assert(result.end == input.end+1, "'a' advances the index by one position.");
+    assert(result.children is null, "'a' has no children.");
+
+    result = abc(input);
+
+    assert(result.name == `caseInsensitiveLiteral!("aBC")`, "caseInsensitiveLiteral name test.");
+    assert(result.successful, "'aBC' succeeds on inputs beginning with 'AbC'.");
+    assert(result.matches == ["aBC"], "'AbC' matches 'aBC' at the beginning.");
+    assert(result.input == input.input, "'aBC' does not change the input.");
+    assert(result.end == input.end+3, "'aBC' advances the index by 3 positions.");
+    assert(result.children is null, "'aBC' has no children.");
+
+    result = abc("AbCdEf");
+
+    assert(result.successful, "'aBC' succeeds on inputs beginning with 'AbC'.");
+    assert(result.matches == ["aBC"], "'AbC' matches 'aBC' at the beginning.");
+    assert(result.input == input.input, "'aBC' does not change the input.");
+    assert(result.end == input.end+3, "'aBC' advances the index by 3 positions.");
+    assert(result.children is null, "'aBC' has no children.");
+
+    result = empty(input);
+
+    assert(result.name == `caseInsensitiveLiteral!("")`, "caseInsensitiveLiteral name test.");
+    assert(result.successful, "'' succeeds on non-null inputs.");
+    assert(result.matches  == [""], "'' matches '' at the beginning.");
+    assert(result.input == input.input, "'' does not change the input.");
+    assert(result.end == input.end+0, "'' does not advance the index.");
+    assert(result.children is null, "'' has no children.");
+
+    result = empty("AbCdEf");
+
+    assert(result.successful, "'' succeeds on non-null inputs.");
+    assert(result.matches  == [""], "'' matches '' at the beginning.");
+    assert(result.input == input.input, "'' does not change the input.");
+    assert(result.end == input.end+0, "'' does not advance the index.");
+    assert(result.children is null, "'' has no children.");
+
+    input.input = "bCdEf";
+
+    result = a(input);
+
+    assert(!result.successful, "'a' fails on inputs not beginning with 'a' or 'A'.");
+    assert(result.matches == ["\"a\""], "'a' makes no match on 'bCdEf'.");
+    assert(result.input == input.input, "'a' does not change the input.");
+    assert(result.end == input.end, "'a' does not advances the index on 'bCdEf'.");
+    assert(result.children is null, "'a' has no children.");
+
+    result = abc(input);
+
+    assert(!result.successful, "'aBC' fails on inputs beginning with 'bCdEf'.");
+    assert(result.matches == ["\"aBC\""], "'aBC' does no match on 'bCdEf'.");
+    assert(result.input == input.input, "'aBC' does not change the input.");
+    assert(result.end == input.end, "'aBC' does not advance the index on 'bCdEf'.");
+    assert(result.children is null, "'aBC' has no children.");
+
+    result = empty(input);
+
+    assert(result.successful, "'' succeeds on non-null inputs.");
+    assert(result.matches == [""], "'' matches '' at the beginning.");
+    assert(result.input == input.input, "'' does not change the input.");
+    assert(result.end == input.end+0, "'' does not advance the index.");
+    assert(result.children is null, "'' has no children.");
+
+    input.input = "";
+
+    result = a(input);
+
+    assert(!result.successful, "'a' fails on empty strings.");
+    assert(result.matches == ["\"a\""], "'a' does not match ''.");
+    assert(result.input == input.input, "'a' does not change the input.");
+    assert(result.end == input.end, "'a' does not advance the index on 'bCdEf'.");
+    assert(result.children is null, "'a' has no children.");
+
+    result = abc(input);
+
+    assert(!result.successful, "'aBC' fails on empty strings.");
+    assert(result.matches == ["\"aBC\""], "'aBC' does not match ''.");
+    assert(result.input == input.input, "'aBC' does not change the input.");
+    assert(result.end == input.end, "'aBC' does not advance the index on 'bCdEf'.");
+    assert(result.children is null, "'aBC' has no children.");
+
+    result = empty(input);
+
+    assert(result.successful, "'' succeeds on empty strings.");
+    assert(result.matches  == [""], "'' matches '' at the beginning, even on empty strings.");
+    assert(result.input == input.input, "'' does not change the input.");
+    assert(result.end == input.end+0, "'' does not advance the index.");
+    assert(result.children is null, "'' has no children.");
+
+    input.input = "ÄöÜæØå";
+    result = caseInsensitiveLiteral!"äÖüÆøÅ"(input);
+
+    assert(result.successful, "Unicode characters are matched case insensitively.");
 }
 
 /**

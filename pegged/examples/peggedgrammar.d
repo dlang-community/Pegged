@@ -17,6 +17,7 @@ Primary      <- !(LhsName Arrow)
                 ( RhsName
                 / :OPEN Expression :CLOSE
                 / Literal
+                / CILiteral
                 / CharClass
                 / ANY)
 # Lexical syntax
@@ -30,8 +31,10 @@ DefaultParam <- Identifier Spacing :ASSIGN Expression
 SingleParam  <- Identifier Spacing
 ArgList      <- :OPEN Expression (:SEPARATOR Expression)* :CLOSE
 
-Literal      <- quote       ~(!quote Char)*       quote       Spacing
-              / doublequote ~(!doublequote Char)* doublequote Spacing
+Literal      <- quote       ~(!quote Char)*       quote       !'i' Spacing
+              / doublequote ~(!doublequote Char)* doublequote !'i' Spacing
+CILiteral    <- quote       ~(!quote Char)*       quote       :'i' Spacing
+              / doublequote ~(!doublequote Char)* doublequote :'i' Spacing
 CharClass    <- :'[' (!']' CharRange)* :']' Spacing
 CharRange    <- Char '-' Char / Char
 
