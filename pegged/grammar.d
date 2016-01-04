@@ -241,9 +241,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     }
 ";
 
-                    result ~= "    import std.typecons:Tuple, tuple;\n";
                     if (withMemo == Memoization.yes)
-                        result ~= "    static TParseTree[Tuple!(string, size_t)] memo;\n"
+                        result ~= "    import std.typecons:Tuple, tuple;\n"
+                               ~  "    static TParseTree[Tuple!(string, size_t)] memo;\n"
                                ~  "    static bool blockMemo = false;\n";
 
                 /+
