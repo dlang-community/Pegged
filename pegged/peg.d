@@ -633,8 +633,8 @@ unittest // 'literal' unit test
 
 /**
 Represents a case insensitive literal in a PEG, like "abc"i or 'abc'i (or even ''i).
-It succeeds if a prefix of the input converted to lower case is equal to its template
-parameter converted to lowercase and fails otherwise.
+It succeeds if a case insensitive comparison of a prefix of the input and its template
+parameter yields no difference and fails otherwise.
 */
 template caseInsensitiveLiteral(string s)
 {
