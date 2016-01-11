@@ -410,8 +410,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        {\n"
                            ~  (stoppers.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
-                                                           "at compile-time. Consider using asModule().\");" : "")
-                           ~  "            return " ~ ctfeCode ~ "(p);\n"
+                                                           "at compile-time. Consider using asModule().\");\n"
+                              "            return fail(p);\n"
+                              :
+                              "            return " ~ ctfeCode ~ "(p);\n"
+                              )
                            ~  "        }\n"
                            ~  "        else\n"
                            ~  "        {\n"
@@ -452,8 +455,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        {\n"
                            ~  (stoppers.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
-                                                           "at compile-time. Consider using asModule().\");" : "")
-                           ~  "            return " ~ ctfeCode ~ "(p);\n"
+                                                           "at compile-time. Consider using asModule().\");\n"
+                              "            return fail(p);\n"
+                              :
+                              "            return " ~ ctfeCode ~ "(p);\n"
+                              )
                            ~  "        }\n"
                            ~  "        else\n"
                            ~  "        {\n"
