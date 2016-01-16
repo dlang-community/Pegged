@@ -427,7 +427,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            while(true)\n"
                               "            {\n"
                               "                auto result = " ~ code ~ "(p);\n"
-                              "                if (result.end > current.end)\n"
+                              "                if (result.end > current.end ||\n"
+                              "                    (!current.successful && result.successful) /* null-match */)\n"
                               "                {\n"
                               "                    current = result;\n"
                               "                    seed[p.end] = current;\n"
@@ -448,7 +449,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        else\n"
                            ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
                            ~  "    }\n";
-                else
+                else // Memoization.yes
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                            ~  "    {\n"
                            ~  "        if(__ctfe)\n"
@@ -473,7 +474,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            while (true)\n"
                               "            {\n"
                               "                auto result = " ~ code ~ "(p);\n"
-                              "                if (result.end > current.end)\n"
+                              "                if (result.end > current.end ||\n"
+                              "                    (!current.successful && result.successful) /* null-match */)\n"
                               "                {\n"
                               "                    current = result;\n"
                               "                    seed[p.end] = current;\n"
@@ -2777,4 +2779,15 @@ unittest // Hidden left-recursion
     mixin(grammar(HiddenLeft));
     assert(Test("caa").successful);
     assert(Test("bbca").successful);
+}
+
+unittest // Null-matching left-recursion
+{
+    enum NullMatch = `
+      Test:
+        M <- S (";" S)* eoi
+        S <- S '+' S / 'n' / eps
+    `;
+    mixin(grammar(NullMatch));
+    assert(Test("n+n;n;").matches == ["n", "+", "n", ";", "n", ";", ""]);
 }
