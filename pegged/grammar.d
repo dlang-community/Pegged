@@ -259,7 +259,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 foreach(i,def; definitions)
                 {
-                    /+
+                    /*
                     if (def.matches[0] !in ruleNames)
                     {
                         ruleNames[def.matches[0]] = true;
@@ -269,7 +269,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         else
                             result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
                     }
-                    +/
+                    */
                     if (def.matches[0] == "Spacing") // user-defined spacing
                     {
                         userDefinedSpacing = true;
@@ -298,38 +298,38 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 {
                     // General calling interface
                     result ~= "    static TParseTree opCall(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "        TParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
-                           ~  "        result.children = [result];\n"
-                           ~  "        result.name = \"" ~ shortGrammarName ~ "\";\n"
-                           ~  "        return result;\n"
-                           ~  "    }\n\n"
-                           ~  "    static TParseTree opCall(string input)\n"
-                           ~  "    {\n";
+                              "    {\n"
+                              "        TParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
+                              "        result.children = [result];\n"
+                              "        result.name = \"" ~ shortGrammarName ~ "\";\n"
+                              "        return result;\n"
+                              "    }\n\n"
+                              "    static TParseTree opCall(string input)\n"
+                              "    {\n";
 
                     if (withMemo == Memoization.no)
                         result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "    }\n";
+                                  "    }\n";
                     else
                         result ~= "        if(__ctfe)\n"
-                               ~  "        {\n"
-                               ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "        }\n"
-                               ~  "        else\n"
-                               ~  "        {\n"
-                               ~  "            memo = null;\n"
-                               ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "        }\n"
-                               ~  "    }\n";
+                                  "        {\n"
+                                  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                                  "        }\n"
+                                  "        else\n"
+                                  "        {\n"
+                                  "            memo = null;\n"
+                                  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                                  "        }\n"
+                                  "    }\n";
 
                     result ~= "    static string opCall(GetName g)\n"
-                            ~ "    {\n"
-                            ~ "        return \"" ~ shortGrammarName ~ "\";\n"
-                            ~ "    }\n\n";
+                              "    {\n"
+                              "        return \"" ~ shortGrammarName ~ "\";\n"
+                              "    }\n\n";
                 }
                 result ~= "    }\n" // end of grammar struct definition
-                        ~ "}\n\n" // end of template definition
-                        ~ "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
+                          "}\n\n" // end of template definition
+                          "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
                         ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
                 break;
             case "Pegged.Definition":
@@ -382,7 +382,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 if (parameterizedRule)
                 {
                     result =  "    template " ~ completeName ~ "\n"
-                            ~ "    {\n";
+                             "    {\n";
                     innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
                     hookedName ~= "_" ~ to!string(p.children[0].children[1].children.length);
                     foreach(i,param; p.children[0].children[1].children)
@@ -402,9 +402,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 import std.algorithm.searching: canFind;
                 if (withMemo == Memoization.no)
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
+                              "    {\n"
+                              "        if(__ctfe)\n"
+                              "        {\n"
                            ~  (stoppers.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                            "at compile-time. Consider using asModule().\");\n"
@@ -413,8 +413,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            return " ~ ctfeCode ~ "(p);\n"
                               )
                            ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
+                              "        else\n"
+                              "        {\n"
                            ~  (stoppers.canFind(shortName) ?
                               // Finite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
@@ -444,19 +444,19 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            return " ~ code ~ "(p);\n"
                               )
                            ~  "        }\n"
-                           ~  "    }\n"
-                           ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "        else\n"
-                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "    }\n";
+                              "    }\n"
+                              "    static TParseTree " ~ shortName ~ "(string s)\n"
+                              "    {\n"
+                              "        if(__ctfe)\n"
+                              "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
+                              "        else\n"
+                              "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                              "    }\n";
                 else // Memoization.yes
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
+                              "    {\n"
+                              "        if(__ctfe)\n"
+                              "        {\n"
                            ~  (stoppers.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                            "at compile-time. Consider using asModule().\");\n"
@@ -465,8 +465,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            return " ~ ctfeCode ~ "(p);\n"
                               )
                            ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
+                              "        else\n"
+                              "        {\n"
                            ~  (stoppers.canFind(shortName) ?
                               // Finite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
@@ -510,24 +510,24 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            }\n"
                               )
                            ~  "        }\n"
-                           ~  "    }\n\n"
-                           ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
-                           ~  "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
-                           ~  "            memo = null;\n"
-                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "        }\n"
-                           ~  "    }\n";
+                              "    }\n\n"
+                              "    static TParseTree " ~ shortName ~ "(string s)\n"
+                              "    {\n"
+                              "        if(__ctfe)\n"
+                              "        {\n"
+                              "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
+                              "        }\n"
+                              "        else\n"
+                              "        {\n"
+                              "            memo = null;\n"
+                              "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                              "        }\n"
+                              "    }\n";
 
                     result ~= "    static string " ~ shortName ~ "(GetName g)\n"
-                           ~  "    {\n"
-                           ~  "        return \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\";\n"
-                           ~  "    }\n\n";
+                              "    {\n"
+                              "        return \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\";\n"
+                              "    }\n\n";
 
                 if (parameterizedRule)
                     result ~= "    }\n";
