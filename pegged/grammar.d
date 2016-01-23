@@ -107,12 +107,13 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         return result;
     }
 
-    string[] leftRecursionStoppers()
-    {
+    // Grammar analysis in support of left-recursion.
         import pegged.dev.introspection;
-        import std.algorithm;
+    import std.algorithm : countUntil;
+    RuleInfo[string] ruleInfo = ruleInfo(defAsParseTree.children[0]);
         string[][] leftRecursiveCycles;
-        foreach (info; ruleInfo(defAsParseTree.children[0]))
+    string[] stoppers;
+    foreach (info; ruleInfo)
         {
             if (info.leftRecursion != LeftRecursive.no)
             {
@@ -133,13 +134,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
             }
         }
 
-        string[] stoppers;
         foreach (cycle; leftRecursiveCycles)
             stoppers ~= cycle[0];
-        return stoppers;
-    }
-
-    string[] stoppers = leftRecursionStoppers();
+    // Analysis competed.
 
     string generateCode(ParseTree p, string propagatedName = "")
     {
@@ -419,6 +416,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        else\n"
                            ~  "        {\n"
                            ~  (stoppers.canFind(shortName) ?
+                              // Finite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                               "            if (auto s = p.end in seed)\n"
                               "                return *s;\n"
@@ -427,9 +425,13 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            while(true)\n"
                               "            {\n"
                               "                auto result = " ~ code ~ "(p);\n"
+                            ~ (ruleInfo[shortName].nullMatch == NullMatch.no ?
+                              "                if (result.end > current.end)\n"
+                              :
                               "                if (result.end > current.end ||\n"
                               "                    (!current.successful && result.successful) /* null-match */)\n"
-                              "                {\n"
+                              )
+                            ~ "                {\n"
                               "                    current = result;\n"
                               "                    seed[p.end] = current;\n"
                               "                } else {\n"
@@ -438,6 +440,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "                }\n"
                               "            }\n"
                               :
+                              // Ordinary, non-left-recursive case.
                               "            return " ~ code ~ "(p);\n"
                               )
                            ~  "        }\n"
@@ -465,6 +468,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                            ~  "        else\n"
                            ~  "        {\n"
                            ~  (stoppers.canFind(shortName) ?
+                              // Finite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                               "            if (auto s = p.end in seed)\n"
                               "                return *s;\n"
@@ -474,9 +478,13 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            while (true)\n"
                               "            {\n"
                               "                auto result = " ~ code ~ "(p);\n"
+                            ~ (ruleInfo[shortName].nullMatch == NullMatch.no ?
+                              "                if (result.end > current.end)\n"
+                              :
                               "                if (result.end > current.end ||\n"
                               "                    (!current.successful && result.successful) /* null-match */)\n"
-                              "                {\n"
+                              )
+                            ~ "                {\n"
                               "                    current = result;\n"
                               "                    seed[p.end] = current;\n"
                               "                } else {\n"
@@ -486,6 +494,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "                }\n"
                               "            }\n"
                               :
+                              // Ordinary, non-left-recursive case.
                               "            if (blockMemo)\n"
                               "                return " ~ code ~ "(p);\n"
                               "            else\n"
