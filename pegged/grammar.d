@@ -108,34 +108,34 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     }
 
     // Grammar analysis in support of left-recursion.
-        import pegged.dev.introspection;
+    import pegged.dev.introspection;
     import std.algorithm : countUntil;
     RuleInfo[string] ruleInfo = ruleInfo(defAsParseTree.children[0]);
-        string[][] leftRecursiveCycles;
+    string[][] leftRecursiveCycles;
     string[] stoppers;
     foreach (info; ruleInfo)
+    {
+        if (info.leftRecursion != LeftRecursive.no)
         {
-            if (info.leftRecursion != LeftRecursive.no)
+            // Consider if the cycle is already present with another head.
+            bool unique = true;
+            foreach (cycle; leftRecursiveCycles)
             {
-                // Consider if the cycle is already present with another head.
-                bool unique = true;
-                foreach (cycle; leftRecursiveCycles)
-                {
-                    auto pos = countUntil(cycle, info.leftRecursiveCycle[0]);
-                    if (pos >= 0)
-                        if (equal!equal(cycle[pos .. $] ~ cycle[0 .. pos], info.leftRecursiveCycle))
-                        {
-                            unique = false;
-                            break;
-                        }
-                }
-                if (unique)
-                    leftRecursiveCycles ~= info.leftRecursiveCycle;
+                auto pos = countUntil(cycle, info.leftRecursiveCycle[0]);
+                if (pos >= 0)
+                    if (equal!equal(cycle[pos .. $] ~ cycle[0 .. pos], info.leftRecursiveCycle))
+                    {
+                        unique = false;
+                        break;
+                    }
             }
+            if (unique)
+                leftRecursiveCycles ~= info.leftRecursiveCycle;
         }
+    }
 
-        foreach (cycle; leftRecursiveCycles)
-            stoppers ~= cycle[0];
+    foreach (cycle; leftRecursiveCycles)
+        stoppers ~= cycle[0];
     // Analysis completed.
 
     string generateCode(ParseTree p, string propagatedName = "")
@@ -381,7 +381,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 if (parameterizedRule)
                 {
-                    result =  "    template " ~ completeName ~ "\n"
+                    result = "    template " ~ completeName ~ "\n"
                              "    {\n";
                     innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
                     hookedName ~= "_" ~ to!string(p.children[0].children[1].children.length);
@@ -405,17 +405,17 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "    {\n"
                               "        if(__ctfe)\n"
                               "        {\n"
-                           ~  (stoppers.canFind(shortName) ?
+                            ~ (stoppers.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                            "at compile-time. Consider using asModule().\");\n"
                               "            return fail(p);\n"
                               :
                               "            return " ~ ctfeCode ~ "(p);\n"
                               )
-                           ~  "        }\n"
+                            ~ "        }\n"
                               "        else\n"
                               "        {\n"
-                           ~  (stoppers.canFind(shortName) ?
+                            ~ (stoppers.canFind(shortName) ?
                               // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                               "            if (auto s = p.end in seed)\n"
@@ -443,7 +443,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               // Possibly left-recursive rule, but infinite recursion is already prevented by another rule in the same cycle.
                               "            return " ~ code ~ "(p);\n"
                               )
-                           ~  "        }\n"
+                            ~ "        }\n"
                               "    }\n"
                               "    static TParseTree " ~ shortName ~ "(string s)\n"
                               "    {\n"
@@ -457,17 +457,17 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "    {\n"
                               "        if(__ctfe)\n"
                               "        {\n"
-                           ~  (stoppers.canFind(shortName) ?
+                            ~ (stoppers.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                            "at compile-time. Consider using asModule().\");\n"
                               "            return fail(p);\n"
                               :
                               "            return " ~ ctfeCode ~ "(p);\n"
                               )
-                           ~  "        }\n"
+                            ~ "        }\n"
                               "        else\n"
                               "        {\n"
-                           ~  (stoppers.canFind(shortName) ?
+                            ~ (stoppers.canFind(shortName) ?
                               // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                               "            if (auto s = p.end in seed)\n"
