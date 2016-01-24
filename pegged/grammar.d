@@ -496,21 +496,21 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            }\n"
                               :
                               // Possibly left-recursive rule, but infinite recursion is already prevented by another rule in the same cycle.
+                              (ruleInfo[shortName].leftRecursion != LeftRecursive.no ?
                               "            if (blockMemo)\n"
                               "                return " ~ code ~ "(p);\n"
+                              : ""
+                              )
+                            ~ "            if (auto m = tuple(" ~ innerName ~ ", p.end) in memo)\n"
+                              "                return *m;\n"
                               "            else\n"
                               "            {\n"
-                              "                if (auto m = tuple(" ~ innerName ~ ", p.end) in memo)\n"
-                              "                    return *m;\n"
-                              "                else\n"
-                              "                {\n"
-                              "                    TParseTree result = " ~ code ~ "(p);\n"
-                              "                    memo[tuple(" ~ innerName ~ ", p.end)] = result;\n"
-                              "                    return result;\n"
-                              "                }\n"
+                              "                TParseTree result = " ~ code ~ "(p);\n"
+                              "                memo[tuple(" ~ innerName ~ ", p.end)] = result;\n"
+                              "                return result;\n"
                               "            }\n"
                               )
-                           ~  "        }\n"
+                            ~ "        }\n"
                               "    }\n\n"
                               "    static TParseTree " ~ shortName ~ "(string s)\n"
                               "    {\n"
@@ -2757,14 +2757,16 @@ unittest // Proper blocking of memoization
       Left:
         S <- E eoi
         E <- F 'n' / 'n'
-        F <- E '+' / G '-'
+        F <- E '+' I* / G '-'
         G <- H 'm' / E
         H <- G 'l'
+        I <- '(' A+ ')'
+        A <- 'a'
     `;
     mixin(grammar(LeftGrammar));
-    ParseTree result = Left("nlm-n+n");
+    ParseTree result = Left("nlm-n+(aaa)n");
     assert(result.successful);
-    assert(result.matches == ["n", "l", "m", "-", "n", "+", "n"]);
+    assert(result.matches == ["n", "l", "m", "-", "n", "+", "(", "a", "a", "a", ")", "n"]);
 }
 
 unittest // Mutual left-recursion
