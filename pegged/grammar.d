@@ -136,7 +136,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
         foreach (cycle; leftRecursiveCycles)
             stoppers ~= cycle[0];
-    // Analysis competed.
+    // Analysis completed.
 
     string generateCode(ParseTree p, string propagatedName = "")
     {
@@ -416,7 +416,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "        else\n"
                               "        {\n"
                            ~  (stoppers.canFind(shortName) ?
-                              // Finite left-recursion.
+                              // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                               "            if (auto s = p.end in seed)\n"
                               "                return *s;\n"
@@ -440,7 +440,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "                }\n"
                               "            }\n"
                               :
-                              // Ordinary, non-left-recursive case.
+                              // Possibly left-recursive rule, but infinite recursion is already prevented by another rule in the same cycle.
                               "            return " ~ code ~ "(p);\n"
                               )
                            ~  "        }\n"
@@ -468,12 +468,13 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "        else\n"
                               "        {\n"
                            ~  (stoppers.canFind(shortName) ?
-                              // Finite left-recursion.
+                              // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                               "            if (auto s = p.end in seed)\n"
                               "                return *s;\n"
                               "            auto current = fail(p);\n"
                               "            seed[p.end] = current;\n"
+                              "            bool memoBlocked = blockMemo;\n"
                               "            blockMemo = true;\n"
                               "            while (true)\n"
                               "            {\n"
@@ -489,12 +490,12 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "                    seed[p.end] = current;\n"
                               "                } else {\n"
                               "                    seed.remove(p.end);\n"
-                              "                    blockMemo = false;\n"
+                              "                    blockMemo = memoBlocked;\n"
                               "                    return current;\n"
                               "                }\n"
                               "            }\n"
                               :
-                              // Ordinary, non-left-recursive case.
+                              // Possibly left-recursive rule, but infinite recursion is already prevented by another rule in the same cycle.
                               "            if (blockMemo)\n"
                               "                return " ~ code ~ "(p);\n"
                               "            else\n"
@@ -2747,6 +2748,23 @@ unittest // Indirect left-recursion
     ParseTree result = Left("n+n+n+n");
     assert(result.successful);
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
+}
+
+unittest // Proper blocking of memoization
+{
+    // Two interlocking cycles of indirect left-recursion.
+    enum LeftGrammar = `
+      Left:
+        S <- E eoi
+        E <- F 'n' / 'n'
+        F <- E '+' / G '-'
+        G <- H 'm' / E
+        H <- G 'l'
+    `;
+    mixin(grammar(LeftGrammar));
+    ParseTree result = Left("nlm-n+n");
+    assert(result.successful);
+    assert(result.matches == ["n", "l", "m", "-", "n", "+", "n"]);
 }
 
 unittest // Mutual left-recursion
