@@ -109,7 +109,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
     string[] leftRecursionStoppers()
     {
-        import pegged.dev.introspection;
+        import pegged.introspection;
         import std.algorithm;
         string[][] leftRecursiveCycles;
         foreach (info; ruleInfo(defAsParseTree.children[0]))
