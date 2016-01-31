@@ -109,7 +109,6 @@ Limitations
 -----------
 
 * **Pegged** accepts only strings for the time being (wstrings or dstrings were OK as input some time ago, but I recently dropped them).
-* As with other top-down recursive descent parsers, **Pegged** has trouble with left-recursive rules for now. But you can do recursive grammars, of course.
 * Error reporting is the same as for any in-my-own-free-time / just-one-guy parsing project (read: perfectible).
 * I recently dropped named captures and the `=` and `@` operators.
 
