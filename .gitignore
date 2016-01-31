@@ -6,3 +6,4 @@
 build/*
 .directory
 .dub
+libpegged.a
