@@ -1,7 +1,7 @@
 /**
 This module contains function to inspect a Pegged grammar.
 */
-module pegged.dev.introspection;
+module pegged.introspection;
 
 import std.typecons;
 

@@ -108,7 +108,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     }
 
     // Grammar analysis in support of left-recursion.
-    import pegged.dev.introspection;
+    import pegged.introspection;
     import std.algorithm : countUntil;
     RuleInfo[string] ruleInfo = ruleInfo(defAsParseTree.children[0]);
     string[][] leftRecursiveCycles;
