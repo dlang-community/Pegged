@@ -1,7 +1,7 @@
 all:
-	if [ -e /usr/bin/dmd ]; then \
+	if [ -x /usr/bin/dmd ]; then \
 		dmd -w -wi -O -release -noboundscheck -lib -oflibpegged.a pegged/peg.d pegged/grammar.d pegged/parser.d pegged/introspection.d pegged/dynamic/grammar.d pegged/dynamic/peg.d; \
-	elif [ -e /usr/bin/gdc ]; then \
+	elif [ -x /usr/bin/gdc ]; then \
 		gdc -c -O -olibpegged.a pegged/peg.d pegged/grammar.d pegged/parser.d pegged/dynamic/grammar.d pegged/dynamic/peg.d; \
 	fi
 
