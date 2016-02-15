@@ -2274,7 +2274,7 @@ unittest // 'named' unit test
 }
 
 /**
-Internal helper template, to get a parse tree node with a name, while keeping the original node (see also named). 
+Internal helper template, to get a parse tree node with a name, while keeping the original node (see also named).
 For example, given:
 ----
 alias or!(literal!("abc"), charRange!('0','9')) myRule;
