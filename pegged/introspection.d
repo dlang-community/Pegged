@@ -164,23 +164,19 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
         {
             case "Pegged.Expression": // choice expressions null-match whenever one of their components can null-match
                 foreach(seq; p.children)
-                {
-                    auto nm = nullMatching(seq);
-                    if (nm == NullMatch.yes)
+                    if (nullMatching(seq) == NullMatch.yes)
                         return NullMatch.yes;
-                    if (nm == NullMatch.indeterminate)
+                foreach(seq; p.children)
+                    if (nullMatching(seq) == NullMatch.indeterminate)
                         return NullMatch.indeterminate;
-                }
                 return NullMatch.no;
             case "Pegged.Sequence": // sequence expressions can null-match when all their components can null-match
-                foreach(seq; p.children)
-                {
-                    auto nm = nullMatching(seq);
-                    if (nm == NullMatch.indeterminate)
-                        return NullMatch.indeterminate;
-                    if (nm == NullMatch.no)
+                foreach(pref; p.children)
+                    if (nullMatching(pref) == NullMatch.no)
                         return NullMatch.no;
-                }
+                foreach(pref; p.children)
+                    if (nullMatching(pref) == NullMatch.indeterminate)
+                        return NullMatch.indeterminate;
                 return NullMatch.yes;
             case "Pegged.Prefix":
                 foreach(pref; p.children[0..$-1])
@@ -188,17 +184,22 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
                         return NullMatch.yes;
                 return nullMatching(p.children[$-1]);
             case "Pegged.Suffix":
-                foreach(pref; p.children[1..$])
-                    if (pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.OPTION")
+                foreach(suff; p.children[1..$])
+                    if (suff.name == "Pegged.ZEROORMORE" || suff.name == "Pegged.OPTION")
                         return NullMatch.yes;
                 return nullMatching(p.children[0]);
             case "Pegged.Primary":
                 return nullMatching(p.children[0]);
             case "Pegged.RhsName":
                 if (p.matches[0] in result)
-                    return result[p.matches[0]].nullMatch;
-                else
-                    return nullMatching(p.children[0]);
+                    if (result[p.matches[0]].nullMatch != NullMatch.indeterminate)
+                        return result[p.matches[0]].nullMatch;
+                return nullMatching(p.children[0]);
+            case "Pegged.Identifier":
+                if (p.matches[0] == "eps" ||
+                    p.matches[0] == "eoi")
+                    return NullMatch.yes;
+                return NullMatch.indeterminate;
             case "Pegged.Literal":
                 if (p.matches[0].length == 0) // Empty literal, '' or ""
                     return NullMatch.yes;
@@ -445,6 +446,69 @@ unittest // Intersecting cycles of left-recursion
     assert(rt["A"].leftRecursion == LeftRecursive.indirect);
     assert(rt["B"].leftRecursion == LeftRecursive.indirect);
 }
+
+unittest // Null-matching
+{
+    enum ct = ruleInfo(`
+      NM:
+        NMM <- NML eoi
+        NML <- 'x'?
+    `);
+    static assert(ct["NML"].nullMatch == NullMatch.yes);
+    static assert(ct["NMM"].nullMatch == NullMatch.yes);
+    auto rt = ruleInfo(`
+      NM:
+        NMM <- NML eoi
+        NML <- 'x'?
+    `);
+    assert(rt["NML"].nullMatch == NullMatch.yes);
+    assert(rt["NMM"].nullMatch == NullMatch.yes);
+}
+
+unittest // Not null-matching
+{
+    enum ct = ruleInfo(`
+      Left:
+        M <- L eoi
+        L <- P '.x' / 'x'
+        P <- P '(n)' / L
+    `);
+    static assert(ct["M"].nullMatch == NullMatch.no);
+    static assert(ct["L"].nullMatch == NullMatch.no);
+    static assert(ct["P"].nullMatch == NullMatch.no);
+    auto rt = ruleInfo(`
+      Left:
+        M <- L eoi
+        L <- P '.x' / 'x'
+        P <- P '(n)' / L
+    `);
+    assert(rt["M"].nullMatch == NullMatch.no);
+    assert(rt["L"].nullMatch == NullMatch.no);
+    assert(rt["P"].nullMatch == NullMatch.no);
+}
+
+unittest // Left-recursive null-matching
+{
+    enum ct = ruleInfo(`
+      Left:
+        M <- L eoi
+        L <- P? '.x'? / 'x'
+        P <- P '(n)' / L
+    `);
+    static assert(ct["M"].nullMatch == NullMatch.yes);
+    static assert(ct["L"].nullMatch == NullMatch.yes);
+    static assert(ct["P"].nullMatch == NullMatch.yes);
+    auto rt = ruleInfo(`
+      Left:
+        M <- L eoi
+        L <- P? '.x'? / 'x'
+        P <- P '(n)' / L
+    `);
+    assert(rt["M"].nullMatch == NullMatch.yes);
+    assert(rt["L"].nullMatch == NullMatch.yes);
+    assert(rt["P"].nullMatch == NullMatch.yes);
+}
+
 
 /**
 Act on rules parse tree as produced by pegged.parser.
