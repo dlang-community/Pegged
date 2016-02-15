@@ -49,7 +49,37 @@ struct RuleInfo
 }
 
 /**
-Returns for all grammar rule:
+Struct holding the introspection info on a grammar.
+*/
+struct GrammarInfo
+{
+    RuleInfo[string] ruleInfo;
+    immutable(string[])[] leftRecursiveCycles;
+}
+
+pure void appendCycleIfUnique(ref immutable(string[])[] cycles, const string[] cycle)
+{
+    bool exists()
+    {
+        import std.algorithm : countUntil;
+        foreach (c; cycles)
+        {
+            if (c.length != cycle.length)
+                continue;
+            auto pos = countUntil(c, cycle[0]);
+            if (pos < 0)
+                continue;
+            if (equal!equal(c[pos .. $] ~ c[0 .. pos], cycle))
+                return true;
+        }
+        return false;
+    }
+    if (!exists())
+        cycles ~= cycle.idup;
+}
+
+/**
+Returns for all grammar rules:
 
 - the recursion type (no recursion, direct or indirect recursion).
 - the left-recursion type (no left-recursion, direct left-recursion, hidden, or indirect)
@@ -58,13 +88,13 @@ Returns for all grammar rule:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-pure RuleInfo[string] ruleInfo(ParseTree p)
+pure GrammarInfo grammarInfo(ParseTree p)
 {
     if (p.name == "Pegged")
-        return ruleInfo(p.children[0]);
+        return grammarInfo(p.children[0]);
     assert(p.name == "Pegged.Grammar");
 
-    RuleInfo[string] result;
+    GrammarInfo result;
     ParseTree[string] rules;
 
     /**
@@ -191,9 +221,9 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
             case "Pegged.Primary":
                 return nullMatching(p.children[0]);
             case "Pegged.RhsName":
-                if (p.matches[0] in result)
-                    if (result[p.matches[0]].nullMatch != NullMatch.indeterminate)
-                        return result[p.matches[0]].nullMatch;
+                if (p.matches[0] in result.ruleInfo)
+                    if (result.ruleInfo[p.matches[0]].nullMatch != NullMatch.indeterminate)
+                        return result.ruleInfo[p.matches[0]].nullMatch;
                 return nullMatching(p.children[0]);
             case "Pegged.Identifier":
                 if (p.matches[0] == "eps" ||
@@ -236,15 +266,15 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
             case "Pegged.Suffix":
                 foreach(pref; p.children[1..$])
                     if ((  pref.name == "Pegged.ZEROORMORE" || pref.name == "Pegged.ONEORMORE")
-                        && p.matches[0] in result
-                        && result[p.matches[0]].nullMatch == NullMatch.yes)
+                        && p.matches[0] in result.ruleInfo
+                        && result.ruleInfo[p.matches[0]].nullMatch == NullMatch.yes)
                         return InfiniteLoop.yes;
                 return infiniteLooping(p.children[0]);
             case "Pegged.Primary":
                 return infiniteLooping(p.children[0]);
             case "Pegged.RhsName":
-                if (p.matches[0] in result)
-                    return result[p.matches[0]].infiniteLoop;
+                if (p.matches[0] in result.ruleInfo)
+                    return result.ruleInfo[p.matches[0]].infiniteLoop;
                 else
                     return infiniteLooping(p.children[0]);
             case "Pegged.Literal":
@@ -260,21 +290,26 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
 
     LeftRecursive leftRecursion(ParseTree p, ref string[] cycle)
     {
-        import std.algorithm.searching: canFind;
+        import std.algorithm.searching: countUntil;
         switch (p.name)
         {
             case "Pegged.Expression": // Choices are left-recursive if any choice is left-recursive
+                // Because memoized left-recursion handling needs to know about all left-recursive cycles,
+                // we consider all choices, not just one.
+                auto any_lr = LeftRecursive.no;
                 size_t current = cycle.length;
                 foreach(seq; p.children)
                 {
+                    cycle = cycle[0..current];
                     auto lr = leftRecursion(seq, cycle);
-                    if (lr != LeftRecursive.no)
-                        return lr;
+                    if (lr != LeftRecursive.no && any_lr == LeftRecursive.no)
+                        any_lr = lr;
                 }
                 cycle = cycle[0..current];
-                return LeftRecursive.no;
+                return any_lr;
             case "Pegged.Sequence": // Sequences are left-recursive when the leftmost member is left-recursive
                                     // or behind null-matching members
+                size_t current = cycle.length;
                 foreach(i, seq; p.children)
                 {
                     auto lr = leftRecursion(seq, cycle);
@@ -285,8 +320,12 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
                     if (nullMatching(seq) == NullMatch.yes)
                         continue;
                     else
+                    {
+                        cycle = cycle[0..current];
                         return LeftRecursive.no;
+                    }
                 }
+                cycle = cycle[0..current];
                 return LeftRecursive.no; // found only null-matching rules!
             case "Pegged.Prefix":
                 return leftRecursion(p.children[$-1], cycle);
@@ -294,13 +333,25 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
             case "Pegged.Primary":
                 return leftRecursion(p.children[0], cycle);
             case "Pegged.RhsName":
-                if (p.matches[0] == cycle[0])
-                    return LeftRecursive.direct;
-                if (canFind(cycle, p.matches[0]))
+                auto dejavu = cycle.countUntil(p.matches[0]);
+                if (dejavu >= 0)
+                {
+                    if (cycle.length == 1)
+                    {
+                        result.leftRecursiveCycles.appendCycleIfUnique(cycle);
+                        return LeftRecursive.direct;
+                    }
+                    // Strictly spoken, the rules before dejavu are not actively left-recursive, but since they
+                    // can call into a left-recursive cycle, they would still left-recurse if left-recursion
+                    // wasn't handled.
+                    result.leftRecursiveCycles.appendCycleIfUnique(cycle[dejavu..$]);
                     return LeftRecursive.indirect;
+                }
+                size_t current = cycle.length;
                 cycle ~= p.matches[0];
                 if ((p.matches[0] in rules) && (leftRecursion(rules[p.matches[0]], cycle) != LeftRecursive.no))
                     return LeftRecursive.indirect;
+                cycle = cycle[0..current];
                 return LeftRecursive.no;
             default:
                 return LeftRecursive.no;
@@ -312,21 +363,21 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
         if (definition.name == "Pegged.Definition")
         {
             rules[definition.matches[0]] = definition.children[2];
-            result[definition.matches[0]] = RuleInfo(Recursive.no, LeftRecursive.no,
-                                                     NullMatch.indeterminate, InfiniteLoop.indeterminate);
+            result.ruleInfo[definition.matches[0]] = RuleInfo(Recursive.no, LeftRecursive.no,
+                                                              NullMatch.indeterminate, InfiniteLoop.indeterminate);
         }
 
     // Detect recursions.
     foreach(rule, recursionType; recursions(callGraph(p)))
-        if (rule in result) // external rules are in recursions, but not in result
-            result[rule].recursion = recursionType;
+        if (rule in result.ruleInfo) // external rules are in recursions, but not in result
+            result.ruleInfo[rule].recursion = recursionType;
 
     // Detect left-recursions.
     foreach(name, tree; rules)
-        if (result[name].recursion != Recursive.no)
+        if (result.ruleInfo[name].recursion != Recursive.no)
         {
-            result[name].leftRecursiveCycle ~= name;
-            result[name].leftRecursion = leftRecursion(tree, result[name].leftRecursiveCycle);
+            result.ruleInfo[name].leftRecursiveCycle ~= name;
+            result.ruleInfo[name].leftRecursion = leftRecursion(tree, result.ruleInfo[name].leftRecursiveCycle);
         }
 
     // Detect null matches.
@@ -335,10 +386,10 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
     {
         changed = false;
         foreach(name, tree; rules)
-            if (result[name].nullMatch == NullMatch.indeterminate) // not done yet
+            if (result.ruleInfo[name].nullMatch == NullMatch.indeterminate) // not done yet
             {
-                result[name].nullMatch = nullMatching(tree); // try to find if it's null-matching
-                if (result[name].nullMatch != NullMatch.indeterminate)
+                result.ruleInfo[name].nullMatch = nullMatching(tree); // try to find if it's null-matching
+                if (result.ruleInfo[name].nullMatch != NullMatch.indeterminate)
                     changed = true;
             }
     }
@@ -349,15 +400,30 @@ pure RuleInfo[string] ruleInfo(ParseTree p)
     {
         changed = false;
         foreach(name, tree; rules)
-            if (result[name].infiniteLoop == InfiniteLoop.indeterminate) // not done yet
+            if (result.ruleInfo[name].infiniteLoop == InfiniteLoop.indeterminate) // not done yet
             {
-                result [name].infiniteLoop = infiniteLooping(tree); // try to find if it's looping
-                if (result[name].infiniteLoop != InfiniteLoop.indeterminate)
+                result.ruleInfo[name].infiniteLoop = infiniteLooping(tree); // try to find if it's looping
+                if (result.ruleInfo[name].infiniteLoop != InfiniteLoop.indeterminate)
                     changed = true;
             }
     }
 
     return result;
+}
+
+/**
+Returns for all grammar rules:
+
+- the recursion type (no recursion, direct or indirect recursion).
+- the left-recursion type (no left-recursion, direct left-recursion, hidden, or indirect)
+- the null-match for a grammar's rules: whether the rule can succeed while consuming nothing.
+- the possibility of an infinite loop (if 'e' can null-match, then 'e*' can enter an infinite loop).
+
+This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
+*/
+pure RuleInfo[string] ruleInfo(ParseTree p)
+{
+    return grammarInfo(p).ruleInfo;
 }
 
 /** ditto */
