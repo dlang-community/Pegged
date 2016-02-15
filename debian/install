@@ -1,0 +1,3 @@
+pegged/*d usr/include/d/pegged/
+pegged/dynamic usr/include/d/pegged/
+libpegged.a usr/lib/

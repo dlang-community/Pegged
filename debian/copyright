@@ -1,0 +1,23 @@
+This work was packaged for Debian by:
+
+    Igor Khasilev <igor.khasilev@gmail.com> on Tue, 09 Feb 2016 13:45:01 -0500
+
+It was downloaded from:
+
+    https://github.com/PhilippeSigaud/Pegged
+
+Upstream Author(s):
+
+    Philippe Sigaud <philippe.sigaud@gmail.com>
+
+Copyright:
+
+    <Copyright (C) 2016 Phillipe Sigaud>
+
+The Debian packaging is:
+
+    Copyright (C) 2016 Igor Khasilev <igor.khasilev@gmail.com>
+
+and is licensed under the Boost 
+see http://www.boost.org/LICENSE_1_0.txt
+

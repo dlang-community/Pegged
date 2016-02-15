@@ -1,0 +1,14 @@
+Source: dlang-pegged
+Section: devel
+Priority: optional
+Maintainer: Igor Khasilev <igor.khasilev@gmail.com>
+Build-Depends: debhelper (>= 7.0.50~), dmd (>=2.069.2-0) | dmd-bin (>=2.069.2-0) | gdc (>=4.9.2-2)
+Standards-Version: 3.8.4
+Homepage: https://github.com/PhilippeSigaud/Pegged
+
+Package: dlang-pegged
+Architecture: any
+Depends: 
+Description: A Parsing Expression Grammar (PEG) module, using the D programming language. 
+ Pegged is a parsing expression grammar (PEG) generator implemented in the D programming language.
+ The idea is to give the generator a PEG(http://en.wikipedia.org/wiki/Parsing_expression_grammar), with the syntax presented in the reference article (http://bford.info/pub/lang/peg). From this grammar definition a set of related parsers will be created, to be used at runtime or compile time.
