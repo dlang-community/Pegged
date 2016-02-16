@@ -25,6 +25,132 @@ import std.conv;
 import std.string: strip;
 import std.typetuple;
 
+version (tracer)
+{
+    import std.experimental.logger;
+    import std.algorithm.comparison : min;
+
+    // Function pointers.
+    private static bool function(string ruleName) traceConditionFunction;
+    private static bool delegate(string ruleName) traceConditionDelegate;
+    private static int traceLevel;
+    private static bool traceBlocked;
+    private static bool logTraceLevel = false;
+
+    private void incTraceLevel()
+    {
+        if (!__ctfe)
+            traceLevel++;
+    }
+
+    private void decTraceLevel()
+    {
+        if (!__ctfe)
+            traceLevel--;
+    }
+
+    private bool shouldTrace(string ruleName)
+    {
+        if (__ctfe || traceBlocked)
+            return false;
+        if (traceConditionDelegate != null)
+            return traceConditionDelegate(ruleName);
+        if (traceConditionFunction != null)
+            return traceConditionFunction(ruleName);
+        return false;
+    }
+
+    static this()
+    {
+        traceLevel = 0;
+        traceNothing();
+        traceBlocked = false;
+    }
+
+    /++ Supply a function to dynamically switch tracing on and off based on the rule name.
+     +
+     + Example:
+     + ---
+     + /* Exclude build-in parsers, only trace parsers generated from MyGrammar. */
+     + setTraceConditionFunction(ruleName => ruleName.startsWith("MyGrammar"));
+     + ---
+     +/
+    void setTraceConditionFunction(bool delegate(string ruleName) condition)
+    {
+        traceConditionDelegate = condition;
+        traceConditionFunction = null;
+    }
+
+    /// ditto
+    void setTraceConditionFunction(bool function(string ruleName) condition)
+    {
+        traceConditionFunction = condition;
+        traceConditionDelegate = null;
+    }
+
+    /** Trace all rules.
+     *
+     * This can produce a lot of output.
+     */
+    void traceAll()
+    {
+        setTraceConditionFunction(string => true);
+    }
+
+    /** Do not trace any rules. */
+    void traceNothing()
+    {
+        traceConditionFunction = null;
+        traceConditionDelegate = null;
+    }
+
+    private string stringified(string inp)
+    {
+        import std.string : translate;
+        return inp.translate(['\n' : "\\n", '\r' : "\\r", '\t' : "\\t", '\v' : "\\v"]);
+    }
+
+    private string traceMsg(ParseTree p, string expression, string name)
+    {
+        import std.format;
+        Position pos = position(p);
+        enum inputLength = 15;
+        string result;
+        for (auto i = 1; i <= traceLevel; i++)
+            result ~= format("%d|", i);
+        result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~
+            expression.stringified ~ " considering rule " ~ name.stringified ~ " on \"" ~
+            p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~ "\"" ~
+            (p.end + inputLength > p.input.length ? "" : "...");
+        return "\n" ~ result;
+    }
+
+    private string traceResultMsg(ParseTree p, string name)
+    {
+        import std.format;
+        import std.range: chain;
+        import std.algorithm.iteration: joiner;
+        Position pos = position(p);
+        enum inputLength = 15;
+        string result;
+        for (auto i = 1; i <= traceLevel; i++)
+            result ~= format("%d|", i);
+        if (p.successful)
+        {
+            string consumed;
+            foreach (match; p.matches)
+                consumed ~= match;
+            result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " SUCCEEDED on \"" ~
+                consumed.stringified ~ "\"";
+        }
+        else
+            result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " FAILED on \"" ~
+                p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~ "\"" ~
+                (p.end + inputLength > p.input.length ? "" : "...");
+        return "\n" ~ result;
+    }
+}
+
 /**
 CT Switch for testing 'keywords' implementations
 */
@@ -239,6 +365,11 @@ assert(position("abc
 Position position(string s)
 {
     size_t col, line, index;
+    version (tracer)
+    {
+        // Do not trace the eol scan below, prevent recursion.
+        traceBlocked = true;
+    }
     foreach(i,c; s)
     {
         if (eol(ParseTree("", false, [], s, 0,i)).successful)
@@ -252,6 +383,10 @@ Position position(string s)
             ++col;
             ++index;
         }
+    }
+    version (tracer)
+    {
+        traceBlocked = false;
     }
 
     return Position(line,col,index);
@@ -436,7 +571,7 @@ Predefined parser: matches word boundaries, as \b for regexes.
 */
 ParseTree wordBoundary(ParseTree p)
 {
-	// TODO: I added more indexing guards and now this could probably use 
+	// TODO: I added more indexing guards and now this could probably use
 	//         some simplification.  Too tired to write it better. --Chad
     bool matched =  (p.end == 0 && isAlpha(p.input.front()))
                  || (p.end == p.input.length && isAlpha(p.input.back()))
@@ -1049,10 +1184,20 @@ template and(rules...) if (rules.length > 0)
                    );
         }
 
+        version (tracer)
+        {
+            incTraceLevel();
+        }
+
         ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end, []);
 
         foreach(i,r; rules)
         {
+            version (tracer)
+            {
+                if (shouldTrace(getName!(r)()))
+                    trace(traceMsg(result, name, getName!(r)()));
+            }
             ParseTree temp = r(result);
             result.end = temp.end;
             if (temp.successful)
@@ -1073,10 +1218,26 @@ template and(rules...) if (rules.length > 0)
                 result.children ~= temp;// add the failed node, to indicate which failed
                 if (temp.matches.length > 0)
                     result.matches ~= temp.matches[$-1];
+                version (tracer)
+                {
+                    if (shouldTrace(getName!(r)()))
+                        trace(traceResultMsg(result, getName!(r)()));
+                    decTraceLevel();
+                }
                 return result; // and end the parsing attempt right there
             }
         }
         result.successful = true;
+        version (tracer)
+        {
+            foreach(i, r; rules)
+                if (shouldTrace(getName!(r)()))
+                {
+                    trace(traceResultMsg(result, name));
+                    break;
+                }
+            decTraceLevel();
+        }
         return result;
     }
 
@@ -1264,18 +1425,39 @@ template or(rules...) if (rules.length > 0)
         size_t[rules.length] failedLength;
         size_t maxFailedLength;
 
+        version (tracer)
+        {
+            incTraceLevel();
+        }
+
 		// Real 'or' loop
 		foreach(i,r; rules)
         {
+            version (tracer)
+            {
+                if (shouldTrace(getName!(r)()))
+                    trace(traceMsg(p, name, getName!(r)()));
+            }
             ParseTree temp = r(p);
             if (temp.successful)
             {
                 temp.children = [temp];
                 temp.name = name;
+                version (tracer)
+                {
+                    if (shouldTrace(getName!(r)()))
+                        trace(traceResultMsg(temp, getName!(r)()));
+                    decTraceLevel();
+                }
                 return temp;
             }
             else
             {
+                version (tracer)
+                {
+                    if (shouldTrace(getName!(r)()))
+                        trace(traceResultMsg(temp, getName!(r)()));
+                }
                 enum errName = " (" ~ getName!(r)() ~")";
                 failedLength[i] = temp.end;
                 if (temp.end >= longestFail.end)
@@ -1292,6 +1474,10 @@ template or(rules...) if (rules.length > 0)
                 }
                 // Else, this error parsed less input than another one: we discard it.
             }
+        }
+        version (tracer)
+        {
+            decTraceLevel();
         }
 
 
@@ -1683,6 +1869,12 @@ template zeroOrMore(alias r)
     ParseTree zeroOrMore(ParseTree p)
     {
         auto result = ParseTree(name, true, [], p.input, p.end, p.end);
+        version (tracer)
+        {
+            incTraceLevel();
+            if (shouldTrace(getName!(r)()))
+                trace(traceMsg(result, name, getName!(r)()));
+        }
         auto temp = r(result);
         while(temp.successful
             && (temp.begin < temp.end // To avoid infinite loops on epsilon-matching rules
@@ -1691,9 +1883,20 @@ template zeroOrMore(alias r)
             result.matches ~= temp.matches;
             result.children ~= temp;
             result.end = temp.end;
+            version (tracer)
+            {
+                if (shouldTrace(getName!(r)()))
+                    trace(traceMsg(result, name, getName!(r)()));
+            }
             temp = r(result);
         }
         result.successful = true;
+        version (tracer)
+        {
+            if (shouldTrace(getName!(r)()))
+                trace(traceResultMsg(result, getName!(r)()));
+            decTraceLevel();
+        }
         return result;
     }
 
@@ -1819,6 +2022,12 @@ template oneOrMore(alias r)
     ParseTree oneOrMore(ParseTree p)
     {
         auto result = ParseTree(name, false, [], p.input, p.end, p.end);
+        version (tracer)
+        {
+            incTraceLevel();
+            if (shouldTrace(getName!(r)()))
+                trace(traceMsg(result, name, getName!(r)()));
+        }
         auto temp = r(result);
 
         if (!temp.successful)
@@ -1836,9 +2045,20 @@ template oneOrMore(alias r)
                 result.matches ~= temp.matches;
                 result.children ~= temp;
                 result.end = temp.end;
+                version (tracer)
+                {
+                    if (shouldTrace(getName!(r)()))
+                        trace(traceMsg(result, name, getName!(r)()));
+                }
                 temp = r(result);
             }
             result.successful = true;
+        }
+        version (tracer)
+        {
+            if (shouldTrace(getName!(r)()))
+                trace(traceResultMsg(result, getName!(r)()));
+            decTraceLevel();
         }
         return result;
     }
@@ -1941,6 +2161,11 @@ template option(alias r)
 
     ParseTree option(ParseTree p)
     {
+        version (tracer)
+        {
+            if (shouldTrace(getName!(r)()))
+                trace(traceMsg(p, name, getName!(r)()));
+        }
         ParseTree result = r(p);
         if (result.successful)
             return ParseTree(name, true, result.matches, result.input, result.begin, result.end, [result]);
@@ -2030,6 +2255,11 @@ template posLookahead(alias r)
 
     ParseTree posLookahead(ParseTree p)
     {
+        version (tracer)
+        {
+            if (shouldTrace(getName!(r)()))
+                trace(traceMsg(p, name, getName!(r)()));
+        }
         ParseTree temp = r(p);
         if (temp.successful)
             return ParseTree(name, temp.successful, [], p.input, p.end, p.end);
@@ -2116,6 +2346,11 @@ template negLookahead(alias r)
 
     ParseTree negLookahead(ParseTree p)
     {
+        version (tracer)
+        {
+            if (shouldTrace(getName!(r)()))
+                trace(traceMsg(p, name, getName!(r)()));
+        }
         ParseTree temp = r(p);
         if (temp.successful)
             return ParseTree(name, false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
@@ -2274,7 +2509,7 @@ unittest // 'named' unit test
 }
 
 /**
-Internal helper template, to get a parse tree node with a name, while keeping the original node (see also named). 
+Internal helper template, to get a parse tree node with a name, while keeping the original node (see also named).
 For example, given:
 ----
 alias or!(literal!("abc"), charRange!('0','9')) myRule;
