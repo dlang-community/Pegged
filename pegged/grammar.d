@@ -107,43 +107,215 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         return result;
     }
 
-    string[] leftRecursionStoppers()
-    {
-        import pegged.introspection;
-        import std.algorithm;
-        string[][] leftRecursiveCycles;
-        foreach (info; ruleInfo(defAsParseTree.children[0]))
-        {
-            if (info.leftRecursion != LeftRecursive.no)
-            {
-                // Consider if the cycle is already present with another head.
-                bool unique = true;
-                foreach (cycle; leftRecursiveCycles)
-                {
-                    auto pos = countUntil(cycle, info.leftRecursiveCycle[0]);
-                    if (pos >= 0)
-                        if (equal!equal(cycle[pos .. $] ~ cycle[0 .. pos], info.leftRecursiveCycle))
-                        {
-                            unique = false;
-                            break;
-                        }
-                }
-                if (unique)
-                    leftRecursiveCycles ~= info.leftRecursiveCycle;
-            }
-        }
+    // Grammar analysis in support of left-recursion.
+    import pegged.introspection;
+    import std.algorithm : canFind;
+    GrammarInfo grammarInfo = grammarInfo(defAsParseTree.children[0]);
+    string[][string] stoppers;  // Keys are the rules that stop left-recursion and the
+                                // values are arrays of strings containing the corresponding
+                                // rules for which memoization needs to be blocked.
 
-        string[] stoppers;
-        foreach (cycle; leftRecursiveCycles)
-            stoppers ~= cycle[0];
-        return stoppers;
+    // Prints comment showing detected left-recursive cycles.
+    string printLeftRecursiveCycles()
+    {
+        string result;
+        foreach (cycle; grammarInfo.leftRecursiveCycles)
+        {
+            result ~= cycle[0];
+            foreach (rule; cycle[1..$])
+                result ~= " <- " ~ rule;
+            result ~= "\n";
+        }
+        return result.length > 0 ? "/** Left-recursive cycles:\n" ~ result ~ "*/\n\n" : "";
     }
 
-    string[] stoppers = leftRecursionStoppers();
+    // Prints comment showing rules that stop left-recursive cycles and rules for which memoization is blocked during recursion.
+    string printLeftRecursionStoppers()
+    {
+        import std.array: join;
+        string result;
+        foreach (stopper, rules; stoppers)
+        {
+            result ~= stopper ~ ": " ~ rules.join(", ") ~ "\n";
+            /*if (rules.length > 0)
+                result ~= rules[0];
+            foreach (rule; rules[1..$])
+                result ~= ", " ~ rule;
+            result ~= "\n";*/
+        }
+        return result.length > 0 ?
+            "/** Rules that stop left-recursive cycles, followed by rules for which\n"
+            " *  memoization is blocked during recursion:\n" ~ result ~ "*/\n\n" : "";
+    }
+    size_t[] handledCycleIndices;
+    // Detect interlocking cycles. Each cycle needs a different stopper.
+    foreach (i, cycle; grammarInfo.leftRecursiveCycles)
+    {
+        foreach (j, otherCycle; grammarInfo.leftRecursiveCycles[i+1 .. $])
+        {
+            foreach (rule; cycle)
+            {
+                if (otherCycle.canFind(rule))
+                {
+                    // cycle and otherCycle intersect at rule.
+                    // If a cycle has one single rule (direct left-recursion) then it needs to be a stopper.
+                    if (cycle.length == 1)
+                    {
+                        if (!handledCycleIndices.canFind(i))
+                        {
+                            if (!(rule in stoppers))
+                                stoppers[rule] = [];
+                            handledCycleIndices ~= i;
+                        }
+                        // The other cycle needs a different stopper.
+                        assert(otherCycle.length > 1);
+                        if (!handledCycleIndices.canFind(j + i + 1))
+                        {
+                            foreach (r; otherCycle)
+                                if (!(r in stoppers))
+                                {
+                                    stoppers[r] = [];
+                                    foreach (rr; otherCycle)
+                                        if (rr != r)
+                                            stoppers[r] ~= rr;
+                                    handledCycleIndices ~= j + i + 1;
+                                    break;
+                                }
+                            assert(handledCycleIndices.canFind(j + i + 1));
+                        }
+                    }
+                    if (otherCycle.length == 1)
+                    {
+                        if (!handledCycleIndices.canFind(j + i + 1))
+                        {
+                            if (!(rule in stoppers))
+                                stoppers[rule] = [];
+                            handledCycleIndices ~= j + i + 1;
+                        }
+                        // The other cycle needs a different stopper.
+                        assert(cycle.length > 1);
+                        if (!handledCycleIndices.canFind(i))
+                        {
+                            foreach (r; cycle)
+                                if (!(r in stoppers))
+                                {
+                                    stoppers[r] = [];
+                                    foreach (rr; cycle)
+                                        if (rr != r)
+                                            stoppers[r] ~= rr;
+                                    handledCycleIndices ~= i;
+                                    break;
+                                }
+                            assert(handledCycleIndices.canFind(i));
+                        }
+                    }
+                    // At this point, if a cycle has not been handled yet, it has more than one rule.
+                    if (!handledCycleIndices.canFind(i))
+                    {
+                        foreach (r; cycle)
+                            if (!(r in stoppers))
+                            {
+                                stoppers[r] = [];
+                                foreach (rr; cycle)
+                                    if (rr != r)
+                                        stoppers[r] ~= rr;
+                                handledCycleIndices ~= i;
+                                break;
+                            }
+                        assert(handledCycleIndices.canFind(i));
+                    }
+                    if (!handledCycleIndices.canFind(j + i + 1))
+                    {
+                        foreach (r; otherCycle)
+                            if (!(r in stoppers))
+                            {
+                                stoppers[r] = [];
+                                foreach (rr; otherCycle)
+                                    if (rr != r)
+                                        stoppers[r] ~= rr;
+                                handledCycleIndices ~= j + i + 1;
+                                break;
+                            }
+                        assert(handledCycleIndices.canFind(j + i + 1));
+                    }
+                }
+            }
+        }
+    }
+    // Take the first node in remaining cycles as the stopper.
+    foreach (i, cycle; grammarInfo.leftRecursiveCycles)
+    {
+        if (handledCycleIndices.canFind(i))
+            continue;
+        stoppers[cycle[0]] = cycle[1..$].dup;
+    }
+    // Analysis completed.
+
+    /// Returns code to prevent memoization of incomplete matches during left-recursion through this rule.
+    string blockMemoForLeftRecursion(string stopper)
+    {
+        string result;
+        foreach (rule; stoppers[stopper] ~ stopper)
+            result ~= "            if (!blockMemo_" ~ rule ~ "_atPos.canFind(p.end))\n"
+                      "                blockMemo_" ~ rule ~ "_atPos ~= p.end;\n";
+        return result;
+    }
+
+    /// Returns code that enables memoization when left-recursion has completed.
+    string unblockMemoForLeftRecursion(string stopper)
+    {
+        string result;
+        foreach (rule; stoppers[stopper] ~ stopper)
+            // TODO investigate if values are always unique.
+            // TODO investigate if p.end is always the last element.
+            result ~= "                    assert(blockMemo_" ~ rule ~ "_atPos.canFind(p.end));\n"
+                      "                    remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
+        return result;
+    }
+
+    /// If $(D_PARAM name) is part of a left-recursive cycle and not a stopping rule, code is
+    //  inserted to test for blocking and if blocked return with "$(D_PARAM code)(p)".
+    string maybeBlockedMemo(string name, string code)
+    {
+        assert(!stoppers.keys.canFind(name));
+        foreach (cycle; stoppers)
+            foreach (rule; cycle)
+                if (rule == name)
+                    return
+    "            if (blockMemo_" ~ name ~ "_atPos.canFind(p.end))\n"
+    "                return " ~ code ~ "(p);\n";
+        return "";
+    }
+
+    /// Returns a Boolean expression whether $(D_PARAM rule) is not blocked.
+    string shouldMemoLeftRecursion(string rule)
+    {
+        return "!blockMemo_" ~ rule ~ "_atPos.canFind(p.end)";
+    }
 
     string generateCode(ParseTree p, string propagatedName = "")
     {
         string result;
+
+        // Variables holding the block-state.
+        string generateBlockers()
+        {
+            string result;
+            import std.algorithm.iteration;
+            string[] visited = [];
+            foreach (cycle; grammarInfo.leftRecursiveCycles)
+                foreach (rule; cycle)
+                    if (!visited.canFind(rule))
+                    {
+                        visited ~= rule;
+                        result ~= "
+    static size_t[] blockMemo_" ~ rule ~ "_atPos;";
+                    }
+            if (result.length > 0)
+                return "
+    import std.algorithm: canFind, countUntil, remove;" ~ result;
+            return result;
+        }
 
         switch (p.name)
         {
@@ -164,8 +336,16 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     enum name = \"" ~ shortGrammarName ~ "\";
     static ParseTree delegate(ParseTree)[string] before;
     static ParseTree delegate(ParseTree)[string] after;
-    static ParseTree delegate(ParseTree)[string] rules;
+    static ParseTree delegate(ParseTree)[string] rules;";
 
+                if (withMemo == Memoization.yes) {
+                    result ~= "
+    import std.typecons:Tuple, tuple;
+    static TParseTree[Tuple!(string, size_t)] memo;";
+                    result ~= generateBlockers();
+                }
+
+                result ~= "
     static this()\n    {\n";
 
                 ParseTree[] definitions = p.children[1 .. $];
@@ -241,10 +421,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     }
 ";
 
-                    if (withMemo == Memoization.yes)
-                        result ~= "    import std.typecons:Tuple, tuple;\n"
-                               ~  "    static TParseTree[Tuple!(string, size_t)] memo;\n"
-                               ~  "    static bool blockMemo = false;\n";
 
                 /+
                         ~ "        switch(s)\n"
@@ -262,7 +438,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 foreach(i,def; definitions)
                 {
-                    /+
+                    /*
                     if (def.matches[0] !in ruleNames)
                     {
                         ruleNames[def.matches[0]] = true;
@@ -272,7 +448,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         else
                             result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
                     }
-                    +/
+                    */
                     if (def.matches[0] == "Spacing") // user-defined spacing
                     {
                         userDefinedSpacing = true;
@@ -284,7 +460,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         ~ parameterizedRulesSpecialCode
                         ~ "                return false;\n        }\n    }\n";
                 +/
-                result ~= "    mixin decimateTree;\n";
+                result ~= "    mixin decimateTree;\n\n";
 
                 // If the grammar provides a Spacing rule, then this will be used.
                 // else, the predefined 'spacing' rule is used.
@@ -301,38 +477,38 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 {
                     // General calling interface
                     result ~= "    static TParseTree opCall(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "        TParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
-                           ~  "        result.children = [result];\n"
-                           ~  "        result.name = \"" ~ shortGrammarName ~ "\";\n"
-                           ~  "        return result;\n"
-                           ~  "    }\n\n"
-                           ~  "    static TParseTree opCall(string input)\n"
-                           ~  "    {\n";
+                              "    {\n"
+                              "        TParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
+                              "        result.children = [result];\n"
+                              "        result.name = \"" ~ shortGrammarName ~ "\";\n"
+                              "        return result;\n"
+                              "    }\n\n"
+                              "    static TParseTree opCall(string input)\n"
+                              "    {\n";
 
                     if (withMemo == Memoization.no)
                         result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "    }\n";
+                                  "    }\n";
                     else
                         result ~= "        if(__ctfe)\n"
-                               ~  "        {\n"
-                               ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "        }\n"
-                               ~  "        else\n"
-                               ~  "        {\n"
-                               ~  "            memo = null;\n"
-                               ~  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
-                               ~  "        }\n"
-                               ~  "    }\n";
+                                  "        {\n"
+                                  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                                  "        }\n"
+                                  "        else\n"
+                                  "        {\n"
+                                  "            memo = null;\n"
+                                  "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                                  "        }\n"
+                                  "    }\n";
 
                     result ~= "    static string opCall(GetName g)\n"
-                            ~ "    {\n"
-                            ~ "        return \"" ~ shortGrammarName ~ "\";\n"
-                            ~ "    }\n\n";
+                              "    {\n"
+                              "        return \"" ~ shortGrammarName ~ "\";\n"
+                              "    }\n\n";
                 }
                 result ~= "    }\n" // end of grammar struct definition
-                        ~ "}\n\n" // end of template definition
-                        ~ "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
+                          "}\n\n" // end of template definition
+                          "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
                         ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
                 break;
             case "Pegged.Definition":
@@ -384,8 +560,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
                 if (parameterizedRule)
                 {
-                    result =  "    template " ~ completeName ~ "\n"
-                            ~ "    {\n";
+                    result = "    template " ~ completeName ~ "\n"
+                             "    {\n";
                     innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
                     hookedName ~= "_" ~ to!string(p.children[0].children[1].children.length);
                     foreach(i,param; p.children[0].children[1].children)
@@ -405,17 +581,21 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 import std.algorithm.searching: canFind;
                 if (withMemo == Memoization.no)
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
-                           ~  (stoppers.canFind(shortName) ?
+                              "    {\n"
+                              "        if(__ctfe)\n"
+                              "        {\n"
+                            ~ (stoppers.keys.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
-                                                           "at compile-time. Consider using asModule().\");" : "")
-                           ~  "            return " ~ ctfeCode ~ "(p);\n"
-                           ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
-                           ~  (stoppers.canFind(shortName) ?
+                                                           "at compile-time. Consider using asModule().\");\n"
+                              "            return fail(p);\n"
+                              :
+                              "            return " ~ ctfeCode ~ "(p);\n"
+                              )
+                            ~ "        }\n"
+                              "        else\n"
+                              "        {\n"
+                            ~ (stoppers.keys.canFind(shortName) ?
+                              // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                               "            if (auto s = p.end in seed)\n"
                               "                return *s;\n"
@@ -424,8 +604,13 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "            while(true)\n"
                               "            {\n"
                               "                auto result = " ~ code ~ "(p);\n"
+                            ~ (grammarInfo.ruleInfo[shortName].nullMatch == NullMatch.no ?
                               "                if (result.end > current.end)\n"
-                              "                {\n"
+                              :
+                              "                if (result.end > current.end ||\n"
+                              "                    (!current.successful && result.successful) /* null-match */)\n"
+                              )
+                            ~ "                {\n"
                               "                    current = result;\n"
                               "                    seed[p.end] = current;\n"
                               "                } else {\n"
@@ -434,83 +619,101 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "                }\n"
                               "            }\n"
                               :
+                              // Possibly left-recursive rule, but infinite recursion is already prevented by another rule in the same cycle.
                               "            return " ~ code ~ "(p);\n"
                               )
-                           ~  "        }\n"
-                           ~  "    }\n"
-                           ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "        else\n"
-                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "    }\n";
-                else
+                            ~ "        }\n"
+                              "    }\n"
+                              "    static TParseTree " ~ shortName ~ "(string s)\n"
+                              "    {\n"
+                              "        if(__ctfe)\n"
+                              "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
+                              "        else\n"
+                              "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                              "    }\n";
+                else // Memoization.yes
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
-                           ~  (stoppers.canFind(shortName) ?
+                              "    {\n"
+                              "        if(__ctfe)\n"
+                              "        {\n"
+                            ~ (stoppers.keys.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
-                                                           "at compile-time. Consider using asModule().\");" : "")
-                           ~  "            return " ~ ctfeCode ~ "(p);\n"
-                           ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
-                           ~  (stoppers.canFind(shortName) ?
+                                                           "at compile-time. Consider using asModule().\");\n"
+                              "            return fail(p);\n"
+                              :
+                              "            return " ~ ctfeCode ~ "(p);\n"
+                              )
+                            ~ "        }\n"
+                              "        else\n"
+                              "        {\n"
+                            ~ (stoppers.keys.canFind(shortName) ?
+                              // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                               "            if (auto s = p.end in seed)\n"
                               "                return *s;\n"
+                              "            if (" ~ shouldMemoLeftRecursion(shortName) ~ ")\n"
+                              "                if (auto m = tuple(" ~ innerName ~ ", p.end) in memo)\n"
+                              "                    return *m;\n"
                               "            auto current = fail(p);\n"
                               "            seed[p.end] = current;\n"
-                              "            blockMemo = true;\n"
+                            ~ blockMemoForLeftRecursion(shortName) ~
                               "            while (true)\n"
                               "            {\n"
                               "                auto result = " ~ code ~ "(p);\n"
+                            ~ (grammarInfo.ruleInfo[shortName].nullMatch == NullMatch.no ?
                               "                if (result.end > current.end)\n"
-                              "                {\n"
+                              :
+                              "                if (result.end > current.end ||\n"
+                              "                    (!current.successful && result.successful) /* null-match */)\n"
+                              )
+                            ~ "                {\n"
                               "                    current = result;\n"
                               "                    seed[p.end] = current;\n"
                               "                } else {\n"
+                                                   // Since seed is local, it cannot be reset between parses the way memo is reset.
+                                                   // We can get away with this by removing elements from it, done below, so that
+                                                   // seed is empty again when left-recursion has ended and all recursive calls have
+                                                   // returned. The advantage of a local seed is that it remains small and fast. The
+                                                   // disadvantage is that seed doesn't memoize the final result, so that must be taken
+                                                   // care of by memo. Note that p.end remains constant for the course of recursion,
+                                                   // and the length of seed only grows when nested recursion occurs.
                               "                    seed.remove(p.end);\n"
-                              "                    blockMemo = false;\n"
+                            ~ unblockMemoForLeftRecursion(shortName) ~
+                              "                    memo[tuple(" ~ innerName ~ ", p.end)] = current;\n"
                               "                    return current;\n"
                               "                }\n"
                               "            }\n"
                               :
-                              "            if (blockMemo)\n"
-                              "                return " ~ code ~ "(p);\n"
+                              // Possibly left-recursive rule, but infinite recursion is already prevented by another rule in the same cycle.
+                              maybeBlockedMemo(shortName, code)
+                            ~ "            if (auto m = tuple(" ~ innerName ~ ", p.end) in memo)\n"
+                              "                return *m;\n"
                               "            else\n"
                               "            {\n"
-                              "                if (auto m = tuple(" ~ innerName ~ ", p.end) in memo)\n"
-                              "                    return *m;\n"
-                              "                else\n"
-                              "                {\n"
-                              "                    TParseTree result = " ~ code ~ "(p);\n"
-                              "                    memo[tuple(" ~ innerName ~ ", p.end)] = result;\n"
-                              "                    return result;\n"
-                              "                }\n"
+                              "                TParseTree result = " ~ code ~ "(p);\n"
+                              "                memo[tuple(" ~ innerName ~ ", p.end)] = result;\n"
+                              "                return result;\n"
                               "            }\n"
                               )
-                           ~  "        }\n"
-                           ~  "    }\n\n"
-                           ~  "    static TParseTree " ~ shortName ~ "(string s)\n"
-                           ~  "    {\n"
-                           ~  "        if(__ctfe)\n"
-                           ~  "        {\n"
-                           ~  "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "        }\n"
-                           ~  "        else\n"
-                           ~  "        {\n"
-                           ~  "            memo = null;\n"
-                           ~  "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
-                           ~  "        }\n"
-                           ~  "    }\n";
+                            ~ "        }\n"
+                              "    }\n\n"
+                              "    static TParseTree " ~ shortName ~ "(string s)\n"
+                              "    {\n"
+                              "        if(__ctfe)\n"
+                              "        {\n"
+                              "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
+                              "        }\n"
+                              "        else\n"
+                              "        {\n"
+                              "            memo = null;\n"
+                              "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                              "        }\n"
+                              "    }\n";
 
                     result ~= "    static string " ~ shortName ~ "(GetName g)\n"
-                           ~  "    {\n"
-                           ~  "        return \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\";\n"
-                           ~  "    }\n\n";
+                              "    {\n"
+                              "        return \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\";\n"
+                              "    }\n\n";
 
                 if (parameterizedRule)
                     result ~= "    }\n";
@@ -797,7 +1000,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
 
 
-    return generateCode(defAsParseTree);
+    return printLeftRecursiveCycles() ~ printLeftRecursionStoppers() ~ generateCode(defAsParseTree);
 }
 
 /**
@@ -2732,6 +2935,26 @@ unittest // Indirect left-recursion
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
 }
 
+unittest // Proper blocking of memoization
+{
+    // Three interlocking cycles of indirect left-recursion.
+    enum LeftGrammar = `
+      Left:
+        S <- E eoi
+        E <- F 'n' / 'n'
+        F <- E '+' I* / G '-'
+        G <- H 'm' / E
+        H <- G 'l'
+        I <- '(' A+ ')'
+        A <- 'a'
+    `;
+    mixin(grammar(LeftGrammar));
+    ParseTree result = Left("nlm-n+(aaa)n");
+    assert(result.successful);
+    assert(result.matches == ["n", "l", "m", "-", "n", "+", "(", "a", "a", "a", ")", "n"]);
+}
+
+// Example from http://www.inf.puc-rio.br/~roberto/docs/sblp2012.pdf
 unittest // Mutual left-recursion
 {
     enum LeftGrammar = `
@@ -2771,4 +2994,15 @@ unittest // Hidden left-recursion
     mixin(grammar(HiddenLeft));
     assert(Test("caa").successful);
     assert(Test("bbca").successful);
+}
+
+unittest // Null-matching left-recursion
+{
+    enum NullMatch = `
+      Test:
+        M <- S (";" S)* eoi
+        S <- S '+' S / 'n' / eps
+    `;
+    mixin(grammar(NullMatch));
+    assert(Test("n+n;n;").matches == ["n", "+", "n", ";", "n", ";", ""]);
 }
