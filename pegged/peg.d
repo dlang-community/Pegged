@@ -122,7 +122,7 @@ version (tracer)
             expression.stringified ~ " considering rule " ~ name.stringified ~ " on \"" ~
             p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~ "\"" ~
             (p.end + inputLength > p.input.length ? "" : "...");
-        return "\n" ~ result;
+        return result;
     }
 
     private string traceResultMsg(ParseTree p, string name)
@@ -147,7 +147,29 @@ version (tracer)
             result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " FAILED on \"" ~
                 p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~ "\"" ~
                 (p.end + inputLength > p.input.length ? "" : "...");
-        return "\n" ~ result;
+        return result;
+    }
+
+    /**
+    Overrides FileLogger to remove the time stamp.
+
+    Example:
+    ---
+    sharedLog = new TraceLogger("TraceLog.txt");
+    ---
+    */
+    class TraceLogger : FileLogger
+    {
+        this(in string fn) @safe
+        {
+            super(fn);
+        }
+        override protected void beginLogMsg(string file, int line, string funcName,
+            string prettyFuncName, string moduleName, LogLevel logLevel,
+            Tid threadId, SysTime timestamp, Logger logger)
+            @safe
+        {
+        }
     }
 }
 
