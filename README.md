@@ -99,32 +99,6 @@ More advanced features, outside the standard PEG perimeter are there to bring mo
 * **Parametrized rules**: `"List(E, Sep) <- E (Sep E)*"` is possible. The previous rule defines a parametrized parser taking two other parsers (namely, `E` and `Sep`) to match a `Sep`-separated list of `E`'s.  Entire grammars can be parametrized, too. See [Parametrized Rules](https://github.com/PhilippeSigaud/Pegged/wiki/Parametrized-Rules) to see what's possible.
 * **Semantic actions** can be added to any rule in a grammar. Once a rule has matched, its associated action is called on the rule output and passed as final result to other parsers further up the grammar. Do what you want to the parse tree. If the passed actions are delegates, they can access external variables. See [Semantic Actions](https://github.com/PhilippeSigaud/Pegged/wiki/Semantic-Actions).
 
-Continuous Integration
-----------------------
-
-The CI server at <http://ci.lycus.org> runs builds of Pegged whenever they pull from <https://github.com/PhilippeSigaud/Pegged> to <https://github.com/lycus/libpegged>.
-The build status can be viewed here: <http://ci.lycus.org/job/libpegged/>
-
-Limitations
------------
-
-* **Pegged** accepts only strings for the time being (wstrings or dstrings were OK as input some time ago, but I recently dropped them).
-* Error reporting is the same as for any in-my-own-free-time / just-one-guy parsing project (read: perfectible).
-* I recently dropped named captures and the `=` and `@` operators.
-
-Future features (aka, my todo list)
------------------------------------
-
-See [todo](https://github.com/PhilippeSigaud/Pegged/wiki/TODO)
-
-Long-Term Goals (the Right to Dream)
-------------------------------------
-
-* As a long-term goal, parsing structures, as presented in [OMeta](http://www.vpri.org/pdf/tr2007003_ometa.pdf). Yeah, I know, but I find that wonderfully interesting. Rules could match not only strings by any D type inner structure (matching a struct if it contains an `int` member named `foo` and a `bar` method, etc).
-* Hence, a pattern-matcher. if you used Haskell or ML, you know what I'm talking about.
-* As a longer-term goal: implementing the complete D grammar and see if that flies.
-* As an even longer-term goal: macros in D. Think Lisp and [talking to God](http://xkcd.com/224/).
-
 References
 ----------
 
