@@ -298,24 +298,21 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     string generateForgetMemo()
     {
         string result;
-        if (withMemo == Memoization.yes) {
-            result ~= "
+        result ~= "
     static void forgetMemo()
     {";
-            if (composedGrammars.length > 0)
-                result ~= "
-        import std.traits;";
+        if (withMemo == Memoization.yes)
             result ~= "
         memo = null;";
-            foreach (composed; composedGrammars)
-            {
-                result ~= "
+        if (composedGrammars.length > 0)
+            result ~= "
+        import std.traits;";
+        foreach (composed; composedGrammars)
+            result ~= "
         static if (__traits(compiles, " ~ composed ~ ".forgetMemo()))
             " ~ composed ~ ".forgetMemo();";
-            }
-            result ~= "
+        result ~= "
     }\n";
-        }
         return result;
     }
 
@@ -513,7 +510,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "    {\n";
 
                     if (withMemo == Memoization.no)
-                        result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                        result ~= "        forgetMemo();\n"
+                                  "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
                                   "    }\n";
                     else
                         result ~= "        if(__ctfe)\n"
@@ -655,7 +653,10 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "        if(__ctfe)\n"
                               "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
                               "        else\n"
+                              "        {\n"
+                              "            forgetMemo();\n"
                               "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                              "        }\n"
                               "    }\n";
                 else // Memoization.yes
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
@@ -2747,7 +2748,7 @@ unittest // Memoization reset in composed grammars. Issue #162
     `;
 
     mixin(grammar(MathGrammar));
-    mixin(grammar(LetGrammar));
+    mixin(grammar!(Memoization.no)(LetGrammar));
 
     assert(Let("a,b be").successful);
     assert(Let("K,H,G be").successful); // This fails if the memoization table is
