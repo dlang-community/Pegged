@@ -107,6 +107,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         return result;
     }
 
+    string[] composedGrammars;
+
     // Grammar analysis in support of left-recursion.
     import pegged.introspection;
     import std.algorithm : canFind;
@@ -291,6 +293,27 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     string shouldMemoLeftRecursion(string rule)
     {
         return "!blockMemo_" ~ rule ~ "_atPos.canFind(p.end)";
+    }
+
+    string generateForgetMemo()
+    {
+        string result;
+        result ~= "
+    static void forgetMemo()
+    {";
+        if (withMemo == Memoization.yes)
+            result ~= "
+        memo = null;";
+        if (composedGrammars.length > 0)
+            result ~= "
+        import std.traits;";
+        foreach (composed; composedGrammars)
+            result ~= "
+        static if (__traits(compiles, " ~ composed ~ ".forgetMemo()))
+            " ~ composed ~ ".forgetMemo();";
+        result ~= "
+    }\n";
+        return result;
     }
 
     string generateCode(ParseTree p, string propagatedName = "")
@@ -487,7 +510,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "    {\n";
 
                     if (withMemo == Memoization.no)
-                        result ~= "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                        result ~= "        forgetMemo();\n"
+                                  "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
                                   "    }\n";
                     else
                         result ~= "        if(__ctfe)\n"
@@ -496,7 +520,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                                   "        }\n"
                                   "        else\n"
                                   "        {\n"
-                                  "            memo = null;\n"
+                                  "            forgetMemo();\n"
                                   "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
                                   "        }\n"
                                   "    }\n";
@@ -506,6 +530,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "        return \"" ~ shortGrammarName ~ "\";\n"
                               "    }\n\n";
                 }
+                result ~= generateForgetMemo();
                 result ~= "    }\n" // end of grammar struct definition
                           "}\n\n" // end of template definition
                           "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
@@ -628,7 +653,10 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "        if(__ctfe)\n"
                               "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
                               "        else\n"
+                              "        {\n"
+                              "            forgetMemo();\n"
                               "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                              "        }\n"
                               "    }\n";
                 else // Memoization.yes
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
@@ -703,7 +731,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                               "        }\n"
                               "        else\n"
                               "        {\n"
-                              "            memo = null;\n"
+                              "            forgetMemo();\n"
                               "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
                               "        }\n"
                               "    }\n";
@@ -836,8 +864,15 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 break;
             case "Pegged.RhsName":
                 result = "";
-                foreach(i,child; p.children)
+                string composedGrammar = "";
+                foreach(child; p.children)
+                {
                     result ~= generateCode(child);
+                    if (child.name == "Pegged.NAMESEP")
+                        composedGrammar = p.input[p.begin .. child.begin];
+                }
+                if (composedGrammar.length > 0 && !composedGrammars.canFind(composedGrammar))
+                    composedGrammars ~= composedGrammar;
                 break;
             case "Pegged.ArgList":
                 result = "!(";
@@ -2698,6 +2733,26 @@ unittest // Memoization testing
     assert(pegged.peg.softCompare(result1, result2));
     assert(pegged.peg.softCompare(result1, result3));
     assert(pegged.peg.softCompare(result1, result4));
+}
+
+unittest // Memoization reset in composed grammars. Issue #162
+{
+    enum MathGrammar = `
+        Math:
+            List    <- Var (:',' Var)*
+            Var     <~ [a-zA-Z]
+    `;
+    enum LetGrammar = `
+        Let:
+            Stmt    <- Math.List ' be'
+    `;
+
+    mixin(grammar(MathGrammar));
+    mixin(grammar!(Memoization.no)(LetGrammar));
+
+    assert(Let("a,b be").successful);
+    assert(Let("K,H,G be").successful); // This fails if the memoization table is
+                                        // not cleared in all composed grammars.
 }
 
 unittest // Test lambda syntax in semantic actions
