@@ -25,7 +25,7 @@ import std.conv;
 import std.string: strip;
 import std.typetuple;
 
-string stringified(string inp)
+private string stringified(string inp)
 {
     import std.string : translate;
     return inp.translate(['\n' : "\\n", '\r' : "\\r", '\t' : "\\t", '\v' : "\\v"]);
