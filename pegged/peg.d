@@ -25,6 +25,12 @@ import std.conv;
 import std.string: strip;
 import std.typetuple;
 
+string stringified(string inp)
+{
+    import std.string : translate;
+    return inp.translate(['\n' : "\\n", '\r' : "\\r", '\t' : "\\t", '\v' : "\\v"]);
+}
+
 version (tracer)
 {
     import std.experimental.logger;
@@ -102,12 +108,6 @@ version (tracer)
     {
         traceConditionFunction = null;
         traceConditionDelegate = null;
-    }
-
-    private string stringified(string inp)
-    {
-        import std.string : translate;
-        return inp.translate(['\n' : "\\n", '\r' : "\\r", '\t' : "\\t", '\v' : "\\v"]);
     }
 
     private string traceMsg(ParseTree p, string expression, string name)
@@ -239,9 +239,9 @@ struct ParseTree
                 //right = strip(right);
 
                 result ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
-                       ~ (left.length > 0 ? "after \"" ~ left ~ "\" " : "")
-                       ~ "expected "~ (matches.length > 0 ? matches[$-1] : "NO MATCH")
-                       ~ ", but got \"" ~ right ~ "\"\n";
+                       ~ (left.length > 0 ? "after \"" ~ stringified(left) ~ "\" " : "")
+                       ~ "expected "~ (matches.length > 0 ? stringified(matches[$-1]) : "NO MATCH")
+                       ~ ", but got \"" ~ stringified(right) ~ "\"\n";
             }
             else
             {
@@ -278,9 +278,9 @@ struct ParseTree
             right = right.replace("\n", `\n`).replace("\t", `\t`);
 
             return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
-                ~ (left.length > 0 ? "after \"" ~ left ~ "\" " : "")
-                ~ "expected " ~ (matches.length > 0 ? matches[$ - 1] : "NO MATCH")
-                ~ `, but got "` ~ right ~ `"`;
+                ~ (left.length > 0 ? "after \"" ~ stringified(left) ~ "\" " : "")
+                ~ "expected " ~ (matches.length > 0 ? stringified(matches[$ - 1]) : "NO MATCH")
+                ~ `, but got "` ~ stringified(right) ~ `"`;
         }
 
         return "Success";
