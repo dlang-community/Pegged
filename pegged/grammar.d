@@ -258,8 +258,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     {
         string result;
         foreach (rule; stoppers[stopper] ~ stopper)
-            result ~= "            if (!blockMemo_" ~ rule ~ "_atPos.canFind(p.end))\n"
-                      "                blockMemo_" ~ rule ~ "_atPos ~= p.end;\n";
+            result ~= "            blockMemo_" ~ rule ~ "_atPos ~= p.end;\n";
         return result;
     }
 
@@ -268,7 +267,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     {
         string result;
         foreach (rule; stoppers[stopper] ~ stopper)
-            // TODO investigate if values are always unique.
             // TODO investigate if p.end is always the last element.
             result ~= "                    assert(blockMemo_" ~ rule ~ "_atPos.canFind(p.end));\n"
                       "                    remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
