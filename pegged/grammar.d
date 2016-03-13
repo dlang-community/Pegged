@@ -302,6 +302,15 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         if (withMemo == Memoization.yes)
             result ~= "
         memo = null;";
+        string[] visited = [];
+        foreach (cycle; grammarInfo.leftRecursiveCycles)
+            foreach (rule; cycle)
+                if (!visited.canFind(rule))
+                {
+                    visited ~= rule;
+                    result ~= "
+        blockMemo_" ~ rule ~ "_atPos = null;";
+                }
         if (composedGrammars.length > 0)
             result ~= "
         import std.traits;";
@@ -322,7 +331,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         string generateBlockers()
         {
             string result;
-            import std.algorithm.iteration;
             string[] visited = [];
             foreach (cycle; grammarInfo.leftRecursiveCycles)
                 foreach (rule; cycle)
