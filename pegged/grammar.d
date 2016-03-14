@@ -258,8 +258,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     {
         string result;
         foreach (rule; stoppers[stopper] ~ stopper)
-            result ~= "            if (!blockMemo_" ~ rule ~ "_atPos.canFind(p.end))\n"
-                      "                blockMemo_" ~ rule ~ "_atPos ~= p.end;\n";
+            result ~= "            blockMemo_" ~ rule ~ "_atPos ~= p.end;\n";
         return result;
     }
 
@@ -268,7 +267,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     {
         string result;
         foreach (rule; stoppers[stopper] ~ stopper)
-            // TODO investigate if values are always unique.
             // TODO investigate if p.end is always the last element.
             result ~= "                    assert(blockMemo_" ~ rule ~ "_atPos.canFind(p.end));\n"
                       "                    remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
@@ -304,6 +302,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         if (withMemo == Memoization.yes)
             result ~= "
         memo = null;";
+        if (composedGrammars.length > 0)
+            result ~= "
+        import std.traits;";
         foreach (composed; composedGrammars)
             result ~= "
         static if (is(typeof(" ~ composed ~ ".forgetMemo)))
@@ -321,7 +322,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         string generateBlockers()
         {
             string result;
-            import std.algorithm.iteration;
             string[] visited = [];
             foreach (cycle; grammarInfo.leftRecursiveCycles)
                 foreach (rule; cycle)
