@@ -304,12 +304,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         if (withMemo == Memoization.yes)
             result ~= "
         memo = null;";
-        if (composedGrammars.length > 0)
-            result ~= "
-        import std.traits;";
         foreach (composed; composedGrammars)
             result ~= "
-        static if (__traits(compiles, " ~ composed ~ ".forgetMemo()))
+        static if (is(typeof(" ~ composed ~ ".forgetMemo)))
             " ~ composed ~ ".forgetMemo();";
         result ~= "
     }\n";
