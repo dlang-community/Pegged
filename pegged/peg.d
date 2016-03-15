@@ -27,8 +27,8 @@ import std.typetuple;
 
 private string stringified(string inp)
 {
-    import std.string : translate;
-    return inp.translate(['\n' : "\\n", '\r' : "\\r", '\t' : "\\t", '\v' : "\\v"]);
+    import std.format : format;
+    return format(`%(%s%)`, (&inp)[0..1]);
 }
 
 version (tracer)
@@ -119,8 +119,8 @@ version (tracer)
         for (auto i = 1; i <= traceLevel; i++)
             result ~= format("%d|", i);
         result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~
-            expression.stringified ~ " considering rule " ~ name.stringified ~ " on \"" ~
-            p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~ "\"" ~
+            expression.stringified ~ " considering rule " ~ name.stringified ~ " on " ~
+            p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~
             (p.end + inputLength > p.input.length ? "" : "...");
         return result;
     }
@@ -140,12 +140,12 @@ version (tracer)
             string consumed;
             foreach (match; p.matches)
                 consumed ~= match;
-            result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " SUCCEEDED on \"" ~
-                consumed.stringified ~ "\"";
+            result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " SUCCEEDED on " ~
+                consumed.stringified;
         }
         else
-            result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " FAILED on \"" ~
-                p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~ "\"" ~
+            result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " FAILED on " ~
+                p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~
                 (p.end + inputLength > p.input.length ? "" : "...");
         return result;
     }
@@ -239,9 +239,9 @@ struct ParseTree
                 //right = strip(right);
 
                 result ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
-                       ~ (left.length > 0 ? "after \"" ~ stringified(left) ~ "\" " : "")
-                       ~ "expected "~ (matches.length > 0 ? stringified(matches[$-1]) : "NO MATCH")
-                       ~ ", but got \"" ~ stringified(right) ~ "\"\n";
+                       ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
+                       ~ "expected "~ (matches.length > 0 ? matches[$-1].stringified : "NO MATCH")
+                       ~ ", but got " ~ right.stringified ~ "\n";
             }
             else
             {
@@ -269,18 +269,16 @@ struct ParseTree
                 left = input[0 .. pos.index];
             else
                 left = input[pos.index - 10 .. pos.index];
-            left = left.replace("\n", `\n`).replace("\t", `\t`);
 
             if (pos.index + 10 < input.length)
                 right = input[pos.index .. pos.index + 10];
             else
                 right = input[pos.index .. $];
-            right = right.replace("\n", `\n`).replace("\t", `\t`);
 
             return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
-                ~ (left.length > 0 ? "after \"" ~ stringified(left) ~ "\" " : "")
-                ~ "expected " ~ (matches.length > 0 ? stringified(matches[$ - 1]) : "NO MATCH")
-                ~ `, but got "` ~ stringified(right) ~ `"`;
+                ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
+                ~ "expected " ~ (matches.length > 0 ? matches[$ - 1].stringified : "NO MATCH")
+                ~ `, but got ` ~ right.stringified;
         }
 
         return "Success";
