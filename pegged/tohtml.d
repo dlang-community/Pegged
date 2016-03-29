@@ -2,6 +2,7 @@ module pegged.tohtml;
 
 import std.stdio;
 import std.conv;
+import std.algorithm.searching;
 import pegged.peg;
 
 void toHTML(const ref ParseTree p, File file)
@@ -35,10 +36,14 @@ a.tooltip:hover span {
     border: 0.1em solid #b7ddf2;
     border-radius: 0.5em;
     white-space: nowrap;
-    z-index : 1;
+    z-index: 1;
 }
 details, div {
     margin-left:25px;
+    white-space: nowrap;
+}
+details.leaf summary::-webkit-details-marker {
+    opacity: 0;
 }
 </style>
 </head>
@@ -47,16 +52,11 @@ details, div {
 
     string treeToHTML(const ref ParseTree p)
     {
-        import std.algorithm.comparison;
-        import std.algorithm.searching;
-        string summary = p.name ~ " " ~ to!string([p.begin, p.end]);
         auto firstNewLine = p.input[p.begin .. p.end].countUntil('\n');
-        if (p.begin != p.end)
-            summary ~= ` <a class="tooltip">` ~ p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end] ~
-                       "<span><pre>" ~ p.input[p.begin .. p.end] ~ "</pre></span></a>";
-        if (p.children.length == 0)
-            return "<div>" ~ summary ~ "</div>\n";
-        string result = "<details><summary>" ~ summary ~ "</summary>\n";
+        string summary = p.name ~ " " ~ to!string([p.begin, p.end]) ~
+            ` <a class="tooltip">` ~ p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end] ~
+            "<span><pre>" ~ p.input[p.begin .. p.end] ~ "</pre></span></a>";
+        string result = "<details" ~ (p.children.length == 0 ? ` class="leaf"` : "") ~ "><summary>" ~ summary ~ "</summary>\n";
         foreach (child; p.children)
             result ~= treeToHTML(child);
         return result ~ "</details>\n";
@@ -72,7 +72,6 @@ details, div {
 
 void toHTML(const ref ParseTree p, string filename)
 {
-    import std.algorithm.searching;
     if (filename.endsWith(".html", ".htm") == 0)
         filename ~= ".html";
     toHTML(p, File(filename, "w"));
