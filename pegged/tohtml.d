@@ -14,16 +14,17 @@ void toHTML(const ref ParseTree p, File file)
 <meta charset="UTF-8">
 <title>Pegged produced parse tree</title>
 <style>
-a.tooltip {
+code.tooltip {
     position: relative;
     font-family: monospace;
+    white-space: pre;
  }
 /* hide tooltip */
-a.tooltip span {
+code.tooltip span {
     display: none;
 }
 /* show and style tooltip */
-a.tooltip:hover span {
+code.tooltip:hover span {
     /* show tooltip */
     display: block;
     /* position relative to container div.tooltip */
@@ -38,7 +39,7 @@ a.tooltip:hover span {
     white-space: nowrap;
     z-index: 1;
 }
-details, div {
+details {
     margin-left:25px;
     white-space: nowrap;
 }
@@ -54,8 +55,8 @@ details.leaf summary::-webkit-details-marker {
     {
         auto firstNewLine = p.input[p.begin .. p.end].countUntil('\n');
         string summary = p.name ~ " " ~ to!string([p.begin, p.end]) ~
-            ` <a class="tooltip">` ~ p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end] ~
-            "<span><pre>" ~ p.input[p.begin .. p.end] ~ "</pre></span></a>";
+            ` <code class="tooltip">` ~ p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end] ~
+            "<span><pre>" ~ p.input[p.begin .. p.end] ~ "</pre></span></code>";
         string result = "<details" ~ (p.children.length == 0 ? ` class="leaf"` : "") ~ "><summary>" ~ summary ~ "</summary>\n";
         foreach (child; p.children)
             result ~= treeToHTML(child);
