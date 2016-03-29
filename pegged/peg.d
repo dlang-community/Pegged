@@ -25,7 +25,7 @@ import std.conv;
 import std.string: strip;
 import std.typetuple;
 
-private string stringified(string inp)
+package string stringified(string inp)
 {
     import std.format : format;
     return format(`%(%s%)`, (&inp)[0..1]);
