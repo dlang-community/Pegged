@@ -1,5 +1,6 @@
 module pegged.dynamic.peg;
 
+import std.algorithm : startsWith;
 import std.array: join;
 import std.conv: to;
 
@@ -370,7 +371,7 @@ Dynamic fuse(D)(D d)
         if (p.successful)
         {
             if (p.matches.length != 0)
-                p.matches = [std.array.join(p.matches)];
+                p.matches = [join(p.matches)];
 
             p.children = null; // also discard children
         }
