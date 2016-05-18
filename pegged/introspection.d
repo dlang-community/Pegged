@@ -3,6 +3,7 @@ This module contains function to inspect a Pegged grammar.
 */
 module pegged.introspection;
 
+import std.algorithm : equal;
 import std.typecons;
 
 import pegged.parser;

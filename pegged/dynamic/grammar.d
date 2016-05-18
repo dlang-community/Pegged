@@ -11,6 +11,7 @@ Advantages:
 */
 module pegged.dynamic.grammar;
 
+import std.algorithm : startsWith;
 import std.array;
 import std.stdio;
 

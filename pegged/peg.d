@@ -343,7 +343,7 @@ bool softCompare(ParseTree p1, ParseTree p2)
         && p1.matches == p2.matches
         && p1.begin == p2.begin
         && p1.end == p2.end
-        && std.algorithm.equal!(softCompare)(p1.children, p2.children); // the same for children
+        && equal!(softCompare)(p1.children, p2.children); // the same for children
 }
 
 unittest // softCompare
@@ -3216,6 +3216,8 @@ mixin template decimateTree()
             ParseTree[] result;
             foreach(child; pt.children)
             {
+				import std.algorithm : startsWith;
+				
                 if (  (isRule(child.name) && child.matches.length != 0)
                    || !child.successful && child.children.length == 0)
                 {

@@ -351,7 +351,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result =
 "struct Generic" ~ shortGrammarName ~ "(TParseTree)
 {
+	import std.functional : toDelegate;
     import pegged.dynamic.grammar;
+	static import pegged.peg;
     struct " ~ grammarName ~ "\n    {
     enum name = \"" ~ shortGrammarName ~ "\";
     static ParseTree delegate(ParseTree)[string] before;
@@ -437,6 +439,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
 
     static bool isRule(string s)
     {
+		import std.algorithm : startsWith;
         return s.startsWith(\"" ~ shortGrammarName ~ ".\");
     }
 ";
@@ -2755,6 +2758,7 @@ unittest // Memoization reset in composed grammars. Issue #162
 unittest // Test lambda syntax in semantic actions
 {
     import std.array;
+	import std.string : strip;
 
     auto actions = [
 
