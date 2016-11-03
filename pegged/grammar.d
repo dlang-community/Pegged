@@ -147,7 +147,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         }
         return result.length > 0 ?
             "/** Rules that stop left-recursive cycles, followed by rules for which\n"
-            " *  memoization is blocked during recursion:\n" ~ result ~ "*/\n\n" : "";
+          ~ " *  memoization is blocked during recursion:\n" ~ result ~ "*/\n\n" : "";
     }
     size_t[] handledCycleIndices;
     // Detect interlocking cycles. Each cycle needs a different stopper.
@@ -269,7 +269,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         foreach (rule; stoppers[stopper] ~ stopper)
             // TODO investigate if p.end is always the last element.
             result ~= "                    assert(blockMemo_" ~ rule ~ "_atPos.canFind(p.end));\n"
-                      "                    remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
+                    ~ "                    remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
         return result;
     }
 
@@ -283,7 +283,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 if (rule == name)
                     return
     "            if (blockMemo_" ~ name ~ "_atPos.canFind(p.end))\n"
-    "                return " ~ code ~ "(p);\n";
+  ~ "                return " ~ code ~ "(p);\n";
         return "";
     }
 
