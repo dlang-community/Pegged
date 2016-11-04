@@ -610,7 +610,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             ~ "        if(__ctfe)\n"
                             ~ "        {\n"
                             ~ (stoppers.keys.canFind(shortName) ?
-                            ~ "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
+                              "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                          ~ "at compile-time. Consider using asModule().\");\n"
                               :
                               "            return " ~ ctfeCode ~ "(p);\n"
