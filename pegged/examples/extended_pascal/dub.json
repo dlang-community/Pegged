@@ -1,14 +1,14 @@
 {
-	"name": "parse_ep",
-	"authors": [
-		"Bastiaan Veelo"
-	],
-	"dependencies": {
-		"pegged":  {
+    "name": "parse_ep",
+    "authors": [
+        "Bastiaan Veelo"
+    ],
+    "dependencies": {
+        "pegged":  {
             "version": "*",
             "path": "../../.."
         },
-	},
+    },
     "preGenerateCommands": [
         "rdmd -I$PEGGED_PACKAGE_DIR source/make.d"
     ],
@@ -16,7 +16,21 @@
         "source/make.d",
         "source/epgrammar.d"
     ],
-	"description": "Example parser for Extended Pascal.",
-	"copyright": "Copyright © 2017, Bastiaan Veelo",
-	"license": "Boost License 1.0"
+    "description": "Example parser for Extended Pascal.",
+    "copyright": "Copyright © 2017, Bastiaan Veelo",
+    "license": "Boost License 1.0",
+    "configurations": [
+        {
+            "name": "default",
+            "targetType": "executable"
+        },
+        {
+            "name": "tracer",
+            "targetType": "executable",
+            "versions": ["tracer"],
+            "subConfigurations": {
+                "pegged": "tracer"
+            }
+        }
+    ]
 }
