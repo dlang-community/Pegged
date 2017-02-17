@@ -18,5 +18,14 @@
     "importPaths": ["."],
     "dflags": ["-ignore"],
     "dflags-gdc": ["-ggdb"],
-    "dflags-ldc": ["-check-printf-calls"]
+    "dflags-ldc": ["-check-printf-calls"],
+    "configurations": [
+        {
+			"name": "default",
+		},
+        {
+			"name": "tracer",
+			"versions": ["tracer"],
+		}
+	]
 }

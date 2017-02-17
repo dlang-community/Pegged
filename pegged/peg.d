@@ -164,6 +164,8 @@ version (tracer)
         {
             super(fn);
         }
+        import std.concurrency : Tid;
+        import std.datetime : SysTime;
         override protected void beginLogMsg(string file, int line, string funcName,
             string prettyFuncName, string moduleName, LogLevel logLevel,
             Tid threadId, SysTime timestamp, Logger logger)

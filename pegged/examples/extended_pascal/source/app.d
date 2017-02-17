@@ -22,6 +22,26 @@ int main(string[] args)
         return 1;
     }
 
+
+    version (tracer)
+    {
+        import std.experimental.logger;
+        import std.algorithm : startsWith;
+        sharedLog = new TraceLogger("TraceLog.txt");
+        bool cond (string ruleName)
+        {
+            static startTrace = false;
+            if (ruleName.startsWith("EP.FunctionDeclaration"))
+                startTrace = true;
+            return startTrace && ruleName.startsWith("EP");
+        }
+        // Various ways of turning logging on and of:
+        //setTraceConditionFunction(&cond);
+        setTraceConditionFunction(ruleName => ruleName.startsWith("EP"));
+        //traceAll;
+    }
+
+
     auto parseTree = EP(readText(args[1]));
 
     if (html) {
