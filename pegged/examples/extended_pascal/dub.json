@@ -22,11 +22,11 @@
     "configurations": [
         {
             "name": "default",
-			"targetType": "executable"
+            "targetType": "executable"
         },
         {
             "name": "tracer",
-			"targetType": "executable",
+            "targetType": "executable",
             "versions": ["tracer"],
             "subConfigurations": {
                 "pegged": "tracer"

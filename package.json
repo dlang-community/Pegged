@@ -21,11 +21,11 @@
     "dflags-ldc": ["-check-printf-calls"],
     "configurations": [
         {
-			"name": "default",
-		},
+            "name": "default",
+        },
         {
-			"name": "tracer",
-			"versions": ["tracer"],
-		}
-	]
+            "name": "tracer",
+            "versions": ["tracer"],
+        }
+    ]
 }
