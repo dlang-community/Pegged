@@ -386,29 +386,25 @@ assert(position("abc
 */
 Position position(string s)
 {
-    size_t col, line, index;
-    version (tracer)
-    {
-        // Do not trace the eol scan below, prevent recursion.
-        traceBlocked = true;
-    }
+    size_t col, line, index, prev_i;
+    char prev_c;
     foreach(i,c; s)
     {
-        if (eol(ParseTree("", false, [], s, 0,i)).successful)
+        if ((c == '\n' && !(i == prev_i + 1 && prev_c == '\r')) ||  // new line except when directly following a carriage return.
+             c == '\r')
         {
             col = 0;
             ++line;
             ++index;
+            prev_i = i;
+            prev_c = c;
         }
         else
         {
-            ++col;
+            if (c != '\n')
+                ++col;
             ++index;
         }
-    }
-    version (tracer)
-    {
-        traceBlocked = false;
     }
 
     return Position(line,col,index);
@@ -438,6 +434,7 @@ unittest
 
 
 ") == Position(3,0,3), "Four lines, all empty.");
+    assert(position("one\r\ntwo\r\nthree") == Position(2, 5, 15), "Three lines, DOS line endings");
 }
 
 string getName(alias expr)() @property
