@@ -118,7 +118,7 @@ version (tracer)
         string result;
         for (auto i = 1; i <= traceLevel; i++)
             result ~= format("%d|", i);
-        result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~
+        result ~= format(" (l:%d, c:%d, i:%d)\t", pos.line + 1, pos.col + 1, pos.index) ~
             expression.stringified ~ " considering rule " ~ name.stringified ~ " on " ~
             p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~
             (p.end + inputLength > p.input.length ? "" : "...");
@@ -140,11 +140,11 @@ version (tracer)
             string consumed;
             foreach (match; p.matches)
                 consumed ~= match;
-            result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " SUCCEEDED on " ~
+            result ~= format(" (l:%d, c:%d, i:%d)\t", pos.line + 1, pos.col + 1, pos.index) ~ name.stringified ~ " SUCCEEDED on " ~
                 consumed.stringified;
         }
         else
-            result ~= format(" (l:%d, c:%d)\t", pos.line, pos.col) ~ name.stringified ~ " FAILED on " ~
+            result ~= format(" (l:%d, c:%d, i:%d)\t", pos.line + 1, pos.col + 1, pos.index) ~ name.stringified ~ " FAILED on " ~
                 p.input[p.end .. min(p.input.length, p.end + inputLength)].stringified ~
                 (p.end + inputLength > p.input.length ? "" : "...");
         return result;
