@@ -37,8 +37,8 @@ version (tracer)
     import std.algorithm.comparison : min;
 
     // Function pointers.
-    private static bool function(string ruleName) traceConditionFunction;
-    private static bool delegate(string ruleName) traceConditionDelegate;
+    private static bool function(string ruleName, const ref ParseTree p) traceConditionFunction;
+    private static bool delegate(string ruleName, const ref ParseTree p) traceConditionDelegate;
     private static int traceLevel;
     private static bool traceBlocked;
     private static bool logTraceLevel = false;
@@ -55,14 +55,14 @@ version (tracer)
             traceLevel--;
     }
 
-    private bool shouldTrace(string ruleName)
+    private bool shouldTrace(string ruleName, const ref ParseTree p)
     {
         if (__ctfe || traceBlocked)
             return false;
         if (traceConditionDelegate != null)
-            return traceConditionDelegate(ruleName);
+            return traceConditionDelegate(ruleName, p);
         if (traceConditionFunction != null)
-            return traceConditionFunction(ruleName);
+            return traceConditionFunction(ruleName, p);
         return false;
     }
 
@@ -81,14 +81,14 @@ version (tracer)
      + setTraceConditionFunction(ruleName => ruleName.startsWith("MyGrammar"));
      + ---
      +/
-    void setTraceConditionFunction(bool delegate(string ruleName) condition)
+    void setTraceConditionFunction(bool delegate(string ruleName, const ref ParseTree p) condition)
     {
         traceConditionDelegate = condition;
         traceConditionFunction = null;
     }
 
     /// ditto
-    void setTraceConditionFunction(bool function(string ruleName) condition)
+    void setTraceConditionFunction(bool function(string ruleName, const ref ParseTree p) condition)
     {
         traceConditionFunction = condition;
         traceConditionDelegate = null;
@@ -100,7 +100,7 @@ version (tracer)
      */
     void traceAll()
     {
-        setTraceConditionFunction(string => true);
+        setTraceConditionFunction(function(string ruleName, const ref ParseTree p) {return true;});
     }
 
     /** Do not trace any rules. */
@@ -1217,7 +1217,7 @@ template and(rules...) if (rules.length > 0)
         {
             version (tracer)
             {
-                if (shouldTrace(getName!(r)()))
+                if (shouldTrace(getName!(r)(), p))
                     trace(traceMsg(result, name, getName!(r)()));
             }
             ParseTree temp = r(result);
@@ -1242,7 +1242,7 @@ template and(rules...) if (rules.length > 0)
                     result.matches ~= temp.matches[$-1];
                 version (tracer)
                 {
-                    if (shouldTrace(getName!(r)()))
+                    if (shouldTrace(getName!(r)(), p))
                         trace(traceResultMsg(result, getName!(r)()));
                     decTraceLevel();
                 }
@@ -1253,7 +1253,7 @@ template and(rules...) if (rules.length > 0)
         version (tracer)
         {
             foreach(i, r; rules)
-                if (shouldTrace(getName!(r)()))
+                if (shouldTrace(getName!(r)(), p))
                 {
                     trace(traceResultMsg(result, name));
                     break;
@@ -1457,7 +1457,7 @@ template or(rules...) if (rules.length > 0)
         {
             version (tracer)
             {
-                if (shouldTrace(getName!(r)()))
+                if (shouldTrace(getName!(r)(), p))
                     trace(traceMsg(p, name, getName!(r)()));
             }
             ParseTree temp = r(p);
@@ -1467,7 +1467,7 @@ template or(rules...) if (rules.length > 0)
                 temp.name = name;
                 version (tracer)
                 {
-                    if (shouldTrace(getName!(r)()))
+                    if (shouldTrace(getName!(r)(), p))
                         trace(traceResultMsg(temp, getName!(r)()));
                     decTraceLevel();
                 }
@@ -1477,7 +1477,7 @@ template or(rules...) if (rules.length > 0)
             {
                 version (tracer)
                 {
-                    if (shouldTrace(getName!(r)()))
+                    if (shouldTrace(getName!(r)(), p))
                         trace(traceResultMsg(temp, getName!(r)()));
                 }
                 enum errName = " (" ~ getName!(r)() ~")";
@@ -1894,7 +1894,7 @@ template zeroOrMore(alias r)
         version (tracer)
         {
             incTraceLevel();
-            if (shouldTrace(getName!(r)()))
+            if (shouldTrace(getName!(r)(), p))
                 trace(traceMsg(result, name, getName!(r)()));
         }
         auto temp = r(result);
@@ -1907,7 +1907,7 @@ template zeroOrMore(alias r)
             result.end = temp.end;
             version (tracer)
             {
-                if (shouldTrace(getName!(r)()))
+                if (shouldTrace(getName!(r)(), p))
                     trace(traceMsg(result, name, getName!(r)()));
             }
             temp = r(result);
@@ -1915,7 +1915,7 @@ template zeroOrMore(alias r)
         result.successful = true;
         version (tracer)
         {
-            if (shouldTrace(getName!(r)()))
+            if (shouldTrace(getName!(r)(), p))
                 trace(traceResultMsg(result, getName!(r)()));
             decTraceLevel();
         }
@@ -2047,7 +2047,7 @@ template oneOrMore(alias r)
         version (tracer)
         {
             incTraceLevel();
-            if (shouldTrace(getName!(r)()))
+            if (shouldTrace(getName!(r)(), p))
                 trace(traceMsg(result, name, getName!(r)()));
         }
         auto temp = r(result);
@@ -2069,7 +2069,7 @@ template oneOrMore(alias r)
                 result.end = temp.end;
                 version (tracer)
                 {
-                    if (shouldTrace(getName!(r)()))
+                    if (shouldTrace(getName!(r)(), p))
                         trace(traceMsg(result, name, getName!(r)()));
                 }
                 temp = r(result);
@@ -2078,7 +2078,7 @@ template oneOrMore(alias r)
         }
         version (tracer)
         {
-            if (shouldTrace(getName!(r)()))
+            if (shouldTrace(getName!(r)(), p))
                 trace(traceResultMsg(result, getName!(r)()));
             decTraceLevel();
         }
@@ -2185,7 +2185,7 @@ template option(alias r)
     {
         version (tracer)
         {
-            if (shouldTrace(getName!(r)()))
+            if (shouldTrace(getName!(r)(), p))
                 trace(traceMsg(p, name, getName!(r)()));
         }
         ParseTree result = r(p);
@@ -2279,7 +2279,7 @@ template posLookahead(alias r)
     {
         version (tracer)
         {
-            if (shouldTrace(getName!(r)()))
+            if (shouldTrace(getName!(r)(), p))
                 trace(traceMsg(p, name, getName!(r)()));
         }
         ParseTree temp = r(p);
@@ -2370,7 +2370,7 @@ template negLookahead(alias r)
     {
         version (tracer)
         {
-            if (shouldTrace(getName!(r)()))
+            if (shouldTrace(getName!(r)(), p))
                 trace(traceMsg(p, name, getName!(r)()));
         }
         ParseTree temp = r(p);

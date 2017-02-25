@@ -28,16 +28,17 @@ int main(string[] args)
         import std.experimental.logger;
         import std.algorithm : startsWith;
         sharedLog = new TraceLogger("TraceLog.txt");
-        bool cond (string ruleName)
+        bool cond (string ruleName, const ref ParseTree p)
         {
             static startTrace = false;
-            if (ruleName.startsWith("EP.FunctionDeclaration"))
+            //if (ruleName.startsWith("EP.FunctionDeclaration"))
+            if (p.begin > 4000)
                 startTrace = true;
             return startTrace && ruleName.startsWith("EP");
         }
         // Various ways of turning logging on and of:
         //setTraceConditionFunction(&cond);
-        setTraceConditionFunction(ruleName => ruleName.startsWith("EP"));
+        setTraceConditionFunction(function(string ruleName, const ref ParseTree p) {return ruleName.startsWith("EP");});
         //traceAll;
     }
 
