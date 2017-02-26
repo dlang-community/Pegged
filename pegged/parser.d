@@ -8,7 +8,9 @@ Pegged:
 # Syntactic rules:
 Grammar      <- Spacing GrammarName Definition+ :eoi
 Definition   <- LhsName Arrow Expression
-Expression   <- :OR? Sequence (:OR Sequence)*
+Expression   <- FirstExpression / LongestExpression
+FirstExpression   <- :OR? Sequence (:OR Sequence)+
+LongestExpression <- :(OR / LONGEST_OR)? Sequence (:LONGEST_OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
@@ -65,6 +67,7 @@ SPACEARROW   <- '<' Spacing
 ACTIONARROW  <- '<' Action Spacing
 
 OR           <- '/' Spacing
+LONGEST_OR   <- '|' Spacing
 
 POS          <- '&' Spacing
 NEG          <- '!' Spacing
@@ -136,7 +139,9 @@ import std.functional: toDelegate;
 
 struct GenericPegged(TParseTree)
 {
+	import std.functional : toDelegate;
     import pegged.dynamic.grammar;
+	static import pegged.peg;
     struct Pegged
     {
     enum name = "Pegged";
@@ -148,6 +153,8 @@ struct GenericPegged(TParseTree)
         rules["Grammar"] = toDelegate(&Grammar);
         rules["Definition"] = toDelegate(&Definition);
         rules["Expression"] = toDelegate(&Expression);
+        rules["FirstExpression"] = toDelegate(&FirstExpression);
+        rules["LongestExpression"] = toDelegate(&LongestExpression);
         rules["Sequence"] = toDelegate(&Sequence);
         rules["Prefix"] = toDelegate(&Prefix);
         rules["Suffix"] = toDelegate(&Suffix);
@@ -176,6 +183,7 @@ struct GenericPegged(TParseTree)
         rules["SPACEARROW"] = toDelegate(&SPACEARROW);
         rules["ACTIONARROW"] = toDelegate(&ACTIONARROW);
         rules["OR"] = toDelegate(&OR);
+        rules["LONGEST_OR"] = toDelegate(&LONGEST_OR);
         rules["POS"] = toDelegate(&POS);
         rules["NEG"] = toDelegate(&NEG);
         rules["FUSE"] = toDelegate(&FUSE);
@@ -248,6 +256,7 @@ struct GenericPegged(TParseTree)
 
     static bool isRule(string s)
     {
+		import std.algorithm : startsWith;
         return s.startsWith("Pegged.");
     }
     mixin decimateTree;
@@ -308,26 +317,78 @@ struct GenericPegged(TParseTree)
     {
         if(__ctfe)
         {
-            return         pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), "Pegged.Expression")(p);
+            return         pegged.peg.defined!(pegged.peg.or!(FirstExpression, LongestExpression), "Pegged.Expression")(p);
         }
         else
         {
-            return hooked!(pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), "Pegged.Expression"), "Expression")(p);
+            return hooked!(pegged.peg.defined!(pegged.peg.or!(FirstExpression, LongestExpression), "Pegged.Expression"), "Expression")(p);
         }
     }
     static TParseTree Expression(string s)
     {
         if(__ctfe)
-            return         pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), "Pegged.Expression")(TParseTree("", false,[], s));
+            return         pegged.peg.defined!(pegged.peg.or!(FirstExpression, LongestExpression), "Pegged.Expression")(TParseTree("", false,[], s));
         else
         {
             forgetMemo();
-            return hooked!(pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), "Pegged.Expression"), "Expression")(TParseTree("", false,[], s));
+            return hooked!(pegged.peg.defined!(pegged.peg.or!(FirstExpression, LongestExpression), "Pegged.Expression"), "Expression")(TParseTree("", false,[], s));
         }
     }
     static string Expression(GetName g)
     {
         return "Pegged.Expression";
+    }
+
+    static TParseTree FirstExpression(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return         pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.oneOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), "Pegged.FirstExpression")(p);
+        }
+        else
+        {
+            return hooked!(pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.oneOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), "Pegged.FirstExpression"), "FirstExpression")(p);
+        }
+    }
+    static TParseTree FirstExpression(string s)
+    {
+        if(__ctfe)
+            return         pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.oneOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), "Pegged.FirstExpression")(TParseTree("", false,[], s));
+        else
+        {
+            forgetMemo();
+            return hooked!(pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(OR)), Sequence, pegged.peg.oneOrMore!(pegged.peg.and!(pegged.peg.discard!(OR), Sequence))), "Pegged.FirstExpression"), "FirstExpression")(TParseTree("", false,[], s));
+        }
+    }
+    static string FirstExpression(GetName g)
+    {
+        return "Pegged.FirstExpression";
+    }
+
+    static TParseTree LongestExpression(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return         pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(pegged.peg.or!(OR, LONGEST_OR))), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(LONGEST_OR), Sequence))), "Pegged.LongestExpression")(p);
+        }
+        else
+        {
+            return hooked!(pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(pegged.peg.or!(OR, LONGEST_OR))), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(LONGEST_OR), Sequence))), "Pegged.LongestExpression"), "LongestExpression")(p);
+        }
+    }
+    static TParseTree LongestExpression(string s)
+    {
+        if(__ctfe)
+            return         pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(pegged.peg.or!(OR, LONGEST_OR))), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(LONGEST_OR), Sequence))), "Pegged.LongestExpression")(TParseTree("", false,[], s));
+        else
+        {
+            forgetMemo();
+            return hooked!(pegged.peg.defined!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.option!(pegged.peg.or!(OR, LONGEST_OR))), Sequence, pegged.peg.zeroOrMore!(pegged.peg.and!(pegged.peg.discard!(LONGEST_OR), Sequence))), "Pegged.LongestExpression"), "LongestExpression")(TParseTree("", false,[], s));
+        }
+    }
+    static string LongestExpression(GetName g)
+    {
+        return "Pegged.LongestExpression";
     }
 
     static TParseTree Sequence(TParseTree p)
@@ -1056,6 +1117,32 @@ struct GenericPegged(TParseTree)
     static string OR(GetName g)
     {
         return "Pegged.OR";
+    }
+
+    static TParseTree LONGEST_OR(TParseTree p)
+    {
+        if(__ctfe)
+        {
+            return         pegged.peg.defined!(pegged.peg.and!(pegged.peg.literal!("|"), Spacing), "Pegged.LONGEST_OR")(p);
+        }
+        else
+        {
+            return hooked!(pegged.peg.defined!(pegged.peg.and!(pegged.peg.literal!("|"), Spacing), "Pegged.LONGEST_OR"), "LONGEST_OR")(p);
+        }
+    }
+    static TParseTree LONGEST_OR(string s)
+    {
+        if(__ctfe)
+            return         pegged.peg.defined!(pegged.peg.and!(pegged.peg.literal!("|"), Spacing), "Pegged.LONGEST_OR")(TParseTree("", false,[], s));
+        else
+        {
+            forgetMemo();
+            return hooked!(pegged.peg.defined!(pegged.peg.and!(pegged.peg.literal!("|"), Spacing), "Pegged.LONGEST_OR"), "LONGEST_OR")(TParseTree("", false,[], s));
+        }
+    }
+    static string LONGEST_OR(GetName g)
+    {
+        return "Pegged.LONGEST_OR";
     }
 
     static TParseTree POS(TParseTree p)

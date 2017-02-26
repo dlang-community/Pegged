@@ -9,7 +9,9 @@ Pegged:
 # Syntactic rules:
 Grammar      <- Spacing GrammarName Definition+ :eoi
 Definition   <- LhsName Arrow Expression
-Expression   <- :OR? Sequence (:OR Sequence)*
+Expression   <- FirstExpression / LongestExpression
+FirstExpression   <- :OR? Sequence (:OR Sequence)+
+LongestExpression <- :(OR / LONGEST_OR)? Sequence (:LONGEST_OR Sequence)*
 Sequence     <- Prefix+
 Prefix       <- (POS / NEG / FUSE / DISCARD / KEEP / DROP / PROPAGATE)* Suffix
 Suffix       <- Primary (OPTION / ZEROORMORE / ONEORMORE / Action)*
@@ -66,6 +68,7 @@ SPACEARROW   <- '<' Spacing
 ACTIONARROW  <- '<' Action Spacing
 
 OR           <- '/' Spacing
+LONGEST_OR   <- '|' Spacing
 
 POS          <- '&' Spacing
 NEG          <- '!' Spacing

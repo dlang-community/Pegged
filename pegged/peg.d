@@ -1603,6 +1603,208 @@ unittest // 'or' unit test
                              , "or!([a-b],[c-d]) error message.");
 }
 
+/**
+Basic operator: it matches if one of its subrules (stored in the rules template parameter tuple) match
+the input. All subrules are tested and the one producing the longest match is taken.
+
+The longest matching subrule's parse tree is stored as its only child and its matches field
+will contain all the subrule matches, in order.
+*/
+template longest_match(rules...) if (rules.length > 0)
+{
+    string ctfeGetNameOr()
+    {
+        string name = "longest_match!(";
+        foreach(i,rule; rules)
+            name ~= getName!(rule)
+                    ~ (i < rules.length -1 ? ", " : "");
+        name ~= ")";
+        return name;
+    }
+
+    enum name = ctfeGetNameOr();
+
+    ParseTree longest_match(ParseTree p)
+    {
+        // error-management
+        ParseTree longest, longestFail = ParseTree(name, false, [], p.input, p.end, 0);
+        string[] errorStrings;
+        size_t errorStringChars;
+        string orErrorString;
+
+        ParseTree[rules.length] results;
+        string[rules.length] names;
+        size_t[rules.length] failedLength;
+        size_t maxFailedLength;
+
+        version (tracer)
+        {
+            incTraceLevel();
+        }
+
+        // Real 'longest_match' loop
+        foreach(i,r; rules)
+        {
+            version (tracer)
+            {
+                if (shouldTrace(getName!(r)(), p))
+                    trace(traceMsg(p, name, getName!(r)()));
+            }
+            ParseTree temp = r(p);
+            version (tracer)
+            {
+                if (shouldTrace(getName!(r)(), p))
+                    trace(traceResultMsg(temp, getName!(r)()));
+            }
+
+            if (temp.successful)
+            {
+                if (temp.end > longest.end)
+                    longest = temp;
+                // Else, this rule parsed less input than another one: we discard it.
+            }
+            else
+            {
+                enum errName = " (" ~ getName!(r)() ~")";
+                failedLength[i] = temp.end;
+                if (temp.end >= longestFail.end)
+                {
+                    maxFailedLength = temp.end;
+                    longestFail = temp;
+                    names[i] = errName;
+                    results[i] = temp;
+
+                    if (temp.end == longestFail.end)
+                        errorStringChars += (temp.matches.length > 0 ? temp.matches[$-1].length : 0) + errName.length + 4;
+                    else
+                        errorStringChars = (temp.matches.length > 0 ? temp.matches[$-1].length : 0) + errName.length + 4;
+                }
+                // Else, this error parsed less input than another one: we discard it.
+            }
+        }
+        version (tracer)
+        {
+            decTraceLevel();
+        }
+        if (longest.successful)
+        {
+            longest.children = [longest];
+            longest.name = name;
+            return longest;
+        }
+
+        // All subrules failed, we will take the longest match as the result
+        // If more than one node failed at the same (farthest) position, we concatenate their error messages
+
+        char[] errString;// = new char[](errorStringChars);
+        errString.length = errorStringChars;
+        uint start = 0;
+        foreach(i; 0..rules.length)
+        {
+            if (failedLength[i] == maxFailedLength && results[i].matches.length > 0)
+            {
+                auto temp = results[i];
+                auto len = temp.matches[$-1].length;
+                auto nlen = names[i].length;
+                errString[start .. start+len] = temp.matches[$-1][];
+                errString[start+len .. start+len+names[i].length] = names[i][];
+                errString[start+len+nlen .. start+len+nlen+4] = " or ";
+                start += len + names[i].length + 4;
+            }
+        }
+        orErrorString = cast(string)(errString[0..$-4]);
+
+        longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
+                              longestFail.matches[0..$-1]  // discarding longestFail error message
+                            ~ [orErrorString];             // and replacing it by the new, concatenated one.
+        longestFail.name = name;
+        longestFail.begin = p.end;
+        return longestFail;
+    }
+
+    ParseTree longest_match(string input)
+    {
+        return .or!(rules)(ParseTree("",false,[],input));
+    }
+
+    string longest_match(GetName g)
+    {
+        return name;
+    }
+}
+
+unittest // 'longest_match' unit test
+{
+    alias charRange!('a','b') ab;
+    alias charRange!('c','d') cd;
+
+    alias longest_match!(ab) abOr;
+    alias longest_match!(ab,cd) abOrcd;
+
+    assert(getName!(ab)() == "charRange!('a','b')");
+    assert(getName!(cd)() == "charRange!('c','d')");
+
+    // These are the same tests as for 'or':
+
+    ParseTree input = ParseTree("",false,[], "abcdefghi");
+
+    ParseTree result = abOr(input);
+
+    assert(result.name == "longest_match!(charRange!('a','b'))", "or name test.");
+    assert(result.successful, "longest_match!([a-b]) parses 'abcdefghi'");
+    assert(result.matches == ["a"], "longest_match!([a-b]) matches 'a' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+1, "longest_match!([a-b]) advances the index by 'a' size (1).");
+    assert(result.children == [ab(input)], "longest_match!([a-b]) has one child: the one created by '[a-b]'.");
+
+    result = abOrcd(input);
+
+    assert(result.name == "longest_match!(charRange!('a','b'), charRange!('c','d'))", "or name test.");
+    assert(result.successful, "longest_match!([a-b],[c-d]) parses 'abcdefghi'");
+    assert(result.matches == ["a"], "longest_match!([a-b],[c-d]) matches 'a' at the beginning of 'abcdefghi'");
+    assert(result.end == input.end+1, "longest_match!([a-b],[c-d]) advances the index by 1 position.");
+
+    assert(result.children == [ab(input)], "longest_match!([a-b],[c-d]) has one child, created by [a-b].");
+
+    input.input = "cdefghi";
+
+    result = abOrcd(input);
+
+    assert(result.name == "longest_match!(charRange!('a','b'), charRange!('c','d'))", "or name test.");
+    assert(result.successful, "longest_match!([a-b],[c-d]) parses 'cdefghi'");
+    assert(result.matches == ["c"], "longest_match!([a-b],[c-d]) matches 'c' at the beginning of 'cdefghi'");
+    assert(result.end == input.end+1, "longest_match!([a-b],[c-d]) advances the index by 1 position.");
+
+    assert(result.children == [cd(input)], "longest_match!([a-b],[c-d]) has one child, created by [c-d].");
+
+    input.input = "_abcdefghi";
+
+    result = abOrcd(input);
+
+    assert(!result.successful, "longest_match!([a-b],[c-d]) fails on '_abcdefghi'");
+    assert(result.end == input.end+0, "longest_match!([a-b],[c-d]) does not advance the index.");
+    assert(result.matches ==
+           [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
+                             , "longest_match!([a-b],[c-d]) error message. |" ~ result.matches[0]~ "|");
+
+    input.input = "";
+
+    result = abOrcd(input);
+
+    assert(!result.successful, "longest_match!([a-b],[c-d]) fails on and empty input");
+    assert(result.end == input.end+0, "longest_match!([a-b],[c-d]) does not advance the index.");
+    assert(result.matches ==
+    [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
+                             , "longest_match!([a-b],[c-d]) error message.");
+
+    // Now test longest match behaviour:
+
+    input.input = "aaaccccb";
+    result =            or!(oneOrMore!(literal!("a")), and!(oneOrMore!(literal!("a")), literal!("cc")))(input);
+    assert(result.matches == ["a", "a", "a"], "or! takes the first matching rule.");
+    result = longest_match!(oneOrMore!(literal!("a")), and!(oneOrMore!(literal!("a")), literal!("cc")))(input);
+    assert(result.matches == ["a", "a", "a", "cc"], "longest_match! takes the longest matching rule.");
+}
+
 
 /**
 Compile-time switch trie from Brian Schott
