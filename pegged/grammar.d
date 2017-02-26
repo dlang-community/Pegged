@@ -771,7 +771,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result = p.matches[0] ~ " = " ~ generateCode(p.children[1]);
                 break;
             case "Pegged.Expression":
-                if (p.children.length > 1) // OR expression
+                result ~= generateCode(p.children[0]);
+                break;
+            case "Pegged.FirstExpression",
+                 "Pegged.LongestExpression":
+                if (p.children.length > 1) // [LONGEST_]OR expression
                 {
                     // Keyword list detection: "abstract"/"alias"/...
                     bool isLiteral(ParseTree p)
@@ -800,13 +804,13 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     }
                     else
                     {
-                        result = "pegged.peg.or!(";
+                        result = p.name == "Pegged.FirstExpression" ? "pegged.peg.or!(" : "pegged.peg.longest_match!(";
                         foreach(seq; p.children)
                             result ~= generateCode(seq) ~ ", ";
                         result = result[0..$-2] ~ ")";
                     }
                 }
-                else // One child -> just a sequence, no need for a or!( , )
+                else // One child -> just a sequence, no need for an or!( , )
                 {
                     result = generateCode(p.children[0]);
                 }
@@ -906,7 +910,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                         result ~= generateCode(seq) ~ ", ";
                     result = result[0..$-2] ~ ")";
                 }
-                else // One child -> just a sequence, no need for a or!( , )
+                else // One child -> just a sequence, no need for an or!( , )
                 {
                     result = generateCode(p.children[0]);
                 }
@@ -2889,12 +2893,13 @@ unittest // Test lambda syntax in semantic actions
 
         assert(p.successful);
 
-        auto action = p.children[0].children[1]
-                                   .children[2]
-                                   .children[0]
-                                   .children[0]
-                                   .children[0]
-                                   .children[1];
+        auto action = p.children[0].children[1]     // Pegged.Definition
+                                   .children[2]     // Pegged.Expression
+                                   .children[0]     // Pegged.FirstExpression
+                                   .children[0]     // Pegged.Sequence
+                                   .children[0]     // Pegged.Prefix
+                                   .children[0]     // Pegged.Suffix
+                                   .children[1];    // Pegged.Action
 
         assert(action.matches.length == results[idx].length);
         foreach(i, s; action.matches)

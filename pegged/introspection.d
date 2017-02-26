@@ -193,7 +193,10 @@ pure GrammarInfo grammarInfo(ParseTree p)
     {
         switch (p.name)
         {
-            case "Pegged.Expression": // choice expressions null-match whenever one of their components can null-match
+            case "Pegged.Expression":
+                return nullMatching(p.children[0]);
+            case "Pegged.FirstExpression",
+                 "Pegged.LongestExpression": // choice expressions null-match whenever one of their components can null-match
                 foreach(seq; p.children)
                     if (nullMatching(seq) == NullMatch.yes)
                         return NullMatch.yes;
@@ -294,7 +297,10 @@ pure GrammarInfo grammarInfo(ParseTree p)
         import std.algorithm.searching: countUntil;
         switch (p.name)
         {
-            case "Pegged.Expression": // Choices are left-recursive if any choice is left-recursive
+            case "Pegged.Expression":
+                return leftRecursion(p.children[0], cycle);
+            case "Pegged.FirstExpression",
+                 "Pegged.LongestExpression": // Choices are left-recursive if any choice is left-recursive
                 // Because memoized left-recursion handling needs to know about all left-recursive cycles,
                 // we consider all choices, not just one.
                 auto any_lr = LeftRecursive.no;
