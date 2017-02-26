@@ -59,7 +59,21 @@ PT failOnWordSymbol(PT)(PT p)
         sicmp(p.matches[0], "VALUE") == 0 ||
         sicmp(p.matches[0], "VAR") == 0 ||
         sicmp(p.matches[0], "WHILE") == 0 ||
-        sicmp(p.matches[0], "WITH") == 0)
+        sicmp(p.matches[0], "WITH") == 0 ||
+    // Prospero extensions:
+        sicmp(p.matches[0], "ABSTRACT") == 0 ||
+        sicmp(p.matches[0], "CLASS") == 0 ||
+        sicmp(p.matches[0], "CONSTRUCTOR") == 0 ||
+        sicmp(p.matches[0], "DESTRUCTOR") == 0 ||
+        sicmp(p.matches[0], "EXCEPT") == 0 ||
+        sicmp(p.matches[0], "IS") == 0 ||
+        sicmp(p.matches[0], "PROPERTY") == 0 ||
+        sicmp(p.matches[0], "REM") == 0 ||
+        sicmp(p.matches[0], "SHL") == 0 ||
+        sicmp(p.matches[0], "SHR") == 0 ||
+        sicmp(p.matches[0], "TRY") == 0 ||
+        sicmp(p.matches[0], "VIEW") == 0 ||
+        sicmp(p.matches[0], "XOR") == 0)
     {
         p.successful = false;
     }
