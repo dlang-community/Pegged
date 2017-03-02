@@ -1,0 +1,1876 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pegged produced parse tree</title>
+<style>
+code {
+    position: relative;
+    font-family: monospace;
+    white-space: pre;
+}
+code.failure {
+    color: red;
+}
+/* hide tooltip */
+code span {
+    display: none;
+}
+/* show and style tooltip */
+code:hover span {
+    /* show tooltip */
+    display: block;
+    /* position relative to container div.tooltip */
+    position: absolute;
+    top: -1.6em;
+    left: -0.6em;
+    background: #ffffff;
+    padding: 0.5em;
+    color: #000000;
+    border: 0.1em solid #b7ddf2;
+    border-radius: 0.5em;
+    white-space: nowrap;
+    z-index: 1;
+}
+details {
+    margin-left:25px;
+    white-space: nowrap;
+}
+details.leaf summary::-webkit-details-marker {
+    opacity: 0;
+}
+</style>
+</head>
+<body>
+    <details><summary>EP [0, 810] <code>PROGRAM arrayc (output);<span><pre>PROGRAM arrayc (output);
+
+  { Extended Pascal examples http://ideone.com/YXpi4n }
+  { Array constant & constant access }
+
+TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+VAR   d: days;
+
+FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END.
+
+  { Generated output is:
+    Friday
+    Thursday
+    Wedsday
+    Tuesday
+    Monday
+  }
+</pre></span></code></summary>
+<details><summary>EP.BNVCompileUnit [0, 810] <code>PROGRAM arrayc (output);<span><pre>PROGRAM arrayc (output);
+
+  { Extended Pascal examples http://ideone.com/YXpi4n }
+  { Array constant & constant access }
+
+TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+VAR   d: days;
+
+FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END.
+
+  { Generated output is:
+    Friday
+    Thursday
+    Wedsday
+    Tuesday
+    Monday
+  }
+</pre></span></code></summary>
+<details><summary>EP.Program [0, 810] <code>PROGRAM arrayc (output);<span><pre>PROGRAM arrayc (output);
+
+  { Extended Pascal examples http://ideone.com/YXpi4n }
+  { Array constant & constant access }
+
+TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+VAR   d: days;
+
+FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END.
+
+  { Generated output is:
+    Friday
+    Thursday
+    Wedsday
+    Tuesday
+    Monday
+  }
+</pre></span></code></summary>
+<details><summary>EP.ProgramBlock [0, 810] <code>PROGRAM arrayc (output);<span><pre>PROGRAM arrayc (output);
+
+  { Extended Pascal examples http://ideone.com/YXpi4n }
+  { Array constant & constant access }
+
+TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+VAR   d: days;
+
+FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END.
+
+  { Generated output is:
+    Friday
+    Thursday
+    Wedsday
+    Tuesday
+    Monday
+  }
+</pre></span></code></summary>
+<details><summary>EP.ProgramComponent [0, 720] <code>PROGRAM arrayc (output);<span><pre>PROGRAM arrayc (output);
+
+  { Extended Pascal examples http://ideone.com/YXpi4n }
+  { Array constant & constant access }
+
+TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+VAR   d: days;
+
+FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END.</pre></span></code></summary>
+<details><summary>EP.MainProgramDeclaration [0, 719] <code>PROGRAM arrayc (output);<span><pre>PROGRAM arrayc (output);
+
+  { Extended Pascal examples http://ideone.com/YXpi4n }
+  { Array constant & constant access }
+
+TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+VAR   d: days;
+
+FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END</pre></span></code></summary>
+<details><summary>EP.ProgramHeading [0, 23] <code>PROGRAM arrayc (output)<span><pre>PROGRAM arrayc (output)</pre></span></code></summary>
+<details class="leaf"><summary>EP.PROGRAM [0, 7] <code>PROGRAM<span><pre>PROGRAM</pre></span></code></summary>
+</details>
+<details><summary>EP.BNVProgramName [8, 14] <code>arrayc<span><pre>arrayc</pre></span></code></summary>
+<details><summary>EP.Identifier [8, 14] <code>arrayc<span><pre>arrayc</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [8, 14] <code>arrayc<span><pre>arrayc</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP.ProgramParameterList [16, 22] <code>output<span><pre>output</pre></span></code></summary>
+<details><summary>EP.IdentifierList [16, 22] <code>output<span><pre>output</pre></span></code></summary>
+<details><summary>EP.Identifier [16, 22] <code>output<span><pre>output</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [16, 22] <code>output<span><pre>output</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP.MainProgramBlock [28, 719] <code>{ Extended Pascal examples http://ideone.com/YXpi4n }<span><pre>{ Extended Pascal examples http://ideone.com/YXpi4n }
+  { Array constant & constant access }
+
+TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+VAR   d: days;
+
+FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END</pre></span></code></summary>
+<details><summary>EP._ [28, 122] <code>{ Extended Pascal examples http://ideone.com/YXpi4n }<span><pre>{ Extended Pascal examples http://ideone.com/YXpi4n }
+  { Array constant & constant access }
+
+</pre></span></code></summary>
+<details><summary>EP.TrailingComment [28, 81] <code>{ Extended Pascal examples http://ideone.com/YXpi4n }<span><pre>{ Extended Pascal examples http://ideone.com/YXpi4n }</pre></span></code></summary>
+<details class="leaf"><summary>EP.CommentOpen [28, 29] <code>{<span><pre>{</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentContent [29, 80] <code> Extended Pascal examples http://ideone.com/YXpi4n <span><pre> Extended Pascal examples http://ideone.com/YXpi4n </pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentClose [80, 81] <code>}<span><pre>}</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.Spacing [81, 84] <code><span><pre>
+  </pre></span></code></summary>
+</details>
+<details><summary>EP.TrailingComment [84, 120] <code>{ Array constant & constant access }<span><pre>{ Array constant & constant access }</pre></span></code></summary>
+<details class="leaf"><summary>EP.CommentOpen [84, 85] <code>{<span><pre>{</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentContent [85, 119] <code> Array constant & constant access <span><pre> Array constant & constant access </pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentClose [119, 120] <code>}<span><pre>}</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.Spacing [120, 122] <code><span><pre>
+
+</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.Block [122, 719] <code>TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);<span><pre>TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+VAR   d: days;
+
+FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END</pre></span></code></summary>
+<details><summary>EP.TypeDefinitionPart [122, 223] <code>TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);<span><pre>TYPE  days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat);
+      dname = string(8);
+
+</pre></span></code></summary>
+<details><summary>EP._ [126, 128] <code>  <span><pre>  </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [126, 128] <code>  <span><pre>  </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.TypeDefinition [128, 195] <code>days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)<span><pre>days = (sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)</pre></span></code></summary>
+<details><summary>EP.BNVTypeDefName [128, 132] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.Identifier [128, 132] <code>days<span><pre>days</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [128, 132] <code>days<span><pre>days</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP._ [132, 133] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [132, 133] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [134, 135] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [134, 135] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.TypeDenoter [135, 195] <code>(sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)<span><pre>(sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)</pre></span></code></summary>
+<details><summary>EP.NewType [135, 195] <code>(sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)<span><pre>(sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)</pre></span></code></summary>
+<details><summary>EP.NewOrdinalType [135, 195] <code>(sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)<span><pre>(sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)</pre></span></code></summary>
+<details><summary>EP.EnumeratedType [135, 195] <code>(sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)<span><pre>(sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat)</pre></span></code></summary>
+<details><summary>EP.IdentifierList [136, 194] <code>sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat<span><pre>sun,mon {First work day},tues,weds,thurs,fri, {Party!} sat</pre></span></code></summary>
+<details><summary>EP.Identifier [136, 139] <code>sun<span><pre>sun</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [136, 139] <code>sun<span><pre>sun</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.COMMA [139, 140] <code>,<span><pre>,</pre></span></code></summary>
+</details>
+<details><summary>EP.Identifier [140, 143] <code>mon<span><pre>mon</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [140, 143] <code>mon<span><pre>mon</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [143, 160] <code> {First work day}<span><pre> {First work day}</pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [143, 144] <code> <span><pre> </pre></span></code></summary>
+</details>
+<details><summary>EP.InlineComment [144, 160] <code>{First work day}<span><pre>{First work day}</pre></span></code></summary>
+<details class="leaf"><summary>EP.CommentOpen [144, 145] <code>{<span><pre>{</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentContent [145, 159] <code>First work day<span><pre>First work day</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentClose [159, 160] <code>}<span><pre>}</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details class="leaf"><summary>EP.COMMA [160, 161] <code>,<span><pre>,</pre></span></code></summary>
+</details>
+<details><summary>EP.Identifier [161, 165] <code>tues<span><pre>tues</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [161, 165] <code>tues<span><pre>tues</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.COMMA [165, 166] <code>,<span><pre>,</pre></span></code></summary>
+</details>
+<details><summary>EP.Identifier [166, 170] <code>weds<span><pre>weds</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [166, 170] <code>weds<span><pre>weds</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.COMMA [170, 171] <code>,<span><pre>,</pre></span></code></summary>
+</details>
+<details><summary>EP.Identifier [171, 176] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [171, 176] <code>thurs<span><pre>thurs</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.COMMA [176, 177] <code>,<span><pre>,</pre></span></code></summary>
+</details>
+<details><summary>EP.Identifier [177, 180] <code>fri<span><pre>fri</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [177, 180] <code>fri<span><pre>fri</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.COMMA [180, 181] <code>,<span><pre>,</pre></span></code></summary>
+</details>
+<details><summary>EP._ [181, 191] <code> {Party!} <span><pre> {Party!} </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [181, 182] <code> <span><pre> </pre></span></code></summary>
+</details>
+<details><summary>EP.InlineComment [182, 190] <code>{Party!}<span><pre>{Party!}</pre></span></code></summary>
+<details class="leaf"><summary>EP.CommentOpen [182, 183] <code>{<span><pre>{</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentContent [183, 189] <code>Party!<span><pre>Party!</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentClose [189, 190] <code>}<span><pre>}</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.Spacing [190, 191] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.Identifier [191, 194] <code>sat<span><pre>sat</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [191, 194] <code>sat<span><pre>sat</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [196, 203] <code><span><pre>
+      </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [196, 203] <code><span><pre>
+      </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.TypeDefinition [203, 220] <code>dname = string(8)<span><pre>dname = string(8)</pre></span></code></summary>
+<details><summary>EP.BNVTypeDefName [203, 208] <code>dname<span><pre>dname</pre></span></code></summary>
+<details><summary>EP.Identifier [203, 208] <code>dname<span><pre>dname</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [203, 208] <code>dname<span><pre>dname</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP._ [208, 209] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [208, 209] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [210, 211] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [210, 211] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.TypeDenoter [211, 220] <code>string(8)<span><pre>string(8)</pre></span></code></summary>
+<details><summary>EP.DiscriminatedSchema [211, 220] <code>string(8)<span><pre>string(8)</pre></span></code></summary>
+<details><summary>EP.SchemaName [211, 217] <code>string<span><pre>string</pre></span></code></summary>
+<details><summary>EP.SchemaIdentifier [211, 217] <code>string<span><pre>string</pre></span></code></summary>
+<details><summary>EP.Identifier [211, 217] <code>string<span><pre>string</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [211, 217] <code>string<span><pre>string</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP.ActualDiscriminantPart [217, 220] <code>(8)<span><pre>(8)</pre></span></code></summary>
+<details><summary>EP.DiscriminantValue [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details><summary>EP.Expression [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details><summary>EP.Term [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details><summary>EP.Factor [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details><summary>EP.Primary [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details><summary>EP.UnsignedNumber [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details><summary>EP.UnsignedInteger [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+<details class="leaf"><summary>EP.DigitSequence [218, 219] <code>8<span><pre>8</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [221, 223] <code><span><pre>
+
+</pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [221, 223] <code><span><pre>
+
+</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP.VariableDeclarationPart [223, 239] <code>VAR   d: days;<span><pre>VAR   d: days;
+
+</pre></span></code></summary>
+<details><summary>EP._ [226, 229] <code>   <span><pre>   </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [226, 229] <code>   <span><pre>   </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.VariableDeclaration [229, 236] <code>d: days<span><pre>d: days</pre></span></code></summary>
+<details><summary>EP.IdentifierList [229, 230] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.Identifier [229, 230] <code>d<span><pre>d</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [229, 230] <code>d<span><pre>d</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP._ [231, 232] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [231, 232] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.TypeDenoter [232, 236] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.TypeName [232, 236] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.TypeIdentifier [232, 236] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.Identifier [232, 236] <code>days<span><pre>days</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [232, 236] <code>days<span><pre>days</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [237, 239] <code><span><pre>
+
+</pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [237, 239] <code><span><pre>
+
+</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP.ProcedureAndFunctionDeclarationPart [239, 650] <code>FUNCTION DayName (fd: days): dname;<span><pre>FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName};
+
+</pre></span></code></summary>
+<details><summary>EP.FunctionDeclaration [239, 647] <code>FUNCTION DayName (fd: days): dname;<span><pre>FUNCTION DayName (fd: days): dname;
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName}</pre></span></code></summary>
+<details><summary>EP.FunctionHeading [239, 273] <code>FUNCTION DayName (fd: days): dname<span><pre>FUNCTION DayName (fd: days): dname</pre></span></code></summary>
+<details><summary>EP._ [247, 248] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [247, 248] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.Identifier [248, 255] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [248, 255] <code>DayName<span><pre>DayName</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [255, 256] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [255, 256] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.FormalParameterList [256, 266] <code>(fd: days)<span><pre>(fd: days)</pre></span></code></summary>
+<details><summary>EP.FormalParameterSection [257, 265] <code>fd: days<span><pre>fd: days</pre></span></code></summary>
+<details><summary>EP.ValueParameterSpecification [257, 265] <code>fd: days<span><pre>fd: days</pre></span></code></summary>
+<details><summary>EP.IdentifierList [257, 259] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.Identifier [257, 259] <code>fd<span><pre>fd</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [257, 259] <code>fd<span><pre>fd</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP._ [260, 261] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [260, 261] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ParameterForm [261, 265] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.TypeName [261, 265] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.TypeIdentifier [261, 265] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.Identifier [261, 265] <code>days<span><pre>days</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [261, 265] <code>days<span><pre>days</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [267, 268] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [267, 268] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ResultType [268, 273] <code>dname<span><pre>dname</pre></span></code></summary>
+<details><summary>EP.TypeName [268, 273] <code>dname<span><pre>dname</pre></span></code></summary>
+<details><summary>EP.TypeIdentifier [268, 273] <code>dname<span><pre>dname</pre></span></code></summary>
+<details><summary>EP.Identifier [268, 273] <code>dname<span><pre>dname</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [268, 273] <code>dname<span><pre>dname</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [274, 369] <code><span><pre>
+    { Elements of the array constant DayNames can be
+      selected with a variable index }
+  </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [274, 279] <code><span><pre>
+    </pre></span></code></summary>
+</details>
+<details><summary>EP.TrailingComment [279, 366] <code>{ Elements of the array constant DayNames can be<span><pre>{ Elements of the array constant DayNames can be
+      selected with a variable index }</pre></span></code></summary>
+<details class="leaf"><summary>EP.CommentOpen [279, 280] <code>{<span><pre>{</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentContent [280, 365] <code> Elements of the array constant DayNames can be<span><pre> Elements of the array constant DayNames can be
+      selected with a variable index </pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentClose [365, 366] <code>}<span><pre>}</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.Spacing [366, 369] <code><span><pre>
+  </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.FunctionBlock [369, 647] <code>TYPE  abbrevs = ARRAY [days] OF<span><pre>TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName}</pre></span></code></summary>
+<details><summary>EP.Block [369, 647] <code>TYPE  abbrevs = ARRAY [days] OF<span><pre>TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END {DayName}</pre></span></code></summary>
+<details><summary>EP.TypeDefinitionPart [369, 442] <code>TYPE  abbrevs = ARRAY [days] OF<span><pre>TYPE  abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char;
+  </pre></span></code></summary>
+<details><summary>EP._ [373, 375] <code>  <span><pre>  </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [373, 375] <code>  <span><pre>  </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.TypeDefinition [375, 438] <code>abbrevs = ARRAY [days] OF<span><pre>abbrevs = ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.BNVTypeDefName [375, 382] <code>abbrevs<span><pre>abbrevs</pre></span></code></summary>
+<details><summary>EP.Identifier [375, 382] <code>abbrevs<span><pre>abbrevs</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [375, 382] <code>abbrevs<span><pre>abbrevs</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP._ [382, 383] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [382, 383] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [384, 385] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [384, 385] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.TypeDenoter [385, 438] <code>ARRAY [days] OF<span><pre>ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.NewType [385, 438] <code>ARRAY [days] OF<span><pre>ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.NewStructuredType [385, 438] <code>ARRAY [days] OF<span><pre>ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.UnpackedStructuredType [385, 438] <code>ARRAY [days] OF<span><pre>ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.ArrayType [385, 438] <code>ARRAY [days] OF<span><pre>ARRAY [days] OF
+          PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP._ [390, 391] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [390, 391] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.IndexType [392, 396] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.OrdinalType [392, 396] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.OrdinalTypeName [392, 396] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.TypeName [392, 396] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.TypeIdentifier [392, 396] <code>days<span><pre>days</pre></span></code></summary>
+<details><summary>EP.Identifier [392, 396] <code>days<span><pre>days</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [392, 396] <code>days<span><pre>days</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [397, 398] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [397, 398] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [400, 411] <code><span><pre>
+          </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [400, 411] <code><span><pre>
+          </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentType [411, 438] <code>PACKED ARRAY [1..5] OF char<span><pre>PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.TypeDenoter [411, 438] <code>PACKED ARRAY [1..5] OF char<span><pre>PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.NewType [411, 438] <code>PACKED ARRAY [1..5] OF char<span><pre>PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.NewStructuredType [411, 438] <code>PACKED ARRAY [1..5] OF char<span><pre>PACKED ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP._ [417, 418] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [417, 418] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.UnpackedStructuredType [418, 438] <code>ARRAY [1..5] OF char<span><pre>ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP.ArrayType [418, 438] <code>ARRAY [1..5] OF char<span><pre>ARRAY [1..5] OF char</pre></span></code></summary>
+<details><summary>EP._ [423, 424] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [423, 424] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.IndexType [425, 429] <code>1..5<span><pre>1..5</pre></span></code></summary>
+<details><summary>EP.OrdinalType [425, 429] <code>1..5<span><pre>1..5</pre></span></code></summary>
+<details><summary>EP.NewOrdinalType [425, 429] <code>1..5<span><pre>1..5</pre></span></code></summary>
+<details><summary>EP.SubrangeType [425, 429] <code>1..5<span><pre>1..5</pre></span></code></summary>
+<details><summary>EP.SubrangeBound [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details><summary>EP.Expression [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details><summary>EP.Term [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details><summary>EP.Factor [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details><summary>EP.Primary [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details><summary>EP.UnsignedNumber [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details><summary>EP.UnsignedInteger [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+<details class="leaf"><summary>EP.DigitSequence [425, 426] <code>1<span><pre>1</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP.SubrangeBound [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details><summary>EP.Expression [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details><summary>EP.Term [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details><summary>EP.Factor [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details><summary>EP.Primary [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details><summary>EP.UnsignedNumber [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details><summary>EP.UnsignedInteger [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+<details class="leaf"><summary>EP.DigitSequence [428, 429] <code>5<span><pre>5</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [430, 431] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [430, 431] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [433, 434] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [433, 434] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentType [434, 438] <code>char<span><pre>char</pre></span></code></summary>
+<details><summary>EP.TypeDenoter [434, 438] <code>char<span><pre>char</pre></span></code></summary>
+<details><summary>EP.TypeName [434, 438] <code>char<span><pre>char</pre></span></code></summary>
+<details><summary>EP.TypeIdentifier [434, 438] <code>char<span><pre>char</pre></span></code></summary>
+<details><summary>EP.Identifier [434, 438] <code>char<span><pre>char</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [434, 438] <code>char<span><pre>char</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [439, 442] <code><span><pre>
+  </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [439, 442] <code><span><pre>
+  </pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP.ConstantDefinitionPart [442, 583] <code>CONST DayNames = abbrevs<span><pre>CONST DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ];
+  </pre></span></code></summary>
+<details><summary>EP._ [447, 448] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [447, 448] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ConstantDefinition [448, 579] <code>DayNames = abbrevs<span><pre>DayNames = abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP.Identifier [448, 456] <code>DayNames<span><pre>DayNames</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [448, 456] <code>DayNames<span><pre>DayNames</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [456, 457] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [456, 457] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [458, 459] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [458, 459] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ConstantExpression [459, 579] <code>abbrevs<span><pre>abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP.Expression [459, 579] <code>abbrevs<span><pre>abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [459, 579] <code>abbrevs<span><pre>abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP.Term [459, 579] <code>abbrevs<span><pre>abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP.Factor [459, 579] <code>abbrevs<span><pre>abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP.Primary [459, 579] <code>abbrevs<span><pre>abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP.StructuredValueConstructor [459, 579] <code>abbrevs<span><pre>abbrevs
+    [ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP.ArrayTypeName [459, 466] <code>abbrevs<span><pre>abbrevs</pre></span></code></summary>
+<details><summary>EP.TypeName [459, 466] <code>abbrevs<span><pre>abbrevs</pre></span></code></summary>
+<details><summary>EP.TypeIdentifier [459, 466] <code>abbrevs<span><pre>abbrevs</pre></span></code></summary>
+<details><summary>EP.Identifier [459, 466] <code>abbrevs<span><pre>abbrevs</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [459, 466] <code>abbrevs<span><pre>abbrevs</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [466, 471] <code><span><pre>
+    </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [466, 471] <code><span><pre>
+    </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ArrayValue [471, 579] <code>[ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';<span><pre>[ sun: 'Sun'; mon: 'Mon'; tues: 'Tues';
+      weds: 'Weds'; thurs: 'Thurs'; fri: 'Fri';
+      sat: 'Satur' ]</pre></span></code></summary>
+<details><summary>EP._ [472, 473] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [472, 473] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ArrayValueElement [473, 483] <code>sun: 'Sun'<span><pre>sun: 'Sun'</pre></span></code></summary>
+<details><summary>EP.CaseConstantList [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.CaseRange [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.CaseConstant [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.ConstantExpression [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.Expression [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.Term [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.Factor [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.Primary [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.FunctionName [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details><summary>EP.Identifier [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [473, 476] <code>sun<span><pre>sun</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [477, 478] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [477, 478] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentValue [478, 483] <code>'Sun'<span><pre>'Sun'</pre></span></code></summary>
+<details><summary>EP.Expression [478, 483] <code>'Sun'<span><pre>'Sun'</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [478, 483] <code>'Sun'<span><pre>'Sun'</pre></span></code></summary>
+<details><summary>EP.Term [478, 483] <code>'Sun'<span><pre>'Sun'</pre></span></code></summary>
+<details><summary>EP.Factor [478, 483] <code>'Sun'<span><pre>'Sun'</pre></span></code></summary>
+<details><summary>EP.Primary [478, 483] <code>'Sun'<span><pre>'Sun'</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [478, 483] <code>'Sun'<span><pre>'Sun'</pre></span></code></summary>
+<details><summary>EP.CharacterString [478, 483] <code>'Sun'<span><pre>'Sun'</pre></span></code></summary>
+<details><summary>EP.StringElement [479, 480] <code>S<span><pre>S</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [479, 480] <code>S<span><pre>S</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [480, 481] <code>u<span><pre>u</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [480, 481] <code>u<span><pre>u</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [481, 482] <code>n<span><pre>n</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [481, 482] <code>n<span><pre>n</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [484, 485] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [484, 485] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ArrayValueElement [485, 495] <code>mon: 'Mon'<span><pre>mon: 'Mon'</pre></span></code></summary>
+<details><summary>EP.CaseConstantList [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.CaseRange [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.CaseConstant [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.ConstantExpression [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Expression [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Term [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Factor [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Primary [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.FunctionName [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Identifier [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [485, 488] <code>mon<span><pre>mon</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [489, 490] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [489, 490] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentValue [490, 495] <code>'Mon'<span><pre>'Mon'</pre></span></code></summary>
+<details><summary>EP.Expression [490, 495] <code>'Mon'<span><pre>'Mon'</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [490, 495] <code>'Mon'<span><pre>'Mon'</pre></span></code></summary>
+<details><summary>EP.Term [490, 495] <code>'Mon'<span><pre>'Mon'</pre></span></code></summary>
+<details><summary>EP.Factor [490, 495] <code>'Mon'<span><pre>'Mon'</pre></span></code></summary>
+<details><summary>EP.Primary [490, 495] <code>'Mon'<span><pre>'Mon'</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [490, 495] <code>'Mon'<span><pre>'Mon'</pre></span></code></summary>
+<details><summary>EP.CharacterString [490, 495] <code>'Mon'<span><pre>'Mon'</pre></span></code></summary>
+<details><summary>EP.StringElement [491, 492] <code>M<span><pre>M</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [491, 492] <code>M<span><pre>M</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [492, 493] <code>o<span><pre>o</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [492, 493] <code>o<span><pre>o</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [493, 494] <code>n<span><pre>n</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [493, 494] <code>n<span><pre>n</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [496, 497] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [496, 497] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ArrayValueElement [497, 509] <code>tues: 'Tues'<span><pre>tues: 'Tues'</pre></span></code></summary>
+<details><summary>EP.CaseConstantList [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.CaseRange [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.CaseConstant [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.ConstantExpression [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.Expression [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.Term [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.Factor [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.Primary [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.FunctionName [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details><summary>EP.Identifier [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [497, 501] <code>tues<span><pre>tues</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [502, 503] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [502, 503] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentValue [503, 509] <code>'Tues'<span><pre>'Tues'</pre></span></code></summary>
+<details><summary>EP.Expression [503, 509] <code>'Tues'<span><pre>'Tues'</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [503, 509] <code>'Tues'<span><pre>'Tues'</pre></span></code></summary>
+<details><summary>EP.Term [503, 509] <code>'Tues'<span><pre>'Tues'</pre></span></code></summary>
+<details><summary>EP.Factor [503, 509] <code>'Tues'<span><pre>'Tues'</pre></span></code></summary>
+<details><summary>EP.Primary [503, 509] <code>'Tues'<span><pre>'Tues'</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [503, 509] <code>'Tues'<span><pre>'Tues'</pre></span></code></summary>
+<details><summary>EP.CharacterString [503, 509] <code>'Tues'<span><pre>'Tues'</pre></span></code></summary>
+<details><summary>EP.StringElement [504, 505] <code>T<span><pre>T</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [504, 505] <code>T<span><pre>T</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [505, 506] <code>u<span><pre>u</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [505, 506] <code>u<span><pre>u</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [506, 507] <code>e<span><pre>e</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [506, 507] <code>e<span><pre>e</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [507, 508] <code>s<span><pre>s</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [507, 508] <code>s<span><pre>s</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [510, 517] <code><span><pre>
+      </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [510, 517] <code><span><pre>
+      </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ArrayValueElement [517, 529] <code>weds: 'Weds'<span><pre>weds: 'Weds'</pre></span></code></summary>
+<details><summary>EP.CaseConstantList [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.CaseRange [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.CaseConstant [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.ConstantExpression [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.Expression [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.Term [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.Factor [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.Primary [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.FunctionName [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details><summary>EP.Identifier [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [517, 521] <code>weds<span><pre>weds</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [522, 523] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [522, 523] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentValue [523, 529] <code>'Weds'<span><pre>'Weds'</pre></span></code></summary>
+<details><summary>EP.Expression [523, 529] <code>'Weds'<span><pre>'Weds'</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [523, 529] <code>'Weds'<span><pre>'Weds'</pre></span></code></summary>
+<details><summary>EP.Term [523, 529] <code>'Weds'<span><pre>'Weds'</pre></span></code></summary>
+<details><summary>EP.Factor [523, 529] <code>'Weds'<span><pre>'Weds'</pre></span></code></summary>
+<details><summary>EP.Primary [523, 529] <code>'Weds'<span><pre>'Weds'</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [523, 529] <code>'Weds'<span><pre>'Weds'</pre></span></code></summary>
+<details><summary>EP.CharacterString [523, 529] <code>'Weds'<span><pre>'Weds'</pre></span></code></summary>
+<details><summary>EP.StringElement [524, 525] <code>W<span><pre>W</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [524, 525] <code>W<span><pre>W</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [525, 526] <code>e<span><pre>e</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [525, 526] <code>e<span><pre>e</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [526, 527] <code>d<span><pre>d</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [526, 527] <code>d<span><pre>d</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [527, 528] <code>s<span><pre>s</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [527, 528] <code>s<span><pre>s</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [530, 531] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [530, 531] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ArrayValueElement [531, 545] <code>thurs: 'Thurs'<span><pre>thurs: 'Thurs'</pre></span></code></summary>
+<details><summary>EP.CaseConstantList [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.CaseRange [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.CaseConstant [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.ConstantExpression [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.Expression [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.Term [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.Factor [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.Primary [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.FunctionName [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details><summary>EP.Identifier [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [531, 536] <code>thurs<span><pre>thurs</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [537, 538] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [537, 538] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentValue [538, 545] <code>'Thurs'<span><pre>'Thurs'</pre></span></code></summary>
+<details><summary>EP.Expression [538, 545] <code>'Thurs'<span><pre>'Thurs'</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [538, 545] <code>'Thurs'<span><pre>'Thurs'</pre></span></code></summary>
+<details><summary>EP.Term [538, 545] <code>'Thurs'<span><pre>'Thurs'</pre></span></code></summary>
+<details><summary>EP.Factor [538, 545] <code>'Thurs'<span><pre>'Thurs'</pre></span></code></summary>
+<details><summary>EP.Primary [538, 545] <code>'Thurs'<span><pre>'Thurs'</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [538, 545] <code>'Thurs'<span><pre>'Thurs'</pre></span></code></summary>
+<details><summary>EP.CharacterString [538, 545] <code>'Thurs'<span><pre>'Thurs'</pre></span></code></summary>
+<details><summary>EP.StringElement [539, 540] <code>T<span><pre>T</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [539, 540] <code>T<span><pre>T</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [540, 541] <code>h<span><pre>h</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [540, 541] <code>h<span><pre>h</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [541, 542] <code>u<span><pre>u</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [541, 542] <code>u<span><pre>u</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [542, 543] <code>r<span><pre>r</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [542, 543] <code>r<span><pre>r</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [543, 544] <code>s<span><pre>s</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [543, 544] <code>s<span><pre>s</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [546, 547] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [546, 547] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ArrayValueElement [547, 557] <code>fri: 'Fri'<span><pre>fri: 'Fri'</pre></span></code></summary>
+<details><summary>EP.CaseConstantList [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.CaseRange [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.CaseConstant [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.ConstantExpression [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Expression [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Term [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Factor [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Primary [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.FunctionName [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Identifier [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [547, 550] <code>fri<span><pre>fri</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [551, 552] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [551, 552] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentValue [552, 557] <code>'Fri'<span><pre>'Fri'</pre></span></code></summary>
+<details><summary>EP.Expression [552, 557] <code>'Fri'<span><pre>'Fri'</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [552, 557] <code>'Fri'<span><pre>'Fri'</pre></span></code></summary>
+<details><summary>EP.Term [552, 557] <code>'Fri'<span><pre>'Fri'</pre></span></code></summary>
+<details><summary>EP.Factor [552, 557] <code>'Fri'<span><pre>'Fri'</pre></span></code></summary>
+<details><summary>EP.Primary [552, 557] <code>'Fri'<span><pre>'Fri'</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [552, 557] <code>'Fri'<span><pre>'Fri'</pre></span></code></summary>
+<details><summary>EP.CharacterString [552, 557] <code>'Fri'<span><pre>'Fri'</pre></span></code></summary>
+<details><summary>EP.StringElement [553, 554] <code>F<span><pre>F</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [553, 554] <code>F<span><pre>F</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [554, 555] <code>r<span><pre>r</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [554, 555] <code>r<span><pre>r</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [555, 556] <code>i<span><pre>i</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [555, 556] <code>i<span><pre>i</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [558, 565] <code><span><pre>
+      </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [558, 565] <code><span><pre>
+      </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ArrayValueElement [565, 577] <code>sat: 'Satur'<span><pre>sat: 'Satur'</pre></span></code></summary>
+<details><summary>EP.CaseConstantList [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.CaseRange [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.CaseConstant [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.ConstantExpression [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.Expression [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.Term [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.Factor [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.Primary [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.FunctionName [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details><summary>EP.Identifier [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [565, 568] <code>sat<span><pre>sat</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [569, 570] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [569, 570] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ComponentValue [570, 577] <code>'Satur'<span><pre>'Satur'</pre></span></code></summary>
+<details><summary>EP.Expression [570, 577] <code>'Satur'<span><pre>'Satur'</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [570, 577] <code>'Satur'<span><pre>'Satur'</pre></span></code></summary>
+<details><summary>EP.Term [570, 577] <code>'Satur'<span><pre>'Satur'</pre></span></code></summary>
+<details><summary>EP.Factor [570, 577] <code>'Satur'<span><pre>'Satur'</pre></span></code></summary>
+<details><summary>EP.Primary [570, 577] <code>'Satur'<span><pre>'Satur'</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [570, 577] <code>'Satur'<span><pre>'Satur'</pre></span></code></summary>
+<details><summary>EP.CharacterString [570, 577] <code>'Satur'<span><pre>'Satur'</pre></span></code></summary>
+<details><summary>EP.StringElement [571, 572] <code>S<span><pre>S</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [571, 572] <code>S<span><pre>S</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [572, 573] <code>a<span><pre>a</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [572, 573] <code>a<span><pre>a</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [573, 574] <code>t<span><pre>t</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [573, 574] <code>t<span><pre>t</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [574, 575] <code>u<span><pre>u</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [574, 575] <code>u<span><pre>u</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [575, 576] <code>r<span><pre>r</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [575, 576] <code>r<span><pre>r</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [577, 578] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [577, 578] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [580, 583] <code><span><pre>
+  </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [580, 583] <code><span><pre>
+  </pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP.StatementPart [583, 637] <code>BEGIN<span><pre>BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END</pre></span></code></summary>
+<details><summary>EP.CompoundStatement [583, 637] <code>BEGIN<span><pre>BEGIN
+    DayName := trim(DayNames[fd]) + 'day';
+  END</pre></span></code></summary>
+<details><summary>EP._ [588, 593] <code><span><pre>
+    </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [588, 593] <code><span><pre>
+    </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StatementSequence [593, 634] <code>DayName := trim(DayNames[fd]) + 'day';<span><pre>DayName := trim(DayNames[fd]) + 'day';
+  </pre></span></code></summary>
+<details><summary>EP.Statement [593, 630] <code>DayName := trim(DayNames[fd]) + 'day'<span><pre>DayName := trim(DayNames[fd]) + 'day'</pre></span></code></summary>
+<details><summary>EP.SimpleStatement [593, 630] <code>DayName := trim(DayNames[fd]) + 'day'<span><pre>DayName := trim(DayNames[fd]) + 'day'</pre></span></code></summary>
+<details><summary>EP.AssignmentStatement [593, 630] <code>DayName := trim(DayNames[fd]) + 'day'<span><pre>DayName := trim(DayNames[fd]) + 'day'</pre></span></code></summary>
+<details><summary>EP.VariableAccess [593, 600] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details><summary>EP.EntireVariable [593, 600] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details><summary>EP.VariableName [593, 600] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details><summary>EP.VariableIdentifier [593, 600] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details><summary>EP.Identifier [593, 600] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [593, 600] <code>DayName<span><pre>DayName</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [600, 601] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [600, 601] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP._ [603, 604] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [603, 604] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.Expression [604, 630] <code>trim(DayNames[fd]) + 'day'<span><pre>trim(DayNames[fd]) + 'day'</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [604, 630] <code>trim(DayNames[fd]) + 'day'<span><pre>trim(DayNames[fd]) + 'day'</pre></span></code></summary>
+<details><summary>EP.Term [604, 622] <code>trim(DayNames[fd])<span><pre>trim(DayNames[fd])</pre></span></code></summary>
+<details><summary>EP.Factor [604, 622] <code>trim(DayNames[fd])<span><pre>trim(DayNames[fd])</pre></span></code></summary>
+<details><summary>EP.Primary [604, 622] <code>trim(DayNames[fd])<span><pre>trim(DayNames[fd])</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [604, 622] <code>trim(DayNames[fd])<span><pre>trim(DayNames[fd])</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [604, 622] <code>trim(DayNames[fd])<span><pre>trim(DayNames[fd])</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [604, 622] <code>trim(DayNames[fd])<span><pre>trim(DayNames[fd])</pre></span></code></summary>
+<details><summary>EP.FunctionName [604, 608] <code>trim<span><pre>trim</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [604, 608] <code>trim<span><pre>trim</pre></span></code></summary>
+<details><summary>EP.Identifier [604, 608] <code>trim<span><pre>trim</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [604, 608] <code>trim<span><pre>trim</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP.ActualParameterList [608, 622] <code>(DayNames[fd])<span><pre>(DayNames[fd])</pre></span></code></summary>
+<details><summary>EP.ActualParameter [609, 621] <code>DayNames[fd]<span><pre>DayNames[fd]</pre></span></code></summary>
+<details><summary>EP.Expression [609, 621] <code>DayNames[fd]<span><pre>DayNames[fd]</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [609, 621] <code>DayNames[fd]<span><pre>DayNames[fd]</pre></span></code></summary>
+<details><summary>EP.Term [609, 621] <code>DayNames[fd]<span><pre>DayNames[fd]</pre></span></code></summary>
+<details><summary>EP.Factor [609, 621] <code>DayNames[fd]<span><pre>DayNames[fd]</pre></span></code></summary>
+<details><summary>EP.Primary [609, 621] <code>DayNames[fd]<span><pre>DayNames[fd]</pre></span></code></summary>
+<details><summary>EP.StructuredValueConstructor [609, 621] <code>DayNames[fd]<span><pre>DayNames[fd]</pre></span></code></summary>
+<details><summary>EP.SetTypeName [609, 617] <code>DayNames<span><pre>DayNames</pre></span></code></summary>
+<details><summary>EP.TypeName [609, 617] <code>DayNames<span><pre>DayNames</pre></span></code></summary>
+<details><summary>EP.TypeIdentifier [609, 617] <code>DayNames<span><pre>DayNames</pre></span></code></summary>
+<details><summary>EP.Identifier [609, 617] <code>DayNames<span><pre>DayNames</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [609, 617] <code>DayNames<span><pre>DayNames</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP.SetValue [617, 621] <code>[fd]<span><pre>[fd]</pre></span></code></summary>
+<details><summary>EP.SetConstructor [617, 621] <code>[fd]<span><pre>[fd]</pre></span></code></summary>
+<details><summary>EP.MemberDesignator [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.Expression [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.Term [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.Factor [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.Primary [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.FunctionName [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details><summary>EP.Identifier [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [618, 620] <code>fd<span><pre>fd</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [622, 623] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [622, 623] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.AddingOperator [623, 624] <code>+<span><pre>+</pre></span></code></summary>
+</details>
+<details><summary>EP._ [624, 625] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [624, 625] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.Term [625, 630] <code>'day'<span><pre>'day'</pre></span></code></summary>
+<details><summary>EP.Factor [625, 630] <code>'day'<span><pre>'day'</pre></span></code></summary>
+<details><summary>EP.Primary [625, 630] <code>'day'<span><pre>'day'</pre></span></code></summary>
+<details><summary>EP.UnsignedConstant [625, 630] <code>'day'<span><pre>'day'</pre></span></code></summary>
+<details><summary>EP.CharacterString [625, 630] <code>'day'<span><pre>'day'</pre></span></code></summary>
+<details><summary>EP.StringElement [626, 627] <code>d<span><pre>d</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [626, 627] <code>d<span><pre>d</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [627, 628] <code>a<span><pre>a</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [627, 628] <code>a<span><pre>a</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StringElement [628, 629] <code>y<span><pre>y</pre></span></code></summary>
+<details class="leaf"><summary>EP.StringCharacter [628, 629] <code>y<span><pre>y</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [631, 634] <code><span><pre>
+  </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [631, 634] <code><span><pre>
+  </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.Statement [634, 634] <code><span><pre></pre></span></code></summary>
+<details><summary>EP.SimpleStatement [634, 634] <code><span><pre></pre></span></code></summary>
+<details class="leaf"><summary>EP.EmptyStatement [634, 634] <code><span><pre></pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [637, 647] <code> {DayName}<span><pre> {DayName}</pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [637, 638] <code> <span><pre> </pre></span></code></summary>
+</details>
+<details><summary>EP.InlineComment [638, 647] <code>{DayName}<span><pre>{DayName}</pre></span></code></summary>
+<details class="leaf"><summary>EP.CommentOpen [638, 639] <code>{<span><pre>{</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentContent [639, 646] <code>DayName<span><pre>DayName</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentClose [646, 647] <code>}<span><pre>}</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [648, 650] <code><span><pre>
+
+</pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [648, 650] <code><span><pre>
+
+</pre></span></code></summary>
+</details>
+</details>
+</details>
+<details><summary>EP.StatementPart [650, 719] <code>BEGIN {program}<span><pre>BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END</pre></span></code></summary>
+<details><summary>EP.CompoundStatement [650, 719] <code>BEGIN {program}<span><pre>BEGIN {program}
+  FOR d := fri DOWNTO mon DO writeln(DayName(d));
+END</pre></span></code></summary>
+<details><summary>EP._ [655, 668] <code> {program}<span><pre> {program}
+  </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [655, 656] <code> <span><pre> </pre></span></code></summary>
+</details>
+<details><summary>EP.TrailingComment [656, 665] <code>{program}<span><pre>{program}</pre></span></code></summary>
+<details class="leaf"><summary>EP.CommentOpen [656, 657] <code>{<span><pre>{</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentContent [657, 664] <code>program<span><pre>program</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentClose [664, 665] <code>}<span><pre>}</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.Spacing [665, 668] <code><span><pre>
+  </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.StatementSequence [668, 716] <code>FOR d := fri DOWNTO mon DO writeln(DayName(d));<span><pre>FOR d := fri DOWNTO mon DO writeln(DayName(d));
+</pre></span></code></summary>
+<details><summary>EP.Statement [668, 714] <code>FOR d := fri DOWNTO mon DO writeln(DayName(d))<span><pre>FOR d := fri DOWNTO mon DO writeln(DayName(d))</pre></span></code></summary>
+<details><summary>EP.StructuredStatement [668, 714] <code>FOR d := fri DOWNTO mon DO writeln(DayName(d))<span><pre>FOR d := fri DOWNTO mon DO writeln(DayName(d))</pre></span></code></summary>
+<details><summary>EP.RepetitiveStatement [668, 714] <code>FOR d := fri DOWNTO mon DO writeln(DayName(d))<span><pre>FOR d := fri DOWNTO mon DO writeln(DayName(d))</pre></span></code></summary>
+<details><summary>EP.ForStatement [668, 714] <code>FOR d := fri DOWNTO mon DO writeln(DayName(d))<span><pre>FOR d := fri DOWNTO mon DO writeln(DayName(d))</pre></span></code></summary>
+<details class="leaf"><summary>EP.FOR [668, 671] <code>FOR<span><pre>FOR</pre></span></code></summary>
+</details>
+<details><summary>EP._ [671, 672] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [671, 672] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.ControlVariable [672, 673] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.EntireVariable [672, 673] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.VariableName [672, 673] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.VariableIdentifier [672, 673] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.Identifier [672, 673] <code>d<span><pre>d</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [672, 673] <code>d<span><pre>d</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [673, 674] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [673, 674] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.IterationClause [674, 691] <code>:= fri DOWNTO mon<span><pre>:= fri DOWNTO mon</pre></span></code></summary>
+<details><summary>EP.SequenceIteration [674, 691] <code>:= fri DOWNTO mon<span><pre>:= fri DOWNTO mon</pre></span></code></summary>
+<details><summary>EP._ [676, 677] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [676, 677] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.InitialValue [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Expression [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Term [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Factor [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Primary [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.FunctionName [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details><summary>EP.Identifier [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [677, 680] <code>fri<span><pre>fri</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [680, 681] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [680, 681] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.DOWNTO [681, 687] <code>DOWNTO<span><pre>DOWNTO</pre></span></code></summary>
+</details>
+<details><summary>EP._ [687, 688] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [687, 688] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.FinalValue [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Expression [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Term [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Factor [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Primary [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.FunctionName [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details><summary>EP.Identifier [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [688, 691] <code>mon<span><pre>mon</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [691, 692] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [691, 692] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.DO [692, 694] <code>DO<span><pre>DO</pre></span></code></summary>
+</details>
+<details><summary>EP._ [694, 695] <code> <span><pre> </pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [694, 695] <code> <span><pre> </pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.Statement [695, 714] <code>writeln(DayName(d))<span><pre>writeln(DayName(d))</pre></span></code></summary>
+<details><summary>EP.SimpleStatement [695, 714] <code>writeln(DayName(d))<span><pre>writeln(DayName(d))</pre></span></code></summary>
+<details><summary>EP.ProcedureStatement [695, 714] <code>writeln(DayName(d))<span><pre>writeln(DayName(d))</pre></span></code></summary>
+<details class="leaf"><summary>EP.WRITELN [695, 702] <code>writeln<span><pre>writeln</pre></span></code></summary>
+</details>
+<details><summary>EP.WritelnParameterList [702, 714] <code>(DayName(d))<span><pre>(DayName(d))</pre></span></code></summary>
+<details><summary>EP.WriteParameter [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.Expression [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.Term [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.Factor [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.Primary [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [703, 713] <code>DayName(d)<span><pre>DayName(d)</pre></span></code></summary>
+<details><summary>EP.FunctionName [703, 710] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [703, 710] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details><summary>EP.Identifier [703, 710] <code>DayName<span><pre>DayName</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [703, 710] <code>DayName<span><pre>DayName</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP.ActualParameterList [710, 713] <code>(d)<span><pre>(d)</pre></span></code></summary>
+<details><summary>EP.ActualParameter [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.Expression [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.SimpleExpression [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.Term [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.Factor [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.Primary [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.FunctionAccess [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.EntireFunctionAccess [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.FunctionDesignator [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.FunctionName [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.FunctionIdentifier [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details><summary>EP.Identifier [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+<details class="leaf"><summary>EP.BNVAnyIdentifier [711, 712] <code>d<span><pre>d</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [715, 716] <code><span><pre>
+</pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [715, 716] <code><span><pre>
+</pre></span></code></summary>
+</details>
+</details>
+<details><summary>EP.Statement [716, 716] <code><span><pre></pre></span></code></summary>
+<details><summary>EP.SimpleStatement [716, 716] <code><span><pre></pre></span></code></summary>
+<details class="leaf"><summary>EP.EmptyStatement [716, 716] <code><span><pre></pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+<details><summary>EP._ [720, 810] <code><span><pre>
+
+  { Generated output is:
+    Friday
+    Thursday
+    Wedsday
+    Tuesday
+    Monday
+  }
+</pre></span></code></summary>
+<details class="leaf"><summary>EP.Spacing [720, 724] <code><span><pre>
+
+  </pre></span></code></summary>
+</details>
+<details><summary>EP.TrailingComment [724, 809] <code>{ Generated output is:<span><pre>{ Generated output is:
+    Friday
+    Thursday
+    Wedsday
+    Tuesday
+    Monday
+  }</pre></span></code></summary>
+<details class="leaf"><summary>EP.CommentOpen [724, 725] <code>{<span><pre>{</pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentContent [725, 808] <code> Generated output is:<span><pre> Generated output is:
+    Friday
+    Thursday
+    Wedsday
+    Tuesday
+    Monday
+  </pre></span></code></summary>
+</details>
+<details class="leaf"><summary>EP.CommentClose [808, 809] <code>}<span><pre>}</pre></span></code></summary>
+</details>
+</details>
+<details class="leaf"><summary>EP.Spacing [809, 810] <code><span><pre>
+</pre></span></code></summary>
+</details>
+</details>
+</details>
+</details>
+</details>
+</details>
+
+</body>
+</html>
+    
