@@ -137,128 +137,27 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         import std.array: join;
         string result;
         foreach (stopper, rules; stoppers)
-        {
             result ~= stopper ~ ": " ~ rules.join(", ") ~ "\n";
-            /*if (rules.length > 0)
-                result ~= rules[0];
-            foreach (rule; rules[1..$])
-                result ~= ", " ~ rule;
-            result ~= "\n";*/
-        }
         return result.length > 0 ?
             "/** Rules that stop left-recursive cycles, followed by rules for which\n"
           ~ " *  memoization is blocked during recursion:\n" ~ result ~ "*/\n\n" : "";
     }
-    size_t[] handledCycleIndices;
-    // Detect interlocking cycles. Each cycle needs a different stopper.
-    foreach (i, cycle; grammarInfo.leftRecursiveCycles)
-    {
-        foreach (j, otherCycle; grammarInfo.leftRecursiveCycles[i+1 .. $])
-        {
-            foreach (rule; cycle)
-            {
-                if (otherCycle.canFind(rule))
-                {
-                    // cycle and otherCycle intersect at rule.
-                    // If a cycle has one single rule (direct left-recursion) then it needs to be a stopper.
-                    if (cycle.length == 1)
-                    {
-                        if (!handledCycleIndices.canFind(i))
-                        {
-                            if (!(rule in stoppers))
-                                stoppers[rule] = [];
-                            handledCycleIndices ~= i;
-                        }
-                        // The other cycle needs a different stopper.
-                        assert(otherCycle.length > 1);
-                        if (!handledCycleIndices.canFind(j + i + 1))
-                        {
-                            foreach (r; otherCycle)
-                                if (!(r in stoppers))
-                                {
-                                    stoppers[r] = [];
-                                    foreach (rr; otherCycle)
-                                        if (rr != r)
-                                            stoppers[r] ~= rr;
-                                    handledCycleIndices ~= j + i + 1;
-                                    break;
-                                }
-                            assert(handledCycleIndices.canFind(j + i + 1));
-                        }
-                    }
-                    if (otherCycle.length == 1)
-                    {
-                        if (!handledCycleIndices.canFind(j + i + 1))
-                        {
-                            if (!(rule in stoppers))
-                                stoppers[rule] = [];
-                            handledCycleIndices ~= j + i + 1;
-                        }
-                        // The other cycle needs a different stopper.
-                        assert(cycle.length > 1);
-                        if (!handledCycleIndices.canFind(i))
-                        {
-                            foreach (r; cycle)
-                                if (!(r in stoppers))
-                                {
-                                    stoppers[r] = [];
-                                    foreach (rr; cycle)
-                                        if (rr != r)
-                                            stoppers[r] ~= rr;
-                                    handledCycleIndices ~= i;
-                                    break;
-                                }
-                            assert(handledCycleIndices.canFind(i));
-                        }
-                    }
-                    // At this point, if a cycle has not been handled yet, it has more than one rule.
-                    if (!handledCycleIndices.canFind(i))
-                    {
-                        foreach (r; cycle)
-                            if (!(r in stoppers))
-                            {
-                                stoppers[r] = [];
-                                foreach (rr; cycle)
-                                    if (rr != r)
-                                        stoppers[r] ~= rr;
-                                handledCycleIndices ~= i;
-                                break;
-                            }
-                        assert(handledCycleIndices.canFind(i));
-                    }
-                    if (!handledCycleIndices.canFind(j + i + 1))
-                    {
-                        foreach (r; otherCycle)
-                            if (!(r in stoppers))
-                            {
-                                stoppers[r] = [];
-                                foreach (rr; otherCycle)
-                                    if (rr != r)
-                                        stoppers[r] ~= rr;
-                                handledCycleIndices ~= j + i + 1;
-                                break;
-                            }
-                        assert(handledCycleIndices.canFind(j + i + 1));
-                    }
-                }
-            }
-        }
-    }
-    // Take the first node in remaining cycles as the stopper.
-    foreach (i, cycle; grammarInfo.leftRecursiveCycles)
-    {
-        if (handledCycleIndices.canFind(i))
-            continue;
-        stoppers[cycle[0]] = cycle[1..$].dup;
-    }
+    string[] allLeftRecursiveRules;
+    foreach (cycle; grammarInfo.leftRecursiveCycles)
+        foreach (rule; cycle)
+            if (!canFind(allLeftRecursiveRules, rule))
+                allLeftRecursiveRules ~= rule;
+    foreach (cycle; grammarInfo.leftRecursiveCycles)
+        stoppers[cycle[0]] = allLeftRecursiveRules;
     // Analysis completed.
 
     /// Returns code to prevent memoization of incomplete matches during left-recursion through this rule.
     string blockMemoForLeftRecursion(string stopper)
     {
         string result;
-        foreach (rule; stoppers[stopper] ~ stopper)
+        foreach (rule; stoppers[stopper]) {
             result ~= "            blockMemo_" ~ rule ~ "_atPos ~= p.end;\n";
+        }
         return result;
     }
 
@@ -266,10 +165,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     string unblockMemoForLeftRecursion(string stopper)
     {
         string result;
-        foreach (rule; stoppers[stopper] ~ stopper)
+        foreach (rule; stoppers[stopper]) {
             // TODO investigate if p.end is always the last element.
             result ~= "                    assert(blockMemo_" ~ rule ~ "_atPos.canFind(p.end));\n"
-                    ~ "                    remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
+                    ~ "                    blockMemo_" ~ rule ~ "_atPos = remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
+        }
         return result;
     }
 
