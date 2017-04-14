@@ -142,6 +142,17 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
             "/** Rules that stop left-recursive cycles, followed by rules for which\n"
           ~ " *  memoization is blocked during recursion:\n" ~ result ~ "*/\n\n" : "";
     }
+
+    /*
+    I once considered that if two left-recursive cycles intersect, unbounded left-recursion
+    would be prevented in both cycles if only the intersection rule would be a stopper. Although
+    true, it causes other problems, as documented in the "Mutual left-recursion" unittest below.
+    Therefore, we simply make the first rule in every left-recursive cycle a stopper.
+    Also, one might think that it suffices to prevent ordinary memoization in just the rules
+    that are part of the cycle. However, some larger input files for pegged/examples/extended_pascal
+    would fail to parse. So memoization for all left-recursive rules is disabled during
+    left-recursion.
+    */
     string[] allLeftRecursiveRules;
     foreach (cycle; grammarInfo.leftRecursiveCycles)
         foreach (rule; cycle)
@@ -155,9 +166,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     string blockMemoForLeftRecursion(string stopper)
     {
         string result;
-        foreach (rule; stoppers[stopper]) {
+        foreach (rule; stoppers[stopper])
             result ~= "            blockMemo_" ~ rule ~ "_atPos ~= p.end;\n";
-        }
         return result;
     }
 
@@ -165,11 +175,10 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     string unblockMemoForLeftRecursion(string stopper)
     {
         string result;
-        foreach (rule; stoppers[stopper]) {
+        foreach (rule; stoppers[stopper])
             // TODO investigate if p.end is always the last element.
             result ~= "                    assert(blockMemo_" ~ rule ~ "_atPos.canFind(p.end));\n"
                     ~ "                    blockMemo_" ~ rule ~ "_atPos = remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
-        }
         return result;
     }
 
@@ -251,9 +260,9 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 result =
 "struct Generic" ~ shortGrammarName ~ "(TParseTree)
 {
-	import std.functional : toDelegate;
+    import std.functional : toDelegate;
     import pegged.dynamic.grammar;
-	static import pegged.peg;
+    static import pegged.peg;
     struct " ~ grammarName ~ "\n    {
     enum name = \"" ~ shortGrammarName ~ "\";
     static ParseTree delegate(ParseTree)[string] before;
@@ -2915,6 +2924,16 @@ unittest // Proper blocking of memoization
 // Example from http://www.inf.puc-rio.br/~roberto/docs/sblp2012.pdf
 unittest // Mutual left-recursion
 {
+    /* A thing about stoppers:
+    Because P is at the intersection of left-recursive cycles P -> P and L -> P -> L, it should
+    suffice to make only P a stopper to stop unbounded left-recursion. And so it does. But,
+    stoppers parse greedily: they always consume the maximum of input. So below, if only P is a stopper,
+    at some point P parses the complete input. Then L fails because it cannot append ".x", then M fails.
+    If both are made a stopper then M succeeds. That is because P will try L when P '(n)' no longer
+    consumes input, which will appear as a left-recursion to L if it is a stopper and because of that
+    it will have a chance to succeed on the full input which it recorded in its seed for the previous
+    recursion.
+    */
     enum LeftGrammar = `
       Left:
         M <- L eoi
