@@ -177,7 +177,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     //  inserted to test for blocking and if blocked return with "$(D_PARAM code)(p)".
     string maybeBlockedMemo(string name, string code)
     {
-        assert(!stoppers.keys.canFind(name));
+        assert(name !in stoppers);
         foreach (cycle; stoppers)
             foreach (rule; cycle)
                 if (rule == name)
@@ -503,13 +503,12 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                 string ctfeCode = "        pegged.peg.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
                 code =            "hooked!(pegged.peg.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
 
-                import std.algorithm.searching: canFind;
                 if (withMemo == Memoization.no)
                     result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
                             ~ "    {\n"
                             ~ "        if(__ctfe)\n"
                             ~ "        {\n"
-                            ~ (stoppers.keys.canFind(shortName) ?
+                            ~ (shortName in stoppers ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                          ~ "at compile-time. Consider using asModule().\");\n"
                               :
@@ -518,7 +517,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             ~ "        }\n"
                             ~ "        else\n"
                             ~ "        {\n"
-                            ~ (stoppers.keys.canFind(shortName) ?
+                            ~ (shortName in stoppers ?
                               // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                             ~ "            if (auto s = p.end in seed)\n"
@@ -563,7 +562,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             ~ "    {\n"
                             ~ "        if(__ctfe)\n"
                             ~ "        {\n"
-                            ~ (stoppers.keys.canFind(shortName) ?
+                            ~ (shortName in stoppers ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                          ~ "at compile-time. Consider using asModule().\");\n"
                               :
@@ -572,7 +571,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             ~ "        }\n"
                             ~ "        else\n"
                             ~ "        {\n"
-                            ~ (stoppers.keys.canFind(shortName) ?
+                            ~ (shortName in stoppers ?
                               // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                             ~ "            if (auto s = p.end in seed)\n"
