@@ -133,7 +133,8 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
             if (!canFind(allLeftRecursiveRules, rule))
                 allLeftRecursiveRules ~= rule;
     foreach (cycle; grammarInfo.leftRecursiveCycles)
-        stoppers ~= cycle[0];
+        if (!stoppers.canFind(cycle[0]))
+            stoppers ~= cycle[0];
 
     // Prints comment showing detected left-recursive cycles.
     string printLeftRecursiveCycles()
