@@ -113,9 +113,27 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     import pegged.introspection;
     import std.algorithm : canFind;
     GrammarInfo grammarInfo = grammarInfo(defAsParseTree.children[0]);
-    string[][string] stoppers;  // Keys are the rules that stop left-recursion and the
-                                // values are arrays of strings containing the corresponding
-                                // rules for which memoization needs to be blocked.
+    string[] stoppers;  // Keys are the rules that stop left-recursion and the
+                        // values are arrays of strings containing the corresponding
+                        // rules for which memoization needs to be blocked.
+
+    /*
+    I once considered that if two left-recursive cycles intersect, unbounded left-recursion
+    would be prevented in both cycles if only the intersection rule would be a stopper. Although
+    true, it causes other problems, as documented in the "Mutual left-recursion" unittest below.
+    Therefore, we simply make the first rule in every left-recursive cycle a stopper.
+    Also, one might think that it suffices to prevent ordinary memoization in just the rules
+    that are part of the cycle. However, some larger input files for pegged/examples/extended_pascal
+    would fail to parse. So memoization for all left-recursive rules is disabled during
+    left-recursion.
+    */
+    string[] allLeftRecursiveRules;
+    foreach (cycle; grammarInfo.leftRecursiveCycles)
+        foreach (rule; cycle)
+            if (!canFind(allLeftRecursiveRules, rule))
+                allLeftRecursiveRules ~= rule;
+    foreach (cycle; grammarInfo.leftRecursiveCycles)
+        stoppers ~= cycle[0];
 
     // Prints comment showing detected left-recursive cycles.
     string printLeftRecursiveCycles()
@@ -136,71 +154,13 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     {
         import std.array: join;
         string result;
-        foreach (stopper, rules; stoppers)
-            result ~= stopper ~ ": " ~ rules.join(", ") ~ "\n";
+        foreach (stopper; stoppers)
+            result ~= stopper ~ ": " ~ allLeftRecursiveRules.join(", ") ~ "\n";
         return result.length > 0 ?
             "/** Rules that stop left-recursive cycles, followed by rules for which\n"
           ~ " *  memoization is blocked during recursion:\n" ~ result ~ "*/\n\n" : "";
     }
-
-    /*
-    I once considered that if two left-recursive cycles intersect, unbounded left-recursion
-    would be prevented in both cycles if only the intersection rule would be a stopper. Although
-    true, it causes other problems, as documented in the "Mutual left-recursion" unittest below.
-    Therefore, we simply make the first rule in every left-recursive cycle a stopper.
-    Also, one might think that it suffices to prevent ordinary memoization in just the rules
-    that are part of the cycle. However, some larger input files for pegged/examples/extended_pascal
-    would fail to parse. So memoization for all left-recursive rules is disabled during
-    left-recursion.
-    */
-    string[] allLeftRecursiveRules;
-    foreach (cycle; grammarInfo.leftRecursiveCycles)
-        foreach (rule; cycle)
-            if (!canFind(allLeftRecursiveRules, rule))
-                allLeftRecursiveRules ~= rule;
-    foreach (cycle; grammarInfo.leftRecursiveCycles)
-        stoppers[cycle[0]] = allLeftRecursiveRules;
     // Analysis completed.
-
-    /// Returns code to prevent memoization of incomplete matches during left-recursion through this rule.
-    string blockMemoForLeftRecursion(string stopper)
-    {
-        string result;
-        foreach (rule; stoppers[stopper])
-            result ~= "            blockMemo_" ~ rule ~ "_atPos ~= p.end;\n";
-        return result;
-    }
-
-    /// Returns code that enables memoization when left-recursion has completed.
-    string unblockMemoForLeftRecursion(string stopper)
-    {
-        string result;
-        foreach (rule; stoppers[stopper])
-            // TODO investigate if p.end is always the last element.
-            result ~= "                    assert(blockMemo_" ~ rule ~ "_atPos.canFind(p.end));\n"
-                    ~ "                    blockMemo_" ~ rule ~ "_atPos = remove(blockMemo_" ~ rule ~ "_atPos, countUntil(blockMemo_" ~ rule ~ "_atPos, p.end));\n";
-        return result;
-    }
-
-    /// If $(D_PARAM name) is part of a left-recursive cycle and not a stopping rule, code is
-    //  inserted to test for blocking and if blocked return with "$(D_PARAM code)(p)".
-    string maybeBlockedMemo(string name, string code)
-    {
-        assert(name !in stoppers);
-        foreach (cycle; stoppers)
-            foreach (rule; cycle)
-                if (rule == name)
-                    return
-    "            if (blockMemo_" ~ name ~ "_atPos.canFind(p.end))\n"
-  ~ "                return " ~ code ~ "(p);\n";
-        return "";
-    }
-
-    /// Returns a Boolean expression whether $(D_PARAM rule) is not blocked.
-    string shouldMemoLeftRecursion(string rule)
-    {
-        return "!blockMemo_" ~ rule ~ "_atPos.canFind(p.end)";
-    }
 
     string generateForgetMemo()
     {
@@ -226,25 +186,6 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
     string generateCode(ParseTree p, string propagatedName = "")
     {
         string result;
-
-        // Variables holding the block-state.
-        string generateBlockers()
-        {
-            string result;
-            string[] visited = [];
-            foreach (cycle; grammarInfo.leftRecursiveCycles)
-                foreach (rule; cycle)
-                    if (!visited.canFind(rule))
-                    {
-                        visited ~= rule;
-                        result ~= "
-    static size_t[] blockMemo_" ~ rule ~ "_atPos;";
-                    }
-            if (result.length > 0)
-                return "
-    import std.algorithm: canFind, countUntil, remove;" ~ result;
-            return result;
-        }
 
         switch (p.name)
         {
@@ -273,7 +214,10 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                     result ~= "
     import std.typecons:Tuple, tuple;
     static TParseTree[Tuple!(string, size_t)] memo;";
-                    result ~= generateBlockers();
+                    if (grammarInfo.leftRecursiveCycles.length > 0)
+                        result ~= "
+    import std.algorithm: canFind, countUntil, remove;
+    static size_t[] blockMemoAtPos;";
                 }
 
                 result ~= "
@@ -517,7 +461,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             ~ "    {\n"
                             ~ "        if(__ctfe)\n"
                             ~ "        {\n"
-                            ~ (shortName in stoppers ?
+                            ~ (stoppers.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                          ~ "at compile-time. Consider using asModule().\");\n"
                               :
@@ -526,7 +470,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             ~ "        }\n"
                             ~ "        else\n"
                             ~ "        {\n"
-                            ~ (shortName in stoppers ?
+                            ~ (stoppers.canFind(shortName) ?
                               // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                             ~ "            if (auto s = p.end in seed)\n"
@@ -571,7 +515,7 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             ~ "    {\n"
                             ~ "        if(__ctfe)\n"
                             ~ "        {\n"
-                            ~ (shortName in stoppers ?
+                            ~ (stoppers.canFind(shortName) ?
                               "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
                                                          ~ "at compile-time. Consider using asModule().\");\n"
                               :
@@ -580,17 +524,17 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                             ~ "        }\n"
                             ~ "        else\n"
                             ~ "        {\n"
-                            ~ (shortName in stoppers ?
+                            ~ (stoppers.canFind(shortName) ?
                               // This rule needs to prevent infinite left-recursion.
                               "            static TParseTree[size_t /*position*/] seed;\n"
                             ~ "            if (auto s = p.end in seed)\n"
                             ~ "                return *s;\n"
-                            ~ "            if (" ~ shouldMemoLeftRecursion(shortName) ~ ")\n"
+                            ~ "            if (!blockMemoAtPos.canFind(p.end))\n"
                             ~ "                if (auto m = tuple(" ~ innerName ~ ", p.end) in memo)\n"
                             ~ "                    return *m;\n"
                             ~ "            auto current = fail(p);\n"
                             ~ "            seed[p.end] = current;\n"
-                            ~ blockMemoForLeftRecursion(shortName)
+                            ~ "            blockMemoAtPos ~= p.end;\n"
                             ~ "            while (true)\n"
                             ~ "            {\n"
                             ~ "                auto result = " ~ code ~ "(p);\n"
@@ -612,14 +556,20 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
                                                    // care of by memo. Note that p.end remains constant for the course of recursion,
                                                    // and the length of seed only grows when nested recursion occurs.
                             ~ "                    seed.remove(p.end);\n"
-                            ~ unblockMemoForLeftRecursion(shortName)
+                                                   // TODO investigate if p.end is always the last element of blockMemoAtPos.
+                            ~ "                    assert(blockMemoAtPos.canFind(p.end));\n"
+                            ~ "                    blockMemoAtPos = blockMemoAtPos.remove(countUntil(blockMemoAtPos, p.end));\n"
                             ~ "                    memo[tuple(" ~ innerName ~ ", p.end)] = current;\n"
                             ~ "                    return current;\n"
                             ~ "                }\n"
                             ~ "            }\n"
                               :
                               // Possibly left-recursive rule, but infinite recursion is already prevented by another rule in the same cycle.
-                              maybeBlockedMemo(shortName, code)
+                              (allLeftRecursiveRules.canFind(shortName) ?
+                              "            if (blockMemoAtPos.canFind(p.end))\n"
+                            ~ "                return " ~ code ~ "(p);\n"
+                              : ""
+                              )
                             ~ "            if (auto m = tuple(" ~ innerName ~ ", p.end) in memo)\n"
                             ~ "                return *m;\n"
                             ~ "            else\n"
