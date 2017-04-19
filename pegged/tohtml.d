@@ -54,31 +54,45 @@ details.leaf summary::-webkit-details-marker {
 <body>
     `);
 
-    string treeToHTML(const ref ParseTree p)
+    void treeToHTML(const ref ParseTree p)
     {
-        auto firstNewLine = p.input[p.begin .. p.end].countUntil('\n');
-        string summary = p.name ~ " " ~ to!string([p.begin, p.end]);
+        file.write("<details");
+        if (p.children.length == 0)
+            file.write(` class="leaf"`);
+        file.write("><summary>", p.name, " ", to!string([p.begin, p.end]));
+
         if (p.children.length == 0 && !p.successful)
-        {
+        {   // Failure leaf.
             Position pos = position(p);
-            string left = pos.index < 10 ? p.input[0 .. pos.index] : p.input[pos.index-10 .. pos.index];
-            string right = pos.index + 10 < p.input.length ? p.input[pos.index .. pos.index + 10] : p.input[pos.index .. $];
-            summary ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
-                    ~ (left.length > 0 ? "after <code>" ~ left.stringified ~ "</code> " : "")
-                    ~ "expected <code>" ~ (p.matches.length > 0 ? p.matches[$-1].stringified : "NO MATCH")
-                    ~ `</code>, but got <code class="failure">` ~ right.stringified ~ "</code>\n";
+            auto left = pos.index < 10 ? p.input[0 .. pos.index] : p.input[pos.index-10 .. pos.index];
+            auto right = pos.index + 10 < p.input.length ? p.input[pos.index .. pos.index + 10] : p.input[pos.index .. $];
+            file.write(" failure at line ", to!string(pos.line), ", col ", to!string(pos.col), ", ");
+            if (left.length > 0)
+                file.write("after <code>", left.stringified, "</code> ");
+            file.write("expected <code>");
+            if (p.matches.length > 0)
+                file.write(p.matches[$-1].stringified);
+            else
+                file.write("NO MATCH");
+            file.write(`</code>, but got <code class="failure">`, right.stringified, "</code>\n");
         }
         else
-            summary ~= " <code" ~ (!p.successful ? ` class="failure"` : "") ~ ">"
-                    ~ p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end]
-                    ~ "<span><pre>" ~ p.input[p.begin .. p.end] ~ "</pre></span></code>";
-        string result = "<details" ~ (p.children.length == 0 ? ` class="leaf"` : "") ~ "><summary>" ~ summary ~ "</summary>\n";
+        {
+            auto firstNewLine = p.input[p.begin .. p.end].countUntil('\n');
+            file.write(" <code");
+            if (!p.successful)
+                file.write(` class="failure"`);
+            file.write(">", p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end],
+                        "<span><pre>", p.input[p.begin .. p.end], "</pre></span></code>");
+        }
+
+        file.write("</summary>\n");
         foreach (child; p.children)
-            result ~= treeToHTML(child);
-        return result ~ "</details>\n";
+            treeToHTML(child);
+        file.write("</details>\n");
     }
 
-    file.write(treeToHTML(p));
+    treeToHTML(p);
 
     file.write(`
 </body>
