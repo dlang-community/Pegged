@@ -1,11 +1,28 @@
 module pegged.tohtml;
 
 import std.stdio;
-import std.conv;
+import std.conv, std.string;
 import std.algorithm.searching;
 import pegged.peg;
 
-void toHTML(const ref ParseTree p, File file)
+enum Expand
+{
+    no, ifMatch, ifNotMatch
+}
+
+/**
+ * Writes a parse tree to a html file.
+ *
+ * Params:
+ *      e = Defines if the tree is expanded.
+ *      Details = Defines the details, as a list of strings, that are expanded
+ *          when e is equal to `Expand.ifMatch`, and not expanded when e is equal to
+ *          `Expand.ifNotMatch`. When no details are passed, each node is expanded.
+ *      p = The ParseTree to represent.
+ *      file = The file where to write the tree.
+ */
+void toHTML(Expand e = Expand.no, Details...)(const ref ParseTree p,
+    File file)
 {
     file.write(`
 <!DOCTYPE html>
@@ -57,6 +74,38 @@ details.leaf summary::-webkit-details-marker {
     void treeToHTML(const ref ParseTree p)
     {
         file.write("<details");
+        static if (e != Expand.no)
+        {
+            static if (!Details.length)
+            {
+                file.write(" open");
+            }
+            else
+            {
+                static if (e == Expand.ifMatch)
+                {
+                    foreach(detail; Details)
+                        if (indexOf(p.name, detail) > -1L)
+                    {
+                        file.write(" open");
+                        break;
+                    }
+                }
+                else
+                {
+                    bool w;
+                    foreach(detail; Details)
+                        if (indexOf(p.name, detail) > -1L)
+                    {
+                        w = true;
+                        break;
+                    }
+                    if (!w)
+                        file.write(" open");
+                }
+            }
+        }
+
         if (p.children.length == 0)
             file.write(` class="leaf"`);
         file.write("><summary>", p.name, " ", to!string([p.begin, p.end]));
@@ -100,9 +149,21 @@ details.leaf summary::-webkit-details-marker {
     `);
 }
 
-void toHTML(const ref ParseTree p, string filename)
+/**
+ * Writes a parse tree to a html file.
+ *
+ * Params:
+ *      e = Defines if the tree is expanded.
+ *      Details = Defines the details, as a list of strings, that are expanded
+ *          when e is equal to `Expand.yes`, and not exapnded when e is equal to
+ *          `Expand.invert`. When no details are passed, each node is expanded.
+ *      p = The ParseTree to represent.
+ *      filename = The name of file where tree is written.
+ */
+void toHTML(Expand e = Expand.no, Details...)(const ref ParseTree p,
+    string filename)
 {
     if (filename.endsWith(".html", ".htm") == 0)
         filename ~= ".html";
-    toHTML(p, File(filename, "w"));
+    toHTML!(e, Details)(p, File(filename, "w"));
 }
