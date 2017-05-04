@@ -17,7 +17,7 @@ Arithmetic:
 
 void main()
 {
-    auto parseTree = Arithmetic("1 + 2 - (3 * 2 - 5) * 6");
+    enum parseTree = Arithmetic("1 + 2 - (3 * 2 - 5) * 6");
 
     float value(ParseTree p)
     {
@@ -46,7 +46,8 @@ void main()
     }
 
     import std.stdio;
-    writeln(value(parseTree));
+    enum answer = value(parseTree);
+    writeln(answer);
 }
 
 // rdmd -I../../.. arithmetic.d 
