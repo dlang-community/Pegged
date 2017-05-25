@@ -106,7 +106,11 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         string result = "static assert(false, `" ~ defAsParseTree.toString("") ~ "`);";
         return result;
     }
-
+    return grammar!(withMemo)(defAsParseTree);
+}
+/// ditto
+string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
+{
     string[] composedGrammars;
 
     // Grammar analysis in support of left-recursion.
