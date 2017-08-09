@@ -25,10 +25,58 @@ import std.conv;
 import std.string: strip;
 import std.typetuple;
 
-package string stringified(string inp)
+// Returns quoted and escaped version of the input, but if the input is null, then return `"end of input"`.
+package string stringified(string inp) @safe
 {
     import std.format : format;
-    return format(`%(%s%)`, (&inp)[0..1]);
+
+    if (inp is null)
+        return `"end of input"`;
+
+    string[1] shell = [inp];
+    return "%(%s%)".format(shell);
+}
+
+@safe unittest // Run- & Compile-time.
+{
+    static bool doTest()
+    {
+        const caseSuit1 = [
+            "" : `""`,
+
+            "\0" : `"\0"`,
+            "\n" : `"\n"`,
+            "\t" : `"\t"`,
+
+            `"` : `"\""`,
+            "`" : q"("`")",
+            "'" : `"'"`,
+
+            "42"              : `"42"`,
+            "\"some text\"\n" : `"\"some text\"\n"`
+        ];
+
+        const caseSuit2 = [cast(string)null : `"end of input"`];
+
+        const auto testSuit = [caseSuit1, caseSuit2];
+
+        foreach (const ref suit; testSuit)
+        {
+            foreach (const ref value, const ref expected; suit)
+            {
+                import std.format : format;
+
+                const result = value.stringified;
+                assert(result == expected, "from %s expected %s but got %s".format(value, expected, result));
+            }
+        }
+
+        return true;
+    }
+
+    // Result is always true, but here, we just force CTFE-mode.
+    static assert(doTest); // Compile-time.
+    doTest;                // Run-time.
 }
 
 version (tracer)
@@ -3418,7 +3466,7 @@ mixin template decimateTree()
             foreach(child; pt.children)
             {
 				import std.algorithm : startsWith;
-				
+
                 if (  (isRule(child.name) && child.matches.length != 0)
                    || !child.successful && child.children.length == 0)
                 {
