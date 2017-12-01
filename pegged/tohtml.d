@@ -127,12 +127,15 @@ details.leaf summary::-webkit-details-marker {
         }
         else
         {
-            auto firstNewLine = p.input[p.begin .. p.end].countUntil('\n');
             file.write(" <code");
             if (!p.successful)
                 file.write(` class="failure"`);
-            file.write(">", p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end],
-                        "<span><pre>", p.input[p.begin .. p.end], "</pre></span></code>");
+            auto firstNewLine = p.input[p.begin .. p.end].countUntil('\n');
+            auto firstLine = p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end];
+            if (firstLine.length > 0)
+                file.write(">", firstLine, "<span><pre>", p.input[p.begin .. p.end], "</pre></span></code>");
+            else // Insert the return-symbol so the mouse has something to hover over.
+                file.write(">&#x23ce;<span><pre>&#x23ce;", p.input[p.begin .. p.end], "</pre></span></code>");
         }
 
         file.write("</summary>\n");
