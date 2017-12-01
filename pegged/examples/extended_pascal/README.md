@@ -23,6 +23,7 @@ and
 
 > `parse_ep --html example.pas`
 
-produces an expandable tree using HTML5 in `example.html`. Please browse with a
+produces an expandable tree using HTML5 in [`example.html`](https://cdn.rawgit.com/PhilippeSigaud/Pegged/ade2aa5d/pegged/examples/extended_pascal/example.html).
+Please browse with a
 browser that supports the
 [&lt;details>](https://www.w3schools.com/tags/tag_details.asp) tag.
