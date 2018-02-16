@@ -31,6 +31,8 @@ Arithmetic:
     Variable <- identifier
 `));
 ```
+[![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/AYKe5x)
+
 
 This creates the `Arithmetic` grammar, with the `Expr`, `Add`, `Factor` (and so on) rules for basic arithmetic expressions with operator precedence ('*' and '/' bind stronger than '+' or '-'). `identifier` is a pre-defined parser recognizing your basic C-style identifier (first a letter or underscore, then digits, letters or underscores). In the rest of this document, I'll call 'rule' a `Parser <- Parsing Expression` expression and I'll use 'grammar' to designate the entire group of rules given to `grammar`.
 
