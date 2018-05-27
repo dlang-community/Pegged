@@ -244,7 +244,7 @@ struct ParseTree
     string[] matches; /// The matched input's parts. Some expressions match at more than one place, hence matches is an array.
 
     string input; /// The input string that generated the parse tree. Stored here for the parse tree to be passed to other expressions, as input.
-    size_t begin, end; /// Indices for the matched part (from the very beginning of the first match to the last char of the last match.
+    size_t begin, end; /// Indices for the matched part from the very beginning of the first match to the last char of the last match.
 
     ParseTree[] children; /// The sub-trees created by sub-rules parsing.
 
