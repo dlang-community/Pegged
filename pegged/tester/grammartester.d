@@ -9,7 +9,8 @@ import std.array;
 import std.ascii : whitespace;
 import std.range : retro;
 import std.algorithm : max, splitter;
-import std.string : format, stripRight, removechars, squeeze;
+import std.format : format;
+import std.string : stripRight, stripLeft, lineSplitter;
 
 import pegged.tester.testerparser;
 import pegged.grammar;
@@ -389,7 +390,8 @@ unittest
 {
 	string normalizeStr(string str)
 	{
-		return removechars(str," \t").replace("\r","\n").squeeze("\n");
+		import std.array : join;
+		return cast(string) str.stripLeft.lineSplitter.join('\n');
 	}
 
 	auto tester = new GrammarTester!(TesterGrammar, "Root");

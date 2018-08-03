@@ -109,7 +109,7 @@ TKNString   <- (&'q{' ('q' NestedList('{',DString,'}')))
 
 DLMString   <- ('q' doublequote) ( (&'{' NestedList('{',DString,'}'))
                                  / (&'[' NestedList('[',DString,']'))
-                                 / (&'(' NestedList('(',DString,')'))
+                                 / (&'$(LPAREN)' NestedList('(',DString,')'))
                                  / (&'<' NestedList('<',DString,'>'))
                                  ) doublequote
 

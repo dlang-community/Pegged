@@ -31,7 +31,7 @@ Comment <-
 
 NestedComment <- '/+' (!NestedCommentEnd . / NestedComment) NestedCommentEnd
 
-# This is needed to make the /+ +/ nest when the grammar is placed into a D nested comment ;)
+# This is needed to make the /+ +/ nest when the grammar is placed into a D # nested comment ;$(RPAREN)
 NestedCommentEnd <- '+/'
 
 
