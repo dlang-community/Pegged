@@ -401,7 +401,7 @@ unittest // ParseTree testing
 
 /// To compare two trees for content (not bothering with node names)
 /// That's useful to compare the results from two different grammars.
-bool softCompare(ParseTree p1, ParseTree p2)
+bool softCompare(const ParseTree p1, const ParseTree p2)
 {
     return p1.successful == p2.successful
         && p1.matches == p2.matches
