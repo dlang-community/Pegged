@@ -334,12 +334,22 @@ struct ParseTree
         return "Success";
     }
 
-    ParseTree dup() @property
+    ParseTree dup() const @property
     {
-        ParseTree result = this;
-        result.matches = result.matches.dup;
-        result.children = map!(p => p.dup)(result.children).array();
+        ParseTree result;
+        result.name = name;
+        result.successful = successful;
+        result.matches = matches.dup;
+        result.input = input;
+        result.begin = begin;
+        result.end = end;
+        result.children = map!(p => p.dup)(children).array();
         return result;
+    }
+
+    immutable(ParseTree) idup() const @property
+    {
+        return cast(immutable)dup();
     }
 }
 
@@ -371,6 +381,10 @@ unittest // ParseTree testing
     assert(p.children == q.children, "Equal children for dupped trees.");
     p.children = null;
     assert(q.children != p.children);
+
+    immutable iq = p.idup;
+    q = iq.dup;
+    assert(p == q, "Dupping to/from immutable creates equal trees.");
 
     q.children = [p,p];
     assert(p != q, "Tree with different children are not equal.");
