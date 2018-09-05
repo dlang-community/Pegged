@@ -334,12 +334,22 @@ struct ParseTree
         return "Success";
     }
 
-    ParseTree dup() @property
+    ParseTree dup() const @property
     {
-        ParseTree result = this;
-        result.matches = result.matches.dup;
-        result.children = map!(p => p.dup)(result.children).array();
+        ParseTree result;
+        result.name = name;
+        result.successful = successful;
+        result.matches = matches.dup;
+        result.input = input;
+        result.begin = begin;
+        result.end = end;
+        result.children = map!(p => p.dup)(children).array();
         return result;
+    }
+
+    immutable(ParseTree) idup() const @property
+    {
+        return cast(immutable)dup();
     }
 }
 
@@ -372,6 +382,10 @@ unittest // ParseTree testing
     p.children = null;
     assert(q.children != p.children);
 
+    immutable iq = p.idup;
+    q = iq.dup;
+    assert(p == q, "Dupping to/from immutable creates equal trees.");
+
     q.children = [p,p];
     assert(p != q, "Tree with different children are not equal.");
 
@@ -387,7 +401,7 @@ unittest // ParseTree testing
 
 /// To compare two trees for content (not bothering with node names)
 /// That's useful to compare the results from two different grammars.
-bool softCompare(ParseTree p1, ParseTree p2)
+bool softCompare(const ParseTree p1, const ParseTree p2)
 {
     return p1.successful == p2.successful
         && p1.matches == p2.matches
