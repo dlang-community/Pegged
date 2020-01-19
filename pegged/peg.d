@@ -18,7 +18,7 @@ Writing tests the long way is preferred here, as it will avoid the circular
 dependency.
 */
 
-import std.algorithm: equal, map, startsWith;
+import std.algorithm: equal, map, startsWith, max, countUntil;
 import std.uni : isAlpha, icmp;
 import std.array;
 import std.conv;
@@ -248,6 +248,9 @@ struct ParseTree
 
     ParseTree[] children; /// The sub-trees created by sub-rules parsing.
 
+    size_t failEnd; // The furthest this tree could match the input (including !successful rules).
+    ParseTree[] failedChild; /// The !successful child that could still be partially parsed.
+
     /**
     Basic toString for easy pretty-printing.
     */
@@ -343,6 +346,8 @@ struct ParseTree
         result.input = input;
         result.begin = begin;
         result.end = end;
+        result.failEnd = failEnd;
+        result.failedChild = map!(p => p.dup)(failedChild).array();
         result.children = map!(p => p.dup)(children).array();
         return result;
     }
@@ -719,7 +724,7 @@ template literal(string s)
         if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
             return ParseTree(name, true, [s], p.input, p.end, p.end+s.length);
         else
-            return ParseTree(name, false, [lit], p.input, p.end, p.end);
+            return ParseTree(name, false, [lit], p.input, p.end, p.end, null, p.end);
     }
 
     ParseTree literal(string input)
@@ -1262,7 +1267,8 @@ template and(rules...) if (rules.length > 0)
                    //&& !node.name.startsWith("drop!(")
                    && node.matches !is null
                    //&& node.begin != node.end
-                   );
+                   )
+		|| (node.failEnd > node.end);
         }
 
         version (tracer)
@@ -1281,6 +1287,7 @@ template and(rules...) if (rules.length > 0)
             }
             ParseTree temp = r(result);
             result.end = temp.end;
+            result.failEnd = max(result.failEnd, temp.failEnd);
             if (temp.successful)
             {
                 if (keepNode(temp))
@@ -1296,9 +1303,17 @@ template and(rules...) if (rules.length > 0)
             }
             else
             {
-                result.children ~= temp;// add the failed node, to indicate which failed
-                if (temp.matches.length > 0)
-                    result.matches ~= temp.matches[$-1];
+                auto firstLongestFailedMatch = result.children.countUntil!(c => c.failEnd > temp.end);
+                if (firstLongestFailedMatch == -1) {
+                    result.children ~= temp;// add the failed node, to indicate which failed
+                    //  result.end = temp.end;
+                    if (temp.matches.length > 0)
+                        result.matches ~= temp.matches[$-1];
+                } else {
+                    // don't add the failed node because a previous one already failed further back
+                    result.children = result.children[0 .. firstLongestFailedMatch+1]; // discard any intermediate correct nodes
+                    failedChildFixup(result.children[firstLongestFailedMatch]);
+                }
                 version (tracer)
                 {
                     if (shouldTrace(getName!(r)(), p))
@@ -1331,6 +1346,29 @@ template and(rules...) if (rules.length > 0)
     {
         return name;
     }
+}
+
+// This function rewrites the ParseTree to move the failedChild into its parents children
+// this is done whenever an 'and' rule fails and there are such a child further down
+bool failedChildFixup(ref ParseTree p) {
+	if (p.failedChild.length > 0) {
+		p.children ~= p.failedChild[0];
+		p.failedChild = [];
+		p.successful = false;
+		p.end = p.failEnd;
+		p.failEnd = 0;
+		return true;
+	} else {
+		foreach(ref c; p.children) {
+			if (failedChildFixup(c)) {
+				p.end = c.end;
+				p.successful = false;
+				p.failEnd = 0;
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 unittest // 'and' unit test
@@ -1524,6 +1562,11 @@ template or(rules...) if (rules.length > 0)
             {
                 temp.children = [temp];
                 temp.name = name;
+                // if there is a child that failed but parsed more
+                if (longestFail.failEnd > temp.end) {
+                    temp.failEnd = longestFail.failEnd;
+                    temp.failedChild = [longestFail];
+                }
                 version (tracer)
                 {
                     if (shouldTrace(getName!(r)(), p))
@@ -2166,12 +2209,17 @@ template zeroOrMore(alias r)
             result.matches ~= temp.matches;
             result.children ~= temp;
             result.end = temp.end;
+            result.failEnd = max(result.failEnd, temp.failEnd);
             version (tracer)
             {
                 if (shouldTrace(getName!(r)(), p))
                     trace(traceMsg(result, name, getName!(r)()));
             }
             temp = r(result);
+        }
+        if (temp.end > result.failEnd) {
+            result.failedChild = [temp];
+            result.failEnd = temp.end;
         }
         result.successful = true;
         version (tracer)
@@ -2328,12 +2376,17 @@ template oneOrMore(alias r)
                 result.matches ~= temp.matches;
                 result.children ~= temp;
                 result.end = temp.end;
+                result.failEnd = max(result.failEnd, temp.failEnd);
                 version (tracer)
                 {
                     if (shouldTrace(getName!(r)(), p))
                         trace(traceMsg(result, name, getName!(r)()));
                 }
                 temp = r(result);
+            }
+            if (temp.end > result.failEnd) {
+                result.failedChild = [temp];
+                result.failEnd = temp.end;
             }
             result.successful = true;
         }
@@ -2451,9 +2504,9 @@ template option(alias r)
         }
         ParseTree result = r(p);
         if (result.successful)
-            return ParseTree(name, true, result.matches, result.input, result.begin, result.end, [result]);
+            return ParseTree(name, true, result.matches, result.input, result.begin, result.end, [result], result.failEnd);
         else
-            return ParseTree(name, true, [], p.input, p.end, p.end, null);
+            return ParseTree(name, true, [], p.input, p.end, p.end, null, result.failEnd, [result]);
     }
 
     ParseTree option(string input)
