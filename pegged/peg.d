@@ -1445,6 +1445,62 @@ unittest // 'and' unit test
     , "'abc' 'de' 'f' has two child on 'abc_efghi', the one from 'abc' (success) and the one from 'de' (failure).");
 }
 
+version (unittest) {
+    static ParseTree getError(ref ParseTree p) {
+        if (p.children.length > 0)
+            return getError(p.children[$-1]);
+        return p;
+    }
+}
+
+unittest // 'and' unit test with zeroOrMore and longest failing match
+{
+    alias literal!"abc" A;
+    alias literal!"def" B;
+    alias literal!"ghi" C;
+
+    alias and!(zeroOrMore!(and!(A,B)), C) Thing;
+
+    ParseTree input = ParseTree("",false,[], "abc");
+    ParseTree result = Thing(input);
+
+    assert(!result.successful);
+    assert(getError(result).matches[$-1] == "\"def\"", "and!(zeroOrMore!(and!(literal!\"abc\", literal!\"def\")), literal!\"ghi\") should expected def when input is \"abc\"");
+    assert(result.matches == []);
+}
+
+unittest // 'and' unit test with option and longest failing match
+{
+    alias literal!"abc" A;
+    alias literal!"def" B;
+    alias literal!"ghi" C;
+
+    alias and!(option!(and!(A,B)), C) Thing;
+
+    ParseTree input = ParseTree("",false,[], "abc");
+    ParseTree result = Thing(input);
+
+    assert(!result.successful);
+    assert(getError(result).matches[$-1] == "\"def\"", "and!(option!(and!(literal!\"abc\", literal!\"def\")), literal!\"ghi\") should expected def when input is \"abc\"");
+    assert(result.matches == []);
+}
+
+unittest // 'and' unit test with oneOrMore and longest failing match
+{
+    alias literal!"abc" A;
+    alias literal!"def" B;
+    alias literal!"ghi" C;
+
+    alias and!(oneOrMore!(and!(A,B)), C) Thing;
+
+    ParseTree input = ParseTree("",false,[], "abcdefabc");
+    ParseTree result = Thing(input);
+
+    assert(!result.successful);
+    assert(getError(result).matches[$-1] == "\"def\"", "and!(oneOrMore!(and!(literal!\"abc\", literal!\"def\")), literal!\"ghi\") should expected def when input is \"abcdefabc\"");
+    assert(result.matches == ["abc", "def"]);
+}
+
 template wrapAround(alias before, alias target, alias after)
 {
     ParseTree wrapAround(ParseTree p)
