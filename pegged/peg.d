@@ -1244,7 +1244,6 @@ and that the second subrule ('[a-z]') failed at position 3 (so, on '1').
 */
 template and(rules...) if (rules.length > 0)
 {
-
     string ctfeGetNameAnd()
     {
         string name = "and!(";
@@ -1306,12 +1305,14 @@ template and(rules...) if (rules.length > 0)
                 auto firstLongestFailedMatch = result.children.countUntil!(c => c.failEnd > temp.end);
                 if (firstLongestFailedMatch == -1) {
                     result.children ~= temp;// add the failed node, to indicate which failed
-                    //  result.end = temp.end;
                     if (temp.matches.length > 0)
                         result.matches ~= temp.matches[$-1];
                 } else {
                     // don't add the failed node because a previous one already failed further back
                     result.children = result.children[0 .. firstLongestFailedMatch+1]; // discard any intermediate correct nodes
+                    // This current 'and' rule has failed parsing and there is a successful child
+                    // that had a longer failing match. We now want to revisit that child and modify it
+                    // so that it is no longer successful and we want to move its failedChild into its children.
                     failedChildFixup(result.children[firstLongestFailedMatch]);
                 }
                 version (tracer)
@@ -1346,29 +1347,32 @@ template and(rules...) if (rules.length > 0)
     {
         return name;
     }
-}
 
-// This function rewrites the ParseTree to move the failedChild into its parents children
-// this is done whenever an 'and' rule fails and there are such a child further down
-bool failedChildFixup(ref ParseTree p) {
-	if (p.failedChild.length > 0) {
-		p.children ~= p.failedChild[0];
-		p.failedChild = [];
-		p.successful = false;
-		p.end = p.failEnd;
-		p.failEnd = 0;
-		return true;
-	} else {
-		foreach(ref c; p.children) {
-			if (failedChildFixup(c)) {
-				p.end = c.end;
-				p.successful = false;
-				p.failEnd = 0;
-				return true;
-			}
-		}
-	}
-	return false;
+    // A child ParseTree has kept track of an alternate ParseTree (in failedChild) that matches longer.
+    // whenever the 'and' rule fails we want to rewrite that child so that the failedChild is
+    // moved into its children, the successful is set to false, the end is set the its failEnd,
+    // the failEnd is reset, and all that info is propagated upwards the tree so intermediate
+    // nodes reflect the proper state.
+    bool failedChildFixup(ref ParseTree p) {
+        if (p.failedChild.length > 0) {
+            p.children ~= p.failedChild[0];
+            p.failedChild = [];
+            p.successful = false;
+            p.end = p.failEnd;
+            p.failEnd = 0;
+            return true;
+        } else {
+            foreach(ref c; p.children) {
+                if (failedChildFixup(c)) {
+                    p.end = c.end;
+                    p.successful = false;
+                    p.failEnd = 0;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
 
 unittest // 'and' unit test
