@@ -18,7 +18,7 @@ Writing tests the long way is preferred here, as it will avoid the circular
 dependency.
 */
 
-import std.algorithm: equal, map, startsWith, max, countUntil;
+import std.algorithm: equal, map, startsWith, max, countUntil, maxElement, filter;
 import std.uni : isAlpha, icmp;
 import std.array;
 import std.conv;
@@ -721,10 +721,13 @@ template literal(string s)
     ParseTree literal(ParseTree p)
     {
         enum lit = "\"" ~ s ~ "\"";
-        if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
+        import std.algorithm : commonPrefix;
+        auto prefix = p.input[p.end..$].commonPrefix(s);
+
+        if (prefix.length == s.length)
             return ParseTree(name, true, [s], p.input, p.end, p.end+s.length);
         else
-            return ParseTree(name, false, [lit], p.input, p.end, p.end, null, p.end);
+            return ParseTree(name, false, [lit], p.input, p.end, p.end, null, p.end + prefix.length);
     }
 
     ParseTree literal(string input)
@@ -1267,7 +1270,7 @@ template and(rules...) if (rules.length > 0)
                    && node.matches !is null
                    //&& node.begin != node.end
                    )
-		|| (node.failEnd > node.end);
+	            || (node.failEnd >= node.end);
         }
 
         version (tracer)
@@ -1313,8 +1316,10 @@ template and(rules...) if (rules.length > 0)
                     // This current 'and' rule has failed parsing and there is a successful child
                     // that had a longer failing match. We now want to revisit that child and modify it
                     // so that it is no longer successful and we want to move its failedChild into its children.
-                    failedChildFixup(result.children[firstLongestFailedMatch]);
+                    failedChildFixup(result.children[firstLongestFailedMatch], result.children[firstLongestFailedMatch].failEnd);
                 }
+                result.end = result.children.map!(c => c.end).maxElement;
+                result.failEnd = result.children.map!(c => c.failEnd).maxElement;
                 version (tracer)
                 {
                     if (shouldTrace(getName!(r)(), p))
@@ -1353,25 +1358,28 @@ template and(rules...) if (rules.length > 0)
     // moved into its children, the successful is set to false, the end is set the its failEnd,
     // the failEnd is reset, and all that info is propagated upwards the tree so intermediate
     // nodes reflect the proper state.
-    bool failedChildFixup(ref ParseTree p) {
+    bool failedChildFixup(ref ParseTree p, size_t failEnd) {
         if (p.failedChild.length > 0) {
             p.children ~= p.failedChild[0];
             p.failedChild = [];
             p.successful = false;
             p.end = p.failEnd;
-            p.failEnd = 0;
+            p.failEnd = p.children.map!(c => c.failEnd).maxElement();
             return true;
         } else {
+            bool result = false;
             foreach(ref c; p.children) {
-                if (failedChildFixup(c)) {
+                if (c.failEnd != failEnd)
+                    continue;
+                if (failedChildFixup(c, failEnd)) {
                     p.end = c.end;
                     p.successful = false;
-                    p.failEnd = 0;
-                    return true;
+                    p.failEnd = p.children.map!(c => c.failEnd).maxElement();
+                    result = true;
                 }
             }
+            return result;
         }
-        return false;
     }
 }
 
@@ -1690,9 +1698,8 @@ template or(rules...) if (rules.length > 0)
         longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
                               longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
-        longestFail.name = name;
-		longestFail.begin = p.end;
-        return longestFail;
+        auto children = results[].filter!(r => max(r.end, r.failEnd) >= maxFailedLength).array();
+        return ParseTree(name, false, longestFail.matches, p.input, p.end, longestFail.end, children, children.map!(c => c.failEnd).maxElement);
     }
 
     ParseTree or(string input)
@@ -2277,9 +2284,10 @@ template zeroOrMore(alias r)
             }
             temp = r(result);
         }
-        if (temp.end > result.failEnd) {
+        auto maxFail = max(temp.failEnd, temp.end);
+        if (maxFail > result.failEnd && maxFail > result.end) {
             result.failedChild = [temp];
-            result.failEnd = temp.end;
+            result.failEnd = maxFail;
         }
         result.successful = true;
         version (tracer)
@@ -2444,9 +2452,10 @@ template oneOrMore(alias r)
                 }
                 temp = r(result);
             }
-            if (temp.end > result.failEnd) {
+            auto maxFail = max(temp.failEnd, temp.end);
+            if (maxFail > result.failEnd && maxFail > result.end) {
                 result.failedChild = [temp];
-                result.failEnd = temp.end;
+                result.failEnd = maxFail;
             }
             result.successful = true;
         }
@@ -2566,7 +2575,7 @@ template option(alias r)
         if (result.successful)
             return ParseTree(name, true, result.matches, result.input, result.begin, result.end, [result], result.failEnd);
         else
-            return ParseTree(name, true, [], p.input, p.end, p.end, null, result.failEnd, [result]);
+            return ParseTree(name, true, [], p.input, p.end, p.end, null, max(result.end,result.failEnd), [result]);
     }
 
     ParseTree option(string input)
@@ -3594,8 +3603,10 @@ mixin template decimateTree()
             {
 				import std.algorithm : startsWith;
 
-                if (  (isRule(child.name) && child.matches.length != 0)
-                   || !child.successful && child.children.length == 0)
+                if (  (isRule(child.name))
+                   || (!child.successful && child.children.length == 0)
+                   || (!child.successful && child.name.startsWith("or!") && child.children.length > 1)
+                   || (!pt.successful && child.successful && child.children.length == 0 && child.failedChild.length > 0))
                 {
                     child.children = filterChildren(child);
                     result ~= child;
@@ -3612,6 +3623,37 @@ mixin template decimateTree()
             }
             return result;
         }
+        void filterFailedChildren(ref ParseTree pt)
+        {
+            foreach(ref child; pt.children)
+            {
+                filterFailedChildren(child);
+				import std.algorithm : startsWith;
+
+                if (  (isRule(child.name))
+                   || (!child.successful && child.children.length == 0)
+                   || (!child.successful && child.name.startsWith("or!") && child.children.length > 1)
+                   || (!pt.successful && child.successful && child.children.length == 0 && child.failedChild.length > 0))
+                {
+                }
+                else if (child.name.startsWith("keep!(")) // 'keep' node are never discarded.
+                                               // They have only one child, the node to keep
+                {
+                }
+                else if (child.failedChild.length > 0)// discard this node, but see if its children contain nodes to keep
+                {
+                    pt.failedChild ~= child.failedChild;
+                    child.failedChild = [];
+                }
+            }
+            foreach(ref child; pt.failedChild)
+            {
+                filterFailedChildren(child);
+                child.children = filterChildren(child);
+            }
+        }
+        if (!p.successful)
+            filterFailedChildren(p);
         p.children = filterChildren(p);
         return p;
     }
