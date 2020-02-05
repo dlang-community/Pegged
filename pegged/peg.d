@@ -721,14 +721,16 @@ template literal(string s)
     ParseTree literal(ParseTree p)
     {
         enum lit = "\"" ~ s ~ "\"";
-        import std.algorithm : commonPrefix;
-        auto prefix = p.input[p.end..$].commonPrefix(s);
 
-        if (prefix.length == s.length)
+        if (p.end+s.length <= p.input.length && p.input[p.end..p.end+s.length] == s)
             return ParseTree(name, true, [s], p.input, p.end, p.end+s.length);
-        else
+        else {
+            import std.algorithm : commonPrefix;
+            import std.utf : byCodeUnit;
+            auto prefix = p.input[p.end..$].byCodeUnit.commonPrefix(s.byCodeUnit);
             return ParseTree(name, false, [lit], p.input, p.end, p.end, null, p.end + prefix.length);
-    }
+        }
+	}
 
     ParseTree literal(string input)
     {
@@ -3596,6 +3598,8 @@ mixin template decimateTree()
     {
         if(p.children.length == 0) return p;
 
+        bool parseFailed = !p.successful;
+
         ParseTree[] filterChildren(ParseTree pt)
         {
             ParseTree[] result;
@@ -3603,7 +3607,7 @@ mixin template decimateTree()
             {
 				import std.algorithm : startsWith;
 
-                if (  (isRule(child.name))
+                if (  (isRule(child.name) && (child.matches.length != 0 || parseFailed))
                    || (!child.successful && child.children.length == 0)
                    || (!child.successful && child.name.startsWith("or!") && child.children.length > 1)
                    || (!pt.successful && child.successful && child.children.length == 0 && child.failedChild.length > 0))
@@ -3630,7 +3634,7 @@ mixin template decimateTree()
                 filterFailedChildren(child);
 				import std.algorithm : startsWith;
 
-                if (  (isRule(child.name))
+                if (  (isRule(child.name) && (child.matches.length != 0 || parseFailed))
                    || (!child.successful && child.children.length == 0)
                    || (!child.successful && child.name.startsWith("or!") && child.children.length > 1)
                    || (!pt.successful && child.successful && child.children.length == 0 && child.failedChild.length > 0))
