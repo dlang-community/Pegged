@@ -1656,15 +1656,15 @@ template or(rules...) if (rules.length > 0)
                 failedLength[i] = temp.end;
                 if (temp.end >= longestFail.end)
                 {
+                    if (temp.end == longestFail.end)
+                        errorStringChars += (temp.matches.length > 0 ? temp.matches[$-1].length : 0) + errName.length + 4;
+                    else
+                        errorStringChars = (temp.matches.length > 0 ? temp.matches[$-1].length : 0) + errName.length + 4;
                     maxFailedLength = temp.end;
                     longestFail = temp;
                     names[i] = errName;
                     results[i] = temp;
 
-                    if (temp.end == longestFail.end)
-                        errorStringChars += (temp.matches.length > 0 ? temp.matches[$-1].length : 0) + errName.length + 4;
-                    else
-                        errorStringChars = (temp.matches.length > 0 ? temp.matches[$-1].length : 0) + errName.length + 4;
                 }
                 // Else, this error parsed less input than another one: we discard it.
             }
