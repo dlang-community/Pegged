@@ -261,70 +261,55 @@ struct ParseTree
         foreach(i,child; children)
         {
             childrenString ~= tabs ~ " +-" ~ child.toString(tabs ~ ((i < children.length -1 ) ? " | " : "   "));
-            if (!child.successful)
+            if (!child.successful) {
                 allChildrenSuccessful = false;
-        }
-
-        if (successful)
-        {
-            result ~= " " ~ to!string([begin, end]) ~ to!string(matches) ~ "\n";
-        }
-        else // some failure info is needed
-        {
-            if (allChildrenSuccessful) // no one calculated the position yet
-            {
-                Position pos = position(this);
-                string left, right;
-
-                if (pos.index < 10)
-                    left = input[0 .. pos.index];
-                else
-                    left = input[pos.index-10 .. pos.index];
-                //left = strip(left);
-
-                if (pos.index + 10 < input.length)
-                    right = input[pos.index .. pos.index + 10];
-                else
-                    right = input[pos.index .. $];
-                //right = strip(right);
-
-                result ~= " failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
-                       ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
-                       ~ "expected "~ (matches.length > 0 ? matches[$-1].stringified : "NO MATCH")
-                       ~ ", but got " ~ right.stringified ~ "\n";
-            }
-            else
-            {
-                result ~= " (failure)\n";
             }
         }
-
+        result ~= this.toStringThisNode(allChildrenSuccessful);
         return result ~ childrenString;
     }
 
-    @property string failMsg()
+    /**
+     * Basic toString of only this node, without the children
+     */
+    private string toStringThisNode(bool allChildrenSuccessful) const
     {
-        foreach(i, child; children)
-        {
-            if (!child.successful)
+        if (successful) {
+            return to!string([begin, end]) ~ to!string(matches) ~ "\n";
+        } else { // some failure info is needed
+            if (allChildrenSuccessful) { // no one calculated the position yet
+                return " " ~ this.failMsg;
+            } else {
+                return " (failure)\n";
+            }
+        }
+    }
+
+    /**
+     * Generates a generic error when a node fails
+     */
+    @property string failMsg() const
+    {
+        foreach(i, child; children) {
+            if (!child.successful) {
                 return child.failMsg;
+            }
         }
 
-        if (!successful)
-        {
+        if (!successful) {
             Position pos = position(this);
             string left, right;
 
-            if (pos.index < 10)
+            if (pos.index < 10) {
                 left = input[0 .. pos.index];
-            else
+            } else {
                 left = input[pos.index - 10 .. pos.index];
-
-            if (pos.index + 10 < input.length)
+            }
+            if (pos.index + 10 < input.length) {
                 right = input[pos.index .. pos.index + 10];
-            else
+            } else {
                 right = input[pos.index .. $];
-
+            }
             return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
                 ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
                 ~ "expected " ~ (matches.length > 0 ? matches[$ - 1].stringified : "NO MATCH")
