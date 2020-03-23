@@ -278,7 +278,7 @@ struct ParseTree
             return to!string([begin, end]) ~ to!string(matches) ~ "\n";
         } else { // some failure info is needed
             if (allChildrenSuccessful) { // no one calculated the position yet
-                return " " ~ this.failMsg;
+                return " " ~ this.failMsg ~ "\n";
             } else {
                 return " (failure)\n";
             }
@@ -287,12 +287,16 @@ struct ParseTree
 
     /**
      * Generates a generic error when a node fails
+     *
+     * @param successMsg String returned when there isn't an error
+     * @param formatFailMsg Formating delegate function that generates the error message.
      */
-    @property string failMsg() const
+    string failMsg(string delegate(Position, string, string, const ParseTree) formatFailMsg = defaultFormatFailMsg,
+        string successMsg = "Sucess") const @property
     {
         foreach(i, child; children) {
             if (!child.successful) {
-                return child.failMsg;
+                return child.failMsg(formatFailMsg, successMsg);
             }
         }
 
@@ -310,13 +314,10 @@ struct ParseTree
             } else {
                 right = input[pos.index .. $];
             }
-            return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
-                ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
-                ~ "expected " ~ (matches.length > 0 ? matches[$ - 1].stringified : "NO MATCH")
-                ~ `, but got ` ~ right.stringified;
+            return formatFailMsg(pos, left, right, this);
         }
 
-        return "Success";
+        return successMsg;
     }
 
     ParseTree dup() const @property
@@ -337,6 +338,17 @@ struct ParseTree
         return cast(immutable)dup();
     }
 }
+
+/**
+  * Default fail message formating function
+  */
+auto defaultFormatFailMsg = delegate (Position pos, string left, string right, const ParseTree pt) 
+{
+    return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
+        ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
+        ~ "expected " ~ (pt.matches.length > 0 ? pt.matches[$ - 1].stringified : "NO MATCH")
+        ~ `, but got ` ~ right.stringified;
+};
 
 
 unittest // ParseTree testing
@@ -382,6 +394,11 @@ unittest // ParseTree testing
 
     p.matches = q.matches;
     assert(p == q, "Copying matches makes equal trees.");
+
+    p.children[0].successful = false;
+    assert(p.children[0].failMsg == `Failure at line 0, col 1, after "i" expected "def", but got "nput"`);
+    assert(p.children[1].failMsg == "Sucess");
+    assert(p.failMsg == `Failure at line 0, col 1, after "i" expected "def", but got "nput"`);
 }
 
 /// To compare two trees for content (not bothering with node names)
