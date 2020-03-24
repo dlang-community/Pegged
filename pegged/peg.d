@@ -351,6 +351,24 @@ struct ParseTree
     {
         return cast(immutable)dup();
     }
+
+    // Override opIndex operators
+    ref ParseTree opIndex(size_t index) {
+      return children[index];
+    }
+
+    ref ParseTree[] opIndex() {
+        return children;
+    }
+
+    size_t opDollar(size_t pos)()
+    {
+        return children.length;
+    }
+
+    ParseTree[] opSlice(size_t i, size_t j) {
+        return children[i..j];
+    }
 }
 
 
@@ -364,6 +382,11 @@ unittest // ParseTree testing
 
     ParseTree child = ParseTree("Child", true, ["abc", "", "def"], "input", 0, 1, null);
     p.children = [child, child];
+
+    assert(p.children[0] == p[0], "override opIndex allows to write less verbose code to navigate the tree");
+    assert(p.children == p[] );
+    assert(p.children[0..1] == p[0..1] );
+    assert(p.children[0..$] == p[0..$] );
 
     ParseTree q = p;
     assert(p == q, "Copying creates equal trees.");
