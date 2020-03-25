@@ -1294,10 +1294,10 @@ template and(rules...) if (rules.length > 0)
             return    node.name.startsWith("keep!(")
                 || (  !node.name.startsWith("discard!(")
                    //&& !node.name.startsWith("drop!(")
-                   && node.matches !is null
+                   && (node.matches !is null
+                   || node.failEnd >= node.end)
                    //&& node.begin != node.end
-                   )
-	            || (node.failEnd >= node.end);
+                   );
         }
 
         version (tracer)
