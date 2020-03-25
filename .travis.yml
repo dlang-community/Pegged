@@ -1,0 +1,33 @@
+language: d
+sudo: false
+
+branches:
+  only:
+  - master
+
+# Enable core dumps
+before_script:
+  - ulimit -c unlimited -S
+  - sudo mkdir /cores/ && sudo chmod 777 /cores/
+  - echo "/cores/%E.%p" | sudo tee /proc/sys/kernel/core_pattern
+
+after_failure:
+  - ./scripts/core-dump.sh
+
+# order: latest DMD, oldest DMD, LDC/GDC, remaining DMD versions
+# this way the overall test time gets cut down (GDC/LDC are a lot
+# slower tham DMD, so they should be started early), while still
+# catching most DMD version related build failures early
+matrix:
+  include:
+    - d: dmd-nightly
+    - d: dmd-2.091.0
+    - d: dmd-2.090.0
+    - d: dmd-2.089.0
+    - d: ldc-1.18.0
+    - d: ldc-1.17.0
+  allow_failures:
+    - d: dmd-nightly
+
+
+script: ./ci.sh
