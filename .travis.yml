@@ -1,10 +1,6 @@
 language: d
 sudo: false
 
-branches:
-  only:
-  - master
-
 # Enable core dumps
 before_script:
   - ulimit -c unlimited -S
