@@ -287,10 +287,10 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
     {
         // enum name is the current grammar named
         DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
-        foreach(name,rule; dg.rules)
+        foreach(ruleName,rule; dg.rules)
         {
-            if (name != \"Spacing\")
-                rules[name] = rule;
+            if (ruleName != \"Spacing\")
+                rules[ruleName] = rule;
         }
         after[parentRule] = rules[dg.startingRule];
     }

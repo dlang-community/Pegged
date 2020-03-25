@@ -228,7 +228,9 @@ Return <- "return"
 
 # The following comes from me, not an official C grammar
 
-Identifier <~ !Keyword [a-zA-Z_] [a-zA-Z0-9_]*
+IdentPattern <~ [a-zA-Z_] [a-zA-Z0-9_]*
+  
+Identifier <- !(Keyword !IdentPattern) IdentPattern
 
 Keyword <- "auto" / "break" / "case" / "char" / "const" / "continue"
          / "default" / "double" / "do" / "else" / "enum" / "extern"
