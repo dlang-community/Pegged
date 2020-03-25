@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/PhilippeSigaud/Pegged.svg?branch=master)](https://travis-ci.com/PhilippeSigaud/Pegged)
+
 PEGGED
 ======
 
