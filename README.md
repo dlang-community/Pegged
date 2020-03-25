@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.com/PhilippeSigaud/Pegged.svg?branch=master)](https://travis-ci.com/PhilippeSigaud/Pegged)
+[![Build status](https://ci.appveyor.com/api/projects/status/qbd39bvvyrrns2m0?svg=true)](https://ci.appveyor.com/project/PhilippeSigaud/pegged)
 
 PEGGED
 ======
