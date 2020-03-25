@@ -1332,7 +1332,7 @@ template and(rules...) if (rules.length > 0)
             }
             else
             {
-                auto firstLongestFailedMatch = result.children.countUntil!(c => c.failEnd > temp.end);
+                auto firstLongestFailedMatch = result.children.firstLongestFailedMatch(temp.end);
                 if (firstLongestFailedMatch == -1) {
                     result.children ~= temp;// add the failed node, to indicate which failed
                     if (temp.matches.length > 0)
@@ -1345,8 +1345,8 @@ template and(rules...) if (rules.length > 0)
                     // so that it is no longer successful and we want to move its failedChild into its children.
                     failedChildFixup(result.children[firstLongestFailedMatch], result.children[firstLongestFailedMatch].failEnd);
                 }
-                result.end = result.children.map!(c => c.end).maxElement;
-                result.failEnd = result.children.map!(c => c.failEnd).maxElement;
+                result.end = result.children.maxEnd();
+                result.failEnd = result.children.maxFailEnd();
                 version (tracer)
                 {
                     if (shouldTrace(getName!(r)(), p))
@@ -1380,33 +1380,54 @@ template and(rules...) if (rules.length > 0)
         return name;
     }
 
-    // A child ParseTree has kept track of an alternate ParseTree (in failedChild) that matches longer.
-    // whenever the 'and' rule fails we want to rewrite that child so that the failedChild is
-    // moved into its children, the successful is set to false, the end is set the its failEnd,
-    // the failEnd is reset, and all that info is propagated upwards the tree so intermediate
-    // nodes reflect the proper state.
-    bool failedChildFixup(ref ParseTree p, size_t failEnd) {
-        if (p.failedChild.length > 0) {
-            p.children ~= p.failedChild[0];
-            p.failedChild = [];
-            p.successful = false;
-            p.end = p.failEnd;
-            p.failEnd = p.children.map!(c => c.failEnd).maxElement();
-            return true;
-        } else {
-            bool result = false;
-            foreach(ref c; p.children) {
-                if (c.failEnd != failEnd)
-                    continue;
-                if (failedChildFixup(c, failEnd)) {
-                    p.end = c.end;
-                    p.successful = false;
-                    p.failEnd = p.children.map!(c => c.failEnd).maxElement();
-                    result = true;
-                }
+}
+
+auto firstLongestFailedMatch(ParseTree[] children, size_t threshold) {
+    return children.countUntil!(c => c.failEnd > threshold);
+}
+
+auto maxFailEnd(ParseTree[] children)
+{
+    return children.map!(c => c.failEnd).maxElement;
+}
+
+auto maxEnd(ParseTree[] children)
+{
+    return children.map!(c => c.end).maxElement;
+}
+
+// A child ParseTree has kept track of an alternate ParseTree (in failedChild) that matches longer.
+// whenever the 'and' rule fails we want to rewrite that child so that the failedChild is
+// moved into its children, the successful is set to false, the end is set the its failEnd,
+// the failEnd is reset, and all that info is propagated upwards the tree so intermediate
+// nodes reflect the proper state.
+bool failedChildFixup(ref ParseTree p, size_t failEnd)
+{
+    if (p.failedChild.length > 0)
+    {
+        p.children ~= p.failedChild[0];
+        p.failedChild = [];
+        p.successful = false;
+        p.end = p.failEnd;
+        p.failEnd = p.children.map!(c => c.failEnd).maxElement();
+        return true;
+    }
+    else
+    {
+        bool result = false;
+        foreach (ref c; p.children)
+        {
+            if (c.failEnd != failEnd)
+                continue;
+            if (failedChildFixup(c, failEnd))
+            {
+                p.end = c.end;
+                p.successful = false;
+                p.failEnd = p.children.map!(c => c.failEnd).maxElement();
+                result = true;
             }
-            return result;
         }
+        return result;
     }
 }
 
@@ -1725,8 +1746,8 @@ template or(rules...) if (rules.length > 0)
         longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
                               longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
-        auto children = results[].filter!(r => max(r.end, r.failEnd) >= maxFailedLength).array();
-        return ParseTree(name, false, longestFail.matches, p.input, p.end, longestFail.end, children, children.map!(c => c.failEnd).maxElement);
+        auto children = results[].getUpto(maxFailedLength);
+        return ParseTree(name, false, longestFail.matches, p.input, p.end, longestFail.end, children, children.maxFailEnd);
     }
 
     ParseTree or(string input)
@@ -1738,6 +1759,10 @@ template or(rules...) if (rules.length > 0)
     {
         return name;
     }
+}
+
+auto getUpto(ParseTree[] children, size_t minFailedLength) {
+    return children.filter!(r => max(r.end, r.failEnd) >= minFailedLength).array();
 }
 
 unittest // 'or' unit test
