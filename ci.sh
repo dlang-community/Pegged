@@ -16,3 +16,10 @@ fi
 
 # Run unit tests
 dub test --compiler=$DC
+
+# Execute extended_pascal build with time -v
+cd pegged/examples/extended_pascal
+# Hack to workaround dub bug with preGenerateCommands
+dub build -b release --compiler=$DC || true
+/usr/bin/time -v dub build -b release --compiler=$DC
+
