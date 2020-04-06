@@ -139,9 +139,9 @@ import std.functional: toDelegate;
 
 struct GenericPegged(TParseTree)
 {
-	import std.functional : toDelegate;
+    import std.functional : toDelegate;
     import pegged.dynamic.grammar;
-	static import pegged.peg;
+    static import pegged.peg;
     struct Pegged
     {
     enum name = "Pegged";
@@ -256,7 +256,7 @@ struct GenericPegged(TParseTree)
 
     static bool isRule(string s)
     {
-		import std.algorithm : startsWith;
+        import std.algorithm : startsWith;
         return s.startsWith("Pegged.");
     }
     mixin decimateTree;

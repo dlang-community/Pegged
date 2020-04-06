@@ -23,7 +23,7 @@ UnorderedBranch <
 
 Spacing <: (blank / Comment)*
 
-Comment <- 
+Comment <-
     / '//' (!eol .)* (eol)
     / '/*' (!'*/' .)* '*/'
     / NestedComment

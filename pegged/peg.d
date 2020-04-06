@@ -365,7 +365,7 @@ struct ParseTree
 /**
   * Default fail message formating function
   */
-auto defaultFormatFailMsg = delegate (Position pos, string left, string right, const ParseTree pt) 
+auto defaultFormatFailMsg = delegate (Position pos, string left, string right, const ParseTree pt)
 {
     return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
         ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
@@ -682,8 +682,8 @@ Predefined parser: matches word boundaries, as \b for regexes.
 */
 ParseTree wordBoundary(ParseTree p)
 {
-	// TODO: I added more indexing guards and now this could probably use
-	//         some simplification.  Too tired to write it better. --Chad
+    // TODO: I added more indexing guards and now this could probably use
+    //         some simplification.  Too tired to write it better. --Chad
     bool matched =  (p.end == 0 && isAlpha(p.input.front()))
                  || (p.end == p.input.length && isAlpha(p.input.back()))
                  || (p.end > 0 && isAlpha(p.input[p.end-1])  && p.end < p.input.length && !isAlpha(p.input[p.end]))
@@ -755,7 +755,7 @@ template literal(string s)
             auto prefix = p.input[p.end..$].byCodeUnit.commonPrefix(s.byCodeUnit);
             return ParseTree(name, false, [lit], p.input, p.end, p.end, null, p.end + prefix.length);
         }
-	}
+    }
 
     ParseTree literal(string input)
     {
@@ -1665,8 +1665,8 @@ template or(rules...) if (rules.length > 0)
             incTraceLevel();
         }
 
-		// Real 'or' loop
-		foreach(i,r; rules)
+        // Real 'or' loop
+        foreach(i,r; rules)
         {
             version (tracer)
             {
@@ -2035,111 +2035,111 @@ Compile-time switch trie from Brian Schott
 */
 class Trie(V) : TrieNode!(V)
 {
-	/**
-	 * Adds the given value to the trie with the given key
-	 */
-	void add(string key, V value) pure
-	{
-		TrieNode!(V) current = this;
-		foreach(dchar keyPart; key)
-		{
-			if ((keyPart in current.children) is null)
-			{
-				auto node = new TrieNode!(V);
-				current.children[keyPart] = node;
-				current = node;
-			}
-			else
-				current = current.children[keyPart];
-		}
-		current.value = value;
-	}
+    /**
+     * Adds the given value to the trie with the given key
+     */
+    void add(string key, V value) pure
+    {
+        TrieNode!(V) current = this;
+        foreach(dchar keyPart; key)
+        {
+            if ((keyPart in current.children) is null)
+            {
+                auto node = new TrieNode!(V);
+                current.children[keyPart] = node;
+                current = node;
+            }
+            else
+                current = current.children[keyPart];
+        }
+        current.value = value;
+    }
 }
 
 class TrieNode(V)
 {
-	V value;
-	TrieNode!(V)[dchar] children;
+    V value;
+    TrieNode!(V)[dchar] children;
 }
 
 string printCaseStatements(V)(TrieNode!(V) node, string indentString)
 {
-	string s = "";
-	string idnt = indentString;
+    string s = "";
+    string idnt = indentString;
 
-	void incIndent() { idnt ~= "  "; }
-	void decIndent() { idnt = idnt[2..$]; }
+    void incIndent() { idnt ~= "  "; }
+    void decIndent() { idnt = idnt[2..$]; }
 
-	void put(string k) { s ~= idnt ~ k; }
-	void append(string k) { s ~= k;}
+    void put(string k) { s ~= idnt ~ k; }
+    void append(string k) { s ~= k;}
 
-	foreach(dchar k, TrieNode!(V) v; node.children)
-	{
-		put("case '");
-		switch(k)
-		{
+    foreach(dchar k, TrieNode!(V) v; node.children)
+    {
+        put("case '");
+        switch(k)
+        {
             case '\n': append("\\n"); break;
             case '\t': append("\\t"); break;
             case '\r': append("\\r"); break;
             case 92:   append("\\");  break;
             default:   append(to!string(k));
-		}
-		append("':\n");
-		incIndent();
+        }
+        append("':\n");
+        incIndent();
 
-		put("temp.end++;\n");
-		if (v.children.length > 0)
-		{
-			put("if (temp.end >= temp.input.length)\n");
-			put("{\n");
-			incIndent();
+        put("temp.end++;\n");
+        if (v.children.length > 0)
+        {
+            put("if (temp.end >= temp.input.length)\n");
+            put("{\n");
+            incIndent();
 
-			if (node.children[k].value.length != 0)
+            if (node.children[k].value.length != 0)
                 put("return ParseTree(name, true, [`" ~ node.children[k].value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
 
-			append(";\n");
-			decIndent();
+            append(";\n");
+            decIndent();
 
-			put("}\n");
-			put("switch (temp.input[temp.end])\n");
-			put("{\n");
+            put("}\n");
+            put("switch (temp.input[temp.end])\n");
+            put("{\n");
 
-			incIndent();
-			append(printCaseStatements(v, idnt));
+            incIndent();
+            append(printCaseStatements(v, idnt));
 
-			put("default:\n");
-			incIndent();
-			if (v.value.length != 0)
+            put("default:\n");
+            incIndent();
+            if (v.value.length != 0)
                 put("return ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
-			append(";\n");
-			decIndent();
-			decIndent();
-			put("}\n");
-		}
-		else
-		{
-			if (v.value.length != 0)
+            append(";\n");
+            decIndent();
+            decIndent();
+            put("}\n");
+        }
+        else
+        {
+            if (v.value.length != 0)
                 put("return ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
-			append(";\n");
-		}
-	}
-	return s;
+            append(";\n");
+        }
+    }
+    return s;
 }
 
 string generateCaseTrie(string[] args ...)
 {
-	auto t = new Trie!(string);
-	foreach(arg; args)
-	{
-		t.add(arg, arg);
-	}
-	return printCaseStatements(t, "");
+    auto t = new Trie!(string);
+    foreach(arg; args)
+    {
+        t.add(arg, arg);
+    }
+    return printCaseStatements(t, "");
 }
 
 /**
@@ -3655,7 +3655,7 @@ mixin template decimateTree()
             ParseTree[] result;
             foreach(child; pt.children)
             {
-				import std.algorithm : startsWith;
+                import std.algorithm : startsWith;
 
                 if (  (isRule(child.name) && (child.matches.length != 0 || parseFailed))
                    || (!child.successful && child.children.length == 0)
@@ -3682,7 +3682,7 @@ mixin template decimateTree()
             foreach(ref child; pt.children)
             {
                 filterFailedChildren(child);
-				import std.algorithm : startsWith;
+                import std.algorithm : startsWith;
 
                 if (  (isRule(child.name) && (child.matches.length != 0 || parseFailed))
                    || (!child.successful && child.children.length == 0)
