@@ -44,9 +44,8 @@ install:
             }
             if($env:arch -eq "x64"){
                 $env:PATH += ";C:\dmd2\windows\bin64;";
-            } else {
-                $env:PATH += ";C:\dmd2\windows\bin;";
             }
+            $env:PATH += ";C:\dmd2\windows\bin;";
             return $url;
         }
   - ps: function ResolveLatestLDC
