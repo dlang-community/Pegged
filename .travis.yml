@@ -1,5 +1,7 @@
+os: linux
+#Latest Ubuntu LTS
+dist: bionic
 language: d
-sudo: false
 
 # Enable core dumps
 before_script:
@@ -10,7 +12,7 @@ before_script:
 after_failure:
   - ./scripts/core-dump.sh
 
-matrix:
+jobs:
   include:
     - d: dmd-nightly
     - d: dmd
