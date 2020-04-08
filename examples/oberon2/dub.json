@@ -1,0 +1,12 @@
+{
+  "name": "oberon2",
+  "description": "The Oberon-2 programming language grammar. This grammar was written by Bjoern Lietz-Spendig.",
+  "license": "Boost",
+  "targetType": "library",
+  "dependencies": {
+    "pegged":  {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}

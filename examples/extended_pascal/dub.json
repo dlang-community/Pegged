@@ -6,8 +6,8 @@
     "dependencies": {
         "pegged":  {
             "version": "*",
-            "path": "../../.."
-        },
+            "path": "../.."
+        }
     },
     "preGenerateCommands": [
         "rdmd -I$PEGGED_PACKAGE_DIR source/make.d"

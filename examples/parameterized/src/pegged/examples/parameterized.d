@@ -105,8 +105,8 @@ unittest
         A <- Parameterized.String
     "));
 
-    assert(ParamTest4(`"abc"`).matches == [`"abc"`]);
-    assert(ParamTest4(`""`).matches == [`""`]);
+    assert(ParamTest4(`"abc"`).matches == [`abc`]);
+    assert(ParamTest4(`""`).matches == []);
 
     mixin(grammar("
     ParamTest5:
