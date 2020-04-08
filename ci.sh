@@ -24,6 +24,10 @@ dub test :strings --compiler=$DC
 dub test :csv --compiler=$DC
 dub test :json --compiler=$DC
 
+pushd examples/composition
+dub test --compiler=$DC
+popd
+
 # TODO Actually doesn't compiles
 # pushd examples/c
 # dub test --compiler=$DC

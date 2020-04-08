@@ -18,6 +18,10 @@ dub test :strings --compiler=%DC%
 dub test :csv --compiler=%DC%
 dub test :json --compiler=%DC%
 
+pushd examples\composition
+dub test --compiler=%DC%
+popd
+
 rem TODO Actually doesn't compiles
 rem pushd examples\c
 rem dub test --compiler=%DC%
