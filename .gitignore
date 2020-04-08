@@ -1,9 +1,45 @@
-*~
-*.deps
-*.obj
+# Created by https://www.gitignore.io/api/d
+# Edit at https://www.gitignore.io/?templates=d
+
+### D ###
+# Compiled Object files
 *.o
+*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.a
+*.lib
+
+# Executables
+*.exe
+
+# DUB
+.dub
+docs.json
+__dummy.html
+docs/
+
+# Code coverage
+*.lst
+
+### D Patch ###
+# Test Executables
+*-test-*
+
+# Comment to allow dub lock file to be version controlled as well
+dub.selections.json
+
+# End of https://www.gitignore.io/api/d
+
+*~
+*.swp
+*.deps
 .lock-*
 build/*
 .directory
-.dub
-libpegged.a
+

@@ -7,7 +7,7 @@ import epgrammar;
 
 void main()
 {
-	auto header = `
+    auto header = `
 PT failOnWordSymbol(PT)(PT p)
 {
     import std.uni: sicmp;
@@ -80,5 +80,5 @@ PT failOnWordSymbol(PT)(PT p)
     return p;
 }
 `;
-	asModule!()("epparser", "source/epparser", EPgrammar, header);
+    asModule!()("epparser", "source/epparser", EPgrammar, header);
 }

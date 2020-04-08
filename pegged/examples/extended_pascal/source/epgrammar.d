@@ -1,4 +1,4 @@
-﻿module epgrammar;
+module epgrammar;
 
 // Extended Pascal grammar.
 // Comments refer to the section numbers in the standard:

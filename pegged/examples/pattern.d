@@ -67,8 +67,8 @@ template TypeFailure(T...)
 {
     enum successful = false;
     alias TypeTuple!() Types;
-	enum begin = 0;
-	enum end = 0;
+    enum begin = 0;
+    enum end = 0;
     alias T Rest;
 }
 
@@ -82,8 +82,8 @@ struct TypeAny
         {
             enum successful = true;
             alias T[0..1] Types;
-			enum begin = 0;
-			enum end = 1;
+            enum begin = 0;
+            enum end = 1;
             alias T[1..$] Rest;
         }
     }
@@ -97,8 +97,8 @@ struct TypeEnd
         {
             enum successful = true;
             alias TypeTuple!() Types;
-			enum begin = 0;
-			enum end = 0;
+            enum begin = 0;
+            enum end = 0;
             alias T Rest;
         }
         else
@@ -112,8 +112,8 @@ struct TypeEps
     {
         enum successful = true;
         alias TypeTuple!() Types;
-		enum begin = 0;
-		enum end = 0;
+        enum begin = 0;
+        enum end = 0;
         alias T Rest;
     }
 }
@@ -128,8 +128,8 @@ struct TypeLiteral(U...)
         {
             enum successful = true;
             alias T[0..U.length] Types;
-			enum begin = 0;
-			enum end = U.length;
+            enum begin = 0;
+            enum end = U.length;
             alias T[U.length..$] Rest;
         }
     }
@@ -155,8 +155,8 @@ struct TypeSubType(U...)
         {
             enum successful = true;
             alias T[0..U.length] Types;
-			enum begin = 0;
-			enum end = U.length;
+            enum begin = 0;
+            enum end = U.length;
             alias T[U.length..$] Rest;
         }
     }
@@ -194,8 +194,8 @@ struct TypeAnd(alias Pattern1, alias Pattern2)
         {
             enum successful = true;
             alias TypeTuple!(P1.Types, P2.Types) Types;
-			enum begin = P1.begin;
-			enum end = P2.end;
+            enum begin = P1.begin;
+            enum end = P2.end;
             alias P2.Rest Rest;
         }
         else
@@ -224,8 +224,8 @@ struct TypeOption(alias Pattern)
         {
             enum successful = true;
             alias TypeTuple!() Types;
-			enum begin = 0;
-			enum end = 0;
+            enum begin = 0;
+            enum end = 0;
             alias T Rest;
         }
     }
@@ -240,17 +240,17 @@ struct TypeZeroOrMore(alias Pattern)
         {
             enum successful = true;
             alias TypeTuple!(P.Types, TypeZeroOrMore!(Pattern).Match!(P.Rest).Types) Types;
-			enum begin = P.begin;
-			alias TypeZeroOrMore!(Pattern).Match!(P.Rest) More;
-			enum end = P.end + More.end;
+            enum begin = P.begin;
+            alias TypeZeroOrMore!(Pattern).Match!(P.Rest) More;
+            enum end = P.end + More.end;
             alias TypeZeroOrMore!(Pattern).Match!(P.Rest).Rest Rest;
         }
         else
         {
             enum successful = true;
             alias TypeTuple!() Types;
-			enum begin = 0;
-			enum end = 0;
+            enum begin = 0;
+            enum end = 0;
             alias T Rest;
         }
     }
@@ -265,9 +265,9 @@ struct TypeOneOrMore(alias Pattern)
         {
             enum successful = true;
             alias TypeTuple!(P.Types, TypeZeroOrMore!(Pattern).Match!(P.Rest).Types) Types;
-			enum begin = P.begin;
-			alias TypeZeroOrMore!(Pattern).Match!(P.Rest) More;
-			enum end = P.end + More.end;
+            enum begin = P.begin;
+            alias TypeZeroOrMore!(Pattern).Match!(P.Rest) More;
+            enum end = P.end + More.end;
             alias TypeZeroOrMore!(Pattern).Match!(P.Rest).Rest Rest;
         }
         else
@@ -280,203 +280,203 @@ Discards the matched types, but propagate the indices.
 */
 struct TypeDiscardMatch(alias Pattern)
 {
-	template Match(T...)
-	{
-		alias Pattern.Match!(T) P;
-		static if (P.successful)
-		{
-			enum successful = true;
-			alias TypeTuple!() Types; // Forget the match,
-			enum begin = P.begin;     // but propagate indices
-			enum end = P.end;         //
-			alias P.Rest Rest;        // and the input
-		}
-		else
-			mixin TypeFailure!(T);
-	}
+    template Match(T...)
+    {
+        alias Pattern.Match!(T) P;
+        static if (P.successful)
+        {
+            enum successful = true;
+            alias TypeTuple!() Types; // Forget the match,
+            enum begin = P.begin;     // but propagate indices
+            enum end = P.end;         //
+            alias P.Rest Rest;        // and the input
+        }
+        else
+            mixin TypeFailure!(T);
+    }
 }
 
 struct TypePosLookAhead(alias Pattern)
 {
-	template Match(T...)
-	{
-		alias Pattern.Match!(T) P;
-		static if (P.successful)
-		{
-			enum successful = true;
-			alias TypeTuple!() Types;
-			enum begin = 0;
-			enum end = 0;
-			alias T Rest;
-		}
-		else
-			mixin TypeFailure!(T);
-	}
+    template Match(T...)
+    {
+        alias Pattern.Match!(T) P;
+        static if (P.successful)
+        {
+            enum successful = true;
+            alias TypeTuple!() Types;
+            enum begin = 0;
+            enum end = 0;
+            alias T Rest;
+        }
+        else
+            mixin TypeFailure!(T);
+    }
 }
 
 struct TypeNegLookAhead(alias Pattern)
 {
-	template Match(T...)
-	{
-		alias Pattern.Match!(T) P;
-		static if (P.successful)
-			mixin TypeFailure!(T);
-		else
-		{
-			enum successful = true;
-			alias TypeTuple!() Types;
-			enum begin = 0;
-			enum end = 0;
-			alias T Rest;
-		}
-	}
+    template Match(T...)
+    {
+        alias Pattern.Match!(T) P;
+        static if (P.successful)
+            mixin TypeFailure!(T);
+        else
+        {
+            enum successful = true;
+            alias TypeTuple!() Types;
+            enum begin = 0;
+            enum end = 0;
+            alias T Rest;
+        }
+    }
 }
 
 struct isRange
 {
-	template Match(T...)
-	{
-		static if (isInputRange!(T[0]))
-		{
-			enum successful = true;
-			alias T[0] Types;
-			enum begin = 0;
-			enum end = 1;
-			alias T[1..$] Rest;
-		}
-		else
-			mixin TypeFailure!(T);
-	}
+    template Match(T...)
+    {
+        static if (isInputRange!(T[0]))
+        {
+            enum successful = true;
+            alias T[0] Types;
+            enum begin = 0;
+            enum end = 1;
+            alias T[1..$] Rest;
+        }
+        else
+            mixin TypeFailure!(T);
+    }
 }
 
 struct TypeSatisfy(alias test)
 {
-	template Match(T...)
-	{
-		static if (test!(T[0]))
-		{
-			enum successful = true;
-			alias T[0] Types;
-			enum begin = 0;
-			enum end = 1;
-			alias T[1..$] Rest;
-		}
-		else
-			mixin TypeFailure!(T);
-	}
+    template Match(T...)
+    {
+        static if (test!(T[0]))
+        {
+            enum successful = true;
+            alias T[0] Types;
+            enum begin = 0;
+            enum end = 1;
+            alias T[1..$] Rest;
+        }
+        else
+            mixin TypeFailure!(T);
+    }
 }
 
 struct MatchResult(size_t junction, T...)
 {
-	bool successful;
-	T[0..junction] match;
-	size_t begin;
-	size_t end;
-	T[junction..$] rest;
+    bool successful;
+    T[0..junction] match;
+    size_t begin;
+    size_t end;
+    T[junction..$] rest;
 }
 
 struct Success(M...)
 {
-	M match;
-	size_t begin;
-	size_t end;
+    M match;
+    size_t begin;
+    size_t end;
 
-	auto rest(R...)(R rest)
-	{
-		return MatchResult!(M.length, M, R)(true, match, begin, end, rest);
-	}
+    auto rest(R...)(R rest)
+    {
+        return MatchResult!(M.length, M, R)(true, match, begin, end, rest);
+    }
 }
 
 Success!(M) success(M...)(M match, size_t begin, size_t end)
 {
-	return Success!(M)(match, begin, end);
+    return Success!(M)(match, begin, end);
 }
 
 auto failure(R...)(R rest)
 {
-	return MatchResult!(0,R)(false, 0,0, rest);
+    return MatchResult!(0,R)(false, 0,0, rest);
 }
 
 auto anyValue(Args...)(Args args)
 {
-	static if (Args.length > 0)
-		return success(args[0],0,1).rest(args[1..$]);
-	else
-		return failure(args);
+    static if (Args.length > 0)
+        return success(args[0],0,1).rest(args[1..$]);
+    else
+        return failure(args);
 }
 
 auto endValue(Args...)(Args args)
 {
-	static if (Args.length == 0)
-		return success(0,0).rest(args);
-	else
-		return failure(args);
+    static if (Args.length == 0)
+        return success(0,0).rest(args);
+    else
+        return failure(args);
 }
 
 /+
 template literalValue(values...)
 {
-	auto literalValue(Args...)(Args args)
-	{
-		if (
-			return success(0,values.length).rest(args[values.length..$]);
-		else
-			return failure(args);
-	}
+    auto literalValue(Args...)(Args args)
+    {
+        if (
+            return success(0,values.length).rest(args[values.length..$]);
+        else
+            return failure(args);
+    }
 }
 +/
 
 Tuple!(ElementType!R, R) rangeAny(R)(R r) if (isInputRange!R)
 {
-	if (r.empty)
-		throw new Exception("Empty range, could not pattern-match");
-	else
-	{
-		auto head = r.front();
-		r.popFront();
-		return tuple(head, r);
-	}
+    if (r.empty)
+        throw new Exception("Empty range, could not pattern-match");
+    else
+    {
+        auto head = r.front();
+        r.popFront();
+        return tuple(head, r);
+    }
 }
 
 Tuple!(R,R) rangeRest(R)(R r) if (isInputRange!R)
 {
-	if (r.empty)
-		throw new Exception("Empty range, could not pattern-match");
-	else
-		return tuple(r, r); // second r will not be used, but is needed to be compatible with other range patterns: Tuple!(result,rest)
+    if (r.empty)
+        throw new Exception("Empty range, could not pattern-match");
+    else
+        return tuple(r, r); // second r will not be used, but is needed to be compatible with other range patterns: Tuple!(result,rest)
 }
 
 template RangePatternResult(R) if (isInputRange!R)
 {
-	template RangePatternResult(alias T)
-	{
-		alias ReturnType!(T!R) RangePatternResult;
-	}
+    template RangePatternResult(alias T)
+    {
+        alias ReturnType!(T!R) RangePatternResult;
+    }
 }
 
 template onRange(RangePatterns...)
 {
-	auto onRange(R)(R r) if (isInputRange!(R))
-	{
-		alias RangePatternResult!R GetType;
+    auto onRange(R)(R r) if (isInputRange!(R))
+    {
+        alias RangePatternResult!R GetType;
 
-		staticMap!(GetType, RangePatterns) _temp;
+        staticMap!(GetType, RangePatterns) _temp;
 
-		static if (RangePatterns.length > 0)
-		{
-			_temp[0] = RangePatterns[0](r);
-			foreach(i,pat; RangePatterns[1..$])
-				_temp[i+1] = RangePatterns[i+1](_temp[i][1]);
-		}
+        static if (RangePatterns.length > 0)
+        {
+            _temp[0] = RangePatterns[0](r);
+            foreach(i,pat; RangePatterns[1..$])
+                _temp[i+1] = RangePatterns[i+1](_temp[i][1]);
+        }
 
-		struct MatchResult
-		{
-			GetType!(RangePatterns[0]).Types[0] a;
-			GetType!(RangePatterns[1]).Types[0] b;
-			GetType!(RangePatterns[2]).Types[0] c;
-		}
+        struct MatchResult
+        {
+            GetType!(RangePatterns[0]).Types[0] a;
+            GetType!(RangePatterns[1]).Types[0] b;
+            GetType!(RangePatterns[2]).Types[0] c;
+        }
 
-		return MatchResult(_temp[0][0],_temp[1][0],_temp[2][0]);
-	}
+        return MatchResult(_temp[0][0],_temp[1][0],_temp[2][0]);
+    }
 }
 

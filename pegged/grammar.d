@@ -297,7 +297,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
 
     static bool isRule(string s)
     {
-		import std.algorithm : startsWith;
+        import std.algorithm : startsWith;
         return s.startsWith(\"" ~ shortGrammarName ~ ".\");
     }
 ";
@@ -2625,7 +2625,7 @@ unittest // Memoization reset in composed grammars. Issue #162
 unittest // Test lambda syntax in semantic actions
 {
     import std.array;
-	import std.string : strip;
+    import std.string : strip;
 
     auto actions = [
 
