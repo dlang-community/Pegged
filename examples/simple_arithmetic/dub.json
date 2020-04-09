@@ -1,0 +1,12 @@
+{
+  "name": "simple_arithmetic",
+  "description": "Example simple arithmetic PEG grammar. Parses arithmetic expression, like 1*(2+ x/3) - ( x * y * y -4).",
+  "license": "Boost",
+  "targetType": "library",
+  "dependencies": {
+    "pegged":  {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}
