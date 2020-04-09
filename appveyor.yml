@@ -1,24 +1,24 @@
 platform: x64
 environment:
- matrix:
-  - DC: dmd
-    DVersion: stable
-    arch: x64
-  - DC: dmd
-    DVersion: stable
-    arch: x86
-  - DC: dmd
-    DVersion: 2.090.1
-    arch: x86
-  - DC: dmd
-    DVersion: 2.087.1
-    arch: x86
-  - DC: ldc
-    DVersion: stable
-    arch: x86
-  - DC: ldc
-    DVersion: stable
-    arch: x64
+    matrix:
+        - DC: dmd
+          DVersion: stable
+          arch: x64
+        - DC: dmd
+          DVersion: stable
+          arch: x86
+        - DC: dmd
+          DVersion: 2.090.1
+          arch: x86
+        - DC: dmd
+          DVersion: 2.087.1
+          arch: x86
+        - DC: ldc
+          DVersion: stable
+          arch: x86
+        - DC: ldc
+          DVersion: stable
+          arch: x64
 
 matrix:
   allow_failures:
@@ -27,7 +27,7 @@ matrix:
 skip_tags: true
 
 install:
-  - ps: function ResolveLatestDMD
+    - ps: function ResolveLatestDMD
         {
             $version = $env:DVersion;
             if($version -eq "stable") {
@@ -48,7 +48,7 @@ install:
             $env:PATH += ";C:\dmd2\windows\bin;";
             return $url;
         }
-  - ps: function ResolveLatestLDC
+    - ps: function ResolveLatestLDC
         {
             $version = $env:DVersion;
             $arch = $env:arch;
@@ -66,7 +66,7 @@ install:
             $env:DC = "ldc2";
             return $url;
         }
-  - ps: function SetUpDCompiler
+    - ps: function SetUpDCompiler
         {
             $env:toolchain = "msvc";
             if($env:DC -eq "dmd"){
@@ -90,10 +90,7 @@ install:
               popd;
             }
         }
-  - ps: SetUpDCompiler
-  - powershell -Command Invoke-WebRequest http://code.dlang.org/files/dub-1.11.0-windows-x86.zip -OutFile dub.zip
-  - 7z x dub.zip -odub > nul
-  - set PATH=%CD%\%binpath%;%CD%\dub;%PATH%
+    - ps: SetUpDCompiler
 
 before_build:
   - ps: if($env:arch -eq "x86"){
