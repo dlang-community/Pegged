@@ -1,3 +1,6 @@
+/**
+This module contains a example grammar rules to parse different kind of numbers literals.
+*/
 module pegged.examples.numbers;
 
 import pegged.grammar;
@@ -10,6 +13,7 @@ Numbers:
     Unsigned   <~ [0-9]+
     Integer    <~ Sign? Unsigned
     Hexa       <~ [0-9a-fA-F]+
+    Binary     <~ "0b" [01] [01_]*
     Sign       <- '-' / '+'
 `));
 
@@ -28,9 +32,12 @@ unittest
         "+123.456e+00", "+123.456E+00", "+123.456e-00", "+123.456E-00"
     ];
 
-    foreach(i,number; testNumbers)
+    foreach(number; testNumbers)
     {
-        assert(Numbers(number).matches == [number]); // Shall parse
+        const parseTree = Numbers(number);
+        auto match = parseTree.matches;
+        assert(parseTree.successful, "Expected to parse successfully number " ~ number);
+        assert(match == [number], "Expected " ~ number ~ " but was " ~ match[0]); // Shall parse
     }
 
     // Failures
@@ -42,9 +49,9 @@ unittest
         "1e", "1e+", "1e-","1ee"
     ];
 
-    foreach(i,number; testNumbers)
+    foreach(number; testNumbers)
     {
-        assert(Numbers(number).matches != [number]); // None shall parse
+        assert(Numbers(number).matches != [number], "Number \"" ~ number ~ "\" musn't be parsed"); // None shall parse
     }
 
     // Hexadecimal numbers
@@ -62,7 +69,10 @@ unittest
 
     foreach(number; testNumbers)
     {
-        assert(Numbers.decimateTree(Numbers.Hexa(number)).matches == [number]); // Shall parse
+        const parseTree = Numbers.decimateTree(Numbers.Hexa(number));
+        auto match = parseTree.matches;
+        assert(parseTree.successful, "Expected to parse successfully number " ~ number);
+        assert(match == [number], "Expected " ~ number ~ " but was " ~ match[0]); // Shall parse
     }
 
     // Hexadecimal failures
@@ -73,6 +83,33 @@ unittest
 
     foreach(number; testNumbers)
     {
-        assert(Numbers.decimateTree(Numbers.Hexa(number)).matches != [number]); // None shall parse
+        assert(Numbers.decimateTree(Numbers.Hexa(number)).matches != [number],
+                "Number \"" ~ number ~ "\" musn't be parsed"); // None shall parse
+    }
+
+    // Binary numbers
+    testNumbers =
+    [
+        "0b0", "0b1", "0b0000", "0b0001", "0b11110000", "0b0000_1111", "0b1010_00_11"
+    ];
+
+    foreach(number; testNumbers)
+    {
+        const parseTree = Numbers.decimateTree(Numbers.Binary(number));
+        auto match = parseTree.matches;
+        assert(parseTree.successful, "Expected to parse successfully number " ~ number);
+        assert(match == [number], "Expected " ~ number ~ " but was " ~ match[0]); // Shall parse
+    }
+
+    // Hexadecimal failures
+    testNumbers =
+    [
+        "", "G", "g", "-1", "123.456", "123e+100", "0b", "01010", "0b3456"
+    ];
+
+    foreach(number; testNumbers)
+    {
+        assert(Numbers.decimateTree(Numbers.Binary(number)).matches != [number],
+                "Number \"" ~ number ~ "\" musn't be parsed"); // None shall parse
     }
 }
