@@ -31,8 +31,11 @@ JSON:
     Digit  <- [0-9]
     Hex    <- [0-9A-Fa-f]
 `));
-enum example2 = `
+
+unittest
 {
+    enum example2 = `
+    {
     "Number": 42,
     "Decimal": 123.456,
     "String": "abc",
@@ -45,10 +48,16 @@ enum example2 = `
     "False" : false,
     "Null"  : null,
     "Empty" : {}
-}`;
+    }`;
 
-enum example3 =
-    `{
+    auto example2Tree = JSON(example2);
+    assert(example2Tree.successful);
+    assert(example2Tree[0].children.length == 12);
+    assert(example2Tree[0][0][0].matches == ["Number"]);
+    assert(example2Tree[0][0][1].matches == ["42"]);
+
+    enum example3 =
+        `{
         "glossary": {
             "title": "example glossary",
             "GlossDiv": {
@@ -71,7 +80,7 @@ enum example3 =
         }
     }`;
 
-enum example4 =
+    enum example4 =
     `{"web-app": {
     "servlet": [
         {
@@ -162,9 +171,6 @@ enum example4 =
         "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
     `;
 
-unittest
-{
-    assert(JSON(example2).successful);
     assert(JSON(example3).successful);
     assert(JSON(example4).successful);
 }

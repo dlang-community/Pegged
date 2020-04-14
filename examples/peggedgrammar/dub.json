@@ -1,0 +1,12 @@
+{
+  "name": "peggedgrammar",
+  "description": "The somewhat extended PEG grammar used by Pegged itself, as described in Extended PEG Syntax.",
+  "license": "Boost",
+  "targetType": "library",
+  "dependencies": {
+    "pegged":  {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}

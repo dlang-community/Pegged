@@ -352,7 +352,7 @@ struct ParseTree
         return children;
     }
 
-    size_t opDollar(size_t pos)()
+    size_t opDollar(size_t pos)() const
     {
         return children.length;
     }

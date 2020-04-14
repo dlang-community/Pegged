@@ -1,4 +1,8 @@
-module pegged.examples.arithmetic;
+/**
+This module contains a simple example of a arithmetic expression grammar and
+how use the ParseTree to calculate a expression.
+*/
+module pegged.examples.simple_arithmetic;
 
 import std.conv: to;
 
@@ -19,12 +23,12 @@ Arithmetic:
     Variable <- identifier
 `));
 
+/// Example interpreter
 float interpreter(string expr)
 {
     auto p = Arithmetic(expr);
 
-    //writeln(p);
-
+    // Travels the ParseTree, calculting the expresion value
     float value(ParseTree p)
     {
         switch (p.name)
@@ -93,8 +97,8 @@ unittest
 
     assert(interpreter("1/2/(1/2)") == 1.0);
     assert(interpreter("1/2/1/2") == .25);
-    assert(interpreter("1-2*3-2*3") == -11.0);
+    assert(interpreter("1 - 2*3 - 2*3") == -11.0);
 
-    assert(interpreter("2*3*3-3*3+3*4") == 21.0);
-    assert(interpreter("2*3*3-3*(3+3*4)") == -27.0);
+    assert(interpreter("2*3*3 - 3*3+3*4") == 21.0);
+    assert(interpreter("2 * 3 * 3 - 3 * (3 + 3 * 4)") == -27.0);
 }

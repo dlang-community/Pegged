@@ -1,0 +1,20 @@
+{
+  "name": "composition",
+  "description": "Example of grammar composition on Pegged",
+  "license": "Boost",
+  "targetType": "library",
+  "dependencies": {
+    "pegged": {
+      "version": "*",
+      "path": "../.."
+    },
+    "pegged:strings": {
+      "version": "*",
+      "path": "../.."
+    },
+    "pegged:numbers": {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}

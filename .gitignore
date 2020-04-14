@@ -43,3 +43,5 @@ dub.selections.json
 build/*
 .directory
 
+.vscode/
+
