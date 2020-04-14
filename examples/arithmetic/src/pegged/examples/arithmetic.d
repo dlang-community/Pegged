@@ -167,7 +167,7 @@ unittest
 
 unittest
 {
-    // Some addituional test borrowed from simple_arithmetic
+    // Some additional test borrowed from simple_arithmetic
     float interpreter(string expr)
     {
         auto p = ArithmeticNoVar(expr);

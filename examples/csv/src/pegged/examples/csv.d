@@ -42,10 +42,10 @@ unittest
  4, 5,  6,,
  7");
 
-    assert(p1.children[0].children.length == 3); // 3 lines
-    assert(p1.children[0].children[0].matches == ["1", "2", "3"]);
-    assert(p1.children[0].children[1].matches == ["4","5","6","",""]);
-    assert(p1.children[0].children[2].matches == ["7"]);
+    assert(p1[0].children.length == 3); // 3 lines
+    assert(p1[0][0].matches == ["1", "2", "3"]);
+    assert(p1[0][1].matches == ["4","5","6","",""]);
+    assert(p1[0][2].matches == ["7"]);
 
     assert(CSV("1,
                      2,
