@@ -348,7 +348,7 @@ struct ParseTree
       return children[index];
     }
 
-    ref ParseTree[] opIndex() {
+    ref ParseTree[] opIndex() return {
         return children;
     }
 
