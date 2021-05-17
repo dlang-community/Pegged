@@ -365,7 +365,7 @@ struct ParseTree
 /**
   * Default fail message formating function
   */
-auto defaultFormatFailMsg = delegate (Position pos, string left, string right, const ParseTree pt)
+immutable defaultFormatFailMsg = delegate (Position pos, string left, string right, const ParseTree pt)
 {
     return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
         ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
