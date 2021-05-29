@@ -49,7 +49,7 @@ package string stringified(string inp) @safe
             "\t" : `"\t"`,
 
             `"` : `"\""`,
-            "`" : q"("`")",
+            "`" : q{("`")},
             "'" : `"'"`,
 
             "42"              : `"42"`,
@@ -237,7 +237,7 @@ enum KEYWORDS = IFCHAIN;
 The basic parse tree, as used throughout the project.
 You can define your own parse tree node, but respect the basic layout.
 */
-struct ParseTree
+mixin template ParseTreeT()
 {
     string name; /// The node name
     bool successful; /// Indicates whether a parsing was successful or not
@@ -362,6 +362,10 @@ struct ParseTree
     }
 }
 
+struct ParseTree
+{
+    mixin ParseTreeT;
+}
 /**
   * Default fail message formating function
   */
