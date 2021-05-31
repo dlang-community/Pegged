@@ -37,6 +37,7 @@ package string stringified(string inp) @safe
     return "%(%s%)".format(shell);
 }
 
+version(none)
 @safe unittest // Run- & Compile-time.
 {
     static bool doTest()
@@ -89,17 +90,17 @@ string getName(alias expr)() @property
         return __traits(identifier, expr);
 }
 
-string fail(GetName g)
+string fail(GetName g) @safe
 {
     return "fail";
 }
 
-string eoi(GetName g)
+string eoi(GetName g) @safe
 {
     return "eoi";
 }
 
-string any(GetName g)
+string any(GetName g) @safe
 {
     return "any";
 }
@@ -120,10 +121,6 @@ template Returns(alias M) {
     }
 }
 
-pragma(msg, Returns!(DefaultParseTree.name));
-pragma(msg, ": ", ForeachType!(Returns!(DefaultParseTree.matches)));
-pragma(msg, ": ", ForeachType!(Returns!(DefaultParseTree.children)));
-//import
 enum isParseTree(T) =
     is(Returns!(T.name) == string) &&
     is(Returns!(T.successful) == bool)  &&
@@ -138,20 +135,55 @@ enum isParseTree(T) =
 /**
    Matches the end of input. Fails if there is any character left.
 */
-ParseTree eoi(ParseTree)(const ParseTree p) if (isParseTree!ParseTree) {
+ParseTree eoi(ParseTree)(const ParseTree p) @safe if (isParseTree!ParseTree) {
     if (p.end == p.input.length)
         return ParseTree("eoi", true, [], p.input, p.end, p.end);
     else
         return ParseTree("eoi", false, ["end of input"], p.input, p.end, p.end);
 }
 
-ParseTree eps(ParseTree)(const ParseTree p) if (isParseTree!ParseTree) {
+ParseTree eps(ParseTree)(const ParseTree p) @safe if (isParseTree!ParseTree) {
     return ParseTree("eps", true, [""], p.input, p.end, p.end);
+}
+
+
+/// To compare two trees for content (not bothering with node names)
+/// That's useful to compare the results from two different grammars.
+bool softCompare(ParseTree)(const ParseTree p1, const ParseTree p2) @safe if (isParseTree!ParseTree) {
+    return p1.successful == p2.successful
+        && p1.matches == p2.matches
+        && p1.begin == p2.begin
+        && p1.end == p2.end
+        && equal!(softCompare)(p1.children, p2.children); // the same for children
+}
+
+/**
+   Predefined parser: matches word boundaries, as \b for regexes.
+*/
+ParseTree wordBoundary(ParseTree)(const ParseTree p) @safe if (isParseTree!ParseTree) {
+    // TODO: I added more indexing guards and now this could probably use
+    //         some simplification.  Too tired to write it better. --Chad
+    bool matched =  (p.end == 0 && isAlpha(p.input.front()))
+        || (p.end == p.input.length && isAlpha(p.input.back()))
+        || (p.end > 0 && isAlpha(p.input[p.end-1])  && p.end < p.input.length && !isAlpha(p.input[p.end]))
+        || (p.end > 0 && !isAlpha(p.input[p.end-1]) && p.end < p.input.length &&  isAlpha(p.input[p.end]));
+    if (matched)
+        return ParseTree("wordBoundary", matched, [], p.input, p.end, p.end, null);
+    else
+        return ParseTree("wordBoundary", matched, ["word boundary"], p.input, p.end, p.end, null);
+}
+
+/**
+   Basic rule, that always fail without consuming.
+*/
+ParseTree fail(ParseTree)(const ParseTree p) @safe if (isParseTree!ParseTree) {
+    return ParseTree("fail", false, [], p.input, p.end, p.end, null);
 }
 
 
 
 mixin template ParseTreeM() {
+    import pegged.peg;
     import std.functional : toDelegate;
     alias ParseTree = typeof(this);
     string name; /// The node name
@@ -374,7 +406,7 @@ unittest
 
 
 struct PeggedT(ParseTree) {
-    import pegged.peg;
+    import pegged.peg : fail, eoi, wordBoundary, eps;
     mixin ParseCollections!ParseTree;
     version (tracer)
         {
@@ -520,143 +552,19 @@ struct PeggedT(ParseTree) {
             }
         }
 
-    unittest // ParseTree testing
-        {
-            ParseTree p;
-            assert(p == p, "Self-identity on null tree.");
-
-            p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
-            assert(p == p, "Self identity on non-null tree.");
-
-            ParseTree child = ParseTree("Child", true, ["abc", "", "def"], "input", 0, 1, null);
-            p.children = [child, child];
-
-            assert(p.children[0] == p[0], "override opIndex allows to write less verbose code to navigate the tree");
-            assert(p.children == p[] );
-            assert(p.children[0..1] == p[0..1] );
-            assert(p.children[0..$] == p[0..$] );
-
-            ParseTree q = p;
-            assert(p == q, "Copying creates equal trees.");
-
-            assert(p.children == q.children);
-            p.children = [child, child, child];
-            assert(q.children != p.children, "Disconnecting children.");
-
-            p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
-            p.children = [child, child];
-
-            q = p.dup;
-            assert(p == q, "Dupping creates equal trees.");
-
-            assert(p.children == q.children, "Equal children for dupped trees.");
-            p.children = null;
-            assert(q.children != p.children);
-
-            immutable iq = p.idup;
-            q = iq.dup;
-            assert(p == q, "Dupping to/from immutable creates equal trees.");
-
-            q.children = [p,p];
-            assert(p != q, "Tree with different children are not equal.");
-
-            p.children = [p,p];
-            assert(p == q, "Adding equivalent children is OK.");
-
-            p.matches = null;
-            assert(p != q, "Nulling matches makes trees unequal.");
-
-            p.matches = q.matches;
-            assert(p == q, "Copying matches makes equal trees.");
-
-            p.children[0].successful = false;
-            assert(p.children[0].failMsg == `Failure at line 0, col 1, after "i" expected "def", but got "nput"`);
-            assert(p.children[1].failMsg == "Sucess");
-            assert(p.failMsg == `Failure at line 0, col 1, after "i" expected "def", but got "nput"`);
-        }
-
-/// To compare two trees for content (not bothering with node names)
-/// That's useful to compare the results from two different grammars.
-    static bool softCompare(const ParseTree p1, const ParseTree p2)
-        {
-            return p1.successful == p2.successful
-                && p1.matches == p2.matches
-                && p1.begin == p2.begin
-                && p1.end == p2.end
-                && equal!(softCompare)(p1.children, p2.children); // the same for children
-        }
-
-    unittest // softCompare
-        {
-            ParseTree p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
-            ParseTree child = ParseTree("Child", true, ["abc", "", "def"], "input", 0, 1, null);
-            p.children = [child, child];
-
-            ParseTree q = p;
-            assert(p == q, "Copy => Equal trees.");
-            assert(softCompare(p,q), "Copy => Trees equal for softCompare.");
-
-            q.name = "Another One";
-            assert(p != q, "Name change => non-equal trees.");
-            assert(softCompare(p,q), "Name change => Trees equal for softCompare.");
-        }
-
-/**
-   Basic rule, that always fail without consuming.
-*/
-    ParseTree fail(ParseTree p)
-        {
-            return ParseTree("fail", false, [], p.input, p.end, p.end, null);
-        }
-
 /// ditto
-    ParseTree fail(string input)
+    static ParseTree fail(string input)
         {
             return fail(ParseTree("", false, [], input));
-        }
-
-    unittest // 'fail' unit test
-        {
-            ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
-            ParseTree result = fail(input);
-            assert(result.name == "fail");
-            assert(!result.successful, "'fail' fails.");
-            assert(result.matches is null, "'fail' makes no match.");
-            assert(result.input == input.input, "'fail' does not change the input.");
-            assert(result.end == input.end, "'fail' puts the index after the previous parse.");
-            assert(result.children is null, "'fail' has no children.");
-
-            result = fail("This is the input string.");
-            assert(!result.successful, "'fail' fails.");
         }
 
 /// ditto
     static ParseTree eoi(string input)
         {
-            return .eoi(ParseTree("", false, [], input));
+            return eoi(ParseTree("", false, [], input));
         }
 
     alias eoi endOfInput; /// helper alias.
-
-    unittest // 'eoi' unit test
-        {
-            ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
-            ParseTree result = eoi(input);
-            assert(result.name == "eoi");
-            assert(!result.successful, "'eoi' fails on non-null string.");
-            assert(result.matches == ["end of input"], "'eoi' error message.");
-            assert(result.input == input.input, "'eoi' does not change the input.");
-            assert(result.end == input.end, "'eoi' puts the index after the previous parse.");
-            assert(result.children is null, "'eoi' has no children.");
-
-            input = ParseTree("input", true, [], "", 0,0, null);
-            result = eoi(input);
-            assert(result.successful, "'eoi' succeeds on strings of length 0.");
-            result = eoi("");
-            assert(result.successful, "'eoi' succeeds on strings of length 0.");
-            result = eoi(null);
-            assert(result.successful, "'eoi' succeeds on null strings");
-        }
 
 /**
    Match any character. As long as there is at least a character left in the input, it succeeds.
@@ -676,60 +584,6 @@ struct PeggedT(ParseTree) {
             return any(ParseTree("", false, [], input));
         }
 
-    unittest // 'any' unit test
-        {
-            ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
-            ParseTree result = any(input);
-
-            assert(result.name == "any");
-            assert(result.successful, "'any' succeeds on non-null strings.");
-            assert(result.matches  == ["T"], "'any' matches the first char in an input.");
-            assert(result.input == input.input, "'any' does not change the input.");
-            assert(result.end == input.end+1, "'any' advances the index by one position.");
-            assert(result.children is null, "'any' has no children.");
-
-            result = any("a");
-            assert(result.successful, "'any' matches on strings of length one.");
-            assert(result.matches == ["a"], "'any' matches the first char in an input.");
-            assert(result.input == "a", "'any' does not change the input.");
-            assert(result.end == 1, "'any' advances the index by one position.");
-            assert(result.children is null, "'any' has no children.");
-
-            input = ParseTree("input", true, [], "", 0,0, null);
-
-            result = any(input);
-            assert(!result.successful, "'any' fails on strings of length 0.");
-            assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
-            assert(result.end == 0, "'any' does not advance the index.");
-
-            result = any("");
-            assert(!result.successful, "'any' fails on strings of length 0.");
-            assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
-            assert(result.end == 0, "'any' does not advance the index.");
-
-            result = any(null);
-            assert(!result.successful, "'any' fails on null strings.");
-            assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
-            assert(result.end == 0, "'any' does not advance the index.");
-        }
-
-/**
-   Predefined parser: matches word boundaries, as \b for regexes.
-*/
-    static ParseTree wordBoundary(ParseTree p)
-        {
-            // TODO: I added more indexing guards and now this could probably use
-            //         some simplification.  Too tired to write it better. --Chad
-            bool matched =  (p.end == 0 && isAlpha(p.input.front()))
-                || (p.end == p.input.length && isAlpha(p.input.back()))
-                || (p.end > 0 && isAlpha(p.input[p.end-1])  && p.end < p.input.length && !isAlpha(p.input[p.end]))
-                || (p.end > 0 && !isAlpha(p.input[p.end-1]) && p.end < p.input.length &&  isAlpha(p.input[p.end]));
-            if (matched)
-                return ParseTree("wordBoundary", matched, [], p.input, p.end, p.end, null);
-            else
-                return ParseTree("wordBoundary", matched, ["word boundary"], p.input, p.end, p.end, null);
-        }
-
 /// ditto
     static ParseTree wordBoundary(string input)
         {
@@ -741,35 +595,6 @@ struct PeggedT(ParseTree) {
             return "wordBoundary";
         }
 
-    unittest // word boundary
-        {
-            ParseTree input = ParseTree("", false, [], "This is a word.");
-            auto wb = [// "This"
-                cast(size_t)(0):true, 1:false, 2:false, 3:false, 4: true,
-                // "is"
-                5: true, 6:false, 7: true,
-                // "a"
-                8: true, 9:true,
-                // "word"
-                10:true, 11:false, 12:false, 13:false, 14:true,
-                // "."
-                15:false
-                ];
-
-            foreach(size_t index; 0 .. input.input.length)
-            {
-                input.end = index;
-                ParseTree result = wordBoundary(input);
-
-                assert(result.name == "wordBoundary");
-                assert(result.successful == wb[index]); // true, false, ...
-                // for errors, there is an error message
-                assert(result.successful && result.matches is null || !result.successful);
-                assert(result.begin == input.end);
-                assert(result.end == input.end);
-                assert(result.children is null);
-            }
-        }
 /**
    eps matches the empty string (usually denoted by the Greek letter 'epsilon') and always succeeds.
    It's equivalent to literal!"" (for example, it creates a match of [""]: one match, the empty string).
@@ -783,31 +608,219 @@ struct PeggedT(ParseTree) {
         {
             return "eps";
         }
-
-    unittest // 'eps' unit test
-        {
-            ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
-
-            ParseTree result = eps(input);
-
-            assert(result.name == "eps");
-            assert(result.successful, "'eps' succeeds on non-null inputs.");
-            assert(result.matches  == [""], "'eps' matches '' at the beginning.");
-            assert(result.input == input.input, "'eps' does not change the input.");
-            assert(result.end == input.end+0, "'eps' does not advance the index.");
-            assert(result.children is null, "'eps' has no children.");
-
-            input.input = "";
-
-            result = eps(input);
-            assert(result.name == "eps");
-            assert(result.successful, "'eps' succeeds on empty strings.");
-            assert(result.matches  == [""], "'eps' matches '' at the beginning, even on empty strings.");
-            assert(result.input == input.input, "'eps' does not change the input.");
-            assert(result.end == input.end+0, "'eps' does not advance the index.");
-            assert(result.children is null, "'eps' has no children.");
-        }
 }
+
+version(unittest) {
+    private {
+        alias ParseTree = DefaultParseTree;
+        mixin ParseCollections!ParseTree;
+        alias PEG=PeggedT!ParseTree;
+        mixin DefaultParsePatterns!PEG;
+    }
+}
+
+unittest // ParseTree testing
+{
+    ParseTree p;
+    assert(p == p, "Self-identity on null tree.");
+
+    p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
+    assert(p == p, "Self identity on non-null tree.");
+
+    ParseTree child = ParseTree("Child", true, ["abc", "", "def"], "input", 0, 1, null);
+    p.children = [child, child];
+
+    assert(p.children[0] == p[0], "override opIndex allows to write less verbose code to navigate the tree");
+    assert(p.children == p[] );
+    assert(p.children[0..1] == p[0..1] );
+    assert(p.children[0..$] == p[0..$] );
+
+    ParseTree q = p;
+    assert(p == q, "Copying creates equal trees.");
+
+    assert(p.children == q.children);
+    p.children = [child, child, child];
+    assert(q.children != p.children, "Disconnecting children.");
+
+    p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
+    p.children = [child, child];
+
+    q = p.dup;
+    assert(p == q, "Dupping creates equal trees.");
+
+    assert(p.children == q.children, "Equal children for dupped trees.");
+    p.children = null;
+    assert(q.children != p.children);
+
+    immutable iq = p.idup;
+    q = iq.dup;
+    assert(p == q, "Dupping to/from immutable creates equal trees.");
+
+    q.children = [p,p];
+    assert(p != q, "Tree with different children are not equal.");
+
+    p.children = [p,p];
+    assert(p == q, "Adding equivalent children is OK.");
+
+    p.matches = null;
+    assert(p != q, "Nulling matches makes trees unequal.");
+
+    p.matches = q.matches;
+    assert(p == q, "Copying matches makes equal trees.");
+
+    p.children[0].successful = false;
+    assert(p.children[0].failMsg == `Failure at line 0, col 1, after "i" expected "def", but got "nput"`);
+    assert(p.children[1].failMsg == "Sucess");
+    assert(p.failMsg == `Failure at line 0, col 1, after "i" expected "def", but got "nput"`);
+}
+
+unittest // softCompare
+{
+    ParseTree p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
+    ParseTree child = ParseTree("Child", true, ["abc", "", "def"], "input", 0, 1, null);
+    p.children = [child, child];
+
+    ParseTree q = p;
+    assert(p == q, "Copy => Equal trees.");
+    assert(softCompare(p,q), "Copy => Trees equal for softCompare.");
+
+    q.name = "Another One";
+    assert(p != q, "Name change => non-equal trees.");
+    assert(softCompare(p,q), "Name change => Trees equal for softCompare.");
+}
+
+
+unittest // 'fail' unit test
+{
+
+    ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
+    ParseTree result = fail(input);
+    assert(result.name == "fail");
+    assert(!result.successful, "'fail' fails.");
+    assert(result.matches is null, "'fail' makes no match.");
+    assert(result.input == input.input, "'fail' does not change the input.");
+    assert(result.end == input.end, "'fail' puts the index after the previous parse.");
+    assert(result.children is null, "'fail' has no children.");
+
+    result = PEG.fail("This is the input string.");
+    assert(!result.successful, "'fail' fails.");
+}
+
+
+unittest // 'eoi' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
+    ParseTree result = eoi(input);
+    assert(result.name == "eoi");
+    assert(!result.successful, "'eoi' fails on non-null string.");
+    assert(result.matches == ["end of input"], "'eoi' error message.");
+    assert(result.input == input.input, "'eoi' does not change the input.");
+    assert(result.end == input.end, "'eoi' puts the index after the previous parse.");
+    assert(result.children is null, "'eoi' has no children.");
+
+    input = ParseTree("input", true, [], "", 0,0, null);
+    result = eoi(input);
+    assert(result.successful, "'eoi' succeeds on strings of length 0.");
+    result = PEG.eoi("");
+    assert(result.successful, "'eoi' succeeds on strings of length 0.");
+    result = PEG.eoi(null);
+    assert(result.successful, "'eoi' succeeds on null strings");
+}
+
+
+unittest // 'any' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
+    ParseTree result = PEG.any(input);
+
+    assert(result.name == "any");
+    assert(result.successful, "'any' succeeds on non-null strings.");
+    assert(result.matches  == ["T"], "'any' matches the first char in an input.");
+    assert(result.input == input.input, "'any' does not change the input.");
+    assert(result.end == input.end+1, "'any' advances the index by one position.");
+    assert(result.children is null, "'any' has no children.");
+
+    result = PEG.any("a");
+    assert(result.successful, "'any' matches on strings of length one.");
+    assert(result.matches == ["a"], "'any' matches the first char in an input.");
+    assert(result.input == "a", "'any' does not change the input.");
+    assert(result.end == 1, "'any' advances the index by one position.");
+    assert(result.children is null, "'any' has no children.");
+
+    input = ParseTree("input", true, [], "", 0,0, null);
+
+    result = PEG.any(input);
+    assert(!result.successful, "'any' fails on strings of length 0.");
+    assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
+    assert(result.end == 0, "'any' does not advance the index.");
+
+    result = PEG.any("");
+    assert(!result.successful, "'any' fails on strings of length 0.");
+    assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
+    assert(result.end == 0, "'any' does not advance the index.");
+
+    result = PEG.any(null);
+    assert(!result.successful, "'any' fails on null strings.");
+    assert(result.matches == ["any char"], "'any' error message on strings of length 0.");
+    assert(result.end == 0, "'any' does not advance the index.");
+}
+
+
+unittest // word boundary
+{
+    ParseTree input = ParseTree("", false, [], "This is a word.");
+    auto wb = [// "This"
+        cast(size_t)(0):true, 1:false, 2:false, 3:false, 4: true,
+        // "is"
+        5: true, 6:false, 7: true,
+        // "a"
+        8: true, 9:true,
+        // "word"
+        10:true, 11:false, 12:false, 13:false, 14:true,
+        // "."
+        15:false
+        ];
+
+    foreach(size_t index; 0 .. input.input.length)
+    {
+        input.end = index;
+        ParseTree result = wordBoundary(input);
+
+        assert(result.name == "wordBoundary");
+        assert(result.successful == wb[index]); // true, false, ...
+        // for errors, there is an error message
+        assert(result.successful && result.matches is null || !result.successful);
+        assert(result.begin == input.end);
+        assert(result.end == input.end);
+        assert(result.children is null);
+    }
+}
+
+
+unittest // 'eps' unit test
+{
+    ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
+
+    ParseTree result = eps(input);
+
+    assert(result.name == "eps");
+    assert(result.successful, "'eps' succeeds on non-null inputs.");
+    assert(result.matches  == [""], "'eps' matches '' at the beginning.");
+    assert(result.input == input.input, "'eps' does not change the input.");
+    assert(result.end == input.end+0, "'eps' does not advance the index.");
+    assert(result.children is null, "'eps' has no children.");
+
+    input.input = "";
+
+    result = eps(input);
+    assert(result.name == "eps");
+    assert(result.successful, "'eps' succeeds on empty strings.");
+    assert(result.matches  == [""], "'eps' matches '' at the beginning, even on empty strings.");
+    assert(result.input == input.input, "'eps' does not change the input.");
+    assert(result.end == input.end+0, "'eps' does not advance the index.");
+    assert(result.children is null, "'eps' has no children.");
+}
+
 
 /**
  * Default fail message formating function
@@ -846,7 +859,7 @@ template literalT(ParseTree, string s)
 
     ParseTree literalT(string input)
         {
-            return .literalT!(ParseTree, s)(ParseTree("", false, [], input));
+            return literalT!(ParseTree, s)(ParseTree("", false, [], input));
         }
 
 
@@ -859,8 +872,6 @@ template literalT(ParseTree, string s)
 
 unittest // 'literal' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
 
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
 
@@ -1005,9 +1016,6 @@ template caseInsensitiveLiteralT(ParseTree, string s)
 
 unittest // 'caseInsensitiveLiteral' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     ParseTree input = ParseTree("input", true, [], "AbCdEf", 0,0, null);
 
     alias caseInsensitiveLiteral!"a" a;
@@ -1158,9 +1166,6 @@ template charRangeT(ParseTree, dchar begin, dchar end) if (begin <= end)
 
 unittest // 'charRange' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
 
     alias charRange!('a','a') aa;
@@ -1434,12 +1439,11 @@ template andT(ParseTree, rules...) if (rules.length > 0)
 
 }
 
-auto firstLongestFailedMatch(ParseTreeT)(ParseTreeT[] children, size_t threshold) {
+auto firstLongestFailedMatch(ParseTree)(ParseTree[] children, size_t threshold) if (isParseTree!ParseTree) {
     return children.countUntil!(c => c.failEnd > threshold);
 }
 
-auto maxFailEnd(ParseTreeT)(ParseTreeT[] children)
-{
+auto maxFailEnd(ParseTree)(ParseTree[] children) if (isParseTree!ParseTree) {
     return children.map!(c => c.failEnd).maxElement;
 }
 
@@ -1485,8 +1489,6 @@ bool failedChildFixup(ParseTreeT)(ref ParseTreeT p, size_t failEnd)
 
 unittest // 'and' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
     alias literal!"abc" abc;
     alias literal!"de" de;
     alias literal!"f" f;
@@ -1565,9 +1567,6 @@ version (unittest) {
 
 unittest // 'and' unit test with zeroOrMore and longest failing match
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias literal!"abc" A;
     alias literal!"def" B;
     alias literal!"ghi" C;
@@ -1584,8 +1583,6 @@ unittest // 'and' unit test with zeroOrMore and longest failing match
 
 unittest // 'and' unit test with option and longest failing match
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
 
     alias literal!"abc" A;
     alias literal!"def" B;
@@ -1603,8 +1600,6 @@ unittest // 'and' unit test with option and longest failing match
 
 unittest // 'and' unit test with oneOrMore and longest failing match
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
 
     alias literal!"abc" A;
     alias literal!"def" B;
@@ -1830,8 +1825,6 @@ auto getUpto(ParseTreeT)(ParseTreeT[] children, size_t minFailedLength) {
 
 unittest // 'or' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
 
     alias charRange!('a','b') ab;
     alias charRange!('c','d') cd;
@@ -1900,7 +1893,7 @@ unittest // 'or' unit test
    The longest matching subrule's parse tree is stored as its only child and its matches field
    will contain all the subrule matches, in order.
 */
-template longest_matchT(ParseTreeT, rules...) if (rules.length > 0)
+template longest_matchT(ParseTree, rules...) if (rules.length > 0)
 {
     string ctfeGetNameOr()
         {
@@ -1914,15 +1907,15 @@ template longest_matchT(ParseTreeT, rules...) if (rules.length > 0)
 
     enum name = ctfeGetNameOr();
 
-    ParseTreeT longest_match(ParseTreeT p)
+    ParseTree longest_matchT(ParseTree p)
         {
             // error-management
-            ParseTreeT longest, longestFail = ParseTreeT(name, false, [], p.input, p.end, 0);
+            ParseTree longest, longestFail = ParseTree(name, false, [], p.input, p.end, 0);
             string[] errorStrings;
             size_t errorStringChars;
             string orErrorString;
 
-            ParseTreeT[rules.length] results;
+            ParseTree[rules.length] results;
             string[rules.length] names;
             size_t[rules.length] failedLength;
             size_t maxFailedLength;
@@ -1940,7 +1933,7 @@ template longest_matchT(ParseTreeT, rules...) if (rules.length > 0)
                     if (shouldTrace(getName!(r)(), p))
                         trace(traceMsg(p, name, getName!(r)()));
                 }
-                ParseTreeT temp = r(p);
+                ParseTree temp = r(p);
                 version (tracer)
                 {
                     if (shouldTrace(getName!(r)(), p))
@@ -2012,12 +2005,12 @@ template longest_matchT(ParseTreeT, rules...) if (rules.length > 0)
             return longestFail;
         }
 
-    ParseTreeT longest_match(string input)
+    ParseTree longest_matchT(string input)
         {
-            return .or!(rules)(ParseTreeT("",false,[],input));
+            return orT!(ParseTree, rules)(ParseTree("",false,[],input));
         }
 
-    string longest_match(GetName g)
+    string longest_matchT(GetName g)
         {
             return name;
         }
@@ -2025,8 +2018,6 @@ template longest_matchT(ParseTreeT, rules...) if (rules.length > 0)
 
 unittest // 'longest_match' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
 
     alias charRange!('a','b') ab;
     alias charRange!('c','d') cd;
@@ -2292,8 +2283,6 @@ template keywordsT(ParseTree,kws...) if (kws.length > 0)
 
 unittest
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
 
     alias keywords!("abc","de","f") kw;
 
@@ -2436,9 +2425,6 @@ template zeroOrMoreT(ParseTree, alias r)
 
 unittest // 'zeroOrMore' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias literal!"a" a;
     alias literal!"abc" abc;
     alias charRange!('a','z') az;
@@ -2608,9 +2594,6 @@ template oneOrMoreT(ParseTree, alias r)
 
 unittest // 'oneOrMore' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias literal!"a" a;
     alias literal!"abc" abc;
     alias charRange!('a','z') az;
@@ -2721,9 +2704,6 @@ template optionT(ParseTree, alias r)
 
 unittest // 'option' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias literal!"a" a;
     alias literal!"abc" abc;
 
@@ -2818,9 +2798,6 @@ template posLookaheadT(ParseTree, alias r)
 
 unittest // 'posLookahead' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias literal!"a" a;
     alias literal!"abc" abc;
 
@@ -2912,9 +2889,6 @@ template negLookaheadT(ParseTree, alias r)
 
 unittest // 'negLookahead' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias literal!"a" a;
     alias literal!"abc" abc;
 
@@ -3023,9 +2997,6 @@ template namedT(ParseTree, alias r, string name)
 
 unittest // 'named' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias or!(literal!("abc"), charRange!('0','9')) rule;
     alias named!(rule, "myRule") myRule;
 
@@ -3108,9 +3079,6 @@ template definedT(ParseTree, alias r, string name)
 
 unittest // 'defined' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias or!(literal!("abc"), charRange!('0','9')) rule;
     alias defined!(rule, "myRule") myRule;
 
@@ -3146,17 +3114,17 @@ unittest // 'defined' unit test
 */
 template actionT(ParseTree, alias r, alias act)
 {
-    ParseTree action(ParseTree p)
+    ParseTree actionT(ParseTree p)
         {
             return act(r(p));
         }
 
-    ParseTree action(string input)
+    ParseTree actionT(string input)
         {
-            return .action!(r,act)(ParseTree("",false,[],input));
+            return actionT!(ParseTree, r,act)(ParseTree("",false,[],input));
         }
 
-    string action(GetName g)
+    string actionT(GetName g)
         {
             enum name = "action!("~ getName!(r)() ~ ", " ~ __traits(identifier, act) ~ ")";
             return name;
@@ -3165,9 +3133,6 @@ template actionT(ParseTree, alias r, alias act)
 
 unittest // 'action' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     ParseTree foo(ParseTree p)
     {
         p.matches ~= p.matches; // doubling matches
@@ -3234,9 +3199,6 @@ template fuseT(ParseTree, alias r)
 
 unittest // 'fuse' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias oneOrMore!(literal!("abc")) abcs;
 
     alias fuse!(abcs) f;
@@ -3307,7 +3269,7 @@ template discardChildrenT(ParseTree, alias r)
 */
 template discardMatchesT(ParseTree, alias r)
 {
-    ParseTree discardMatches(ParseTree p)
+    ParseTree discardMatchesT(ParseTree p)
         {
             p = r(p);
             if (p.successful)
@@ -3315,12 +3277,12 @@ template discardMatchesT(ParseTree, alias r)
             return p;
         }
 
-    ParseTree discardMatches(string input)
+    ParseTree discardMatchesT(string input)
         {
-            return .discardMatches!(r)(ParseTree("",false,[],input));
+            return discardMatchesT!(ParseTree, r)(ParseTree("",false,[],input));
         }
 
-    string discardMatches(GetName g)
+    string discardMatchesT(GetName g)
         {
             enum name = "discardMatches!(" ~ getName!(r)() ~ ")";
             return name;
@@ -3360,9 +3322,6 @@ template discardT(ParseTree, alias r)
 
 unittest // 'discard' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias literal!"abc" abc;
     alias oneOrMore!abc abcs;
     alias discard!(literal!("abc")) dabc;
@@ -3443,9 +3402,6 @@ template dropT(ParseTree, alias r)
 
 unittest // 'drop' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     alias literal!"abc" abc;
     alias oneOrMore!abc abcs;
     alias drop!(literal!("abc")) dabc;
@@ -3553,9 +3509,6 @@ template keepT(ParseTree, alias r)
 
 unittest // 'keep' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-
     // Grammar mimicry
     struct KeepTest
     {
@@ -3596,11 +3549,11 @@ unittest // 'keep' unit test
     assert(result.children == [literal!("b")(literal!("a")("abc"))], "'b' node was kept.");
 }
 
-template AddSpace(alias sp)
+template AddSpaceT(ParseTree, alias sp)
 {
-    template AddSpace(alias r)
+    template AddSpaceT(alias r)
     {
-        alias TypeTuple!(r, discard!sp) AddSpace;
+        alias AddSpaceT=TypeTuple!(r, discardT!(ParseTree,sp));
     }
 }
 
@@ -3648,61 +3601,60 @@ template AddSpace(alias sp)
 
 unittest // 'spaceAnd' unit test
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
+    with(PEG) {
+        alias literal!"a" a;
+        alias literal!"b" b;
 
-    alias literal!"a" a;
-    alias literal!"b" b;
+        //Basic use
+        alias and!(a,b) ab;
+        alias spaceAnd!(oneOrMore!blank, a, b) a_b;
 
-    //Basic use
-    alias and!(a,b) ab;
-    alias spaceAnd!(oneOrMore!blank, a, b) a_b;
+        ParseTree reference = ab("ab");
+        ParseTree result = a_b("ab");
 
-    ParseTree reference = ab("ab");
-    ParseTree result = a_b("ab");
+        assert(reference.successful);
+        assert(result.successful);
+        assert(result.matches == reference.matches);
+        assert(result.begin == reference.begin);
+        assert(result.end == reference.end);
+        assert(result.children == reference.children);
 
-    assert(reference.successful);
-    assert(result.successful);
-    assert(result.matches == reference.matches);
-    assert(result.begin == reference.begin);
-    assert(result.end == reference.end);
-    assert(result.children == reference.children);
+        reference = ab("   a  b  ");
+        result = a_b(  "   a  b  ");
 
-    reference = ab("   a  b  ");
-    result = a_b(  "   a  b  ");
+        assert(!reference.successful);
+        assert(result.successful);
+        assert(result.matches == ["a","b"]);
+        assert(result.begin == 0);
+        assert(result.end == "   a  b  ".length);
+        assert(result.children.length == 2);
 
-    assert(!reference.successful);
-    assert(result.successful);
-    assert(result.matches == ["a","b"]);
-    assert(result.begin == 0);
-    assert(result.end == "   a  b  ".length);
-    assert(result.children.length == 2);
+        reference = ab("ac");
+        result = a_b("ac");
 
-    reference = ab("ac");
-    result = a_b("ac");
+        assert(!reference.successful);
+        assert(!result.successful);
 
-    assert(!reference.successful);
-    assert(!result.successful);
+        reference = ab("   a  c   ");
+        result = a_b("   a  c   ");
 
-    reference = ab("   a  c   ");
-    result = a_b("   a  c   ");
+        assert(!reference.successful);
+        assert(!result.successful);
 
-    assert(!reference.successful);
-    assert(!result.successful);
+        // With another separator than spaces
+        alias spaceAnd!(digit, a, b) a0b;
 
-    // With another separator than spaces
-    alias spaceAnd!(digit, a, b) a0b;
+        assert(a0b("ab").successful);
+        assert(!a0b("  a b  ").successful);
 
-    assert(a0b("ab").successful);
-    assert(!a0b("  a b  ").successful);
+        result = a0b("012a34b567");
 
-    result = a0b("012a34b567");
-
-    assert(result.successful);
-    assert(result.matches == ["a", "b"]);
-    assert(result.begin == 0);
-    assert(result.end == "012a34b567".length);
-    assert(result.children.length == 2);
+        assert(result.successful);
+        assert(result.matches == ["a", "b"]);
+        assert(result.begin == 0);
+        assert(result.end == "012a34b567".length);
+        assert(result.children.length == 2);
+    }
 }
 
 /// Mixin to simplify a parse tree inside a grammar
@@ -3831,7 +3783,7 @@ mixin template ParseCollections(ParseTree) {
     alias wrapAround(alias before, alias target, alias after) = wrapAroundT!(ParseTree, before, target, after);
     alias and(rules...) = andT!(ParseTree, rules);
     alias or(rules...) = orT!(ParseTree, rules);
-    alias longest_matchT(rules...) = longest_matchT!(ParseTree, rules);
+    alias longest_match(rules...) = longest_matchT!(ParseTree, rules);
     alias keywords(kws...) = keywordsT!(ParseTree, kws);
     alias zeroOrMore(alias r) = zeroOrMoreT!(ParseTree, r);
     alias oneOrMore(alias r) = oneOrMoreT!(ParseTree, r);
@@ -3848,10 +3800,12 @@ mixin template ParseCollections(ParseTree) {
     alias drop(alias r) = dropT!(ParseTree, r);
     alias propagate(alias r) = propagateT!(ParseTree, r);
     alias keep(alias r) = keepT!(ParseTree, r);
+    alias AddSpace(alias sp) = AddSpaceT!(ParseTree, sp);
 
 }
 
 mixin template DefaultParsePatterns(alias PEG) {
+    import std.meta : staticMap;
     /* ****************** predefined rules ******************** */
 
     alias endOfLine = PEG.named!(PEG.or!(PEG.literal!("\r\n"), PEG.literal!("\n"), PEG.literal!("\r")), "endOfLine"); /// predefined end-of-line parser

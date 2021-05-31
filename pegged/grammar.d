@@ -452,7 +452,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
                     innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
                     hookedName ~= "_" ~ to!string(p.children[0].children[1].children.length);
                     foreach(i,param; p.children[0].children[1].children)
-                        innerName ~= "PEG.getName!("~ param.children[0].matches[0]
+                        innerName ~= "pegged.peg.getName!("~ param.children[0].matches[0]
                                     ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ \", \" ~ "
                                                                                      : ")");
                     innerName ~= " ~ \")\"";
@@ -1395,6 +1395,8 @@ unittest // Parsing at compile-time
 
 unittest // PEG extensions (arrows, prefixes, suffixes)
 {
+    alias ParseTree = DefaultParseTree;
+
     mixin(grammar(`
     Arrows:
         Rule1 <- ABC DEF  # Standard arrow
@@ -1545,6 +1547,8 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
 
 unittest //More space arrow tests
 {
+    alias ParseTree = DefaultParseTree;
+
     mixin(grammar(`
     Spaces:
         Rule1 < A (B C)+
@@ -1981,6 +1985,7 @@ unittest // Prefix and suffix tests
 
 unittest // Issue #88 unit test
 {
+    alias ParseTree = DefaultParseTree;
     enum gram = `
     P:
         Rule1 <- (w 'a' w)*
@@ -2006,6 +2011,8 @@ unittest // Issue #88 unit test
 
 unittest // Leading alternation
 {
+    alias ParseTree = DefaultParseTree;
+
     mixin(grammar(`
     LeadingAlternation:
         Rule1 <- / 'a'
@@ -2141,6 +2148,8 @@ unittest // Extended char range tests
 
 unittest // qualified names for rules
 {
+    alias ParseTree = DefaultParseTree;
+
     mixin(grammar(`
     First:
         Rule1 <- "abc"
@@ -2151,7 +2160,7 @@ unittest // qualified names for rules
     Second:
         Rule1 <- First.Rule1
         Rule2 <- First.Rule2
-        Rule3 <- PEG.list(PEG.identifier, ',')
+        Rule3 <- list(identifier, ',')
     `));
 
     // Equal on success
@@ -2190,6 +2199,10 @@ unittest // qualified names for rules
 
 unittest // Parameterized rules
 {
+    alias ParseTree = DefaultParseTree;
+    alias PEG=PeggedT!ParseTree;
+    mixin DefaultParsePatterns!PEG;
+
     mixin(grammar(`
     Parameterized:
         # Different arities
@@ -2216,9 +2229,10 @@ unittest // Parameterized rules
         # Another common PEG pattern
         AllUntil(End) <~ (!End .)* :End
     `));
+    with(PEG) {
 
-    alias Parameterized.Rule1!(literal!"a") R1;
-    alias oneOrMore!(literal!"a") Ref1;
+    alias Parameterized.Rule1!(PEG.literal!"a") R1;
+    alias PEG.oneOrMore!(PEG.literal!"a") Ref1;
 
     ParseTree reference = Ref1("aaaa");
     ParseTree result = R1("aaaa");
@@ -2238,8 +2252,8 @@ unittest // Parameterized rules
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
 
-    alias Parameterized.Rule1!(literal!"abc") R1long;
-    alias oneOrMore!(literal!"abc") Ref1long;
+    alias Parameterized.Rule1!(PEG.literal!"abc") R1long;
+    alias Ref1long=PEG.oneOrMore!(PEG.literal!"abc");
 
     reference = Ref1long("abcabcabcabc");
     result = R1long("abcabcabcabc");
@@ -2251,8 +2265,8 @@ unittest // Parameterized rules
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
 
-    alias Parameterized.Rule1!(literal!"a", literal!"b") R2;
-    alias oneOrMore!(and!(literal!"a", literal!"b")) Ref2;
+    alias Parameterized.Rule1!(PEG.literal!"a", PEG.literal!"b") R2;
+    alias Ref2=PEG.oneOrMore!(PEG.and!(PEG.literal!"a", PEG.literal!"b"));
 
     reference = Ref2("abababab");
     result = R2("abababab");
@@ -2272,8 +2286,8 @@ unittest // Parameterized rules
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
 
-    alias Parameterized.Rule1!(literal!"a", literal!"b", literal!"c") R3;
-    alias oneOrMore!(and!(literal!"a", literal!"b", literal!"c")) Ref3;
+    alias Parameterized.Rule1!(PEG.literal!"a", PEG.literal!"b", PEG.literal!"c") R3;
+    alias oneOrMore!(PEG.and!(PEG.literal!"a", literal!"b", literal!"c")) Ref3;
 
     reference = Ref3("abcabcabcabc");
     result = R3("abcabcabcabc");
@@ -2389,6 +2403,7 @@ Here is another line.
     assert(!Arith1("1 + 2*3/456").successful);
     assert(Arith2("1 + 2*3/456").successful);
     assert(Arith2("1 + 2*3/z").successful);
+    }
 }
 
 version(unittest) // Semantic actions
@@ -2403,6 +2418,8 @@ version(unittest) // Semantic actions
 
 unittest // Semantic actions, testing { foo } and { foo, bar, baz }
 {
+    alias ParseTree = DefaultParseTree;
+
     mixin(grammar(`
     Semantic:
         Rule1 <- 'a' {doubler}
@@ -2583,6 +2600,8 @@ unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
 
 unittest // Memoization testing
 {
+    alias ParseTree = DefaultParseTree;
+
     enum gram1 = `
     Test1:
         Rule1 <- Rule2* 'b'   # To force a long evaluation of aaaa...
@@ -2612,9 +2631,9 @@ unittest // Memoization testing
     assert(result3 == result4);
 
     //Directly comparing result1 and result3 is not possible, for the grammar names are different
-    assert(PEG.softCompare(result1, result2));
-    assert(PEG.softCompare(result1, result3));
-    assert(PEG.softCompare(result1, result4));
+    assert(softCompare(result1, result2));
+    assert(softCompare(result1, result3));
+    assert(softCompare(result1, result4));
 }
 
 unittest // Memoization reset in composed grammars. Issue #162
@@ -2789,7 +2808,22 @@ unittest // Test lambda syntax in semantic actions
 unittest
 {
     // Higher-level word boundary test.
-    mixin(grammar(`
+    pragma(msg, grammar(`
+        TestGrammar:
+
+        Foo < '{' 'X' '}'
+        Bar < 'A' 'B'
+
+        Spacing <:
+            / blank+
+            / blank* wordBoundary
+            / wordBoundary blank*
+            / ![a-zA-Z]
+            / !.
+
+        `));
+
+   mixin(grammar(`
         TestGrammar:
 
         Foo < '{' 'X' '}'
@@ -2819,6 +2853,8 @@ unittest
 
 unittest // Issue #129 unit test
 {
+    alias ParseTree = DefaultParseTree;
+
     enum gram = `
     G:
         A <- B
@@ -2847,6 +2883,8 @@ unittest // Issue #129 unit test
 
 unittest // Direct left-recursion
 {
+    alias ParseTree = DefaultParseTree;
+
     enum LeftGrammar = `
       Left:
         S <- E eoi
@@ -2860,6 +2898,8 @@ unittest // Direct left-recursion
 
 unittest // Indirect left-recursion
 {
+    alias ParseTree = DefaultParseTree;
+
     enum LeftGrammar = `
       Left:
         S <- E eoi
@@ -2874,6 +2914,8 @@ unittest // Indirect left-recursion
 
 unittest // Proper blocking of memoization
 {
+    alias ParseTree = DefaultParseTree;
+
     // Three interlocking cycles of indirect left-recursion.
     enum LeftGrammar = `
       Left:
@@ -2904,6 +2946,8 @@ unittest // Mutual left-recursion
     it will have a chance to succeed on the full input which it recorded in its seed for the previous
     recursion.
     */
+    alias ParseTree = DefaultParseTree;
+
     enum LeftGrammar = `
       Left:
         M <- L eoi
@@ -2918,6 +2962,8 @@ unittest // Mutual left-recursion
 
 unittest // Left- and right-recursion (is right-associative!)
 {
+    alias ParseTree = DefaultParseTree;
+
     enum LeftRightGrammar = `
       LeftRight:
         M <- E eoi
