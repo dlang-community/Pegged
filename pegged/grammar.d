@@ -75,7 +75,7 @@ ParseTree spaceArrow(ParseTree)(ParseTree input)
         result.children = spacer ~ result.children ~ spacer;
         return result;
     }
-    return modify!( p => p.name == "Pegged.Primary",
+    return modify!(ParseTree, p => p.name == "Pegged.Primary",
                     wrapInSpaces)(input);
 }
 
@@ -96,7 +96,7 @@ mixin(grammar(def));
 ParseTree p = Gram("abcbccbcd");
 ----
 */
-string grammar(Memoization withMemo = Memoization.yes)(string definition)
+string grammar(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTree)(string definition)
 {
     ParseTree defAsParseTree = Pegged(definition);
 
@@ -106,10 +106,10 @@ string grammar(Memoization withMemo = Memoization.yes)(string definition)
         string result = "static assert(false, `" ~ defAsParseTree.toString("") ~ "`);";
         return result;
     }
-    return grammar!(withMemo)(defAsParseTree);
+    return grammar!(ParseTree, withMemo)(defAsParseTree);
 }
 /// ditto
-string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
+string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree) if (isParseTree!ParseTree)
 {
     string[] composedGrammars;
 
@@ -204,12 +204,15 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 string firstRuleName = generateCode(p.children[1].children[0]);
 
                 result =
-"struct Generic" ~ shortGrammarName ~ "(TParseTree)
+"struct Generic" ~ shortGrammarName ~ "(ParseTree)
 {
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
     static import pegged.peg;
-    alias PEG=pegged.peg;
+    mixin ParseCollections!ParseTree;
+    alias PEG=PeggedT!ParseTree;
+    mixin DefaultParsePatterns!PEG;
+
     struct " ~ grammarName ~ "\n    {
     enum name = \"" ~ shortGrammarName ~ "\";
     static ParseTree delegate(ParseTree)[string] before;
@@ -219,7 +222,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 if (withMemo == Memoization.yes) {
                     result ~= "
     import std.typecons:Tuple, tuple;
-    static TParseTree[Tuple!(string, size_t)] memo;";
+    static ParseTree[Tuple!(string, size_t)] memo;";
                     if (grammarInfo.leftRecursiveCycles.length > 0)
                         result ~= "
     import std.algorithm: canFind, countUntil, remove;
@@ -358,29 +361,29 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 if (p.children[1].children[0].children.length == 1)
                 {
                     // General calling interface
-                    result ~= "    static TParseTree opCall(TParseTree p)\n"
+                    result ~= "    static ParseTree opCall(ParseTree p)\n"
                             ~ "    {\n"
-                            ~ "        TParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
+                            ~ "        ParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
                             ~ "        result.children = [result];\n"
                             ~ "        result.name = \"" ~ shortGrammarName ~ "\";\n"
                             ~ "        return result;\n"
                             ~ "    }\n\n"
-                            ~ "    static TParseTree opCall(string input)\n"
+                            ~ "    static ParseTree opCall(string input)\n"
                             ~ "    {\n";
 
                     if (withMemo == Memoization.no)
                         result ~= "        forgetMemo();\n"
-                                ~ "        return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                                ~ "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
                                 ~ "    }\n";
                     else
                         result ~= "        if(__ctfe)\n"
                                 ~ "        {\n"
-                                ~ "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                                ~ "            return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
                                 ~ "        }\n"
                                 ~ "        else\n"
                                 ~ "        {\n"
                                 ~ "            forgetMemo();\n"
-                                ~ "            return " ~ shortGrammarName ~ "(TParseTree(``, false, [], input, 0, 0));\n"
+                                ~ "            return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
                                 ~ "        }\n"
                                 ~ "    }\n";
 
@@ -392,7 +395,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 result ~= generateForgetMemo();
                 result ~= "    }\n" // end of grammar struct definition
                         ~ "}\n\n" // end of template definition
-                        ~ "alias Generic" ~ shortGrammarName ~ "!(ParseTree)."
+                        ~ "alias Generic" ~ shortGrammarName ~ "!(DefaultParseTree)."
                         ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
                 break;
             case "Pegged.Definition":
@@ -408,19 +411,19 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                         code ~= generateCode(p.children[2]);
                         break;
                     case "Pegged.FUSEARROW":
-                        code ~= "pegged.peg.fuse!(" ~ generateCode(p.children[2]) ~ ")";
+                        code ~= "PEG.fuse!(" ~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.DISCARDARROW":
-                        code ~= "pegged.peg.discard!(" ~ generateCode(p.children[2]) ~ ")";
+                        code ~= "PEG.discard!(" ~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.KEEPARROW":
-                        code ~= "pegged.peg.keep!("~ generateCode(p.children[2]) ~ ")";
+                        code ~= "PEG.keep!("~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.DROPARROW":
-                        code ~= "pegged.peg.drop!("~ generateCode(p.children[2]) ~ ")";
+                        code ~= "PEG.drop!("~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.PROPAGATEARROW":
-                        code ~= "pegged.peg.propagate!("~ generateCode(p.children[2]) ~ ")";
+                        code ~= "PEG.propagate!("~ generateCode(p.children[2]) ~ ")";
                         break;
                     case "Pegged.SPACEARROW":
                         ParseTree modified = spaceArrow(p.children[2]);
@@ -429,7 +432,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                     case "Pegged.ACTIONARROW":
                         auto actionResult = generateCode(p.children[2]);
                         foreach(action; p.children[1].matches[1..$])
-                            actionResult = "pegged.peg.action!(" ~ actionResult ~ ", " ~ action ~ ")";
+                            actionResult = "PEG.action!(" ~ actionResult ~ ", " ~ action ~ ")";
                         code ~= actionResult;
                         break;
                     default:
@@ -449,7 +452,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                     innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
                     hookedName ~= "_" ~ to!string(p.children[0].children[1].children.length);
                     foreach(i,param; p.children[0].children[1].children)
-                        innerName ~= "pegged.peg.getName!("~ param.children[0].matches[0]
+                        innerName ~= "PEG.getName!("~ param.children[0].matches[0]
                                     ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ \", \" ~ "
                                                                                      : ")");
                     innerName ~= " ~ \")\"";
@@ -459,11 +462,11 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                     innerName ~= "`" ~ completeName ~ "`";
                 }
 
-                string ctfeCode = "        pegged.peg.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
-                code =            "hooked!(pegged.peg.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
+                string ctfeCode = "        PEG.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+                code =            "hooked!(PEG.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
 
                 if (withMemo == Memoization.no)
-                    result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
+                    result ~= "    static ParseTree " ~ shortName ~ "(ParseTree p)\n"
                             ~ "    {\n"
                             ~ "        if(__ctfe)\n"
                             ~ "        {\n"
@@ -478,7 +481,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                             ~ "        {\n"
                             ~ (stoppers.canFind(shortName) ?
                               // This rule needs to prevent infinite left-recursion.
-                              "            static TParseTree[size_t /*position*/] seed;\n"
+                              "            static ParseTree[size_t /*position*/] seed;\n"
                             ~ "            if (auto s = p.end in seed)\n"
                             ~ "                return *s;\n"
                             ~ "            auto current = fail(p);\n"
@@ -506,18 +509,18 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                               )
                             ~ "        }\n"
                             ~ "    }\n"
-                            ~ "    static TParseTree " ~ shortName ~ "(string s)\n"
+                            ~ "    static ParseTree " ~ shortName ~ "(string s)\n"
                             ~ "    {\n"
                             ~ "        if(__ctfe)\n"
-                            ~ "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
+                            ~ "            return " ~ ctfeCode ~ "(ParseTree(\"\", false,[], s));\n"
                             ~ "        else\n"
                             ~ "        {\n"
                             ~ "            forgetMemo();\n"
-                            ~ "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                            ~ "            return " ~ code ~ "(ParseTree(\"\", false,[], s));\n"
                             ~ "        }\n"
                             ~ "    }\n";
                 else // Memoization.yes
-                    result ~= "    static TParseTree " ~ shortName ~ "(TParseTree p)\n"
+                    result ~= "    static ParseTree " ~ shortName ~ "(ParseTree p)\n"
                             ~ "    {\n"
                             ~ "        if(__ctfe)\n"
                             ~ "        {\n"
@@ -532,7 +535,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                             ~ "        {\n"
                             ~ (stoppers.canFind(shortName) ?
                               // This rule needs to prevent infinite left-recursion.
-                              "            static TParseTree[size_t /*position*/] seed;\n"
+                              "            static ParseTree[size_t /*position*/] seed;\n"
                             ~ "            if (auto s = p.end in seed)\n"
                             ~ "                return *s;\n"
                             ~ "            if (!blockMemoAtPos.canFind(p.end))\n"
@@ -580,23 +583,23 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                             ~ "                return *m;\n"
                             ~ "            else\n"
                             ~ "            {\n"
-                            ~ "                TParseTree result = " ~ code ~ "(p);\n"
+                            ~ "                ParseTree result = " ~ code ~ "(p);\n"
                             ~ "                memo[tuple(" ~ innerName ~ ", p.end)] = result;\n"
                             ~ "                return result;\n"
                             ~ "            }\n"
                               )
                             ~ "        }\n"
                             ~ "    }\n\n"
-                            ~ "    static TParseTree " ~ shortName ~ "(string s)\n"
+                            ~ "    static ParseTree " ~ shortName ~ "(string s)\n"
                             ~ "    {\n"
                             ~ "        if(__ctfe)\n"
                             ~ "        {\n"
-                            ~ "            return " ~ ctfeCode ~ "(TParseTree(\"\", false,[], s));\n"
+                            ~ "            return " ~ ctfeCode ~ "(ParseTree(\"\", false,[], s));\n"
                             ~ "        }\n"
                             ~ "        else\n"
                             ~ "        {\n"
                             ~ "            forgetMemo();\n"
-                            ~ "            return " ~ code ~ "(TParseTree(\"\", false,[], s));\n"
+                            ~ "            return " ~ code ~ "(ParseTree(\"\", false,[], s));\n"
                             ~ "        }\n"
                             ~ "    }\n";
 
@@ -661,14 +664,14 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
 
                     if (keywordList)
                     {
-                        result = "pegged.peg.keywords!(";
+                        result = "PEG.keywords!(";
                         foreach(seq; p.children)
                             result ~= "\"" ~ (seq.matches.length == 3 ? seq.matches[1] : "") ~ "\", ";
                         result = result[0..$-2] ~ ")";
                     }
                     else
                     {
-                        result = p.name == "Pegged.FirstExpression" ? "pegged.peg.or!(" : "pegged.peg.longest_match!(";
+                        result = p.name == "Pegged.FirstExpression" ? "PEG.or!(" : "PEG.longest_match!(";
                         foreach(seq; p.children)
                             result ~= generateCode(seq) ~ ", ";
                         result = result[0..$-2] ~ ")";
@@ -682,12 +685,12 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
             case "Pegged.Sequence":
                 if (p.children.length > 1) // real sequence
                 {
-                    result = "pegged.peg.and!(";
+                    result = "PEG.and!(";
                     foreach(seq; p.children)
                     {
                         string elementCode = generateCode(seq);
                         // flattening inner sequences
-                        if (elementCode.length > 6 && elementCode[0..5] == "pegged.peg.and!(")
+                        if (elementCode.length > 6 && elementCode[0..5] == "PEG.and!(")
                             elementCode = elementCode[5..$-1]; // cutting 'and!(' and ')'
                         result ~= elementCode ~ ", ";
                     }
@@ -710,17 +713,17 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                     switch (child.name)
                     {
                         case "Pegged.OPTION":
-                            result = "pegged.peg.option!(" ~ result ~ ")";
+                            result = "PEG.option!(" ~ result ~ ")";
                             break;
                         case "Pegged.ZEROORMORE":
-                            result = "pegged.peg.zeroOrMore!(" ~ result ~ ")";
+                            result = "PEG.zeroOrMore!(" ~ result ~ ")";
                             break;
                         case "Pegged.ONEORMORE":
-                            result = "pegged.peg.oneOrMore!(" ~ result ~ ")";
+                            result = "PEG.oneOrMore!(" ~ result ~ ")";
                             break;
                         case "Pegged.Action":
                             foreach(action; child.matches)
-                                result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
+                                result = "PEG.action!(" ~ result ~ ", " ~ action ~ ")";
                             break;
                         default:
                             break;
@@ -756,20 +759,20 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 break;
             case "Pegged.Literal":
                 if(p.matches.length == 3) // standard case
-                    result = "pegged.peg.literal!(\"" ~ p.matches[1] ~ "\")";
+                    result = "PEG.literal!(\"" ~ p.matches[1] ~ "\")";
                 else // only two children -> empty literal
-                    result = "pegged.peg.literal!(``)";
+                    result = "PEG.literal!(``)";
                 break;
             case "Pegged.CILiteral":
                 if(p.matches.length == 3) // standard case
-                    result = "pegged.peg.caseInsensitiveLiteral!(\"" ~ p.matches[1] ~ "\")";
+                    result = "PEG.caseInsensitiveLiteral!(\"" ~ p.matches[1] ~ "\")";
                 else // only two children -> empty literal
-                    result = "pegged.peg.caseInsensitiveLiteral!(``)";
+                    result = "PEG.caseInsensitiveLiteral!(``)";
                 break;
             case "Pegged.CharClass":
                 if (p.children.length > 1)
                 {
-                    result = "pegged.peg.or!(";
+                    result = "PEG.or!(";
                     foreach(seq; p.children)
                         result ~= generateCode(seq) ~ ", ";
                     result = result[0..$-2] ~ ")";
@@ -783,14 +786,14 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 /// Make the generation at the Char level: directly what is needed, be it `` or "" or whatever
                 if (p.children.length > 1) // a-b range
                 {
-                    result = "pegged.peg.charRange!('" ~ generateCode(p.children[0])
+                    result = "PEG.charRange!('" ~ generateCode(p.children[0])
                                                        ~ "', '"
                                                        ~ generateCode(p.children[1])
                                                        ~ "')";
                 }
                 else // lone char
                 {
-                    result = "pegged.peg.literal!(";
+                    result = "PEG.literal!(";
                     string ch = p.matches[0];
                     switch (ch)
                     {
@@ -811,7 +814,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                             break;
                         case "\"":
                         case "\\\"":
-                            result ~= "`\"`)";
+                            result ~= q{`"`)};
                             break;
                         case "\n":
                         case "\r":
@@ -847,48 +850,48 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 }
                 break;
             case "Pegged.POS":
-                result = "pegged.peg.posLookahead!(";
+                result = "PEG.posLookahead!(";
                 break;
             case "Pegged.NEG":
-                result = "pegged.peg.negLookahead!(";
+                result = "PEG.negLookahead!(";
                 break;
             case "Pegged.FUSE":
-                result = "pegged.peg.fuse!(";
+                result = "PEG.fuse!(";
                 break;
             case "Pegged.DISCARD":
-                result = "pegged.peg.discard!(";
+                result = "PEG.discard!(";
                 break;
             //case "Pegged.CUT":
             //    result = "discardChildren!(";
             //    break;
             case "Pegged.KEEP":
-                result = "pegged.peg.keep!(";
+                result = "PEG.keep!(";
                 break;
             case "Pegged.DROP":
-                result = "pegged.peg.drop!(";
+                result = "PEG.drop!(";
                 break;
             case "Pegged.PROPAGATE":
-                result = "pegged.peg.propagate!(";
+                result = "PEG.propagate!(";
                 break;
             case "Pegged.OPTION":
-                result = "pegged.peg.option!(";
+                result = "PEG.option!(";
                 break;
             case "Pegged.ZEROORMORE":
-                result = "pegged.peg.zeroOrMore!(";
+                result = "PEG.zeroOrMore!(";
                 break;
             case "Pegged.ONEORMORE":
-                result = "pegged.peg.oneOrMore!(";
+                result = "PEG.oneOrMore!(";
                 break;
             case "Pegged.Action":
                 result = generateCode(p.children[0]);
                 foreach(action; p.matches[1..$])
-                    result = "pegged.peg.action!(" ~ result ~ ", " ~ action ~ ")";
+                    result = "PEG.action!(" ~ result ~ ", " ~ action ~ ")";
                 break;
             case "Pegged.ANY":
-                result = "pegged.peg.any";
+                result = "PEG.any";
                 break;
             case "Pegged.WrapAround":
-                result = "pegged.peg.wrapAround!(" ~ generateCode(p.children[0]) ~ ", "
+                result = "PEG.wrapAround!(" ~ generateCode(p.children[0]) ~ ", "
                                                    ~ generateCode(p.children[1]) ~ ", "
                                                    ~ generateCode(p.children[2]) ~ ")";
                 break;
@@ -979,6 +982,11 @@ mixin template expected()
 
 unittest // 'grammar' unit test: low-level functionalities
 {
+    alias ParseTree = DefaultParseTree;
+    mixin ParseCollections!ParseTree;
+    alias PEG=PeggedT!ParseTree;
+    mixin DefaultParsePatterns!PEG;
+
     mixin(grammar(`
     Test1:
         Rule1 <- 'a'
@@ -999,9 +1007,13 @@ unittest // 'grammar' unit test: low-level functionalities
 
 unittest // 'grammar' unit test: PEG syntax
 {
-    // Here we do not test pegged.peg.*, just the grammar transformations
-    // From a PEG to a Pegged expression template.
+    alias ParseTree = DefaultParseTree;
+    mixin ParseCollections!ParseTree;
+    alias PEG=PeggedT!ParseTree;
+    mixin DefaultParsePatterns!PEG;
 
+    // Here we do not test PEG.*, just the grammar transformations
+    // From a PEG to a Pegged expression template.
     mixin(grammar(`
     Terminals:
         Literal1 <- "abc"
@@ -1359,6 +1371,8 @@ Rule4 <- 'f' Rule5   # Rule4 ends with 'f', then it's Rule5
 
 unittest // Parsing at compile-time
 {
+    alias ParseTree = DefaultParseTree;
+
     mixin(grammar(`
     Test:
         Rule1 <- 'a' Rule2('b')
@@ -2137,7 +2151,7 @@ unittest // qualified names for rules
     Second:
         Rule1 <- First.Rule1
         Rule2 <- First.Rule2
-        Rule3 <- pegged.peg.list(pegged.peg.identifier, ',')
+        Rule3 <- PEG.list(PEG.identifier, ',')
     `));
 
     // Equal on success
@@ -2598,9 +2612,9 @@ unittest // Memoization testing
     assert(result3 == result4);
 
     //Directly comparing result1 and result3 is not possible, for the grammar names are different
-    assert(pegged.peg.softCompare(result1, result2));
-    assert(pegged.peg.softCompare(result1, result3));
-    assert(pegged.peg.softCompare(result1, result4));
+    assert(PEG.softCompare(result1, result2));
+    assert(PEG.softCompare(result1, result3));
+    assert(PEG.softCompare(result1, result4));
 }
 
 unittest // Memoization reset in composed grammars. Issue #162

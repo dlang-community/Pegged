@@ -145,6 +145,11 @@ ParseTree eoi(ParseTree)(const ParseTree p) if (isParseTree!ParseTree) {
         return ParseTree("eoi", false, ["end of input"], p.input, p.end, p.end);
 }
 
+ParseTree eps(ParseTree)(const ParseTree p) if (isParseTree!ParseTree) {
+    return ParseTree("eps", true, [""], p.input, p.end, p.end);
+}
+
+
 
 mixin template ParseTreeM() {
     import std.functional : toDelegate;
@@ -769,11 +774,6 @@ struct PeggedT(ParseTree) {
    eps matches the empty string (usually denoted by the Greek letter 'epsilon') and always succeeds.
    It's equivalent to literal!"" (for example, it creates a match of [""]: one match, the empty string).
 */
-    ParseTree eps(ParseTree p)
-        {
-            return ParseTree("eps", true, [""], p.input, p.end, p.end);
-        }
-
     ParseTree eps(string input)
         {
             return eps(ParseTree("",false,[], input));
@@ -977,11 +977,11 @@ unittest // 'literal' unit test
    It succeeds if a case insensitive comparison of a prefix of the input and its template
    parameter yields no difference and fails otherwise.
 */
-template caseInsensitiveLiteralT(ParseTreeT, string s)
+template caseInsensitiveLiteralT(ParseTree, string s)
 {
     enum name = "caseInsensitiveLiteral!(\""~s~"\")";
 
-    ParseTreeT caseInsensitiveLiteral(ParseTree p)
+    ParseTree caseInsensitiveLiteralT(ParseTree p)
         {
             enum lit = "\"" ~ s ~ "\"";
             if (p.end+s.length <= p.input.length && icmp(p.input[p.end..p.end+s.length], s) == 0)
@@ -990,13 +990,13 @@ template caseInsensitiveLiteralT(ParseTreeT, string s)
                 return ParseTree(name, false, [lit], p.input, p.end, p.end);
         }
 
-    ParseTreeT caseInsensitiveLiteral(string input)
+    ParseTree caseInsensitiveLiteralT(string input)
         {
-            return .caseInsensitiveLiteral!(s)(ParseTree("", false, [], input));
+            return caseInsensitiveLiteralT!(ParseTree, s)(ParseTree("", false, [], input));
         }
 
 
-    string caseInsensitiveLiteral(GetName g)
+    string caseInsensitiveLiteralT(GetName g)
         {
             return name;
         }
@@ -1007,6 +1007,7 @@ unittest // 'caseInsensitiveLiteral' unit test
 {
     alias ParseTree = DefaultParseTree;
     mixin ParseCollections!ParseTree;
+
     ParseTree input = ParseTree("input", true, [], "AbCdEf", 0,0, null);
 
     alias caseInsensitiveLiteral!"a" a;
@@ -1555,7 +1556,7 @@ unittest // 'and' unit test
 }
 
 version (unittest) {
-    static ParseTree getError(ref ParseTree p) {
+    static ParseTree getError(ParseTree)(ref ParseTree p) if (isParseTree!ParseTree) {
         if (p.children.length > 0)
             return getError(p.children[$-1]);
         return p;
@@ -1621,7 +1622,7 @@ unittest // 'and' unit test with oneOrMore and longest failing match
 
 template wrapAroundT(ParseTree, alias before, alias target, alias after)
 {
-    ParseTree wrapAround(ParseTree p)
+    ParseTree wrapAroundT(ParseTree p)
         {
             ParseTree temp = before(p);
             if (!temp.successful)
@@ -1640,12 +1641,12 @@ template wrapAroundT(ParseTree, alias before, alias target, alias after)
             return result;
         }
 
-    ParseTree wrapAround(string input)
+    ParseTree wrapAroundT(string input)
         {
-            return .wrapAround!(before, target, after)(ParseTree("",false,[],input));
+            return wrapAroundT!(ParseTree, before, target, after)(ParseTree("",false,[],input));
         }
 
-    string wrapAround(GetName g)
+    string wrapAroundT(GetName g)
         {
             return "wrapAround!(" ~ getName!(before)() ~
                 ", " ~ getName!(target)() ~
@@ -2239,7 +2240,7 @@ template keywordsT(ParseTree,kws...) if (kws.length > 0)
     enum name = ctfeGetNameKeywords();
     enum failString = "one among " ~ ctfeConcatKeywords();
 
-    ParseTree keywords(ParseTree p)
+    ParseTree keywordsT(ParseTree p)
         {
             string keywordCode(string[] keywords)
             {
@@ -2278,12 +2279,12 @@ template keywordsT(ParseTree,kws...) if (kws.length > 0)
             }
         }
 
-    ParseTree keywords(string input)
+    ParseTree keywordsT(string input)
         {
-            return .keywords!(kws)(ParseTree("",false,[],input));
+            return keywordsT!(ParseTree, kws)(ParseTree("",false,[],input));
         }
 
-    string keywords(GetName g)
+    string keywordsT(GetName g)
         {
             return name;
         }
@@ -3419,7 +3420,7 @@ unittest // 'discard' unit test
 */
 template dropT(ParseTree, alias r)
 {
-    ParseTree drop(ParseTree p)
+    ParseTree dropT(ParseTree p)
         {
             ParseTree result = r(p);
             //result.begin = result.end;
@@ -3429,12 +3430,12 @@ template dropT(ParseTree, alias r)
             return result;
         }
 
-    ParseTree drop(string input)
+    ParseTree dropT(string input)
         {
-            return .drop!(r)(ParseTree("",false,[],input));
+            return dropT!(ParseTree, r)(ParseTree("",false,[],input));
         }
 
-    string drop(GetName g)
+    string dropT(GetName g)
         {
             return "drop!(" ~ getName!(r)() ~ ")";
         }
@@ -3503,7 +3504,7 @@ unittest // 'drop' unit test
 */
 template propagateT(ParseTree, alias r)
 {
-    ParseTree propagate(ParseTree p)
+    ParseTree propagateT(ParseTree p)
         {
             ParseTree result = r(p);
             if (result.successful)
@@ -3511,12 +3512,12 @@ template propagateT(ParseTree, alias r)
             return result;
         }
 
-    ParseTree propagate(string input)
+    ParseTree propagateT(string input)
         {
-            return .propagate!(r)(ParseTree("",false,[],input));
+            return propagateT!(ParseTree, r)(ParseTree("",false,[],input));
         }
 
-    string propagate(GetName g)
+    string propagateT(GetName g)
         {
             return "propagate!(" ~ getName!(r)() ~ ")";
         }
