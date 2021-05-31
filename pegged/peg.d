@@ -37,7 +37,6 @@ package string stringified(string inp) @safe
     return "%(%s%)".format(shell);
 }
 
-version(none)
 @safe unittest // Run- & Compile-time.
 {
     static bool doTest()
@@ -50,7 +49,7 @@ version(none)
             "\t" : `"\t"`,
 
             `"` : `"\""`,
-            "`" : q{("`")},
+            "`" : q{"`"},
             "'" : `"'"`,
 
             "42"              : `"42"`,
@@ -76,8 +75,8 @@ version(none)
     }
 
     // Result is always true, but here, we just force CTFE-mode.
-    static assert(doTest); // Compile-time.
     doTest;                // Run-time.
+    static assert(doTest); // Compile-time.
 }
 
 struct GetName {}
