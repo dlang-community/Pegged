@@ -8,6 +8,7 @@ import std.stdio;
 
 import pegged.peg;
 
+private alias ParseTree=DefaultParseTree;
 alias ParseTree delegate(ParseTree) Dynamic;
 
 string getName(D)(D rule)

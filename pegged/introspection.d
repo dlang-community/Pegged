@@ -89,7 +89,7 @@ Returns for all grammar rules:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-pure GrammarInfo grammarInfo(ParseTree p)
+pure GrammarInfo grammarInfo(ParseTree)(ParseTree p)
 {
     if (p.name == "Pegged")
         return grammarInfo(p.children[0]);
@@ -428,7 +428,7 @@ Returns for all grammar rules:
 
 This kind of potential problem can be detected statically and should be transmitted to the grammar designer.
 */
-pure RuleInfo[string] ruleInfo(ParseTree p)
+pure RuleInfo[string] ruleInfo(ParseTree)(ParseTree p)
 {
     return grammarInfo(p).ruleInfo;
 }
@@ -587,7 +587,7 @@ unittest // Left-recursive null-matching
 Act on rules parse tree as produced by pegged.parser.
 Replace every occurence of child in parent by child's parse tree
 */
-ParseTree replaceInto(ParseTree parent, ParseTree child)
+ParseTree replaceInto(ParseTree)(ParseTree parent, ParseTree child)
 {
     if (parent.name == "Pegged.RhsName" && parent.matches[0] == child.matches[0])
         return ParseTree("Pegged.Named", true, child.matches[0..1], "",0,0,

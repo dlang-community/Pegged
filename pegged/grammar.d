@@ -57,7 +57,7 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File fi
 }
 
 // Helper to insert 'Spacing' before and after Primaries
-ParseTree spaceArrow(ParseTree input)
+ParseTree spaceArrow(ParseTree)(ParseTree input)
 {
     ParseTree wrapInSpaces(ParseTree p)
     {
@@ -209,6 +209,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
     static import pegged.peg;
+    alias PEG=pegged.peg;
     struct " ~ grammarName ~ "\n    {
     enum name = \"" ~ shortGrammarName ~ "\";
     static ParseTree delegate(ParseTree)[string] before;

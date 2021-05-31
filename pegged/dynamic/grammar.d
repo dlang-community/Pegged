@@ -19,6 +19,8 @@ import pegged.peg;
 import pegged.parser;
 import pegged.dynamic.peg;
 
+private alias ParseTree=DefaultParseTree;
+
 struct ParameterizedRule
 {
     size_t numArgs;
@@ -78,6 +80,7 @@ struct DynamicGrammar
     string startingRule;
     Dynamic[string] rules;
     ParameterizedRule[string] paramRules;
+    private alias ParseTree=DefaultParseTree;
 
     ParseTree decimateTree(ParseTree p)
     {
@@ -142,7 +145,7 @@ struct DynamicGrammar
 }
 
 // Helper to insert 'Spacing' before and after Primaries
-ParseTree spaceArrow(ParseTree input)
+ParseTree spaceArrow(ParseTree)(ParseTree input) if (isParseTree!ParseTree)
 {
     ParseTree wrapInSpaces(ParseTree p)
     {
@@ -160,7 +163,7 @@ ParseTree spaceArrow(ParseTree input)
         result.children = spacer ~ result.children ~ spacer;
         return result;
     }
-    return modify!( p => p.name == "Pegged.Primary",
+    return modify!(ParseTree, p => p.name == "Pegged.Primary",
                     wrapInSpaces)(input);
 }
 
@@ -170,7 +173,7 @@ Dynamic makeRule(string def, Dynamic[string] context)
     return makeRule(p, context);
 }
 
-Dynamic makeRule(ParseTree def, Dynamic[string] context)
+Dynamic makeRule(ParseTree)(ParseTree def, Dynamic[string] context) if (isParseTree!ParseTree)
 {
     Dynamic code;
 
