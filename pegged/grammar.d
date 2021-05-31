@@ -2808,21 +2808,6 @@ unittest // Test lambda syntax in semantic actions
 unittest
 {
     // Higher-level word boundary test.
-    pragma(msg, grammar(`
-        TestGrammar:
-
-        Foo < '{' 'X' '}'
-        Bar < 'A' 'B'
-
-        Spacing <:
-            / blank+
-            / blank* wordBoundary
-            / wordBoundary blank*
-            / ![a-zA-Z]
-            / !.
-
-        `));
-
    mixin(grammar(`
         TestGrammar:
 

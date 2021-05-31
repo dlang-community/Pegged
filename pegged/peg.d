@@ -3296,8 +3296,6 @@ template discardT(ParseTree, alias r)
 {
     ParseTree discardT(ParseTree p)
         {
-            pragma(msg, typeof(p));
-            pragma(msg, typeof(r(p)));
             ParseTree result = r(p);
             result.name = "discard!(" ~ getName!(r)() ~ ")";
             //result.begin = result.end;
