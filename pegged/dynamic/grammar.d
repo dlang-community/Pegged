@@ -19,6 +19,7 @@ import pegged.peg;
 import pegged.parser;
 import pegged.dynamic.peg;
 
+private import pegged.parsetree : DefaultParseTree, isParseTree;
 private alias ParseTree=DefaultParseTree;
 
 struct ParameterizedRule

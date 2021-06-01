@@ -8,6 +8,8 @@ import std.stdio;
 
 import pegged.peg;
 
+
+private import pegged.parsetree : DefaultParseTree;
 private alias ParseTree=DefaultParseTree;
 alias ParseTree delegate(ParseTree) Dynamic;
 

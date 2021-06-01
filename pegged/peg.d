@@ -24,6 +24,7 @@ import std.array;
 import std.conv;
 import std.string: strip;
 import std.typetuple;
+import pegged.parsetree : isParseTree;
 
 // Returns quoted and escaped version of the input, but if the input is null, then return `"end of input"`.
 package string stringified(string inp) @safe
@@ -104,33 +105,6 @@ string any(GetName g) @safe
     return "any";
 }
 
-import std.traits : isType, ReturnType, ForeachType, isCallable, Unqual;
-template Returns(alias M) {
-    static if (isType!M) {
-        alias U = M;
-    }
-    else {
-        alias U = typeof(M);
-    }
-    static if (isCallable!U) {
-        alias Returns = Unqual!(ReturnType!U);
-    }
-    else {
-        alias Returns = Unqual!(U);
-    }
-}
-
-enum isParseTree(T) =
-    is(Returns!(T.name) == string) &&
-    is(Returns!(T.successful) == bool)  &&
-    is(Returns!(T.input) == string)  &&
-    is(Returns!(T.begin) == size_t)  &&
-    is(Returns!(T.end) == size_t) &&
-    is(Returns!(T.failEnd) == size_t) &&
-    is(ForeachType!(Returns!(T.matches)) == string)  &&
-    is(ForeachType!(Returns!(T.children)) == T)  &&
-    is(ForeachType!(Returns!(T.failedChild)) == T);
-
 /**
    Matches the end of input. Fails if there is any character left.
 */
@@ -181,143 +155,6 @@ ParseTree fail(ParseTree)(const ParseTree p) @safe if (isParseTree!ParseTree) {
 
 
 
-mixin template ParseTreeM() {
-    import pegged.peg;
-    import std.functional : toDelegate;
-    alias ParseTree = typeof(this);
-    string name; /// The node name
-    bool successful; /// Indicates whether a parsing was successful or not
-    string[] matches; /// The matched input's parts. Some expressions match at more than one place, hence matches is an array.
-
-    string input; /// The input string that generated the parse tree. Stored here for the parse tree to be passed to other expressions, as input.
-    size_t begin, end; /// Indices for the matched part from the very beginning of the first match to the last char of the last match.
-
-    ParseTree[] children; /// The sub-trees created by sub-rules parsing.
-
-    size_t failEnd; // The furthest this tree could match the input (including !successful rules).
-    ParseTree[] failedChild; /// The !successful child that could still be partially parsed.
-
-    /**
-       Basic toString for easy pretty-printing.
-    */
-    string toString(string tabs = "") const
-        {
-            string result = name;
-
-            string childrenString;
-            bool allChildrenSuccessful = true;
-
-            foreach(i,child; children)
-            {
-                childrenString ~= tabs ~ " +-" ~ child.toString(tabs ~ ((i < children.length -1 ) ? " | " : "   "));
-                if (!child.successful) {
-                    allChildrenSuccessful = false;
-                }
-            }
-            result ~= this.toStringThisNode(allChildrenSuccessful);
-            return result ~ childrenString;
-        }
-
-    /**
-     * Basic toString of only this node, without the children
-     */
-    private string toStringThisNode(bool allChildrenSuccessful) const
-        {
-            if (successful) {
-                return to!string([begin, end]) ~ to!string(matches) ~ "\n";
-            } else { // some failure info is needed
-                if (allChildrenSuccessful) { // no one calculated the position yet
-                    return " " ~ this.failMsg ~ "\n";
-                } else {
-                    return " (failure)\n";
-                }
-            }
-        }
-
-    /**
-     * Generates a generic error when a node fails
-     *
-     * @param successMsg String returned when there isn't an error
-     * @param formatFailMsg Formating delegate function that generates the error message.
-     */
-    string failMsg(string delegate(Position, string, string, const ParseTree) formatFailMsg = toDelegate(&defaultFormatFailMsg!ParseTree),
-        string successMsg = "Sucess") const @property
-        {
-            foreach(i, child; children) {
-                if (!child.successful) {
-                    return child.failMsg(formatFailMsg, successMsg);
-                }
-            }
-
-            if (!successful) {
-                Position pos = position(this);
-                string left, right;
-
-                if (pos.index < 10) {
-                    left = input[0 .. pos.index];
-                } else {
-                    left = input[pos.index - 10 .. pos.index];
-                }
-                if (pos.index + 10 < input.length) {
-                    right = input[pos.index .. pos.index + 10];
-                } else {
-                    right = input[pos.index .. $];
-                }
-                return formatFailMsg(pos, left, right, this);
-            }
-
-            return successMsg;
-        }
-
-    ParseTree dup() const @property
-        {
-            ParseTree result;
-            result.name = name;
-            result.successful = successful;
-            result.matches = matches.dup;
-            result.input = input;
-            result.begin = begin;
-            result.end = end;
-            result.failEnd = failEnd;
-            result.failedChild = map!(p => p.dup)(failedChild).array();
-            result.children = map!(p => p.dup)(children).array();
-            return result;
-        }
-
-    immutable(ParseTree) idup() const @property
-        {
-            return cast(immutable)dup();
-        }
-
-    // Override opIndex operators
-    ref ParseTree opIndex(size_t index) {
-        return children[index];
-    }
-
-    ref ParseTree[] opIndex() return {
-        return children;
-    }
-
-    size_t opDollar(size_t pos)() const
-        {
-            return children.length;
-        }
-
-    ParseTree[] opSlice(size_t i, size_t j) {
-        return children[i..j];
-    }
-}
-
-/**
-   The basic parse tree, as used throughout the project.
-   You can define your own parse tree node, but respect the basic layout.
-*/
-struct DefaultParseTree
-{
-    mixin ParseTreeM;
-}
-
-static assert(isParseTree!DefaultParseTree);
 /**
    CT Switch for testing 'keywords' implementations
 */
@@ -551,7 +388,6 @@ struct PeggedT(ParseTree) {
             }
         }
 
-/// ditto
     static ParseTree fail(string input)
         {
             return fail(ParseTree("", false, [], input));
@@ -583,12 +419,12 @@ struct PeggedT(ParseTree) {
             return any(ParseTree("", false, [], input));
         }
 
-/// ditto
     static ParseTree wordBoundary(string input)
         {
             return ParseTree("wordBoundary", isAlpha(input.front()), [], input, 0,0, null);
         }
 
+/// ditto
     static string wordBoundary(GetName g)
         {
             return "wordBoundary";
@@ -611,9 +447,10 @@ struct PeggedT(ParseTree) {
 
 version(unittest) {
     private {
-        alias ParseTree = DefaultParseTree;
+        private import pegged.parsetree : DefaultParseTree;
+        private alias ParseTree = DefaultParseTree;
         mixin ParseCollections!ParseTree;
-        alias PEG=PeggedT!ParseTree;
+        private alias PEG=PeggedT!ParseTree;
         mixin DefaultParsePatterns!PEG;
     }
 }

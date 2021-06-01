@@ -2115,4 +2115,5 @@ struct GenericPegged(ParseTree)
     }
 }
 
+private import pegged.parsetree : DefaultParseTree;
 alias GenericPegged!(DefaultParseTree).Pegged Pegged;

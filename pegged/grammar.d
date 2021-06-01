@@ -1,8 +1,8 @@
 /**
-Parser generation module for Pegged.
-The Pegged parser itself is in pegged.parser, generated from pegged.examples.peggedgrammar.
+   Parser generation module for Pegged.
+   The Pegged parser itself is in pegged.parser, generated from pegged.examples.peggedgrammar.
 
-The documentation is in the /docs directory.
+   The documentation is in the /docs directory.
 */
 module pegged.grammar;
 
@@ -13,17 +13,18 @@ import std.stdio;
 
 public import pegged.peg;
 import pegged.parser;
+import pegged.parsetree : DefaultParseTree, isParseTree;
 
 
 
 /**
-Option enum to get internal memoization (parse results storing).
+   Option enum to get internal memoization (parse results storing).
 */
 enum Memoization { no, yes }
 
 /**
-This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
-It writes the corresponding parser inside a module with the given name.
+   This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
+   It writes the corresponding parser inside a module with the given name.
 */
 void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString, string optHeader = "")
 {
@@ -62,39 +63,39 @@ ParseTree spaceArrow(ParseTree)(ParseTree input)
     ParseTree wrapInSpaces(ParseTree p)
     {
         ParseTree spacer =
-        ParseTree("Pegged.Prefix", true, null, null, 0,0, [
-            ParseTree("Pegged.Suffix", true, null, null, 0, 0, [
-                ParseTree("Pegged.Primary", true, null, null, 0, 0, [
-                    ParseTree("Pegged.RhsName", true, null, null, 0,0, [
-                        ParseTree("Pegged.Identifier", true, ["Spacing"])
-                    ])
-                ])
-            ])
-        ]);
+            ParseTree("Pegged.Prefix", true, null, null, 0,0, [
+                    ParseTree("Pegged.Suffix", true, null, null, 0, 0, [
+                            ParseTree("Pegged.Primary", true, null, null, 0, 0, [
+                                    ParseTree("Pegged.RhsName", true, null, null, 0,0, [
+                                            ParseTree("Pegged.Identifier", true, ["Spacing"])
+                                            ])
+                                    ])
+                            ])
+                    ]);
         ParseTree result = ParseTree("Pegged.WrapAround", true, p.matches, p.input, p.begin, p.end, p.children);
         result.children = spacer ~ result.children ~ spacer;
         return result;
     }
     return modify!(ParseTree, p => p.name == "Pegged.Primary",
-                    wrapInSpaces)(input);
+        wrapInSpaces)(input);
 }
 
 
 /**
-Generate a parser from a PEG definition.
-The parser is a string containing D code, to be mixed in or written in a file.
+   Generate a parser from a PEG definition.
+   The parser is a string containing D code, to be mixed in or written in a file.
 
-----
-enum string def = "
-Gram:
-    A <- 'a' B*
-    B <- 'b' / 'c'
-";
+   ----
+   enum string def = "
+   Gram:
+   A <- 'a' B*
+   B <- 'b' / 'c'
+   ";
 
-mixin(grammar(def));
+   mixin(grammar(def));
 
-ParseTree p = Gram("abcbccbcd");
-----
+   ParseTree p = Gram("abcbccbcd");
+   ----
 */
 string grammar(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTree)(string definition)
 {
@@ -122,14 +123,14 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
                         // rules for which memoization needs to be blocked.
 
     /*
-    I once considered that if two left-recursive cycles intersect, unbounded left-recursion
-    would be prevented in both cycles if only the intersection rule would be a stopper. Although
-    true, it causes other problems, as documented in the "Mutual left-recursion" unittest below.
-    Therefore, we simply make the first rule in every left-recursive cycle a stopper.
-    Also, one might think that it suffices to prevent ordinary memoization in just the rules
-    that are part of the cycle. However, some larger input files for pegged/examples/extended_pascal
-    would fail to parse. So memoization for all left-recursive rules is disabled during
-    left-recursion.
+      I once considered that if two left-recursive cycles intersect, unbounded left-recursion
+      would be prevented in both cycles if only the intersection rule would be a stopper. Although
+      true, it causes other problems, as documented in the "Mutual left-recursion" unittest below.
+      Therefore, we simply make the first rule in every left-recursive cycle a stopper.
+      Also, one might think that it suffices to prevent ordinary memoization in just the rules
+      that are part of the cycle. However, some larger input files for pegged/examples/extended_pascal
+      would fail to parse. So memoization for all left-recursive rules is disabled during
+      left-recursion.
     */
     string[] allLeftRecursiveRules;
     foreach (cycle; grammarInfo.leftRecursiveCycles)
@@ -163,7 +164,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             result ~= stopper ~ ": " ~ allLeftRecursiveRules.join(", ") ~ "\n";
         return result.length > 0 ?
             "/** Rules that stop left-recursive cycles, followed by rules for which\n"
-          ~ " *  memoization is blocked during recursion:\n" ~ result ~ "*/\n\n" : "";
+            ~ " *  memoization is blocked during recursion:\n" ~ result ~ "*/\n\n" : "";
     }
     // Analysis completed.
 
@@ -194,17 +195,18 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
 
         switch (p.name)
         {
-            case "Pegged":
-                result = generateCode(p.children[0]);
-                break;
-            case "Pegged.Grammar":
-                string grammarName = generateCode(p.children[0]);
-                string shortGrammarName = p.children[0].matches[0];
-                //string invokedGrammarName = generateCode(transformName(p.children[0]));
-                string firstRuleName = generateCode(p.children[1].children[0]);
+        case "Pegged":
+            result = generateCode(p.children[0]);
+            break;
+        case "Pegged.Grammar":
+            string grammarName = generateCode(p.children[0]);
+            string shortGrammarName = p.children[0].matches[0];
+            //string invokedGrammarName = generateCode(transformName(p.children[0]));
+            string firstRuleName = generateCode(p.children[1].children[0]);
+            result = "import pegged.parsetree : DefaultParseTree;\n";
 
-                result =
-"struct Generic" ~ shortGrammarName ~ "(ParseTree)
+            result ~=
+                "struct Generic" ~ shortGrammarName ~ "(ParseTree)
 {
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
@@ -219,36 +221,36 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
     static ParseTree delegate(ParseTree)[string] after;
     static ParseTree delegate(ParseTree)[string] rules;";
 
-                if (withMemo == Memoization.yes) {
-                    result ~= "
+            if (withMemo == Memoization.yes) {
+                result ~= "
     import std.typecons:Tuple, tuple;
     static ParseTree[Tuple!(string, size_t)] memo;";
-                    if (grammarInfo.leftRecursiveCycles.length > 0)
-                        result ~= "
+                if (grammarInfo.leftRecursiveCycles.length > 0)
+                    result ~= "
     import std.algorithm: canFind, countUntil, remove;
     static size_t[] blockMemoAtPos;";
-                }
+            }
 
-                result ~= "
+            result ~= "
     static this()\n    {\n";
 
-                ParseTree[] definitions = p.children[1 .. $];
-                bool userDefinedSpacing;
-                foreach(i,def; definitions)
+            ParseTree[] definitions = p.children[1 .. $];
+            bool userDefinedSpacing;
+            foreach(i,def; definitions)
+            {
+                if (def.children[0].children.length == 1) // Non-parameterized ruleName
+                    result ~= "        rules[\"" ~ def.matches[0] ~ "\"] = toDelegate(&" ~ def.matches[0] ~ ");\n";
+                if (def.matches[0] == "Spacing") // user-defined spacing
                 {
-                    if (def.children[0].children.length == 1) // Non-parameterized ruleName
-                        result ~= "        rules[\"" ~ def.matches[0] ~ "\"] = toDelegate(&" ~ def.matches[0] ~ ");\n";
-                    if (def.matches[0] == "Spacing") // user-defined spacing
-                    {
-                        userDefinedSpacing = true;
-                        break;
-                    }
+                    userDefinedSpacing = true;
+                    break;
                 }
-                if(!userDefinedSpacing)
-                    result ~= "        rules[\"Spacing\"] = toDelegate(&Spacing);\n";
+            }
+            if(!userDefinedSpacing)
+                result ~= "        rules[\"Spacing\"] = toDelegate(&Spacing);\n";
 
-                result ~=
-"    }
+            result ~=
+                "    }
 
     template hooked(alias r, string name)
     {
@@ -307,181 +309,181 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
 ";
 
 
-                /+
-                        ~ "        switch(s)\n"
-                        ~ "        {\n";
+            /+
+             ~ "        switch(s)\n"
+             ~ "        {\n";
 
-                bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
-                string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
+             bool[string] ruleNames; // to avoid duplicates, when using parameterized rules
+             string parameterizedRulesSpecialCode; // because param rules need to be put in the 'default' part of the switch
 
-                string paramRuleHandler(string target)
-                {
-                    return "if (s.length >= "~to!string(shortGrammarName.length + target.length + 3)
-                          ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""
-                          ~shortGrammarName ~ "." ~ target~"!(\") return true;";
-                }
+             string paramRuleHandler(string target)
+             {
+             return "if (s.length >= "~to!string(shortGrammarName.length + target.length + 3)
+             ~" && s[0.."~to!string(shortGrammarName.length + target.length + 3)~"] == \""
+             ~shortGrammarName ~ "." ~ target~"!(\") return true;";
+             }
 
-                foreach(i,def; definitions)
-                {
-                    /*
-                    if (def.matches[0] !in ruleNames)
-                    {
-                        ruleNames[def.matches[0]] = true;
+             foreach(i,def; definitions)
+             {
+             /*
+             if (def.matches[0] !in ruleNames)
+             {
+             ruleNames[def.matches[0]] = true;
 
-                        if (def.children[0].children.length > 1) // Parameterized rule
-                            parameterizedRulesSpecialCode ~= "                " ~ paramRuleHandler(def.matches[0])~ "\n";
-                        else
-                            result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
-                    }
-                    */
-                    if (def.matches[0] == "Spacing") // user-defined spacing
-                    {
-                        userDefinedSpacing = true;
-                        break;
-                    }
-                }
-                result ~= "                return true;\n"
-                        ~ "            default:\n"
-                        ~ parameterizedRulesSpecialCode
-                        ~ "                return false;\n        }\n    }\n";
-                +/
-                result ~= "    mixin decimateTree;\n\n";
+             if (def.children[0].children.length > 1) // Parameterized rule
+             parameterizedRulesSpecialCode ~= "                " ~ paramRuleHandler(def.matches[0])~ "\n";
+             else
+             result ~= "            case \"" ~ shortGrammarName ~ "." ~ def.matches[0] ~ "\":\n";
+             }
+            */
+            if (def.matches[0] == "Spacing") // user-defined spacing
+            {
+            userDefinedSpacing = true;
+            break;
+            }
+            }
+            result ~= "                return true;\n"
+            ~ "            default:\n"
+            ~ parameterizedRulesSpecialCode
+            ~ "                return false;\n        }\n    }\n";
+            +/
+            result ~= "    mixin decimateTree;\n\n";
 
-                // If the grammar provides a Spacing rule, then this will be used.
-                // else, the predefined 'spacing' rule is used.
-                result ~= userDefinedSpacing ? "" : "    alias spacing Spacing;\n\n";
+            // If the grammar provides a Spacing rule, then this will be used.
+            // else, the predefined 'spacing' rule is used.
+            result ~= userDefinedSpacing ? "" : "    alias spacing Spacing;\n\n";
 
-                // Creating the inner functions, each corresponding to a grammar rule
-                foreach(def; definitions)
-                    result ~= generateCode(def, shortGrammarName);
+            // Creating the inner functions, each corresponding to a grammar rule
+            foreach(def; definitions)
+                result ~= generateCode(def, shortGrammarName);
 
-                // if the first rule is parameterized (a template), it's impossible to get an opCall
-                // because we don't know with which template arguments it should be called.
-                // So no opCall is generated in this case.
-                if (p.children[1].children[0].children.length == 1)
-                {
-                    // General calling interface
-                    result ~= "    static ParseTree opCall(ParseTree p)\n"
-                            ~ "    {\n"
-                            ~ "        ParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
-                            ~ "        result.children = [result];\n"
-                            ~ "        result.name = \"" ~ shortGrammarName ~ "\";\n"
-                            ~ "        return result;\n"
-                            ~ "    }\n\n"
-                            ~ "    static ParseTree opCall(string input)\n"
-                            ~ "    {\n";
-
-                    if (withMemo == Memoization.no)
-                        result ~= "        forgetMemo();\n"
-                                ~ "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
-                                ~ "    }\n";
-                    else
-                        result ~= "        if(__ctfe)\n"
-                                ~ "        {\n"
-                                ~ "            return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
-                                ~ "        }\n"
-                                ~ "        else\n"
-                                ~ "        {\n"
-                                ~ "            forgetMemo();\n"
-                                ~ "            return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
-                                ~ "        }\n"
-                                ~ "    }\n";
-
-                    result ~= "    static string opCall(GetName g)\n"
-                            ~ "    {\n"
-                            ~ "        return \"" ~ shortGrammarName ~ "\";\n"
-                            ~ "    }\n\n";
-                }
-                result ~= generateForgetMemo();
-                result ~= "    }\n" // end of grammar struct definition
-                        ~ "}\n\n" // end of template definition
-                        ~ "alias Generic" ~ shortGrammarName ~ "!(DefaultParseTree)."
-                        ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
-                break;
-            case "Pegged.Definition":
-                // children[0]: name
-                // children[1]: arrow (arrow type as first child)
-                // children[2]: description
-
-                string code;
-
-                switch(p.children[1].children[0].name)
-                {
-                    case "Pegged.LEFTARROW":
-                        code ~= generateCode(p.children[2]);
-                        break;
-                    case "Pegged.FUSEARROW":
-                        code ~= "PEG.fuse!(" ~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.DISCARDARROW":
-                        code ~= "PEG.discard!(" ~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.KEEPARROW":
-                        code ~= "PEG.keep!("~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.DROPARROW":
-                        code ~= "PEG.drop!("~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.PROPAGATEARROW":
-                        code ~= "PEG.propagate!("~ generateCode(p.children[2]) ~ ")";
-                        break;
-                    case "Pegged.SPACEARROW":
-                        ParseTree modified = spaceArrow(p.children[2]);
-                        code ~= generateCode(modified);
-                        break;
-                    case "Pegged.ACTIONARROW":
-                        auto actionResult = generateCode(p.children[2]);
-                        foreach(action; p.children[1].matches[1..$])
-                            actionResult = "PEG.action!(" ~ actionResult ~ ", " ~ action ~ ")";
-                        code ~= actionResult;
-                        break;
-                    default:
-                        break;
-                }
-
-                bool parameterizedRule = p.children[0].children.length > 1;
-                string completeName = generateCode(p.children[0]);
-                string shortName = p.matches[0];
-                string innerName;
-                string hookedName = p.matches[0];
-
-                if (parameterizedRule)
-                {
-                    result = "    template " ~ completeName ~ "\n"
-                           ~ "    {\n";
-                    innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
-                    hookedName ~= "_" ~ to!string(p.children[0].children[1].children.length);
-                    foreach(i,param; p.children[0].children[1].children)
-                        innerName ~= "pegged.peg.getName!("~ param.children[0].matches[0]
-                                    ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ \", \" ~ "
-                                                                                     : ")");
-                    innerName ~= " ~ \")\"";
-                }
-                else
-                {
-                    innerName ~= "`" ~ completeName ~ "`";
-                }
-
-                string ctfeCode = "        PEG.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
-                code =            "hooked!(PEG.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
+            // if the first rule is parameterized (a template), it's impossible to get an opCall
+            // because we don't know with which template arguments it should be called.
+            // So no opCall is generated in this case.
+            if (p.children[1].children[0].children.length == 1)
+            {
+                // General calling interface
+                result ~= "    static ParseTree opCall(ParseTree p)\n"
+                    ~ "    {\n"
+                    ~ "        ParseTree result = decimateTree(" ~ firstRuleName ~ "(p));\n"
+                    ~ "        result.children = [result];\n"
+                    ~ "        result.name = \"" ~ shortGrammarName ~ "\";\n"
+                    ~ "        return result;\n"
+                    ~ "    }\n\n"
+                    ~ "    static ParseTree opCall(string input)\n"
+                    ~ "    {\n";
 
                 if (withMemo == Memoization.no)
-                    result ~= "    static ParseTree " ~ shortName ~ "(ParseTree p)\n"
-                            ~ "    {\n"
-                            ~ "        if(__ctfe)\n"
-                            ~ "        {\n"
-                            ~ (stoppers.canFind(shortName) ?
-                              "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
-                                                         ~ "at compile-time. Consider using asModule().\");\n"
-                              :
-                              "            return " ~ ctfeCode ~ "(p);\n"
-                              )
-                            ~ "        }\n"
-                            ~ "        else\n"
-                            ~ "        {\n"
-                            ~ (stoppers.canFind(shortName) ?
-                              // This rule needs to prevent infinite left-recursion.
-                              "            static ParseTree[size_t /*position*/] seed;\n"
+                    result ~= "        forgetMemo();\n"
+                        ~ "        return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
+                        ~ "    }\n";
+                else
+                    result ~= "        if(__ctfe)\n"
+                        ~ "        {\n"
+                        ~ "            return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
+                        ~ "        }\n"
+                        ~ "        else\n"
+                        ~ "        {\n"
+                        ~ "            forgetMemo();\n"
+                        ~ "            return " ~ shortGrammarName ~ "(ParseTree(``, false, [], input, 0, 0));\n"
+                        ~ "        }\n"
+                        ~ "    }\n";
+
+                result ~= "    static string opCall(GetName g)\n"
+                    ~ "    {\n"
+                    ~ "        return \"" ~ shortGrammarName ~ "\";\n"
+                    ~ "    }\n\n";
+            }
+            result ~= generateForgetMemo();
+            result ~= "    }\n" // end of grammar struct definition
+                ~ "}\n\n" // end of template definition
+                ~ "alias Generic" ~ shortGrammarName ~ "!(DefaultParseTree)."
+                ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
+            break;
+        case "Pegged.Definition":
+            // children[0]: name
+            // children[1]: arrow (arrow type as first child)
+            // children[2]: description
+
+            string code;
+
+            switch(p.children[1].children[0].name)
+            {
+            case "Pegged.LEFTARROW":
+                code ~= generateCode(p.children[2]);
+                break;
+            case "Pegged.FUSEARROW":
+                code ~= "PEG.fuse!(" ~ generateCode(p.children[2]) ~ ")";
+                break;
+            case "Pegged.DISCARDARROW":
+                code ~= "PEG.discard!(" ~ generateCode(p.children[2]) ~ ")";
+                break;
+            case "Pegged.KEEPARROW":
+                code ~= "PEG.keep!("~ generateCode(p.children[2]) ~ ")";
+                break;
+            case "Pegged.DROPARROW":
+                code ~= "PEG.drop!("~ generateCode(p.children[2]) ~ ")";
+                break;
+            case "Pegged.PROPAGATEARROW":
+                code ~= "PEG.propagate!("~ generateCode(p.children[2]) ~ ")";
+                break;
+            case "Pegged.SPACEARROW":
+                ParseTree modified = spaceArrow(p.children[2]);
+                code ~= generateCode(modified);
+                break;
+            case "Pegged.ACTIONARROW":
+                auto actionResult = generateCode(p.children[2]);
+                foreach(action; p.children[1].matches[1..$])
+                    actionResult = "PEG.action!(" ~ actionResult ~ ", " ~ action ~ ")";
+                code ~= actionResult;
+                break;
+            default:
+                break;
+            }
+
+            bool parameterizedRule = p.children[0].children.length > 1;
+            string completeName = generateCode(p.children[0]);
+            string shortName = p.matches[0];
+            string innerName;
+            string hookedName = p.matches[0];
+
+            if (parameterizedRule)
+            {
+                result = "    template " ~ completeName ~ "\n"
+                    ~ "    {\n";
+                innerName ~= "\"" ~ shortName ~ "!(\" ~ ";
+                hookedName ~= "_" ~ to!string(p.children[0].children[1].children.length);
+                foreach(i,param; p.children[0].children[1].children)
+                    innerName ~= "pegged.peg.getName!("~ param.children[0].matches[0]
+                        ~ (i<p.children[0].children[1].children.length-1 ? ")() ~ \", \" ~ "
+                            : ")");
+                innerName ~= " ~ \")\"";
+            }
+            else
+            {
+                innerName ~= "`" ~ completeName ~ "`";
+            }
+
+            string ctfeCode = "        PEG.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\")";
+            code =            "hooked!(PEG.defined!(" ~ code ~ ", \"" ~ propagatedName ~ "." ~ innerName[1..$-1] ~ "\"), \"" ~ hookedName  ~ "\")";
+
+            if (withMemo == Memoization.no)
+                result ~= "    static ParseTree " ~ shortName ~ "(ParseTree p)\n"
+                    ~ "    {\n"
+                    ~ "        if(__ctfe)\n"
+                    ~ "        {\n"
+                    ~ (stoppers.canFind(shortName) ?
+                        "            assert(false, \"" ~ shortName ~ " is left-recursive, which is not supported "
+                        ~ "at compile-time. Consider using asModule().\");\n"
+                        :
+                        "            return " ~ ctfeCode ~ "(p);\n"
+                        )
+                    ~ "        }\n"
+                    ~ "        else\n"
+                    ~ "        {\n"
+                    ~ (stoppers.canFind(shortName) ?
+                        // This rule needs to prevent infinite left-recursion.
+                        "            static ParseTree[size_t /*position*/] seed;\n"
                             ~ "            if (auto s = p.end in seed)\n"
                             ~ "                return *s;\n"
                             ~ "            auto current = fail(p);\n"
@@ -914,10 +916,10 @@ Not used by Pegged yet.
 mixin template expected()
 {
     string expected(ParseTree p)
-    {
-
-        switch(p.name)
         {
+
+            switch(p.name)
+            {
             case "Pegged.Expression":
                 string expectation;
                 foreach(i, child; p.children)
@@ -978,15 +980,20 @@ mixin template expected()
                 return "unknow rule (" ~ p.matches[0] ~ ")";
         }
     }
+
+}
+
+
+
+version(unittest) {
+    private alias ParseTree = DefaultParseTree;
+    mixin ParseCollections!ParseTree;
+    private alias PEG=PeggedT!ParseTree;
+    mixin DefaultParsePatterns!PEG;
 }
 
 unittest // 'grammar' unit test: low-level functionalities
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-    alias PEG=PeggedT!ParseTree;
-    mixin DefaultParsePatterns!PEG;
-
     mixin(grammar(`
     Test1:
         Rule1 <- 'a'
@@ -1007,11 +1014,6 @@ unittest // 'grammar' unit test: low-level functionalities
 
 unittest // 'grammar' unit test: PEG syntax
 {
-    alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
-    alias PEG=PeggedT!ParseTree;
-    mixin DefaultParsePatterns!PEG;
-
     // Here we do not test PEG.*, just the grammar transformations
     // From a PEG to a Pegged expression template.
     mixin(grammar(`
@@ -1353,13 +1355,13 @@ Rule3
 <
 'e'
 Rule4 <- 'f' Rule5   # Rule4 ends with 'f', then it's Rule5
-<- 'g'
+            <- 'g'
 
 
 
 
-    'h'
-`));
+            'h'
+            `));
 
 
     assert(Indentation("abc").successful);
@@ -1374,10 +1376,10 @@ unittest // Parsing at compile-time
     alias ParseTree = DefaultParseTree;
 
     mixin(grammar(`
-    Test:
-        Rule1 <- 'a' Rule2('b')
-        Rule2(B) <- B
-    `));
+            Test:
+            Rule1 <- 'a' Rule2('b')
+            Rule2(B) <- B
+            `));
 
     // Equality on success
     ParseTree result = Test("ab");
@@ -1398,23 +1400,23 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     alias ParseTree = DefaultParseTree;
 
     mixin(grammar(`
-    Arrows:
-        Rule1 <- ABC DEF  # Standard arrow
-        Rule2 <  ABC DEF  # Space arrow
-        Rule3 <  ABC DEF* # Space arrow
-        Rule4 <  ABC+ DEF # Space arrow
+            Arrows:
+            Rule1 <- ABC DEF  # Standard arrow
+            Rule2 <  ABC DEF  # Space arrow
+            Rule3 <  ABC DEF* # Space arrow
+            Rule4 <  ABC+ DEF # Space arrow
 
-        Rule5 <- ABC*
-        Rule6 <~ ABC*     # Fuse arrow
+            Rule5 <- ABC*
+            Rule6 <~ ABC*     # Fuse arrow
 
-        Rule7 <: ABC DEF  # Discard arrow
-        Rule8 <^ ABC DEF  # Keep arrow
-        Rule9 <; ABC DEF  # Drop arrow
-        Rule10 <% ABC Rule1 DEF  # Propagate arrow
+            Rule7 <: ABC DEF  # Discard arrow
+            Rule8 <^ ABC DEF  # Keep arrow
+            Rule9 <; ABC DEF  # Drop arrow
+            Rule10 <% ABC Rule1 DEF  # Propagate arrow
 
-        ABC <- "abc"
-        DEF <- "def"
-    `));
+            ABC <- "abc"
+            DEF <- "def"
+            `));
 
     // Comparing <- ABC DEF and < ABC DEF
     ParseTree result = Arrows.decimateTree(Arrows.Rule1("abcdef"));
@@ -1547,15 +1549,13 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
 
 unittest //More space arrow tests
 {
-    alias ParseTree = DefaultParseTree;
-
     mixin(grammar(`
-    Spaces:
-        Rule1 < A (B C)+
-        A <- 'a'
-        B <- 'b'
-        C <- 'c'
-    `));
+            Spaces:
+            Rule1 < A (B C)+
+            A <- 'a'
+            B <- 'b'
+            C <- 'c'
+            `));
 
     ParseTree result = Spaces.decimateTree(Spaces.Rule1("abcbc"));
 
@@ -1585,41 +1585,41 @@ unittest //More space arrow tests
 unittest // Prefix and suffix tests
 {
     mixin(grammar(`
-    PrefixSuffix:
-        # Reference
-        Rule1 <-  ABC   DEF
-        Rule2 <- "abc" "def"
-        Rule3 <-    ABC*
-        Rule4 <-   "abc"*
+            PrefixSuffix:
+# Reference
+            Rule1 <-  ABC   DEF
+            Rule2 <- "abc" "def"
+            Rule3 <-    ABC*
+            Rule4 <-   "abc"*
 
-        # Discard operator
-        Rule5 <-  :ABC    DEF
-        Rule6 <-   ABC   :DEF
-        Rule7 <- :"abc"  "def"
-        Rule8 <-  "abc" :"def"
+# Discard operator
+            Rule5 <-  :ABC    DEF
+            Rule6 <-   ABC   :DEF
+            Rule7 <- :"abc"  "def"
+            Rule8 <-  "abc" :"def"
 
-        # Drop operator
-        Rule9  <-  ;ABC    DEF
-        Rule10 <-   ABC   ;DEF
-        Rule11 <- ;"abc"  "def"
-        Rule12 <-  "abc" ;"def"
+# Drop operator
+            Rule9  <-  ;ABC    DEF
+            Rule10 <-   ABC   ;DEF
+            Rule11 <- ;"abc"  "def"
+            Rule12 <-  "abc" ;"def"
 
-        # Fuse operator
+# Fuse operator
 
-        Rule13 <- ~( ABC* )
-        Rule14 <- ~("abc"*)
+            Rule13 <- ~( ABC* )
+            Rule14 <- ~("abc"*)
 
-        # Keep operator
-        Rule15 <- ^"abc" ^"def"
+# Keep operator
+            Rule15 <- ^"abc" ^"def"
 
-        # Propagate operator
-        Rule16 <- ABC  Rule1 DEF
-        Rule17 <- ABC %Rule1 DEF
+# Propagate operator
+            Rule16 <- ABC  Rule1 DEF
+            Rule17 <- ABC %Rule1 DEF
 
 
-        ABC <- "abc"
-        DEF <- "def"
-    `));
+            ABC <- "abc"
+            DEF <- "def"
+            `));
 
 
     // Comparing standard and discarded rules
@@ -1794,17 +1794,17 @@ unittest // Prefix and suffix tests
 
     // Testing % and < together
     mixin(grammar(`
-    PropTest:
-        Rule1 < B C+
-        Rule2 <- B (%C)+
-        Rule3 <  B (%C)+
-        Rule4 <  B %(D E)+
+            PropTest:
+            Rule1 < B C+
+            Rule2 <- B (%C)+
+            Rule3 <  B (%C)+
+            Rule4 <  B %(D E)+
 
-        B <- 'b'
-        C <- D E
-        D <- 'd'
-        E <- 'e'
-    `));
+            B <- 'b'
+            C <- D E
+            D <- 'd'
+            E <- 'e'
+            `));
 
     result = PropTest.decimateTree(PropTest.Rule1("bdedede"));
     assert(result.successful);
@@ -1889,20 +1889,20 @@ unittest // Prefix and suffix tests
 
     // More than one prefix, more than one suffixes
     mixin(grammar(`
-    MoreThanOne:
-        Rule1 <- ~:("abc"*)   # Two prefixes (nothing left for ~, after :)
-        Rule2 <- :~("abc"*)   # Two prefixes (: will discard everything ~ did)
-        Rule3 <- ;:~"abc"     # Many prefixes
-        Rule4 <- ~~~("abc"*)  # Many fuses (no global effect)
+            MoreThanOne:
+            Rule1 <- ~:("abc"*)   # Two prefixes (nothing left for ~, after :)
+            Rule2 <- :~("abc"*)   # Two prefixes (: will discard everything ~ did)
+            Rule3 <- ;:~"abc"     # Many prefixes
+            Rule4 <- ~~~("abc"*)  # Many fuses (no global effect)
 
-        Rule5 <- "abc"+*      # Many suffixes
-        Rule6 <- "abc"+?      # Many suffixes
+            Rule5 <- "abc"+*      # Many suffixes
+            Rule6 <- "abc"+?      # Many suffixes
 
-        Rule7 <- !!"abc"      # Double negation, equivalent to '&'
-        Rule8 <-  &"abc"
+            Rule7 <- !!"abc"      # Double negation, equivalent to '&'
+            Rule8 <-  &"abc"
 
-        Rule9 <- ^^"abc"+*   # Many suffixes and prefixes
-    `));
+            Rule9 <- ^^"abc"+*   # Many suffixes and prefixes
+            `));
 
     assert(is(MoreThanOne), "This compiles all right.");
 
@@ -1987,12 +1987,12 @@ unittest // Issue #88 unit test
 {
     alias ParseTree = DefaultParseTree;
     enum gram = `
-    P:
+        P:
         Rule1 <- (w 'a' w)*
-        Rule2 <- (wx 'a' wx)*
-        w <- :(' ' / '\n' / '\t' / '\r')*
+            Rule2 <- (wx 'a' wx)*
+            w <- :(' ' / '\n' / '\t' / '\r')*
         wx <- (:' ' / '\n' / '\t' / '\r')*
-    `;
+        `;
 
     mixin(grammar(gram));
 
@@ -2014,11 +2014,11 @@ unittest // Leading alternation
     alias ParseTree = DefaultParseTree;
 
     mixin(grammar(`
-    LeadingAlternation:
-        Rule1 <- / 'a'
-        Rule2 <- / 'a' / 'b'
-        Rule3 <- (/ 'a' / 'b')
-    `));
+            LeadingAlternation:
+            Rule1 <- / 'a'
+            Rule2 <- / 'a' / 'b'
+            Rule3 <- (/ 'a' / 'b')
+            `));
 
     ParseTree result = LeadingAlternation.decimateTree(LeadingAlternation.Rule1("a"));
     assert(result.successful);
@@ -2106,15 +2106,15 @@ unittest // Extended char range tests
     import std.conv;
 
     mixin(grammar(`
-    CharRanges:
-        Rule1 <- [a-z]
-        Rule2 <- [\141-\172]             # a-z in octal
-        Rule3 <- [\x61-\x7A]             # a-z in hexadecimal
-        Rule4 <- [\u0061-\u007A]         # a-z in UTF16
-        Rule5 <- [\U00000061-\U0000007A] # a-z in UTF32
+            CharRanges:
+            Rule1 <- [a-z]
+            Rule2 <- [\141-\172]             # a-z in octal
+                                                          Rule3 <- [\x61-\x7A]             # a-z in hexadecimal
+                                                                                                        Rule4 <- [\u0061-\u007A]         # a-z in UTF16
+                                                                                                                                                      Rule5 <- [\U00000061-\U0000007A] # a-z in UTF32
 
-        Rule6 <- [\-\[\]\\\'\"\n\r\t]
-    `));
+                                                                                                                                                                                                    Rule6 <- [\-\[\]\\\'\"\n\r\t]
+                                                                                                                                                                                                    `));
 
     string lower = "abcdefghijklmnopqrstuvwxyz";
     string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -2148,20 +2148,18 @@ unittest // Extended char range tests
 
 unittest // qualified names for rules
 {
-    alias ParseTree = DefaultParseTree;
+    mixin(grammar(`
+            First:
+            Rule1 <- "abc"
+            Rule2 <- "def"
+            `));
 
     mixin(grammar(`
-    First:
-        Rule1 <- "abc"
-        Rule2 <- "def"
-    `));
-
-    mixin(grammar(`
-    Second:
-        Rule1 <- First.Rule1
-        Rule2 <- First.Rule2
-        Rule3 <- list(identifier, ',')
-    `));
+            Second:
+            Rule1 <- First.Rule1
+            Rule2 <- First.Rule2
+            Rule3 <- list(identifier, ',')
+            `));
 
     // Equal on success
     ParseTree reference = First("abc");
@@ -2204,31 +2202,31 @@ unittest // Parameterized rules
     mixin DefaultParsePatterns!PEG;
 
     mixin(grammar(`
-    Parameterized:
-        # Different arities
-        Rule1(A)     <- A+
-        Rule1(A,B)   <- (A B)+
-        Rule1(A,B,C) <- (A B C)+
+            Parameterized:
+# Different arities
+            Rule1(A)     <- A+
+            Rule1(A,B)   <- (A B)+
+            Rule1(A,B,C) <- (A B C)+
 
-        # Inner call
-        Call1    <- Rule1('a')
-        Call2    <- Rule1('a','b')
-        Call3    <- Rule1('a','b','c')
-        Call4(A) <- Rule1(A, A, A)
-        Call5(A) <- Rule1('a', A, 'c')
+# Inner call
+            Call1    <- Rule1('a')
+            Call2    <- Rule1('a','b')
+            Call3    <- Rule1('a','b','c')
+            Call4(A) <- Rule1(A, A, A)
+            Call5(A) <- Rule1('a', A, 'c')
 
-        # Default values
-        Rule2(A = 'a', B = 'b') <- (A B)+
+# Default values
+            Rule2(A = 'a', B = 'b') <- (A B)+
 
-        # Re-using the parameters
-        Rule3(A,B) <- A B B A  # Money money money!
+# Re-using the parameters
+            Rule3(A,B) <- A B B A  # Money money money!
 
-        # The standard parameterized rule
-        List(Elem, Sep) < Elem (:Sep Elem)*
+# The standard parameterized rule
+            List(Elem, Sep) < Elem (:Sep Elem)*
 
-        # Another common PEG pattern
-        AllUntil(End) <~ (!End .)* :End
-    `));
+# Another common PEG pattern
+            AllUntil(End) <~ (!End .)* :End
+            `));
     with(PEG) {
 
     alias Parameterized.Rule1!(PEG.literal!"a") R1;
@@ -2388,11 +2386,11 @@ Here is another line.
 
     // Parameterized grammar test
     mixin(grammar(`
-    Arithmetic(Atom) :
-        Expr     <  Factor  (('+'/'-') Factor)*
-        Factor   <  Primary (('*'/'/') Primary)*
-        Primary  <  '(' Expr ')' / '-' Expr / Atom
-    `));
+            Arithmetic(Atom) :
+            Expr     <  Factor  (('+'/'-') Factor)*
+            Factor   <  Primary (('*'/'/') Primary)*
+            Primary  <  '(' Expr ')' / '-' Expr / Atom
+            `));
 
     alias Arithmetic!(identifier) Arith1;
     alias Arithmetic!(or!(identifier, digits)) Arith2;
@@ -2421,15 +2419,15 @@ unittest // Semantic actions, testing { foo } and { foo, bar, baz }
     alias ParseTree = DefaultParseTree;
 
     mixin(grammar(`
-    Semantic:
-        Rule1 <- 'a' {doubler}
-        Rule2 <- 'b' {doubler, doubler}
-        Rule3 <- 'b' {doubler} {doubler} # Same as Rule2
-        Rule4 <- 'b' {doubler, doubler, doubler}
-        Rule5 <- 'a' {doubler} 'b' 'c'{doubler}
-        Rule6 <{doubler} 'a'  # Rule Level actions
-        Rule7 <{doubler} 'a' 'b' {doubler}  # Rule Level actions
-        `));
+            Semantic:
+            Rule1 <- 'a' {doubler}
+            Rule2 <- 'b' {doubler, doubler}
+            Rule3 <- 'b' {doubler} {doubler} # Same as Rule2
+            Rule4 <- 'b' {doubler, doubler, doubler}
+            Rule5 <- 'a' {doubler} 'b' 'c'{doubler}
+            Rule6 <{doubler} 'a'  # Rule Level actions
+            Rule7 <{doubler} 'a' 'b' {doubler}  # Rule Level actions
+            `));
 
     ParseTree result = Semantic.decimateTree(Semantic.Rule1("a"));
     assert(result.successful);
@@ -2528,11 +2526,11 @@ unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
     badGrammar!"Name:
         Rule1 <- a'";
     badGrammar!`Name:
-        Rule1 <- "a`;
+Rule1 <- "a`;
     badGrammar!`Name:
         Rule1 <- a"`;
     badGrammar!`Name:
-        Rule1 <- 'a"`;
+Rule1 <- 'a"`;
     badGrammar!`Name:
         Rule1 <- "a'`;
     badGrammar!"Name:
@@ -2589,19 +2587,17 @@ unittest // failure cases: unnamed grammar, no-rule grammar, syntax errors, etc.
     badGrammar!"Name:
         Rule1 <- 'a' /";
     // But: <- / 'a' is legal (it's equivalent to: <- 'a')
-    goodGrammar!"Name:
+goodGrammar!"Name:
         Rule1 <- / 'a'";
-    badGrammar!"Name:
+badGrammar!"Name:
         Rule1 <- /";
-    badGrammar!"Name:
+badGrammar!"Name:
         Rule1 <- 'a' / / 'b'";
 }
 +/
 
 unittest // Memoization testing
 {
-    alias ParseTree = DefaultParseTree;
-
     enum gram1 = `
     Test1:
         Rule1 <- Rule2* 'b'   # To force a long evaluation of aaaa...
@@ -2663,22 +2659,22 @@ unittest // Test lambda syntax in semantic actions
 
     auto actions = [
 
-    // Normal action
-    `{ myAction }`,
+        // Normal action
+        `{ myAction }`,
 
-    // List of normal actions
-    `{ myAction, myAction2 }`,
+        // List of normal actions
+        `{ myAction, myAction2 }`,
 
-    // Simple do-nothing lambda
-    `{ (a) {return a;} }`,
+        // Simple do-nothing lambda
+        `{ (a) {return a;} }`,
 
-    // Simple do-nothing lambda with formatting
-    `{ (a) {
+        // Simple do-nothing lambda with formatting
+        `{ (a) {
         return a;
      }}`,
 
-    // Lambda with commas and spurious braces to try and confuse it
-    `{ (a, b) {
+        // Lambda with commas and spurious braces to try and confuse it
+        `{ (a, b) {
         string s = "}";
         if (a.successful,) {
             s ~= q"<}>";
@@ -2687,14 +2683,14 @@ unittest // Test lambda syntax in semantic actions
         }
         return a;} }`,
 
-    // List of mixed actions and lambdas
-    `{ myAction , (a) {return a;}, myAction2 , (a) { /* , } */ return a; } }`,
+        // List of mixed actions and lambdas
+        `{ myAction , (a) {return a;}, myAction2 , (a) { /* , } */ return a; } }`,
 
-    // Ambiguous lambda (not sure it would compile if used... but it should parse)
-    `{ myAction, a => transform(a), myAction2 }`,
+        // Ambiguous lambda (not sure it would compile if used... but it should parse)
+        `{ myAction, a => transform(a), myAction2 }`,
 
-    // Something more convoluted
-    "{ myAction, (a) {
+        // Something more convoluted
+        "{ myAction, (a) {
         /* block } comment with } braces */
         string s = `} {` // wysiwyg string with braces and line comment with brace }
         if (s is null) {
@@ -2728,16 +2724,16 @@ unittest // Test lambda syntax in semantic actions
 
         return a;
     }, myAction2 }",
-    ];
+        ];
 
     auto results = [
-    [`myAction`],
-    [`myAction`,`myAction2`],
-    [`(a) {return a;}`],
-    [`(a) {
+        [`myAction`],
+        [`myAction`,`myAction2`],
+        [`(a) {return a;}`],
+        [`(a) {
         return a;
      }`],
-    [`(a, b) {
+        [`(a, b) {
         string s = "}";
         if (a.successful,) {
             s ~= q"<}>";
@@ -2745,9 +2741,9 @@ unittest // Test lambda syntax in semantic actions
             { s ~= q"<}>"; /* } */ }
         }
         return a;}`],
-    [`myAction`,`(a) {return a;}`,`myAction2`,`(a) { /* , } */ return a; }`],
-    [`myAction`,`a => transform(a)`,`myAction2`],
-    [`myAction`,"(a) {
+        [`myAction`,`(a) {return a;}`,`myAction2`,`(a) { /* , } */ return a; }`],
+        [`myAction`,`a => transform(a)`,`myAction2`],
+        [`myAction`,"(a) {
         /* block } comment with } braces */
         string s = `} {` // wysiwyg string with braces and line comment with brace }
         if (s is null) {
@@ -2781,7 +2777,7 @@ unittest // Test lambda syntax in semantic actions
 
         return a;
     }",`myAction2`]
-    ];
+        ];
 
     foreach(idx, act; actions)
     {
@@ -2791,24 +2787,24 @@ unittest // Test lambda syntax in semantic actions
         assert(p.successful);
 
         auto action = p.children[0].children[1]     // Pegged.Definition
-                                   .children[2]     // Pegged.Expression
-                                   .children[0]     // Pegged.FirstExpression
-                                   .children[0]     // Pegged.Sequence
-                                   .children[0]     // Pegged.Prefix
-                                   .children[0]     // Pegged.Suffix
-                                   .children[1];    // Pegged.Action
+            .children[2]     // Pegged.Expression
+            .children[0]     // Pegged.FirstExpression
+            .children[0]     // Pegged.Sequence
+            .children[0]     // Pegged.Prefix
+            .children[0]     // Pegged.Suffix
+            .children[1];    // Pegged.Action
 
         assert(action.matches.length == results[idx].length);
         foreach(i, s; action.matches)
             assert(strip(s) == results[idx][i],
-                   "\nGot |"~s~"|" ~ "\nNeeded: |"~results[idx][i]~"|");
+                "\nGot |"~s~"|" ~ "\nNeeded: |"~results[idx][i]~"|");
     }
 }
 
 unittest
 {
     // Higher-level word boundary test.
-   mixin(grammar(`
+    mixin(grammar(`
         TestGrammar:
 
         Foo < '{' 'X' '}'
@@ -2868,8 +2864,6 @@ unittest // Issue #129 unit test
 
 unittest // Direct left-recursion
 {
-    alias ParseTree = DefaultParseTree;
-
     enum LeftGrammar = `
       Left:
         S <- E eoi
@@ -2883,8 +2877,6 @@ unittest // Direct left-recursion
 
 unittest // Indirect left-recursion
 {
-    alias ParseTree = DefaultParseTree;
-
     enum LeftGrammar = `
       Left:
         S <- E eoi
@@ -2899,8 +2891,6 @@ unittest // Indirect left-recursion
 
 unittest // Proper blocking of memoization
 {
-    alias ParseTree = DefaultParseTree;
-
     // Three interlocking cycles of indirect left-recursion.
     enum LeftGrammar = `
       Left:
@@ -2922,14 +2912,14 @@ unittest // Proper blocking of memoization
 unittest // Mutual left-recursion
 {
     /* A thing about stoppers:
-    Because P is at the intersection of left-recursive cycles P -> P and L -> P -> L, it should
-    suffice to make only P a stopper to stop unbounded left-recursion. And so it does. But,
-    stoppers parse greedily: they always consume the maximum of input. So below, if only P is a stopper,
-    at some point P parses the complete input. Then L fails because it cannot append ".x", then M fails.
-    If both are made a stopper then M succeeds. That is because P will try L when P '(n)' no longer
-    consumes input, which will appear as a left-recursion to L if it is a stopper and because of that
-    it will have a chance to succeed on the full input which it recorded in its seed for the previous
-    recursion.
+       Because P is at the intersection of left-recursive cycles P -> P and L -> P -> L, it should
+       suffice to make only P a stopper to stop unbounded left-recursion. And so it does. But,
+       stoppers parse greedily: they always consume the maximum of input. So below, if only P is a stopper,
+       at some point P parses the complete input. Then L fails because it cannot append ".x", then M fails.
+       If both are made a stopper then M succeeds. That is because P will try L when P '(n)' no longer
+       consumes input, which will appear as a left-recursion to L if it is a stopper and because of that
+       it will have a chance to succeed on the full input which it recorded in its seed for the previous
+       recursion.
     */
     alias ParseTree = DefaultParseTree;
 
@@ -2947,8 +2937,6 @@ unittest // Mutual left-recursion
 
 unittest // Left- and right-recursion (is right-associative!)
 {
-    alias ParseTree = DefaultParseTree;
-
     enum LeftRightGrammar = `
       LeftRight:
         M <- E eoi
