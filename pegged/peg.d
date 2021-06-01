@@ -457,14 +457,14 @@ struct PeggedT(ParseTree) {
              + setTraceConditionFunction(ruleName => ruleName.startsWith("MyGrammar"));
              + ---
              +/
-            void setTraceConditionFunction(bool delegate(string ruleName, const ref ParseTree p) condition)
+            static void setTraceConditionFunction(bool delegate(string ruleName, const ref ParseTree p) condition)
             {
                 traceConditionDelegate = condition;
                 traceConditionFunction = null;
             }
 
             /// ditto
-            void setTraceConditionFunction(bool function(string ruleName, const ref ParseTree p) condition)
+            static void setTraceConditionFunction(bool function(string ruleName, const ref ParseTree p) condition)
             {
                 traceConditionFunction = condition;
                 traceConditionDelegate = null;
@@ -474,19 +474,19 @@ struct PeggedT(ParseTree) {
              *
              * This can produce a lot of output.
              */
-            void traceAll()
+            static void traceAll()
             {
                 setTraceConditionFunction(function(string ruleName, const ref ParseTree p) {return true;});
             }
 
             /** Do not trace any rules. */
-            void traceNothing()
+            static void traceNothing()
             {
                 traceConditionFunction = null;
                 traceConditionDelegate = null;
             }
 
-            private string traceMsg(ParseTree p, string expression, string name)
+            private static string traceMsg(const ParseTree p, string expression, string name)
             {
                 import std.format;
                 Position pos = position(p);
@@ -501,7 +501,7 @@ struct PeggedT(ParseTree) {
                 return result;
             }
 
-            private string traceResultMsg(ParseTree p, string name)
+            private static string traceResultMsg(const ParseTree p, string name)
             {
                 import std.format;
                 import std.range: chain;
@@ -598,12 +598,12 @@ struct PeggedT(ParseTree) {
    eps matches the empty string (usually denoted by the Greek letter 'epsilon') and always succeeds.
    It's equivalent to literal!"" (for example, it creates a match of [""]: one match, the empty string).
 */
-    ParseTree eps(string input)
+    static ParseTree eps(string input)
         {
             return eps(ParseTree("",false,[], input));
         }
 
-    string eps(GetName g)
+    static string eps(GetName g)
         {
             return "eps";
         }
@@ -824,7 +824,7 @@ unittest // 'eps' unit test
 /**
  * Default fail message formating function
  */
-static defaultFormatFailMsg(ParseTree)(Position pos, string left, string right, const ParseTree pt)
+static string defaultFormatFailMsg(ParseTree)(Position pos, string left, string right, const ParseTree pt) if (isParseTree!ParseTree)
 {
     return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
         ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
@@ -1446,8 +1446,7 @@ auto maxFailEnd(ParseTree)(ParseTree[] children) if (isParseTree!ParseTree) {
     return children.map!(c => c.failEnd).maxElement;
 }
 
-auto maxEnd(ParseTreeT)(ParseTreeT[] children)
-{
+auto maxEnd(ParseTreeT)(ParseTreeT[] children) if (isParseTree!ParseTree) {
     return children.map!(c => c.end).maxElement;
 }
 
@@ -1456,8 +1455,7 @@ auto maxEnd(ParseTreeT)(ParseTreeT[] children)
 // moved into its children, the successful is set to false, the end is set the its failEnd,
 // the failEnd is reset, and all that info is propagated upwards the tree so intermediate
 // nodes reflect the proper state.
-bool failedChildFixup(ParseTreeT)(ref ParseTreeT p, size_t failEnd)
-{
+bool failedChildFixup(ParseTree)(ref ParseTree p, size_t failEnd) if (isParseTree!ParseTree) {
     if (p.failedChild.length > 0)
     {
         p.children ~= p.failedChild[0];
