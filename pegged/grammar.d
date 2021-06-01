@@ -15,6 +15,11 @@ public import pegged.peg;
 import pegged.parser;
 import pegged.parsetree : DefaultParseTree, isParseTree;
 
+struct GrammarOptions {
+    string parsetreeName;
+}
+
+enum defaultGrammarOptions = GrammarOptions(DefaultParseTree.stringof);
 
 
 /**
@@ -26,7 +31,7 @@ enum Memoization { no, yes }
    This function takes a (future) module name, a (future) file name and a grammar as a string or a file.
    It writes the corresponding parser inside a module with the given name.
 */
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string fileName, string grammarString, string optHeader = "")
+void asModule(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTree)(string moduleName, string fileName, string grammarString, string optHeader = "", immutable GrammarOptions optGrammar=defaultGrammarOptions) if (isParseTree!ParseTree)
 {
     import std.stdio;
     auto f = File(fileName ~ ".d","w");
@@ -40,21 +45,29 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
     if (optHeader.length > 0)
         f.write(optHeader ~ "\n\n");
 
+    static if (is(ParseTree == DefaultParseTree)) {
+        f.writeln("public import pegged.parsetree : DefaultParseTree;");
+    }
+    else {
+        f.writefln(`static assert(is(%s), "ParseTree %s must be defined");`, ParseTree.stringof, ParseTree.stringof);
+        f.writefln(`static assert(isParseTree!(%s), "%s must compile with isParseTree");`, ParseTree.stringof, ParseTree.stringof);
+
+    }
     f.write("public import pegged.peg;\n");
     f.write("import std.algorithm: startsWith;\n");
     f.write("import std.functional: toDelegate;\n\n");
-    f.write(grammar!(withMemo)(grammarString));
+    f.write(grammar!(withMemo)(grammarString, optGrammar));
 }
 
 /// ditto
-void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File file, string optHeader = "")
+void asModule(Memoization withMemo = Memoization.yes)(string moduleName, File file, string optHeader = "", immutable GrammarOptions optGrammar=defaultGrammarOptions)
 {
     string grammarDefinition;
     foreach(line; file.byLine)
     {
         grammarDefinition ~= line ~ '\n';
     }
-    asModule!(withMemo)(moduleName, grammarDefinition, optHeader);
+    asModule!(withMemo)(moduleName, grammarDefinition, optHeader, optGrammar);
 }
 
 // Helper to insert 'Spacing' before and after Primaries
@@ -97,7 +110,8 @@ ParseTree spaceArrow(ParseTree)(ParseTree input)
    ParseTree p = Gram("abcbccbcd");
    ----
 */
-string grammar(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTree)(string definition)
+string grammar(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTree)(string definition,
+    GrammarOptions optGrammar=defaultGrammarOptions) if (isParseTree!ParseTree)
 {
     ParseTree defAsParseTree = Pegged(definition);
 
@@ -107,10 +121,11 @@ string grammar(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTre
         string result = "static assert(false, `" ~ defAsParseTree.toString("") ~ "`);";
         return result;
     }
-    return grammar!(ParseTree, withMemo)(defAsParseTree);
+    return grammar!(ParseTree, withMemo)(defAsParseTree, optGrammar);
 }
 /// ditto
-string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree) if (isParseTree!ParseTree)
+string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree,
+    GrammarOptions optGrammar=defaultGrammarOptions) if (isParseTree!ParseTree)
 {
     string[] composedGrammars;
 
@@ -203,8 +218,10 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             string shortGrammarName = p.children[0].matches[0];
             //string invokedGrammarName = generateCode(transformName(p.children[0]));
             string firstRuleName = generateCode(p.children[1].children[0]);
-            result = "import pegged.parsetree : DefaultParseTree;\n";
 
+            if (optGrammar.parsetreeName ==DefaultParseTree.stringof) {
+                result = "import pegged.parsetree : DefaultParseTree;\n";
+            }
             result ~=
                 "struct Generic" ~ shortGrammarName ~ "(ParseTree)
 {
@@ -397,7 +414,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             result ~= generateForgetMemo();
             result ~= "    }\n" // end of grammar struct definition
                 ~ "}\n\n" // end of template definition
-                ~ "alias Generic" ~ shortGrammarName ~ "!(DefaultParseTree)."
+                ~ "alias Generic" ~ shortGrammarName ~ "!(" ~  optGrammar.parsetreeName ~ ")."
                 ~ shortGrammarName ~ " " ~ shortGrammarName ~ ";\n\n";
             break;
         case "Pegged.Definition":
