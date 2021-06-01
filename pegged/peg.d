@@ -1283,7 +1283,7 @@ auto maxFailEnd(ParseTree)(ParseTree[] children) if (isParseTree!ParseTree) {
     return children.map!(c => c.failEnd).maxElement;
 }
 
-auto maxEnd(ParseTreeT)(ParseTreeT[] children) if (isParseTree!ParseTree) {
+auto maxEnd(ParseTree)(ParseTree[] children) if (isParseTree!ParseTree) {
     return children.map!(c => c.end).maxElement;
 }
 
