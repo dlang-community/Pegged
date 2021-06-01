@@ -1653,7 +1653,7 @@ template orT(ParseTree, rules...) if (rules.length > 0)
         }
 }
 
-auto getUpto(ParseTreeT)(ParseTreeT[] children, size_t minFailedLength) {
+auto getUpto(ParseTree)(ParseTree[] children, size_t minFailedLength) if (isParseTree!ParseTree) {
     return children.filter!(r => max(r.end, r.failEnd) >= minFailedLength).array();
 }
 
