@@ -20,16 +20,24 @@ import pegged.parser;
 import pegged.dynamic.peg;
 
 private import pegged.parsetree : DefaultParseTree, isParseTree;
-private alias ParseTree=DefaultParseTree;
 
-struct ParameterizedRule
+struct ParameterizedRule(ParseTree)
 {
     size_t numArgs;
-    Dynamic delegate(Dynamic[]) code;
+    alias Dynamic=ParseTree.Dynamic;
+    alias DynamicModifier = Dynamic delegate(Dynamic[]);
+    DynamicModifier code;
 
+//    @disbale this();
+    this(const size_t num, DynamicModifier code) {
+        numArgs = num;
+        this.code=code;
+    }
     Dynamic opCall(D...)(D rules)
     {
         Dynamic[] args;
+        //args.length = rules.length;
+        pragma(msg, "Dynmaic ", typeof(rules));
         foreach(i,rule; rules)
         {
             static if (is(typeof(rule) == Dynamic))
@@ -67,21 +75,25 @@ struct ParameterizedRule
     }
 }
 
-ParameterizedRule parameterizedRule(size_t n, Dynamic delegate(Dynamic[] d) code)
+    ParameterizedRule!ParseTree parameterizedRule(ParseTree)(size_t n, Dynamic delegate(Dynamic[] d) code)
 {
-    ParameterizedRule pr;
-    pr.numArgs = n;
-    pr.code = code;
-    return pr;
+    return ParameterizedRule(n, code);
+    // ParameterizedRule pr;
+    // pr.numArgs = n;
+    // pr.code = code;
+    // return pr;
 }
 
-struct DynamicGrammar
+private alias ParseTree=DefaultParseTree;
+
+struct DynamicGrammar(ParseTree)
 {
     string grammarName;
     string startingRule;
+    alias Dynamic = ParseTree.Dynamic;
     Dynamic[string] rules;
-    ParameterizedRule[string] paramRules;
-    private alias ParseTree=DefaultParseTree;
+    ParameterizedRule!ParseTree[string] paramRules;
+//    private alias ParseTree=DefaultParseTree;
 
     ParseTree decimateTree(ParseTree p)
     {
@@ -390,7 +402,7 @@ Dynamic makeRule(ParseTree)(ParseTree def, Dynamic[string] context) if (isParseT
     return named(code, def.matches[0]);
 }
 
-DynamicGrammar grammar(string definition, Dynamic[string] context = null)
+DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic[string] context = null) if(isParseTree!ParseTree)
 {
     //writeln("Entering dyn gram");
     ParseTree defAsParseTree = Pegged(definition);
@@ -401,7 +413,7 @@ DynamicGrammar grammar(string definition, Dynamic[string] context = null)
         throw new Exception("Bad grammar input: " ~ defAsParseTree.toString(""));
     }
 
-    DynamicGrammar gram;
+    DynamicGrammar!ParseTree gram;
     foreach(name, rule; context)
     {
         gram.rules[name] = rule;

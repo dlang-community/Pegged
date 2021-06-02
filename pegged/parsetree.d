@@ -50,6 +50,8 @@ mixin template ParseTreeM() {
     import std.array : array;
 
     alias ParseTree = typeof(this);
+    alias Dynamic = ParseTree delegate(ParseTree);
+
     string name; /// The node name
     bool successful; /// Indicates whether a parsing was successful or not
     string[] matches; /// The matched input's parts. Some expressions match at more than one place, hence matches is an array.

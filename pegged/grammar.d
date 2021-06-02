@@ -300,7 +300,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
     static void addRuleBefore(string parentRule, string ruleSyntax)
     {
         // enum name is the current grammar name
-        DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
+        auto dg = pegged.dynamic.grammar.grammar!ParseTree(name ~ \": \" ~ ruleSyntax, rules);
         foreach(ruleName,rule; dg.rules)
             if (ruleName != \"Spacing\") // Keep the local Spacing rule, do not overwrite it
                 rules[ruleName] = rule;
@@ -310,7 +310,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
     static void addRuleAfter(string parentRule, string ruleSyntax)
     {
         // enum name is the current grammar named
-        DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
+        auto dg = pegged.dynamic.grammar.grammar!ParseTree(name ~ \": \" ~ ruleSyntax, rules);
         foreach(ruleName,rule; dg.rules)
         {
             if (ruleName != \"Spacing\")
