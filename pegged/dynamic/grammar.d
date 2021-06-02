@@ -36,8 +36,6 @@ struct ParameterizedRule(ParseTree)
     Dynamic opCall(D...)(D rules)
     {
         Dynamic[] args;
-        //args.length = rules.length;
-        pragma(msg, "Dynmaic ", D);
         foreach(i,rule; rules)
         {
             static if (is(typeof(rule) == Dynamic))
@@ -75,14 +73,14 @@ struct ParameterizedRule(ParseTree)
     }
 }
 
-ParameterizedRule!ParseTree parameterizedRule(ParseTree)(size_t n, Dynamic delegate(Dynamic[] d) code)
-{
-    return ParameterizedRule(n, code);
-    // ParameterizedRule pr;
-    // pr.numArgs = n;
-    // pr.code = code;
-    // return pr;
-}
+// ParameterizedRule!ParseTree parameterizedRule(ParseTree)(size_t n, Dynamic delegate(Dynamic[] d) code)
+// {
+//     return ParameterizedRule(n, code);
+//     // ParameterizedRule pr;
+//     // pr.numArgs = n;
+//     // pr.code = code;
+//     // return pr;
+// }
 
 //private alias ParseTree=DefaultParseTree;
 
