@@ -39,10 +39,11 @@ NestedCommentEnd <- '+/'
 module pegged.tester.testerparser;
 
 public import pegged.peg;
+private import pegged.parsetree;
 struct GenericTesterGrammar(ParseTree)
 {
     alias PEG=PeggedT!ParseTree;
-    mixin DefaultParsePatterns!PEG;
+//    mixin DefaultParsePatterns!PEG;
 
     struct TesterGrammar
     {
@@ -203,5 +204,4 @@ struct GenericTesterGrammar(ParseTree)
     }
 }
 
-private import pegged.parsetree : DefaultParseTree;
 alias GenericTesterGrammar!(DefaultParseTree).TesterGrammar TesterGrammar;

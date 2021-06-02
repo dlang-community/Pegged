@@ -137,11 +137,11 @@ public import pegged.peg;
 import std.algorithm: startsWith;
 import std.functional: toDelegate;
 
+private import pegged.parsetree;
 struct GenericPegged(ParseTree)
 {
-//    mixin ParseCollections!ParseTree;
     alias PEG=PeggedT!ParseTree;
-    mixin DefaultParsePatterns!PEG;
+//    mixin DefaultParsePatterns!PEG;
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
     static import pegged.peg;
@@ -2115,5 +2115,4 @@ struct GenericPegged(ParseTree)
     }
 }
 
-private import pegged.parsetree : DefaultParseTree;
 alias GenericPegged!(DefaultParseTree).Pegged Pegged;

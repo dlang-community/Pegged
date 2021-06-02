@@ -175,6 +175,8 @@ mixin template ParseTreeM() {
     }
 }
 
+private import pegged.peg : ParseCollections;
+mixin ParseCollections!DefaultParseTree;
 /**
    The basic parse tree, as used throughout the project.
    You can define your own parse tree node, but respect the basic layout.

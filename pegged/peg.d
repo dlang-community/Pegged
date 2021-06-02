@@ -451,7 +451,7 @@ version(unittest) {
         private alias ParseTree = DefaultParseTree;
         mixin ParseCollections!ParseTree;
         private alias PEG=PeggedT!ParseTree;
-        mixin DefaultParsePatterns!PEG;
+//        mixin DefaultParsePatterns!PEG;
     }
 }
 
@@ -3433,60 +3433,58 @@ template AddSpaceT(ParseTree, alias sp)
 
 unittest // 'spaceAnd' unit test
 {
-    with(PEG) {
-        alias literal!"a" a;
-        alias literal!"b" b;
+    alias a = PEG.literal!"a";
+    alias b = PEG.literal!"b";
 
-        //Basic use
-        alias and!(a,b) ab;
-        alias spaceAnd!(oneOrMore!blank, a, b) a_b;
+    //Basic use
+    alias ab = PEG.and!(a,b);
+    alias a_b = PEG.spaceAnd!(PEG.oneOrMore!(PEG.blank), a, b);
 
-        ParseTree reference = ab("ab");
-        ParseTree result = a_b("ab");
+    ParseTree reference = ab("ab");
+    ParseTree result = a_b("ab");
 
-        assert(reference.successful);
-        assert(result.successful);
-        assert(result.matches == reference.matches);
-        assert(result.begin == reference.begin);
-        assert(result.end == reference.end);
-        assert(result.children == reference.children);
+    assert(reference.successful);
+    assert(result.successful);
+    assert(result.matches == reference.matches);
+    assert(result.begin == reference.begin);
+    assert(result.end == reference.end);
+    assert(result.children == reference.children);
 
-        reference = ab("   a  b  ");
-        result = a_b(  "   a  b  ");
+    reference = ab("   a  b  ");
+    result = a_b(  "   a  b  ");
 
-        assert(!reference.successful);
-        assert(result.successful);
-        assert(result.matches == ["a","b"]);
-        assert(result.begin == 0);
-        assert(result.end == "   a  b  ".length);
-        assert(result.children.length == 2);
+    assert(!reference.successful);
+    assert(result.successful);
+    assert(result.matches == ["a","b"]);
+    assert(result.begin == 0);
+    assert(result.end == "   a  b  ".length);
+    assert(result.children.length == 2);
 
-        reference = ab("ac");
-        result = a_b("ac");
+    reference = ab("ac");
+    result = a_b("ac");
 
-        assert(!reference.successful);
-        assert(!result.successful);
+    assert(!reference.successful);
+    assert(!result.successful);
 
-        reference = ab("   a  c   ");
-        result = a_b("   a  c   ");
+    reference = ab("   a  c   ");
+    result = a_b("   a  c   ");
 
-        assert(!reference.successful);
-        assert(!result.successful);
+    assert(!reference.successful);
+    assert(!result.successful);
 
-        // With another separator than spaces
-        alias spaceAnd!(digit, a, b) a0b;
+    // With another separator than spaces
+    alias a0b = PEG.spaceAnd!(digit, a, b);
 
-        assert(a0b("ab").successful);
-        assert(!a0b("  a b  ").successful);
+    assert(a0b("ab").successful);
+    assert(!a0b("  a b  ").successful);
 
-        result = a0b("012a34b567");
+    result = a0b("012a34b567");
 
-        assert(result.successful);
-        assert(result.matches == ["a", "b"]);
-        assert(result.begin == 0);
-        assert(result.end == "012a34b567".length);
-        assert(result.children.length == 2);
-    }
+    assert(result.successful);
+    assert(result.matches == ["a", "b"]);
+    assert(result.begin == 0);
+    assert(result.end == "012a34b567".length);
+    assert(result.children.length == 2);
 }
 
 /// Mixin to simplify a parse tree inside a grammar
@@ -3608,6 +3606,7 @@ ParseTree modify(ParseTree, alias predicate, alias modifier)(ParseTree input) if
 }
 
 mixin template ParseCollections(ParseTree) {
+    import pegged.peg;
     alias literal(string s) = literalT!(ParseTree, s);
     alias caseInsensitiveLiteral(string s) = caseInsensitiveLiteralT!(ParseTree, s);
     alias charRange(dchar begin, dchar end) = charRangeT!(ParseTree, begin, end);
@@ -3634,47 +3633,52 @@ mixin template ParseCollections(ParseTree) {
     alias keep(alias r) = keepT!(ParseTree, r);
     alias AddSpace(alias sp) = AddSpaceT!(ParseTree, sp);
 
-}
+// }
 
-mixin template DefaultParsePatterns(alias PEG) {
+// mixin template DefaultParsePatterns() {
     import std.meta : staticMap;
     /* ****************** predefined rules ******************** */
 
-    alias endOfLine = PEG.named!(PEG.or!(PEG.literal!("\r\n"), PEG.literal!("\n"), PEG.literal!("\r")), "endOfLine"); /// predefined end-of-line parser
+    alias endOfLine = named!(or!(literal!("\r\n"), literal!("\n"), literal!("\r")), "endOfLine"); /// predefined end-of-line parser
     alias eol = endOfLine; /// helper alias.
 
-    alias space = PEG.or!(PEG.literal!(" "), PEG.literal!("\t"), PEG.literal!("\v")); /// predefined space-recognizing parser (space or tabulation).
-    alias tab = PEG.named!(PEG.literal!"\t", "tab"); /// A parser recognizing \t (tabulation)
-    alias spaces = PEG.named!(PEG.fuse!(PEG.discardChildren!(PEG.oneOrMore!space)),
+    alias space = or!(literal!(" "), literal!("\t"), literal!("\v")); /// predefined space-recognizing parser (space or tabulation).
+    alias tab = named!(literal!"\t", "tab"); /// A parser recognizing \t (tabulation)
+    alias spaces = named!(fuse!(discardChildren!(oneOrMore!space)),
         "spaces"); /// aka '~space+'
-    alias blank = PEG.or!(space, endOfLine); /// Any blank char (spaces or end of line).
-    alias spacing = PEG.named!(PEG.discard!(PEG.zeroOrMore!blank),
-        "spacing"); /// The basic space-management parser: PEG.discard zero or more blank spaces.
+    alias blank = or!(space, endOfLine); /// Any blank char (spaces or end of line).
+    alias spacing = named!(discard!(zeroOrMore!blank),
+        "spacing"); /// The basic space-management parser: discard zero or more blank spaces.
 
-    alias digit = PEG.charRange!('0', '9'); /// Decimal digit: [0-9]
-    alias digits = PEG.named!(PEG.fuse!(PEG.discardChildren!(PEG.oneOrMore!digit)), "digits"); /// [0-9]+
+    alias digit = charRange!('0', '9'); /// Decimal digit: [0-9]
+    alias digits = named!(fuse!(discardChildren!(oneOrMore!digit)), "digits"); /// [0-9]+
 
-    alias hexDigit = PEG.or!(PEG.charRange!('0','9'), PEG.charRange!('a','f'), PEG.charRange!('A', 'F')); /// Hexadecimal digit: [0-9a-fA-F]
+    alias hexDigit = or!(charRange!('0','9'), charRange!('a','f'), charRange!('A', 'F')); /// Hexadecimal digit: [0-9a-fA-F]
 
-    alias alpha = PEG.charRange!('a', 'z'); /// [a-z]
-    alias Alpha = PEG.charRange!('A', 'Z'); /// [A-Z]
+    alias alpha = charRange!('a', 'z'); /// [a-z]
+    alias Alpha = charRange!('A', 'Z'); /// [A-Z]
 
-    alias ident = PEG.and!(PEG.oneOrMore!(PEG.or!(alpha, Alpha, PEG.literal!("_"))), PEG.zeroOrMore!(PEG.or!(digit, alpha, Alpha, PEG.literal!("_"))));
-    alias identifier = PEG.named!(PEG.fuse!(PEG.discardChildren!ident),
+    alias ident = and!(oneOrMore!(or!(alpha, Alpha, literal!("_"))), zeroOrMore!(or!(digit, alpha, Alpha, literal!("_"))));
+    alias identifier = named!(fuse!(discardChildren!ident),
         "identifier"); /// [a-zA-Z_][a-zA-Z_0-9]*, the basic C-family identifier
-    alias qualifiedIdentifier = PEG.named!(PEG.fuse!(PEG.discardChildren!(PEG.and!(identifier, PEG.zeroOrMore!(PEG.and!(PEG.literal!".", identifier))))),
+    alias qualifiedIdentifier = named!(fuse!(discardChildren!(and!(identifier, zeroOrMore!(and!(literal!".", identifier))))),
         "qualifiedIdentifier"); /// qualified identifiers (ids separated by dots: abd.def.g).
 
-    alias slash = PEG.named!(PEG.literal!"/", "slash"); /// A parser recognizing '/'
-    alias backslash = PEG.named!(PEG.literal!"\\", "backslash"); /// A parser recognizing '\'
-    alias quote = PEG.named!(PEG.literal!"'", "quote"); /// A parser recognizing ' (single quote)
-    alias doublequote = PEG.named!(PEG.literal!"\"", "doublequote"); /// A parser recognizing " (double quote)
-    alias backquote = PEG.named!(PEG.literal!"`", "backquote"); /// A parser recognizing $(BACKTICK) (backquote)
+    alias slash = named!(literal!"/", "slash"); /// A parser recognizing '/'
+    alias backslash = named!(literal!"\\", "backslash"); /// A parser recognizing '\'
+    alias quote = named!(literal!"'", "quote"); /// A parser recognizing ' (single quote)
+    alias doublequote = named!(literal!"\"", "doublequote"); /// A parser recognizing " (double quote)
+    alias backquote = named!(literal!"`", "backquote"); /// A parser recognizing $(BACKTICK) (backquote)
     /// A list of elem's separated by sep's. One element minimum.
-    alias list(alias elem, alias sep) = PEG.named!(spaceAnd!(PEG.oneOrMore!blank, PEG.and!(elem, PEG.zeroOrMore!(spaceAnd!(PEG.discardMatches!(sep), elem)))), "list");
+    alias list(alias elem, alias sep) = named!(spaceAnd!(oneOrMore!blank, and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem)))), "list");
 
 /// A list of elem's separated by sep's. The empty list (no elem, no sep) is OK.
-    alias list0(alias elem, alias sep) = PEG.named!(spaceAnd!(PEG.oneOrMore!blank, PEG.option!(PEG.and!(elem, PEG.zeroOrMore!(spaceAnd!(PEG.discardMatches!(sep), elem))))), "list0");
+    alias list0(alias elem, alias sep) = named!(spaceAnd!(oneOrMore!blank, option!(and!(elem, zeroOrMore!(spaceAnd!(discardMatches!(sep), elem))))), "list0");
 
-    alias spaceAnd(alias sp, rules...) = PEG.and!(PEG.discard!(PEG.zeroOrMore!sp), staticMap!(AddSpace!(PEG.zeroOrMore!sp), rules));
+    alias spaceAnd(alias sp, rules...) = and!(discard!(zeroOrMore!sp), staticMap!(AddSpace!(zeroOrMore!sp), rules));
+
+    static bool isParseCollectionDefined(ParseTree dummy) pure nothrow {
+        return true;
+    }
+
 }

@@ -13,7 +13,7 @@ import std.stdio;
 
 public import pegged.peg;
 import pegged.parser;
-import pegged.parsetree : DefaultParseTree, isParseTree;
+package import pegged.parsetree;
 
 struct GrammarOptions {
     string parsetreeName;
@@ -46,13 +46,12 @@ void asModule(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTree
         f.write(optHeader ~ "\n\n");
 
     static if (is(ParseTree == DefaultParseTree)) {
-        f.writeln("public import pegged.parsetree : DefaultParseTree;");
+        f.writeln("public import pegged.parsetree;");
     }
     else {
         f.writefln("import pegged.parsetree : isParseTree;");
         f.writefln(`static assert(is(%s), "ParseTree %s must be defined");`, ParseTree.stringof, ParseTree.stringof);
         f.writefln(`static assert(isParseTree!(%s), "%s must compile with isParseTree");`, ParseTree.stringof, ParseTree.stringof);
-
     }
     f.write("public import pegged.peg;\n");
     f.write("import std.algorithm: startsWith;\n");
@@ -229,9 +228,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
     static import pegged.peg;
-    mixin ParseCollections!ParseTree;
     alias PEG=PeggedT!ParseTree;
-    mixin DefaultParsePatterns!PEG;
 
     struct " ~ grammarName ~ "\n    {
     enum name = \"" ~ shortGrammarName ~ "\";
@@ -1005,9 +1002,7 @@ mixin template expected()
 
 version(unittest) {
     private alias ParseTree = DefaultParseTree;
-    mixin ParseCollections!ParseTree;
     private alias PEG=PeggedT!ParseTree;
-    mixin DefaultParsePatterns!PEG;
 }
 
 unittest // 'grammar' unit test: low-level functionalities
@@ -2215,10 +2210,6 @@ unittest // qualified names for rules
 
 unittest // Parameterized rules
 {
-    alias ParseTree = DefaultParseTree;
-    alias PEG=PeggedT!ParseTree;
-    mixin DefaultParsePatterns!PEG;
-
     mixin(grammar(`
             Parameterized:
 # Different arities
