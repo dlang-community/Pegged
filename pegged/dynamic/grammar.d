@@ -75,7 +75,7 @@ struct ParameterizedRule(ParseTree)
     }
 }
 
-    ParameterizedRule!ParseTree parameterizedRule(ParseTree)(size_t n, Dynamic delegate(Dynamic[] d) code)
+ParameterizedRule!ParseTree parameterizedRule(ParseTree)(size_t n, Dynamic delegate(Dynamic[] d) code)
 {
     return ParameterizedRule(n, code);
     // ParameterizedRule pr;
@@ -84,7 +84,7 @@ struct ParameterizedRule(ParseTree)
     // return pr;
 }
 
-private alias ParseTree=DefaultParseTree;
+//private alias ParseTree=DefaultParseTree;
 
 struct DynamicGrammar(ParseTree)
 {
@@ -180,17 +180,19 @@ ParseTree spaceArrow(ParseTree)(ParseTree input) if (isParseTree!ParseTree)
                     wrapInSpaces)(input);
 }
 
-Dynamic makeRule(string def, Dynamic[string] context)
+ParseTree.Dynamic makeRule(ParseTree)(string def, Dynamic[string] context) if(isParseTree!ParseTree)
 {
     ParseTree p = Pegged.decimateTree(Pegged.Definition(def));
     return makeRule(p, context);
 }
 
-Dynamic makeRule(ParseTree)(ParseTree def, Dynamic[string] context) if (isParseTree!ParseTree)
-{
-    Dynamic code;
 
-    Dynamic getDyn(string name)
+
+ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] context) if (isParseTree!ParseTree)
+{
+    ParseTree.Dynamic code;
+
+    ParseTree.Dynamic getDyn(string name)
     {
         if (name in context)
             return context[name];
@@ -198,7 +200,7 @@ Dynamic makeRule(ParseTree)(ParseTree def, Dynamic[string] context) if (isParseT
             throw new Exception("Unknown name: " ~ name);
     }
 
-    Dynamic ruleFromTree(ParseTree p)
+    ParseTree.Dynamic ruleFromTree(ParseTree p)
     {
         //writeln("rfT: ", p.name, " ", p.matches);
         //Dynamic result;
@@ -210,7 +212,7 @@ Dynamic makeRule(ParseTree)(ParseTree def, Dynamic[string] context) if (isParseT
                     Dynamic[] children;
                     foreach(seq; p.children)
                         children ~= ruleFromTree(seq);
-                    return distribute!(or)(children);
+                    return distribute!(ParseTree, or)(children);
                 //}
                 //else // One child -> just a sequence, no need for a or!( , )
                 //{
@@ -223,7 +225,7 @@ Dynamic makeRule(ParseTree)(ParseTree def, Dynamic[string] context) if (isParseT
                     Dynamic[] children;
                     foreach(seq; p.children)
                         children ~= ruleFromTree(seq);
-                    return distribute!(pegged.dynamic.peg.and)(children);
+                    return distribute!(ParseTree, and)(children);
                 /+}
                 else // One child -> just a Suffix, no need for a and!( , )
                 {
@@ -266,7 +268,7 @@ Dynamic makeRule(ParseTree)(ParseTree def, Dynamic[string] context) if (isParseT
                     Dynamic[] children;
                     foreach(seq; p.children)
                         children ~= ruleFromTree(seq);
-                    return distribute!(pegged.dynamic.peg.or)(children);
+                    return distribute!(ParseTree, or)(children);
                 }
                 else // One child -> just a sequence, no need for a or!( , )
                 {
@@ -443,13 +445,13 @@ DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic
             gram.startingRule = shortName;
         // prepending the global grammar name, to get a qualified-name rule 'Gram.Rule'
         def.matches[0] = shortGrammarName ~ "." ~ def.matches[0];
-        gram.rules[shortName] = makeRule(def, gram.rules);
+        gram.rules[shortName] = makeRule!ParseTree(def, gram.rules);
     }
 
     return gram;
 }
 
-Dynamic distribute(alias fun)(Dynamic[] args)
+ParseTree.Dynamic distribute(ParseTree, alias fun)(ParseTree.Dynamic[] args) if(isParseTree!ParseTree)
 {
     //mixin(makeSwitch(40));
     switch(args.length)
@@ -467,6 +469,6 @@ Dynamic distribute(alias fun)(Dynamic[] args)
         case 6:
             return fun(args[0], args[1], args[2], args[3], args[4], args[5]);
         default:
-            return fun(fun(args[0], args[1], args[2], args[3], args[4], args[5]), distribute!fun(args[6..$]));
+            return fun(fun(args[0], args[1], args[2], args[3], args[4], args[5]), distribute!(ParseTree, fun)(args[6..$]));
     }
 }
