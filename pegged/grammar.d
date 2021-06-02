@@ -49,6 +49,7 @@ void asModule(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTree
         f.writeln("public import pegged.parsetree : DefaultParseTree;");
     }
     else {
+        f.writefln("import pegged.parsetree : isParseTree;");
         f.writefln(`static assert(is(%s), "ParseTree %s must be defined");`, ParseTree.stringof, ParseTree.stringof);
         f.writefln(`static assert(isParseTree!(%s), "%s must compile with isParseTree");`, ParseTree.stringof, ParseTree.stringof);
 
