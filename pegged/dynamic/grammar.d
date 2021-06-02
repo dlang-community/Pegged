@@ -37,7 +37,7 @@ struct ParameterizedRule(ParseTree)
     {
         Dynamic[] args;
         //args.length = rules.length;
-        pragma(msg, "Dynmaic ", typeof(rules));
+        pragma(msg, "Dynmaic ", D);
         foreach(i,rule; rules)
         {
             static if (is(typeof(rule) == Dynamic))
