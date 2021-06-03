@@ -27,7 +27,7 @@ import std.typetuple;
 import pegged.parsetree : isParseTree;
 
 // Returns quoted and escaped version of the input, but if the input is null, then return `"end of input"`.
-package string stringified(string inp) @safe
+string stringified(string inp) @safe
 {
     import std.format : format;
 

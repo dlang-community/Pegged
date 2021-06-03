@@ -15,11 +15,10 @@ import std.algorithm : startsWith;
 import std.array;
 import std.stdio;
 
-import pegged.peg;
 import pegged.parser;
 import pegged.dynamic.peg;
 
-private import pegged.parsetree : DefaultParseTree, isParseTree;
+private import pegged.parsetree : isParseTree;
 
 struct ParameterizedRule(ParseTree)
 {
@@ -73,17 +72,6 @@ struct ParameterizedRule(ParseTree)
     }
 }
 
-// ParameterizedRule!ParseTree parameterizedRule(ParseTree)(size_t n, Dynamic delegate(Dynamic[] d) code)
-// {
-//     return ParameterizedRule(n, code);
-//     // ParameterizedRule pr;
-//     // pr.numArgs = n;
-//     // pr.code = code;
-//     // return pr;
-// }
-
-//private alias ParseTree=DefaultParseTree;
-
 struct DynamicGrammar(ParseTree)
 {
     string grammarName;
@@ -91,7 +79,6 @@ struct DynamicGrammar(ParseTree)
     alias Dynamic = ParseTree.Dynamic;
     Dynamic[string] rules;
     ParameterizedRule!ParseTree[string] paramRules;
-//    private alias ParseTree=DefaultParseTree;
 
     ParseTree decimateTree(ParseTree p)
     {
@@ -174,6 +161,7 @@ ParseTree spaceArrow(ParseTree)(ParseTree input) if (isParseTree!ParseTree)
         result.children = spacer ~ result.children ~ spacer;
         return result;
     }
+    import pegged.peg : modify;
     return modify!(ParseTree, p => p.name == "Pegged.Primary",
                     wrapInSpaces)(input);
 }
@@ -413,6 +401,7 @@ DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic
         throw new Exception("Bad grammar input: " ~ defAsParseTree.toString(""));
     }
 
+    pragma(msg, "ParseTree ", ParseTree);
     DynamicGrammar!ParseTree gram;
     foreach(name, rule; context)
     {
@@ -426,6 +415,9 @@ DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic
     gram.grammarName = shortGrammarName;
 
     // Predefined spacing
+    pragma(msg, `ParseTree.Dynamic `, ParseTree.Dynamic);
+    pragma(msg, `gram.rules["Spacing"] `, typeof(gram.rules["Spacing"]));
+    pragma(msg, `discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))))`, typeof(discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))))));
     gram.rules["Spacing"] = discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))));
 
     ParseTree[] definitions = p.children[1 .. $];

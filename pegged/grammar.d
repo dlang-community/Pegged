@@ -219,7 +219,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             //string invokedGrammarName = generateCode(transformName(p.children[0]));
             string firstRuleName = generateCode(p.children[1].children[0]);
 
-            if (optGrammar.parsetreeName ==DefaultParseTree.stringof) {
+            if (optGrammar.parsetreeName == DefaultParseTree.stringof) {
                 result = "import pegged.parsetree : DefaultParseTree;\n";
             }
             result ~=

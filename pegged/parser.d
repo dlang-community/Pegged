@@ -133,13 +133,14 @@ NestedList(L,R) <- ^L ( !(L/R) . )* (NestedList(L,R) / ( !(L/R) . )*)* ( !(L/R) 
 +/
 module pegged.parser;
 
-public import pegged.peg;
+//public import pegged.peg;
 import std.algorithm: startsWith;
 import std.functional: toDelegate;
 
 private import pegged.parsetree;
 struct GenericPegged(ParseTree)
 {
+    import pegged.peg : DefaultPatters, decimateTree, GetName;
     alias PEG=ParseTree;
     mixin DefaultPatters!ParseTree;
     // static if (is(ParseTree == DefaultParseTree)) {
@@ -149,7 +150,7 @@ struct GenericPegged(ParseTree)
 //    mixin DefaultParsePatterns!PEG;
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
-    //static import pegged.peg;
+    private import peg = pegged.peg;
     struct Pegged
     {
     enum name = "Pegged";
@@ -2043,26 +2044,26 @@ struct GenericPegged(ParseTree)
     {
         if(__ctfe)
         {
-            return         PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.zeroOrMore!(PEG.or!(Items, NestedList!(L, Items, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(Items)() ~ ", " ~ pegged.peg.getName!(R) ~ ")")(p);
+            return         PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.zeroOrMore!(PEG.or!(Items, NestedList!(L, Items, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(Items)() ~ ", " ~ peg.getName!(R) ~ ")")(p);
         }
         else
         {
-            return hooked!(PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.zeroOrMore!(PEG.or!(Items, NestedList!(L, Items, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(Items)() ~ ", " ~ pegged.peg.getName!(R) ~ ")"), "NestedList_3")(p);
+            return hooked!(PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.zeroOrMore!(PEG.or!(Items, NestedList!(L, Items, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(Items)() ~ ", " ~ peg.getName!(R) ~ ")"), "NestedList_3")(p);
         }
     }
     static ParseTree NestedList(string s)
     {
         if(__ctfe)
-            return         PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.zeroOrMore!(PEG.or!(Items, NestedList!(L, Items, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(Items)() ~ ", " ~ pegged.peg.getName!(R) ~ ")")(ParseTree("", false,[], s));
+            return         PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.zeroOrMore!(PEG.or!(Items, NestedList!(L, Items, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(Items)() ~ ", " ~ peg.getName!(R) ~ ")")(ParseTree("", false,[], s));
         else
         {
             forgetMemo();
-            return hooked!(PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.zeroOrMore!(PEG.or!(Items, NestedList!(L, Items, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(Items)() ~ ", " ~ pegged.peg.getName!(R) ~ ")"), "NestedList_3")(ParseTree("", false,[], s));
+            return hooked!(PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.zeroOrMore!(PEG.or!(Items, NestedList!(L, Items, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R, Items)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(Items)() ~ ", " ~ peg.getName!(R) ~ ")"), "NestedList_3")(ParseTree("", false,[], s));
         }
     }
     static string NestedList(GetName g)
     {
-        return "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(Items)() ~ ", " ~ pegged.peg.getName!(R) ~ ")";
+        return "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(Items)() ~ ", " ~ peg.getName!(R) ~ ")";
     }
 
     }
@@ -2072,26 +2073,26 @@ struct GenericPegged(ParseTree)
     {
         if(__ctfe)
         {
-            return         PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.zeroOrMore!(PEG.or!(NestedList!(L, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(R) ~ ")")(p);
+            return         PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.zeroOrMore!(PEG.or!(NestedList!(L, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(R) ~ ")")(p);
         }
         else
         {
-            return hooked!(PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.zeroOrMore!(PEG.or!(NestedList!(L, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(R) ~ ")"), "NestedList_2")(p);
+            return hooked!(PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.zeroOrMore!(PEG.or!(NestedList!(L, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(R) ~ ")"), "NestedList_2")(p);
         }
     }
     static ParseTree NestedList(string s)
     {
         if(__ctfe)
-            return         PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.zeroOrMore!(PEG.or!(NestedList!(L, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(R) ~ ")")(ParseTree("", false,[], s));
+            return         PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.zeroOrMore!(PEG.or!(NestedList!(L, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(R) ~ ")")(ParseTree("", false,[], s));
         else
         {
             forgetMemo();
-            return hooked!(PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.zeroOrMore!(PEG.or!(NestedList!(L, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(R) ~ ")"), "NestedList_2")(ParseTree("", false,[], s));
+            return hooked!(PEG.defined!(PEG.and!(PEG.keep!(L), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.zeroOrMore!(PEG.or!(NestedList!(L, R), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)))), PEG.zeroOrMore!(PEG.and!(PEG.negLookahead!(PEG.or!(L, R)), PEG.any)), PEG.keep!(R)), "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(R) ~ ")"), "NestedList_2")(ParseTree("", false,[], s));
         }
     }
     static string NestedList(GetName g)
     {
-        return "Pegged.NestedList!(" ~ pegged.peg.getName!(L)() ~ ", " ~ pegged.peg.getName!(R) ~ ")";
+        return "Pegged.NestedList!(" ~ peg.getName!(L)() ~ ", " ~ peg.getName!(R) ~ ")";
     }
 
     }
