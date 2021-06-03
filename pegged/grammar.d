@@ -225,13 +225,14 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             result ~=
                 "struct Generic" ~ shortGrammarName ~ "(ParseTree)
 {
-    static if (is(ParseTree == DefaultParseTree)) {
-        import PEG=pegged.parsetree;
-    }
+//    static if (is(ParseTree == DefaultParseTree)) {
+        alias PEG=ParseTree;
+//    }
 
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
     static import pegged.peg;
+    mixin DefaultPatters!ParseTree;
     //alias PEG=PeggedT!ParseTree;
 
     struct " ~ grammarName ~ "\n    {
@@ -1011,12 +1012,6 @@ version(unittest) {
 
 unittest // 'grammar' unit test: low-level functionalities
 {
-    pragma(msg, grammar(`
-    Test1:
-        Rule1 <- 'a'
-        Rule2 <- 'b'
-    `));
-
     mixin(grammar(`
     Test1:
         Rule1 <- 'a'
@@ -1059,6 +1054,7 @@ unittest // 'grammar' unit test: PEG syntax
         Chars4 <- [\U00000000-\U000000FF]
     `));
 
+    mixin DefaultPatters!ParseTree;
     ParseTree result = Terminals("abc");
 
     assert(result.name == "Terminals", "Grammar name test.");
@@ -2246,10 +2242,10 @@ unittest // Parameterized rules
 # Another common PEG pattern
             AllUntil(End) <~ (!End .)* :End
             `));
-//    with(PEG) {
 
-    alias Parameterized.Rule1!(PEG.literal!"a") R1;
-    alias PEG.oneOrMore!(PEG.literal!"a") Ref1;
+    mixin DefaultPatters!ParseTree;
+    alias R1 = Parameterized.Rule1!(literal!"a");
+    alias Ref1 = oneOrMore!(literal!"a");
 
     ParseTree reference = Ref1("aaaa");
     ParseTree result = R1("aaaa");
@@ -2269,8 +2265,8 @@ unittest // Parameterized rules
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
 
-    alias Parameterized.Rule1!(PEG.literal!"abc") R1long;
-    alias Ref1long=PEG.oneOrMore!(PEG.literal!"abc");
+    alias Parameterized.Rule1!(literal!"abc") R1long;
+    alias Ref1long=oneOrMore!(literal!"abc");
 
     reference = Ref1long("abcabcabcabc");
     result = R1long("abcabcabcabc");
@@ -2282,8 +2278,8 @@ unittest // Parameterized rules
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
 
-    alias Parameterized.Rule1!(PEG.literal!"a", PEG.literal!"b") R2;
-    alias Ref2=PEG.oneOrMore!(PEG.and!(PEG.literal!"a", PEG.literal!"b"));
+    alias R2 = Parameterized.Rule1!(literal!"a", literal!"b");
+    alias Ref2 = oneOrMore!(and!(literal!"a", literal!"b"));
 
     reference = Ref2("abababab");
     result = R2("abababab");
@@ -2303,8 +2299,8 @@ unittest // Parameterized rules
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
 
-    alias Parameterized.Rule1!(PEG.literal!"a", PEG.literal!"b", PEG.literal!"c") R3;
-    alias oneOrMore!(PEG.and!(PEG.literal!"a", literal!"b", literal!"c")) Ref3;
+    alias R3 = Parameterized.Rule1!(literal!"a", literal!"b", literal!"c");
+    alias Ref3 = oneOrMore!(and!(literal!"a", literal!"b", literal!"c"));
 
     reference = Ref3("abcabcabcabc");
     result = R3("abcabcabcabc");
@@ -2752,14 +2748,14 @@ unittest // Test lambda syntax in semantic actions
         [`(a) {
         return a;
      }`],
-        [`(a, b) {
+        [q{(a, b) {
         string s = "}";
         if (a.successful,) {
             s ~= q"<}>";
         } else {
             { s ~= q"<}>"; /* } */ }
         }
-        return a;}`],
+        return a;}}],
         [`myAction`,`(a) {return a;}`,`myAction2`,`(a) { /* , } */ return a; }`],
         [`myAction`,`a => transform(a)`,`myAction2`],
         [`myAction`,"(a) {
@@ -2888,6 +2884,7 @@ unittest // Direct left-recursion
         S <- E eoi
         E <- E '+n' / 'n'
     `;
+    pragma(msg, grammar(LeftGrammar));
     mixin(grammar(LeftGrammar));
     ParseTree result = Left("n+n+n+n");
     assert(result.successful);

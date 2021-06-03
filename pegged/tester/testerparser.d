@@ -42,10 +42,8 @@ public import pegged.peg;
 private import pegged.parsetree;
 struct GenericTesterGrammar(ParseTree)
 {
-    static if (is(ParseTree == DefaultParseTree)) {
-        import PEG=pegged.parsetree;
-    }
-
+    alias PEG=ParseTree;
+    mixin DefaultPatters!ParseTree;
     //alias PEG=PeggedT!ParseTree;
 //    mixin DefaultParsePatterns!PEG;
 

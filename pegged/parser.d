@@ -140,9 +140,11 @@ import std.functional: toDelegate;
 private import pegged.parsetree;
 struct GenericPegged(ParseTree)
 {
-    static if (is(ParseTree == DefaultParseTree)) {
-        import PEG=pegged.parsetree;
-    }
+    alias PEG=ParseTree;
+    mixin DefaultPatters!ParseTree;
+    // static if (is(ParseTree == DefaultParseTree)) {
+    //     import PEG=pegged.parsetree;
+    // }
 //    alias PEG=PeggedT!ParseTree;
 //    mixin DefaultParsePatterns!PEG;
     import std.functional : toDelegate;

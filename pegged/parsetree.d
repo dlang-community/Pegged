@@ -85,6 +85,17 @@ mixin template ParseTreeM() {
             return result ~ childrenString;
         }
 
+    static ParseTree[] getUpto(ParseTree[] children, size_t minFailedLength) {
+        import std.algorithm : filter, max;
+        ParseTree[] arr;
+        foreach(a; children.filter!(r => max(r.end, r.failEnd) >= minFailedLength)) {
+            arr~=a;
+        }
+        return arr;
+//        return children.filter!(r => max(r.end, r.failEnd) >= minFailedLength).array();
+    }
+
+
     /**
      * Basic toString of only this node, without the children
      */
@@ -102,12 +113,24 @@ mixin template ParseTreeM() {
         }
 
     /**
+     * Default fail message formating function
+     */
+    static string defaultFormatFailMsg(Position pos, string left, string right, const ParseTree pt)
+    {
+        return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
+            ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
+            ~ "expected " ~ (pt.matches.length > 0 ? pt.matches[$ - 1].stringified : "NO MATCH")
+            ~ `, but got ` ~ right.stringified;
+    };
+
+
+    /**
      * Generates a generic error when a node fails
      *
      * @param successMsg String returned when there isn't an error
      * @param formatFailMsg Formating delegate function that generates the error message.
      */
-    string failMsg(string delegate(Position, string, string, const ParseTree) formatFailMsg = toDelegate(&defaultFormatFailMsg!ParseTree),
+    string failMsg(string delegate(Position, string, string, const ParseTree) formatFailMsg = toDelegate(&defaultFormatFailMsg),
         string successMsg = "Sucess") const @property
         {
             foreach(i, child; children) {
@@ -175,8 +198,7 @@ mixin template ParseTreeM() {
     }
 }
 
-private import pegged.peg : ParseCollections;
-mixin ParseCollections!DefaultParseTree;
+private import pegged.peg : ParseCollectionsM;
 /**
    The basic parse tree, as used throughout the project.
    You can define your own parse tree node, but respect the basic layout.
@@ -186,9 +208,10 @@ mixin ParseCollections!DefaultParseTree;
        ... My own stuff
    }
 */
-struct DefaultParseTree
-{
+struct DefaultParseTree {
     mixin ParseTreeM;
+    mixin ParseCollectionsM;
 }
+
 
 static assert(isParseTree!DefaultParseTree);
