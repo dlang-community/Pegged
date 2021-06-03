@@ -42,7 +42,11 @@ public import pegged.peg;
 private import pegged.parsetree;
 struct GenericTesterGrammar(ParseTree)
 {
-    alias PEG=PeggedT!ParseTree;
+    static if (is(ParseTree == DefaultParseTree)) {
+        import PEG=pegged.parsetree;
+    }
+
+    //alias PEG=PeggedT!ParseTree;
 //    mixin DefaultParsePatterns!PEG;
 
     struct TesterGrammar
@@ -66,14 +70,14 @@ struct GenericTesterGrammar(ParseTree)
                 return false;
         }
     }
-    mixin decimateTree;
+    mixin decimateTree!ParseTree;
     static ParseTree Root(ParseTree p)
     {
-         return PEG.named!(PEG.and!(PEG.wrapAround!(Spacing, Node, Spacing), PEG.wrapAround!(Spacing, eoi, Spacing)), "TesterGrammar.Root")(p);
+         return PEG.named!(PEG.and!(PEG.wrapAround!(Spacing, Node, Spacing), PEG.wrapAround!(Spacing, PEG.eoi, Spacing)), "TesterGrammar.Root")(p);
     }
     static ParseTree Root(string s)
     {
-        return PEG.named!(PEG.and!(PEG.wrapAround!(Spacing, Node, Spacing), PEG.wrapAround!(Spacing, eoi, Spacing)), "TesterGrammar.Root")(ParseTree("", false,[], s));
+        return PEG.named!(PEG.and!(PEG.wrapAround!(Spacing, Node, Spacing), PEG.wrapAround!(Spacing, PEG.eoi, Spacing)), "TesterGrammar.Root")(ParseTree("", false,[], s));
     }
     static string Root(GetName g)
     {

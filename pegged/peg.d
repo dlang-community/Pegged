@@ -90,36 +90,6 @@ string getName(alias expr)() @property
         return __traits(identifier, expr);
 }
 
-string fail(GetName g) @safe
-{
-    return "fail";
-}
-
-string eoi(GetName g) @safe
-{
-    return "eoi";
-}
-
-string any(GetName g) @safe
-{
-    return "any";
-}
-
-/**
-   Matches the end of input. Fails if there is any character left.
-*/
-ParseTree eoi(ParseTree)(const ParseTree p) @safe if (isParseTree!ParseTree) {
-    if (p.end == p.input.length)
-        return ParseTree("eoi", true, [], p.input, p.end, p.end);
-    else
-        return ParseTree("eoi", false, ["end of input"], p.input, p.end, p.end);
-}
-
-ParseTree eps(ParseTree)(const ParseTree p) @safe if (isParseTree!ParseTree) {
-    return ParseTree("eps", true, [""], p.input, p.end, p.end);
-}
-
-
 /// To compare two trees for content (not bothering with node names)
 /// That's useful to compare the results from two different grammars.
 bool softCompare(ParseTree)(const ParseTree p1, const ParseTree p2) @safe if (isParseTree!ParseTree) {
@@ -145,14 +115,6 @@ ParseTree wordBoundary(ParseTree)(const ParseTree p) @safe if (isParseTree!Parse
     else
         return ParseTree("wordBoundary", matched, ["word boundary"], p.input, p.end, p.end, null);
 }
-
-/**
-   Basic rule, that always fail without consuming.
-*/
-ParseTree fail(ParseTree)(const ParseTree p) @safe if (isParseTree!ParseTree) {
-    return ParseTree("fail", false, [], p.input, p.end, p.end, null);
-}
-
 
 
 /**
@@ -216,7 +178,7 @@ Position position(string s)
 /**
    Same as previous overload, but from the begin of P.input to p.end
 */
-Position position(ParseTree)(const ParseTree p)
+Position position(ParseTree)(const ParseTree p) if(isParseTree!ParseTree)
 {
     return position(p.input[0..p.end]);
 }
@@ -242,8 +204,9 @@ unittest
 
 
 struct PeggedT(ParseTree) {
-    import pegged.peg : fail, eoi, wordBoundary, eps;
-    mixin ParseCollections!ParseTree;
+
+//    import pegged.peg : fail, eoi, wordBoundary, eps;
+//    mixin ParseCollections!ParseTree;
     version (tracer)
         {
             import std.experimental.logger;
@@ -388,37 +351,7 @@ struct PeggedT(ParseTree) {
             }
         }
 
-    static ParseTree fail(string input)
-        {
-            return fail(ParseTree("", false, [], input));
-        }
-
-/// ditto
-    static ParseTree eoi(string input)
-        {
-            return eoi(ParseTree("", false, [], input));
-        }
-
-    alias eoi endOfInput; /// helper alias.
-
-/**
-   Match any character. As long as there is at least a character left in the input, it succeeds.
-   Conversely, it fails only if called at the end of the input.
-*/
-    static ParseTree any(ParseTree p)
-        {
-            if (p.end < p.input.length)
-                return ParseTree("any", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
-            else
-                return ParseTree("any", false, ["any char"], p.input, p.end, p.end);
-        }
-
-/// ditto
-    static ParseTree any(string input)
-        {
-            return any(ParseTree("", false, [], input));
-        }
-
+//    alias endOfInput = PEG.eoi; /// helper alias.
     static ParseTree wordBoundary(string input)
         {
             return ParseTree("wordBoundary", isAlpha(input.front()), [], input, 0,0, null);
@@ -430,27 +363,15 @@ struct PeggedT(ParseTree) {
             return "wordBoundary";
         }
 
-/**
-   eps matches the empty string (usually denoted by the Greek letter 'epsilon') and always succeeds.
-   It's equivalent to literal!"" (for example, it creates a match of [""]: one match, the empty string).
-*/
-    static ParseTree eps(string input)
-        {
-            return eps(ParseTree("",false,[], input));
-        }
-
-    static string eps(GetName g)
-        {
-            return "eps";
-        }
 }
 
 version(unittest) {
     private {
         private import pegged.parsetree : DefaultParseTree;
         private alias ParseTree = DefaultParseTree;
-        mixin ParseCollections!ParseTree;
-        private alias PEG=PeggedT!ParseTree;
+        private import PEG=pegged.parsetree;
+//        mixin ParseCollections!ParseTree;
+//        private alias PEG=PeggedT!ParseTree;
 //        mixin DefaultParsePatterns!PEG;
     }
 }
@@ -530,7 +451,7 @@ unittest // 'fail' unit test
 {
 
     ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
-    ParseTree result = fail(input);
+    ParseTree result = PEG.fail(input);
     assert(result.name == "fail");
     assert(!result.successful, "'fail' fails.");
     assert(result.matches is null, "'fail' makes no match.");
@@ -546,7 +467,7 @@ unittest // 'fail' unit test
 unittest // 'eoi' unit test
 {
     ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
-    ParseTree result = eoi(input);
+    ParseTree result = PEG.eoi(input);
     assert(result.name == "eoi");
     assert(!result.successful, "'eoi' fails on non-null string.");
     assert(result.matches == ["end of input"], "'eoi' error message.");
@@ -555,7 +476,7 @@ unittest // 'eoi' unit test
     assert(result.children is null, "'eoi' has no children.");
 
     input = ParseTree("input", true, [], "", 0,0, null);
-    result = eoi(input);
+    result = PEG.eoi(input);
     assert(result.successful, "'eoi' succeeds on strings of length 0.");
     result = PEG.eoi("");
     assert(result.successful, "'eoi' succeeds on strings of length 0.");
@@ -637,7 +558,7 @@ unittest // 'eps' unit test
 {
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
 
-    ParseTree result = eps(input);
+    ParseTree result = PEG.eps(input);
 
     assert(result.name == "eps");
     assert(result.successful, "'eps' succeeds on non-null inputs.");
@@ -648,7 +569,7 @@ unittest // 'eps' unit test
 
     input.input = "";
 
-    result = eps(input);
+    result = PEG.eps(input);
     assert(result.name == "eps");
     assert(result.successful, "'eps' succeeds on empty strings.");
     assert(result.matches  == [""], "'eps' matches '' at the beginning, even on empty strings.");
@@ -668,6 +589,102 @@ static string defaultFormatFailMsg(ParseTree)(Position pos, string left, string 
         ~ "expected " ~ (pt.matches.length > 0 ? pt.matches[$ - 1].stringified : "NO MATCH")
         ~ `, but got ` ~ right.stringified;
 };
+
+template eoiT(ParseTree) {
+    @safe:
+/**
+   Matches the end of input. Fails if there is any character left.
+*/
+    ParseTree eoiT(ParseTree p) {
+        if (p.end == p.input.length)
+            return ParseTree("eoi", true, [], p.input, p.end, p.end);
+        else
+            return ParseTree("eoi", false, ["end of input"], p.input, p.end, p.end);
+    }
+
+/// ditto
+    ParseTree eoiT(string input)
+        {
+            return eoiT(ParseTree("", false, [], input));
+        }
+
+
+    string eoiT(GetName g) @safe
+        {
+            return "eoi";
+        }
+}
+
+
+template epsT(ParseTree) {
+/**
+   eps matches the empty string (usually denoted by the Greek letter 'epsilon') and always succeeds.
+   It's equivalent to literal!"" (for example, it creates a match of [""]: one match, the empty string).
+*/
+    ParseTree epsT(const ParseTree p) {
+        return ParseTree("eps", true, [""], p.input, p.end, p.end);
+    }
+
+    ParseTree epsT(string input)
+        {
+            return epsT(ParseTree("",false,[], input));
+        }
+
+    string epsT(GetName g)
+        {
+            return "eps";
+        }
+}
+
+
+template anyT(ParseTree) {
+    /**
+       Match any character. As long as there is at least a character left in the input, it succeeds.
+       Conversely, it fails only if called at the end of the input.
+    */
+    ParseTree anyT(ParseTree p) {
+        if (p.end < p.input.length)
+            return ParseTree("any", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
+        else
+            return ParseTree("any", false, ["any char"], p.input, p.end, p.end);
+    }
+
+
+    /// ditto
+    ParseTree anyT(string input)
+        {
+            return anyT(ParseTree("", false, [], input));
+        }
+
+
+    string anyT(GetName g) @safe
+        {
+            return "any";
+        }
+}
+
+template failT(ParseTree) {
+    /**
+       Basic rule, that always fail without consuming.
+    */
+    ParseTree failT(ParseTree p) @safe {
+        return ParseTree("fail", false, [], p.input, p.end, p.end, null);
+    }
+
+
+
+    ParseTree failT(string input)
+        {
+            return failT(ParseTree("", false, [], input));
+        }
+
+
+    string failT(GetName g) @safe
+        {
+            return "fail";
+        }
+}
+
 
 
 
@@ -711,9 +728,9 @@ unittest // 'literal' unit test
 
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
 
-    alias literal!"a" a;
-    alias literal!"abc" abc;
-    alias literal!"" empty;
+    alias a = PEG.literal!"a";
+    alias abc = PEG.literal!"abc";
+    alias empty = PEG.literal!"";
 
     ParseTree result = a(input);
 
@@ -854,9 +871,9 @@ unittest // 'caseInsensitiveLiteral' unit test
 {
     ParseTree input = ParseTree("input", true, [], "AbCdEf", 0,0, null);
 
-    alias caseInsensitiveLiteral!"a" a;
-    alias caseInsensitiveLiteral!"aBC" abc;
-    alias caseInsensitiveLiteral!"" empty;
+    alias PEG.caseInsensitiveLiteral!"a" a;
+    alias PEG.caseInsensitiveLiteral!"aBC" abc;
+    alias PEG.caseInsensitiveLiteral!"" empty;
 
     ParseTree result = a(input);
 
@@ -962,7 +979,7 @@ unittest // 'caseInsensitiveLiteral' unit test
     assert(result.children is null, "'' has no children.");
 
     input.input = "ÄöÜæØå";
-    result = caseInsensitiveLiteral!"äÖüÆøÅ"(input);
+    result = PEG.caseInsensitiveLiteral!"äÖüÆøÅ"(input);
 
     assert(result.successful, "Unicode characters are matched case insensitively.");
 }
@@ -1004,11 +1021,11 @@ unittest // 'charRange' unit test
 {
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
 
-    alias charRange!('a','a') aa;
-    alias charRange!('a','b') ab;
-    alias charRange!('a','z') az;
-    alias charRange!(dchar.min,dchar.max) allChars;
-    alias charRange!('\U00000000','\U000000FF') ASCII;
+    alias aa = PEG.charRange!('a','a');
+    alias ab = PEG.charRange!('a','b');
+    alias az = PEG.charRange!('a','z');
+    alias allChars = PEG.charRange!(dchar.min,dchar.max);
+    alias ASCII = PEG.charRange!('\U00000000','\U000000FF');
 
     static assert(!__traits(compiles, {alias charRange!('z','a') za;}));
 
@@ -1323,15 +1340,14 @@ bool failedChildFixup(ParseTree)(ref ParseTree p, size_t failEnd) if (isParseTre
 
 unittest // 'and' unit test
 {
-    alias literal!"abc" abc;
-    alias literal!"de" de;
-    alias literal!"f" f;
+    alias abc= PEG.literal!"abc";
+    alias de = PEG.literal!"de";
+    alias f = PEG.literal!"f";
 
-    alias and!(abc) abcAnd;
-    alias and!(abc,de) abcde;
-    alias and!(abc,de,f) abcdef;
-    alias and!(eps, abc, eps, de, eps, f, eps) withEps;
-
+    alias abcAnd = PEG.and!(abc);
+    alias abcde = PEG.and!(abc,de);
+    alias abcdef = PEG.and!(abc,de,f);
+    alias withEps = PEG.and!(PEG.eps, abc, PEG.eps, de, PEG.eps, f, PEG.eps);
     //assert(getName!(abcAnd)() == `and!(literal!("abc"))`);
     //assert(getName!(abcde)()  == `and!(literal!("abc"), literal!("de"))`);
     //assert(getName!(abcdef)() == `and!(literal!("abc"), literal!("de"), literal!("f"))`);
@@ -1401,11 +1417,12 @@ version (unittest) {
 
 unittest // 'and' unit test with zeroOrMore and longest failing match
 {
-    alias literal!"abc" A;
-    alias literal!"def" B;
-    alias literal!"ghi" C;
+    with(PEG) {
+    alias A = literal!"abc";
+    alias B = literal!"def";
+    alias C = literal!"ghi";
 
-    alias and!(zeroOrMore!(and!(A,B)), C) Thing;
+    alias Thing = and!(zeroOrMore!(and!(A,B)), C) Thing;
 
     ParseTree input = ParseTree("",false,[], "abc");
     ParseTree result = Thing(input);
@@ -1413,11 +1430,13 @@ unittest // 'and' unit test with zeroOrMore and longest failing match
     assert(!result.successful);
     assert(getError(result).matches[$-1] == "\"def\"", "and!(zeroOrMore!(and!(literal!\"abc\", literal!\"def\")), literal!\"ghi\") should expected def when input is \"abc\"");
     assert(result.matches == []);
+    }
 }
 
 unittest // 'and' unit test with option and longest failing match
 {
 
+    with(PEG) {
     alias literal!"abc" A;
     alias literal!"def" B;
     alias literal!"ghi" C;
@@ -1430,11 +1449,13 @@ unittest // 'and' unit test with option and longest failing match
     assert(!result.successful);
     assert(getError(result).matches[$-1] == "\"def\"", "and!(option!(and!(literal!\"abc\", literal!\"def\")), literal!\"ghi\") should expected def when input is \"abc\"");
     assert(result.matches == []);
+    }
 }
 
 unittest // 'and' unit test with oneOrMore and longest failing match
 {
 
+    with(PEG) {
     alias literal!"abc" A;
     alias literal!"def" B;
     alias literal!"ghi" C;
@@ -1447,6 +1468,7 @@ unittest // 'and' unit test with oneOrMore and longest failing match
     assert(!result.successful);
     assert(getError(result).matches[$-1] == "\"def\"", "and!(oneOrMore!(and!(literal!\"abc\", literal!\"def\")), literal!\"ghi\") should expected def when input is \"abcdefabc\"");
     assert(result.matches == ["abc", "def"]);
+    }
 }
 
 template wrapAroundT(ParseTree, alias before, alias target, alias after)
@@ -1660,6 +1682,7 @@ auto getUpto(ParseTree)(ParseTree[] children, size_t minFailedLength) if (isPars
 unittest // 'or' unit test
 {
 
+    with(PEG) {
     alias charRange!('a','b') ab;
     alias charRange!('c','d') cd;
 
@@ -1718,6 +1741,7 @@ unittest // 'or' unit test
     assert(result.matches ==
         [ "a char between 'a' and 'b' (charRange!('a','b')) or a char between 'c' and 'd' (charRange!('c','d'))"]
         , "or!([a-b],[c-d]) error message.");
+    }
 }
 
 /**
@@ -1853,6 +1877,7 @@ template longest_matchT(ParseTree, rules...) if (rules.length > 0)
 unittest // 'longest_match' unit test
 {
 
+    with(PEG) {
     alias charRange!('a','b') ab;
     alias charRange!('c','d') cd;
 
@@ -1921,6 +1946,7 @@ unittest // 'longest_match' unit test
     assert(result.matches == ["a", "a", "a"], "or! takes the first matching rule.");
     result = longest_match!(oneOrMore!(literal!("a")), and!(oneOrMore!(literal!("a")), literal!("cc")))(input);
     assert(result.matches == ["a", "a", "a", "cc"], "longest_match! takes the longest matching rule.");
+    }
 }
 
 
@@ -2118,6 +2144,7 @@ template keywordsT(ParseTree,kws...) if (kws.length > 0)
 unittest
 {
 
+    with(PEG) {
     alias keywords!("abc","de","f") kw;
 
     assert(getName!(kw)() == `keywords!("abc", "de", "f")`);
@@ -2159,6 +2186,7 @@ unittest
     assert(result.matches == [`one among ["abc", "de", "f"]`], "keywords error message.");
     assert(result.end == input.end, "keywords does not advance the index.");
     assert(result.children is null, "No children for `keywords`.");
+    }
 }
 
 
@@ -2259,6 +2287,7 @@ template zeroOrMoreT(ParseTree, alias r)
 
 unittest // 'zeroOrMore' unit test
 {
+    with(PEG) {
     alias literal!"a" a;
     alias literal!"abc" abc;
     alias charRange!('a','z') az;
@@ -2320,6 +2349,7 @@ unittest // 'zeroOrMore' unit test
     assert(result.end == 3);
     assert(result.children.length == 3);
     assert(result.children == [ az("abc"), az(az("abc")), az(az(az("abc")))]);
+    }
 }
 
 /**
@@ -2428,6 +2458,7 @@ template oneOrMoreT(ParseTree, alias r)
 
 unittest // 'oneOrMore' unit test
 {
+    with(PEG) {
     alias literal!"a" a;
     alias literal!"abc" abc;
     alias charRange!('a','z') az;
@@ -2490,6 +2521,7 @@ unittest // 'oneOrMore' unit test
     assert(result.end == 3);
     assert(result.children.length == 3);
     assert(result.children == [ az("abc"), az(az("abc")), az(az(az("abc")))]);
+    }
 }
 
 /**
@@ -2538,6 +2570,7 @@ template optionT(ParseTree, alias r)
 
 unittest // 'option' unit test
 {
+    with(PEG) {
     alias literal!"a" a;
     alias literal!"abc" abc;
 
@@ -2595,6 +2628,7 @@ unittest // 'option' unit test
     assert(result.begin == 0);
     assert(result.end == 0);
     assert(result.children.length == 0);
+    }
 }
 
 /**
@@ -2632,6 +2666,7 @@ template posLookaheadT(ParseTree, alias r)
 
 unittest // 'posLookahead' unit test
 {
+    with(PEG) {
     alias literal!"a" a;
     alias literal!"abc" abc;
 
@@ -2686,6 +2721,7 @@ unittest // 'posLookahead' unit test
     assert(result.begin == 0);
     assert(result.end == 0);
     assert(result.children.length == 0);
+    }
 }
 
 /**
@@ -2703,6 +2739,7 @@ template negLookaheadT(ParseTree, alias r)
                 if (shouldTrace(getName!(r)(), p))
                     trace(traceMsg(p, name, getName!(r)()));
             }
+
             ParseTree temp = r(p);
             if (temp.successful)
                 return ParseTree(name, false, ["anything but \"" ~ p.input[temp.begin..temp.end] ~ "\""], p.input, p.end, p.end);
@@ -2723,6 +2760,7 @@ template negLookaheadT(ParseTree, alias r)
 
 unittest // 'negLookahead' unit test
 {
+    with(PEG) {
     alias literal!"a" a;
     alias literal!"abc" abc;
 
@@ -2777,6 +2815,7 @@ unittest // 'negLookahead' unit test
     assert(result.begin == 0);
     assert(result.end == 0);
     assert(result.children.length == 0);
+    }
 }
 
 /**
@@ -2831,6 +2870,7 @@ template namedT(ParseTree, alias r, string name)
 
 unittest // 'named' unit test
 {
+    with(PEG) {
     alias or!(literal!("abc"), charRange!('0','9')) rule;
     alias named!(rule, "myRule") myRule;
 
@@ -2858,6 +2898,7 @@ unittest // 'named' unit test
     assert(myResult.begin == result.begin);
     assert(myResult.end == result.end);
     assert(myResult.children == result.children);
+    }
 }
 
 /**
@@ -2913,6 +2954,7 @@ template definedT(ParseTree, alias r, string name)
 
 unittest // 'defined' unit test
 {
+    with(PEG) {
     alias or!(literal!("abc"), charRange!('0','9')) rule;
     alias defined!(rule, "myRule") myRule;
 
@@ -2940,6 +2982,7 @@ unittest // 'defined' unit test
     assert(myResult.begin == result.begin);
     assert(myResult.end == result.end);
     assert(myResult.children[0] == result);
+    }
 }
 
 /**
@@ -2972,7 +3015,7 @@ unittest // 'action' unit test
         p.matches ~= p.matches; // doubling matches
         return p;
     }
-
+    with(PEG) {
     alias literal!("abc") abc;
 
     alias action!(abc, foo) abcfoo;
@@ -2999,6 +3042,7 @@ unittest // 'action' unit test
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children == reference.children);
+    }
 }
 
 /**
@@ -3033,6 +3077,7 @@ template fuseT(ParseTree, alias r)
 
 unittest // 'fuse' unit test
 {
+    with(PEG) {
     alias oneOrMore!(literal!("abc")) abcs;
 
     alias fuse!(abcs) f;
@@ -3072,6 +3117,7 @@ unittest // 'fuse' unit test
     assert(result.begin == reference.begin);
     assert(result.end == reference.end);
     assert(result.children == reference.children);
+    }
 }
 
 /**
@@ -3154,6 +3200,7 @@ template discardT(ParseTree, alias r)
 
 unittest // 'discard' unit test
 {
+    with(PEG) {
     alias literal!"abc" abc;
     alias oneOrMore!abc abcs;
     alias discard!(literal!("abc")) dabc;
@@ -3203,6 +3250,7 @@ unittest // 'discard' unit test
     assert(result.end == 3*3);
     assert(result.children.length == 2);
     assert(result.children == [abc("abcabcabc"), abc(abc(abc("abcabcabc")))]);
+    }
 }
 
 /**
@@ -3234,6 +3282,7 @@ template dropT(ParseTree, alias r)
 
 unittest // 'drop' unit test
 {
+    with(PEG) {
     alias literal!"abc" abc;
     alias oneOrMore!abc abcs;
     alias drop!(literal!("abc")) dabc;
@@ -3283,6 +3332,7 @@ unittest // 'drop' unit test
     assert(result.end == 3*3);
     assert(result.children.length == 2, "but only 2 children.");
     assert(result.children == [abc("abcabcabc"), abc(abc(abc("abcabcabc")))]);
+    }
 }
 
 /**
@@ -3341,8 +3391,9 @@ template keepT(ParseTree, alias r)
 
 unittest // 'keep' unit test
 {
+    with(PEG) {
     // Grammar mimicry
-    struct KeepTest
+    static struct KeepTest
     {
         static bool isRule(string s)
             {
@@ -3352,7 +3403,7 @@ unittest // 'keep' unit test
                     return false;
             }
 
-        mixin decimateTree;
+        mixin decimateTree!ParseTree;
 
         // Equivalent to A <- 'a' 'b'
         static ParseTree A(string s)
@@ -3379,6 +3430,7 @@ unittest // 'keep' unit test
     assert(reference.children.length == 0);
     assert(result.children.length == 1);
     assert(result.children == [literal!("b")(literal!("a")("abc"))], "'b' node was kept.");
+    }
 }
 
 template AddSpaceT(ParseTree, alias sp)
@@ -3433,12 +3485,13 @@ template AddSpaceT(ParseTree, alias sp)
 
 unittest // 'spaceAnd' unit test
 {
-    alias a = PEG.literal!"a";
-    alias b = PEG.literal!"b";
+    with(PEG) {
+    alias a = literal!"a";
+    alias b = literal!"b";
 
     //Basic use
-    alias ab = PEG.and!(a,b);
-    alias a_b = PEG.spaceAnd!(PEG.oneOrMore!(PEG.blank), a, b);
+    alias ab = and!(a,b);
+    alias a_b = spaceAnd!(PEG.oneOrMore!(PEG.blank), a, b);
 
     ParseTree reference = ab("ab");
     ParseTree result = a_b("ab");
@@ -3473,7 +3526,7 @@ unittest // 'spaceAnd' unit test
     assert(!result.successful);
 
     // With another separator than spaces
-    alias a0b = PEG.spaceAnd!(digit, a, b);
+    alias a0b = spaceAnd!(digit, a, b);
 
     assert(a0b("ab").successful);
     assert(!a0b("  a b  ").successful);
@@ -3485,10 +3538,11 @@ unittest // 'spaceAnd' unit test
     assert(result.begin == 0);
     assert(result.end == "012a34b567".length);
     assert(result.children.length == 2);
+    }
 }
 
 /// Mixin to simplify a parse tree inside a grammar
-mixin template decimateTree()
+mixin template decimateTree(ParseTree)
 {
     static ParseTree decimateTree(ParseTree p)
         {
@@ -3606,7 +3660,13 @@ ParseTree modify(ParseTree, alias predicate, alias modifier)(ParseTree input) if
 }
 
 mixin template ParseCollections(ParseTree) {
+    @safe:
     import pegged.peg;
+    alias eoi = eoiT!ParseTree;
+
+    alias eps = epsT!ParseTree;
+    alias any = anyT!ParseTree;
+    alias fail = failT!ParseTree;
     alias literal(string s) = literalT!(ParseTree, s);
     alias caseInsensitiveLiteral(string s) = caseInsensitiveLiteralT!(ParseTree, s);
     alias charRange(dchar begin, dchar end) = charRangeT!(ParseTree, begin, end);

@@ -140,11 +140,14 @@ import std.functional: toDelegate;
 private import pegged.parsetree;
 struct GenericPegged(ParseTree)
 {
-    alias PEG=PeggedT!ParseTree;
+    static if (is(ParseTree == DefaultParseTree)) {
+        import PEG=pegged.parsetree;
+    }
+//    alias PEG=PeggedT!ParseTree;
 //    mixin DefaultParsePatterns!PEG;
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
-    static import pegged.peg;
+    //static import pegged.peg;
     struct Pegged
     {
     enum name = "Pegged";
@@ -262,17 +265,17 @@ struct GenericPegged(ParseTree)
         import std.algorithm : startsWith;
         return s.startsWith("Pegged.");
     }
-    mixin decimateTree;
+    mixin decimateTree!ParseTree;
 
     static ParseTree Grammar(ParseTree p)
     {
         if(__ctfe)
         {
-            return         PEG.defined!(PEG.and!(Spacing, GrammarName, PEG.oneOrMore!(Definition), PEG.discard!(eoi)), "Pegged.Grammar")(p);
+            return         PEG.defined!(PEG.and!(Spacing, GrammarName, PEG.oneOrMore!(Definition), PEG.discard!(PEG.eoi)), "Pegged.Grammar")(p);
         }
         else
         {
-            return hooked!(PEG.defined!(PEG.and!(Spacing, GrammarName, PEG.oneOrMore!(Definition), PEG.discard!(eoi)), "Pegged.Grammar"), "Grammar")(p);
+            return hooked!(PEG.defined!(PEG.and!(Spacing, GrammarName, PEG.oneOrMore!(Definition), PEG.discard!(PEG.eoi)), "Pegged.Grammar"), "Grammar")(p);
         }
     }
     static ParseTree Grammar(string s)

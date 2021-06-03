@@ -45,3 +45,6 @@ build/*
 
 .vscode/
 
+# Emacs
+*#
+*.parked

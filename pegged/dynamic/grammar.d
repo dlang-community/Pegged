@@ -405,7 +405,7 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
 DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic[string] context = null) if(isParseTree!ParseTree)
 {
     //writeln("Entering dyn gram");
-    ParseTree defAsParseTree = Pegged(definition);
+    ParseTree defAsParseTree = GenericPegged!(ParseTree).Pegged(definition);
     //writeln(defAsParseTree);
     if (!defAsParseTree.successful)
     {

@@ -225,10 +225,14 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             result ~=
                 "struct Generic" ~ shortGrammarName ~ "(ParseTree)
 {
+    static if (is(ParseTree == DefaultParseTree)) {
+        import PEG=pegged.parsetree;
+    }
+
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
     static import pegged.peg;
-    alias PEG=PeggedT!ParseTree;
+    //alias PEG=PeggedT!ParseTree;
 
     struct " ~ grammarName ~ "\n    {
     enum name = \"" ~ shortGrammarName ~ "\";
@@ -362,7 +366,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             ~ parameterizedRulesSpecialCode
             ~ "                return false;\n        }\n    }\n";
             +/
-            result ~= "    mixin decimateTree;\n\n";
+            result ~= "    mixin decimateTree!ParseTree;\n\n";
 
             // If the grammar provides a Spacing rule, then this will be used.
             // else, the predefined 'spacing' rule is used.
@@ -1002,11 +1006,17 @@ mixin template expected()
 
 version(unittest) {
     private alias ParseTree = DefaultParseTree;
-    private alias PEG=PeggedT!ParseTree;
+    private import PEG=pegged.parsetree;
 }
 
 unittest // 'grammar' unit test: low-level functionalities
 {
+    pragma(msg, grammar(`
+    Test1:
+        Rule1 <- 'a'
+        Rule2 <- 'b'
+    `));
+
     mixin(grammar(`
     Test1:
         Rule1 <- 'a'
@@ -2236,7 +2246,7 @@ unittest // Parameterized rules
 # Another common PEG pattern
             AllUntil(End) <~ (!End .)* :End
             `));
-    with(PEG) {
+//    with(PEG) {
 
     alias Parameterized.Rule1!(PEG.literal!"a") R1;
     alias PEG.oneOrMore!(PEG.literal!"a") Ref1;
@@ -2410,7 +2420,7 @@ Here is another line.
     assert(!Arith1("1 + 2*3/456").successful);
     assert(Arith2("1 + 2*3/456").successful);
     assert(Arith2("1 + 2*3/z").successful);
-    }
+//    }
 }
 
 version(unittest) // Semantic actions
