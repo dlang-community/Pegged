@@ -137,7 +137,6 @@ module pegged.parser;
 import std.algorithm: startsWith;
 import std.functional: toDelegate;
 
-private import pegged.parsetree;
 struct GenericPegged(ParseTree)
 {
     import pegged.peg : DefaultPatters, decimateTree, GetName;
@@ -2121,4 +2120,5 @@ struct GenericPegged(ParseTree)
     }
 }
 
+private import pegged.defaultparsetree : DefaultParseTree;
 alias GenericPegged!(DefaultParseTree).Pegged Pegged;

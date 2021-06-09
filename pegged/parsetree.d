@@ -198,20 +198,20 @@ mixin template ParseTreeM() {
     }
 }
 
-private import pegged.peg : ParseCollectionsM;
-/**
-   The basic parse tree, as used throughout the project.
-   You can define your own parse tree node, but respect the basic layout.
-   Example:
-   struct MyParseTree {
-       mixin ParseTreeM;
-       ... My own stuff
-   }
-*/
-struct DefaultParseTree {
-    mixin ParseTreeM;
-    mixin ParseCollectionsM;
-}
+// private import pegged.peg : ParseCollectionsM;
+// /**
+//    The basic parse tree, as used throughout the project.
+//    You can define your own parse tree node, but respect the basic layout.
+//    Example:
+//    struct MyParseTree {
+//        mixin ParseTreeM;
+//        ... My own stuff
+//    }
+// */
+// struct DefaultParseTree {
+//     mixin ParseTreeM;
+//     mixin ParseCollectionsM;
+// }
 
 
-static assert(isParseTree!DefaultParseTree);
+// static assert(isParseTree!DefaultParseTree);

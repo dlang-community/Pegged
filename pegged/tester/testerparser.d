@@ -206,4 +206,5 @@ struct GenericTesterGrammar(ParseTree)
     }
 }
 
+import pegged.defaultparsetree : DefaultParseTree;
 alias GenericTesterGrammar!(DefaultParseTree).TesterGrammar TesterGrammar;

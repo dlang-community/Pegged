@@ -74,6 +74,7 @@ struct ParameterizedRule(ParseTree)
 
 struct DynamicGrammar(ParseTree)
 {
+    alias DPEG=ParseTree.DPEG;
     string grammarName;
     string startingRule;
     alias Dynamic = ParseTree.Dynamic;
@@ -133,7 +134,7 @@ struct DynamicGrammar(ParseTree)
 
     void opIndexAssign(D)(D code, string s)
     {
-        rules[s]= named(code, grammarName ~ "." ~ s);
+        rules[s]= DPEG.named(code, grammarName ~ "." ~ s);
     }
 
     Dynamic opIndex(string s)
@@ -176,6 +177,7 @@ ParseTree.Dynamic makeRule(ParseTree)(string def, Dynamic[string] context) if(is
 
 ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] context) if (isParseTree!ParseTree)
 {
+    alias DPEG=ParseTree.DPEG;
     ParseTree.Dynamic code;
 
     ParseTree.Dynamic getDyn(string name)
@@ -195,10 +197,10 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
             case "Pegged.Expression":
                 //if (p.children.length > 1) // OR expression
                 //{
-                    Dynamic[] children;
+                    ParseTree.Dynamic[] children;
                     foreach(seq; p.children)
                         children ~= ruleFromTree(seq);
-                    return distribute!(ParseTree, or)(children);
+                    return distribute!(ParseTree, DPEG.or)(children);
                 //}
                 //else // One child -> just a sequence, no need for a or!( , )
                 //{
@@ -208,10 +210,10 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
             case "Pegged.Sequence":
                 //if (p.children.length > 1) // real sequence
                 //{
-                    Dynamic[] children;
+                    ParseTree.Dynamic[] children;
                     foreach(seq; p.children)
                         children ~= ruleFromTree(seq);
-                    return distribute!(ParseTree, and)(children);
+                    return distribute!(ParseTree, DPEG.and)(children);
                 /+}
                 else // One child -> just a Suffix, no need for a and!( , )
                 {
@@ -245,16 +247,16 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
             case "Pegged.Literal":
                 //writeln("Literal: ", p.matches);
                 if(p.matches.length == 3) // standard case
-                    return literal(p.matches[1]);
+                    return DPEG.literal(p.matches[1]);
                 else // only two children -> empty literal
-                    return eps();
+                    return DPEG.eps();
             case "Pegged.CharClass":
                 if (p.children.length > 1)
                 {
-                    Dynamic[] children;
+                    ParseTree.Dynamic[] children;
                     foreach(seq; p.children)
                         children ~= ruleFromTree(seq);
-                    return distribute!(ParseTree, or)(children);
+                    return distribute!(ParseTree, DPEG.or)(children);
                 }
                 else // One child -> just a sequence, no need for a or!( , )
                 {
@@ -265,7 +267,7 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
                 /// Make the generation at the Char level: directly what is needed, be it `` or "" or whatever
                 if (p.children.length > 1) // a-b range
                 {
-                    return charRange(p.matches[0].front, p.matches[2].front);
+                    return DPEG.charRange(p.matches[0].front, p.matches[2].front);
                 }
                 else // lone char
                 {
@@ -276,23 +278,23 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
                         case "\\[":
                         case "\\]":
                         case "\\-":
-                            return literal(ch[0..1]);
+                            return DPEG.literal(ch[0..1]);
                         case "\\\'":
-                            return literal("\'");
+                            return DPEG.literal("\'");
                         case "\\`":
-                            return literal("`");
+                            return DPEG.literal("`");
                         case "\\":
                         case "\\\\":
-                            return literal("\\");
+                            return DPEG.literal("\\");
                         case "\"":
                         case "\\\"":
-                            return literal("\"");
+                            return DPEG.literal("\"");
                         case "\n":
                         case "\r":
                         case "\t":
-                            return literal(ch);
+                            return DPEG.literal(ch);
                         default:
-                            return literal(ch);
+                            return DPEG.literal(ch);
                     }
                 }
             case "Pegged.Char":
@@ -307,44 +309,44 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
                     case "\\\"":
                     case "\\`":
                     case "\\\\":
-                        return literal(ch[1..$]);
+                        return DPEG.literal(ch[1..$]);
                     case "\n":
                     case "\r":
                     case "\t":
-                        return literal(ch);
+                        return DPEG.literal(ch);
                     default:
-                        return literal(ch);
+                        return DPEG.literal(ch);
                 }
                 //break;
             case "Pegged.POS":
-                return posLookahead(ruleFromTree(p.children[0]));
+                return DPEG.posLookahead(ruleFromTree(p.children[0]));
             case "Pegged.NEG":
-                return negLookahead(ruleFromTree(p.children[0]));
+                return DPEG.negLookahead(ruleFromTree(p.children[0]));
             case "Pegged.FUSE":
-                return fuse(ruleFromTree(p.children[0]));
+                return DPEG.fuse(ruleFromTree(p.children[0]));
             case "Pegged.DISCARD":
-                return discard(ruleFromTree(p.children[0]));
+                return DPEG.discard(ruleFromTree(p.children[0]));
             case "Pegged.KEEP":
-                return keep(ruleFromTree(p.children[0]));
+                return DPEG.keep(ruleFromTree(p.children[0]));
             case "Pegged.DROP":
-                return drop(ruleFromTree(p.children[0]));
+                return DPEG.drop(ruleFromTree(p.children[0]));
             case "Pegged.PROPAGATE":
-                return propagate(ruleFromTree(p.children[0]));
+                return DPEG.propagate(ruleFromTree(p.children[0]));
             case "Pegged.OPTION":
-                return option(ruleFromTree(p.children[0]));
+                return DPEG.option(ruleFromTree(p.children[0]));
             case "Pegged.ZEROORMORE":
-                return zeroOrMore(ruleFromTree(p.children[0]));
+                return DPEG.zeroOrMore(ruleFromTree(p.children[0]));
             case "Pegged.ONEORMORE":
-                return oneOrMore(ruleFromTree(p.children[0]));
+                return DPEG.oneOrMore(ruleFromTree(p.children[0]));
             case "Pegged.Action":
-                Dynamic result = ruleFromTree(p.children[0]);
+                ParseTree.Dynamic result = ruleFromTree(p.children[0]);
                 foreach(act; p.matches[1..$])
-                    result = action(result, getDyn(act));
+                    result = DPEG.action(result, getDyn(act));
                 return result;
             case "Pegged.ANY":
-                return any();
+                return DPEG.any();
             case "Pegged.WrapAround":
-                return wrapAround( ruleFromTree(p.children[0])
+                return DPEG.wrapAround( ruleFromTree(p.children[0])
                                         , ruleFromTree(p.children[1])
                                         , ruleFromTree(p.children[2]));
             default:
@@ -358,28 +360,28 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
             code = ruleFromTree(def.children[2]);
             break;
         case "Pegged.FUSEARROW":
-            code = fuse(ruleFromTree(def.children[2]));
+            code = DPEG.fuse(ruleFromTree(def.children[2]));
             break;
         case "Pegged.DISCARDARROW":
-            code = discard(ruleFromTree(def.children[2]));
+            code = DPEG.discard(ruleFromTree(def.children[2]));
             break;
         case "Pegged.KEEPARROW":
-            code = keep(ruleFromTree(def.children[2]));
+            code = DPEG.keep(ruleFromTree(def.children[2]));
             break;
         case "Pegged.DROPARROW":
-            code = drop(ruleFromTree(def.children[2]));
+            code = DPEG.drop(ruleFromTree(def.children[2]));
             break;
         case "Pegged.PROPAGATEARROW":
-            code = propagate(ruleFromTree(def.children[2]));
+            code = DPEG.propagate(ruleFromTree(def.children[2]));
             break;
         case "Pegged.SPACEARROW":
             ParseTree modified = spaceArrow(def.children[2]);
             code = ruleFromTree(modified);
             break;
         case "Pegged.ACTIONARROW":
-            Dynamic actionResult = ruleFromTree(def.children[2]);
+            ParseTree.Dynamic actionResult = ruleFromTree(def.children[2]);
             foreach(act; def.children[1].matches[1..$])
-                actionResult = action(actionResult, getDyn(act));
+                actionResult = DPEG.action(actionResult, getDyn(act));
             code = actionResult;
             break;
         default:
@@ -387,11 +389,12 @@ ParseTree.Dynamic makeRule(ParseTree)(ParseTree def, ParseTree.Dynamic[string] c
             //break;
     }
 
-    return named(code, def.matches[0]);
+    return DPEG.named(code, def.matches[0]);
 }
 
 DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic[string] context = null) if(isParseTree!ParseTree)
 {
+    alias DPEG=ParseTree.DPEG;
     //writeln("Entering dyn gram");
     ParseTree defAsParseTree = GenericPegged!(ParseTree).Pegged(definition);
     //writeln(defAsParseTree);
@@ -417,14 +420,14 @@ DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic
     // Predefined spacing
     pragma(msg, `ParseTree.Dynamic `, ParseTree.Dynamic);
     pragma(msg, `gram.rules["Spacing"] `, typeof(gram.rules["Spacing"]));
-    pragma(msg, `discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))))`, typeof(discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))))));
-    gram.rules["Spacing"] = discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))));
+//    pragma(msg, `discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))))`, typeof(discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))))));
+    gram.rules["Spacing"] = DPEG.discard(DPEG.zeroOrMore(DPEG.or(DPEG.literal(" "), DPEG.literal("\t"), DPEG.literal("\n"), DPEG.literal("\r"))));
 
     ParseTree[] definitions = p.children[1 .. $];
 
     foreach(i,def; definitions)
     {
-        gram[def.matches[0]] = fail();
+        gram[def.matches[0]] = DPEG.fail();
     }
 
     foreach(i,def; definitions)

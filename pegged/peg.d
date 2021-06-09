@@ -367,7 +367,7 @@ struct PeggedT(ParseTree) {
 
 version(unittest) {
     private {
-        private import pegged.parsetree : DefaultParseTree;
+        private import pegged.defaultparsetree : DefaultParseTree;
         private alias ParseTree = DefaultParseTree;
         private import PEG=pegged.parsetree;
 //        mixin ParseCollections!ParseTree;

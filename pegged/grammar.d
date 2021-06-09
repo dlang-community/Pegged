@@ -13,7 +13,8 @@ import std.stdio;
 
 public import pegged.peg;
 import pegged.parser;
-package import pegged.parsetree;
+package import pegged.defaultparsetree : DefaultParseTree;
+package import pegged.parsetree : isParseTree;
 
 struct GrammarOptions {
     string parsetreeName;
@@ -46,7 +47,7 @@ void asModule(Memoization withMemo = Memoization.yes, ParseTree=DefaultParseTree
         f.write(optHeader ~ "\n\n");
 
     static if (is(ParseTree == DefaultParseTree)) {
-        f.writeln("public import pegged.parsetree;");
+        f.writeln("public import pegged.defaultparsetree;");
     }
     else {
         f.writefln("import pegged.parsetree : isParseTree;");
@@ -220,7 +221,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             string firstRuleName = generateCode(p.children[1].children[0]);
 
             if (optGrammar.parsetreeName == DefaultParseTree.stringof) {
-                result = "import pegged.parsetree : DefaultParseTree;\n";
+                result = "import pegged.defaultparsetree : DefaultParseTree;\n";
             }
             result ~=
                 "struct Generic" ~ shortGrammarName ~ "(ParseTree)
@@ -1012,6 +1013,13 @@ version(unittest) {
 
 unittest // 'grammar' unit test: low-level functionalities
 {
+    pragma(msg, grammar(`
+    Test1:
+        Rule1 <- 'a'
+        Rule2 <- 'b'
+    `));
+
+
     mixin(grammar(`
     Test1:
         Rule1 <- 'a'
