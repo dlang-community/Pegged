@@ -84,9 +84,6 @@ import pegged.grammar;
 		if ( treeGot.successful && treeChecker.successful )
 		{
 			auto ctx = getDifferencer(treeGot, treeChecker);
-                        pragma(msg, "treeGot ", typeof(treeGot));
-                        // pragma(msg, "treeGot  ", typeof(treeChecker));
-                        pragma(msg, typeof(ctx));
 			latestDiff = ctx.diff();
 
 			bool pass;

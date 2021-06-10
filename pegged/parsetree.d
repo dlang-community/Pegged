@@ -1,13 +1,13 @@
 /**
    This module contaits functions and parameter for ParseTree data element
- */
+*/
 module pegged.parsetree;
 
 import std.traits : isType, ReturnType, ForeachType, isCallable, Unqual;
 /**
    Returns:
    Gets the lvalue of M where M can be a function/data as type of data
- */
+*/
 template Returns(alias M) {
     static if (isType!M) {
         alias U = M;
@@ -26,7 +26,7 @@ template Returns(alias M) {
 /**
    Returns
    true if T is a value ParseTree type
- */
+*/
 enum isParseTree(T) =
     is(Returns!(T.name) == string) &&
     is(Returns!(T.successful) == bool)  &&
@@ -41,7 +41,7 @@ enum isParseTree(T) =
 
 /**
    Contains the basic data and function for a ParseTree data element
- */
+*/
 mixin template ParseTreeM() {
     import pegged.peg;
     import std.functional : toDelegate;
@@ -52,23 +52,23 @@ mixin template ParseTreeM() {
     alias ParseTree = typeof(this);
     @safe {
 
-    alias Dynamic = ParseTree delegate(ParseTree) @safe;
-    string name; /// The node name
-    bool successful; /// Indicates whether a parsing was successful or not
-    string[] matches; /// The matched input's parts. Some expressions match at more than one place, hence matches is an array.
+        alias Dynamic = ParseTree delegate(ParseTree) @safe;
+        string name; /// The node name
+        bool successful; /// Indicates whether a parsing was successful or not
+        string[] matches; /// The matched input's parts. Some expressions match at more than one place, hence matches is an array.
 
-    string input; /// The input string that generated the parse tree. Stored here for the parse tree to be passed to other expressions, as input.
-    size_t begin, end; /// Indices for the matched part from the very beginning of the first match to the last char of the last match.
+        string input; /// The input string that generated the parse tree. Stored here for the parse tree to be passed to other expressions, as input.
+        size_t begin, end; /// Indices for the matched part from the very beginning of the first match to the last char of the last match.
 
-    ParseTree[] children; /// The sub-trees created by sub-rules parsing.
+        ParseTree[] children; /// The sub-trees created by sub-rules parsing.
 
-    size_t failEnd; // The furthest this tree could match the input (including !successful rules).
-    ParseTree[] failedChild; /// The !successful child that could still be partially parsed.
+        size_t failEnd; // The furthest this tree could match the input (including !successful rules).
+        ParseTree[] failedChild; /// The !successful child that could still be partially parsed.
 
-    /**
-       Basic toString for easy pretty-printing.
-    */
-    string toString(string tabs = "") const
+        /**
+           Basic toString for easy pretty-printing.
+        */
+        string toString(string tabs = "") const
         {
             string result = name;
 
@@ -86,21 +86,21 @@ mixin template ParseTreeM() {
             return result ~ childrenString;
         }
 
-    static ParseTree[] getUpto(ParseTree[] children, size_t minFailedLength) {
-        import std.algorithm : filter, max;
-        ParseTree[] arr;
-        foreach(a; children.filter!(r => max(r.end, r.failEnd) >= minFailedLength)) {
-            arr~=a;
-        }
-        return arr;
+        static ParseTree[] getUpto(ParseTree[] children, size_t minFailedLength) {
+            import std.algorithm : filter, max;
+            ParseTree[] arr;
+            foreach(a; children.filter!(r => max(r.end, r.failEnd) >= minFailedLength)) {
+                arr~=a;
+            }
+            return arr;
 //        return children.filter!(r => max(r.end, r.failEnd) >= minFailedLength).array();
-    }
+        }
 
 
-    /**
-     * Basic toString of only this node, without the children
-     */
-    private string toStringThisNode(bool allChildrenSuccessful) const
+        /**
+         * Basic toString of only this node, without the children
+         */
+        private string toStringThisNode(bool allChildrenSuccessful) const
         {
             if (successful) {
                 return to!string([begin, end]) ~ to!string(matches) ~ "\n";
@@ -113,26 +113,26 @@ mixin template ParseTreeM() {
             }
         }
 
-    /**
-     * Default fail message formating function
-     */
-    static string defaultFormatFailMsg(Position pos, string left, string right, const ParseTree pt)
-    {
-        return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
-            ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
-            ~ "expected " ~ (pt.matches.length > 0 ? pt.matches[$ - 1].stringified : "NO MATCH")
-            ~ `, but got ` ~ right.stringified;
-    };
+        /**
+         * Default fail message formating function
+         */
+        static string defaultFormatFailMsg(Position pos, string left, string right, const ParseTree pt)
+        {
+            return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
+                ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
+                ~ "expected " ~ (pt.matches.length > 0 ? pt.matches[$ - 1].stringified : "NO MATCH")
+                ~ `, but got ` ~ right.stringified;
+        };
 
 
-    /**
-     * Generates a generic error when a node fails
-     *
-     * @param successMsg String returned when there isn't an error
-     * @param formatFailMsg Formating delegate function that generates the error message.
-     */
-    string failMsg(string delegate(Position, string, string, const ParseTree) @safe formatFailMsg = toDelegate(&defaultFormatFailMsg),
-        string successMsg = "Sucess") const @property
+        /**
+         * Generates a generic error when a node fails
+         *
+         * @param successMsg String returned when there isn't an error
+         * @param formatFailMsg Formating delegate function that generates the error message.
+         */
+        string failMsg(string delegate(Position, string, string, const ParseTree) @safe formatFailMsg = toDelegate(&defaultFormatFailMsg),
+            string successMsg = "Sucess") const @property
         {
             foreach(i, child; children) {
                 if (!child.successful) {
@@ -160,7 +160,7 @@ mixin template ParseTreeM() {
             return successMsg;
         }
 
-    ParseTree dup() const @property
+        ParseTree dup() const @property
         {
             ParseTree result;
             result.name = name;
@@ -175,45 +175,27 @@ mixin template ParseTreeM() {
             return result;
         }
 
-    @trusted immutable(ParseTree) idup() const @property
+        @trusted immutable(ParseTree) idup() const @property
         {
             return cast(immutable)dup();
         }
 
-    // Override opIndex operators
-    ref ParseTree opIndex(size_t index) {
-        return children[index];
-    }
+        // Override opIndex operators
+        ref ParseTree opIndex(size_t index) {
+            return children[index];
+        }
 
-    ref ParseTree[] opIndex() return {
-        return children;
-    }
+        ref ParseTree[] opIndex() return {
+            return children;
+        }
 
-    size_t opDollar(size_t pos)() const
+        size_t opDollar(size_t pos)() const
         {
             return children.length;
         }
 
-    ParseTree[] opSlice(size_t i, size_t j) {
-        return children[i..j];
-    }
+        ParseTree[] opSlice(size_t i, size_t j) {
+            return children[i..j];
+        }
     }
 }
-
-// private import pegged.peg : ParseCollectionsM;
-// /**
-//    The basic parse tree, as used throughout the project.
-//    You can define your own parse tree node, but respect the basic layout.
-//    Example:
-//    struct MyParseTree {
-//        mixin ParseTreeM;
-//        ... My own stuff
-//    }
-// */
-// struct DefaultParseTree {
-//     mixin ParseTreeM;
-//     mixin ParseCollectionsM;
-// }
-
-
-// static assert(isParseTree!DefaultParseTree);

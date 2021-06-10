@@ -48,3 +48,6 @@ build/*
 # Emacs
 *#
 *.parked
+
+# Pegged self generator
+pegged/dev/peggedgrammar
