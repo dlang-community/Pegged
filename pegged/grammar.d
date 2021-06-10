@@ -1013,7 +1013,7 @@ version(unittest) {
     private import PEG=pegged.parsetree;
 }
 
-unittest // 'grammar' unit test: low-level functionalities
+@safe unittest // 'grammar' unit test: low-level functionalities
 {
     mixin(grammar(`
     Test1:
@@ -1033,7 +1033,7 @@ unittest // 'grammar' unit test: low-level functionalities
     assert(__traits(hasMember, Test1, "isRule"), "Test1 has a member named isRule.");
 }
 
-unittest // 'grammar' unit test: PEG syntax
+@safe unittest // 'grammar' unit test: PEG syntax
 {
     // Here we do not test PEG.*, just the grammar transformations
     // From a PEG to a Pegged expression template.
@@ -1362,7 +1362,7 @@ unittest // 'grammar' unit test: PEG syntax
     assert(CaseSensitive("abci").successful);
 }
 
-unittest // Multilines rules
+@safe unittest // Multilines rules
 {
     mixin(grammar(`
 Indentation:
@@ -1393,7 +1393,7 @@ Rule4 <- 'f' Rule5   # Rule4 ends with 'f', then it's Rule5
     assert(Indentation.Rule5("gh").successful);
 }
 
-unittest // Parsing at compile-time
+@safe unittest // Parsing at compile-time
 {
     alias ParseTree = DefaultParseTree;
 
@@ -1417,7 +1417,7 @@ unittest // Parsing at compile-time
     assert(CTfailure == result, "Compile-time parsing is equal to runtime parsing on failure.");
 }
 
-unittest // PEG extensions (arrows, prefixes, suffixes)
+@safe unittest // PEG extensions (arrows, prefixes, suffixes)
 {
     alias ParseTree = DefaultParseTree;
 
@@ -1569,7 +1569,7 @@ unittest // PEG extensions (arrows, prefixes, suffixes)
     assert(result.children[2].name == "Arrows.DEF");
 }
 
-unittest //More space arrow tests
+@safe unittest //More space arrow tests
 {
     mixin(grammar(`
             Spaces:
@@ -1604,7 +1604,7 @@ unittest //More space arrow tests
     assert(result.children[4].name == "Spaces.C");
 }
 
-unittest // Prefix and suffix tests
+@safe unittest // Prefix and suffix tests
 {
     mixin(grammar(`
             PrefixSuffix:
@@ -2005,7 +2005,7 @@ unittest // Prefix and suffix tests
     assert(result.children[0].children[0].children[0].children[2].name == `literal!("abc")`);
 }
 
-unittest // Issue #88 unit test
+@safe unittest // Issue #88 unit test
 {
     alias ParseTree = DefaultParseTree;
     enum gram = `
@@ -2031,7 +2031,7 @@ unittest // Issue #88 unit test
     assert(p2.end == input.length);
 }
 
-unittest // Leading alternation
+@safe unittest // Leading alternation
 {
     alias ParseTree = DefaultParseTree;
 
@@ -2061,7 +2061,7 @@ unittest // Leading alternation
     assert(result.matches == ["b"]);
 }
 
-unittest // Extended chars tests
+@safe unittest // Extended chars tests
 {
 mixin(grammar("
     Chars:
@@ -2123,7 +2123,7 @@ mixin(grammar("
     assert(Chars.decimateTree(Chars.Spanish("¡Hola!")).successful);
 }
 
-unittest // Extended char range tests
+@safe unittest // Extended char range tests
 {
     import std.conv;
 
@@ -2168,7 +2168,7 @@ unittest // Extended char range tests
     }
 }
 
-unittest // qualified names for rules
+@safe unittest // qualified names for rules
 {
     mixin(grammar(`
             First:
@@ -2217,7 +2217,7 @@ unittest // qualified names for rules
     assert(result.matches == ["foo", "bar", "baz"]);
 }
 
-unittest // Parameterized rules
+@safe unittest // Parameterized rules
 {
     mixin(grammar(`
             Parameterized:
@@ -2432,7 +2432,7 @@ version(unittest) // Semantic actions
     }
 }
 
-unittest // Semantic actions, testing { foo } and { foo, bar, baz }
+@safe unittest // Semantic actions, testing { foo } and { foo, bar, baz }
 {
     alias ParseTree = DefaultParseTree;
 
@@ -2614,7 +2614,7 @@ badGrammar!"Name:
 }
 +/
 
-unittest // Memoization testing
+@safe unittest // Memoization testing
 {
     enum gram1 = `
     Test1:
@@ -2650,7 +2650,7 @@ unittest // Memoization testing
     assert(softCompare(result1, result4));
 }
 
-unittest // Memoization reset in composed grammars. Issue #162
+@safe unittest // Memoization reset in composed grammars. Issue #162
 {
     enum MathGrammar = `
         Math:
@@ -2670,7 +2670,7 @@ unittest // Memoization reset in composed grammars. Issue #162
                                         // not cleared in all composed grammars.
 }
 
-unittest // Test lambda syntax in semantic actions
+@safe unittest // Test lambda syntax in semantic actions
 {
     import std.array;
     import std.string : strip;
@@ -2819,7 +2819,7 @@ unittest // Test lambda syntax in semantic actions
     }
 }
 
-unittest
+@safe unittest
 {
     // Higher-level word boundary test.
     mixin(grammar(`
@@ -2850,7 +2850,7 @@ unittest
     assert(!pt.successful);
 }
 
-unittest // Issue #129 unit test
+@safe unittest // Issue #129 unit test
 {
     alias ParseTree = DefaultParseTree;
 
@@ -2880,7 +2880,7 @@ unittest // Issue #129 unit test
     assert(p.children[0].children[0].children[0].children[0].children.length == 0);
 }
 
-unittest // Direct left-recursion
+@safe unittest // Direct left-recursion
 {
     enum LeftGrammar = `
       Left:
@@ -2893,7 +2893,7 @@ unittest // Direct left-recursion
     assert(result.matches == ["n", "+n", "+n", "+n"]);
 }
 
-unittest // Indirect left-recursion
+@safe unittest // Indirect left-recursion
 {
     enum LeftGrammar = `
       Left:
@@ -2907,7 +2907,7 @@ unittest // Indirect left-recursion
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
 }
 
-unittest // Proper blocking of memoization
+@safe unittest // Proper blocking of memoization
 {
     // Three interlocking cycles of indirect left-recursion.
     enum LeftGrammar = `
@@ -2927,7 +2927,7 @@ unittest // Proper blocking of memoization
 }
 
 // Example from http://www.inf.puc-rio.br/~roberto/docs/sblp2012.pdf
-unittest // Mutual left-recursion
+@safe unittest // Mutual left-recursion
 {
     /* A thing about stoppers:
        Because P is at the intersection of left-recursive cycles P -> P and L -> P -> L, it should
@@ -2953,7 +2953,7 @@ unittest // Mutual left-recursion
     assert(result.matches == ["x", "(n)", "(n)", ".x", "(n)", ".x"]);
 }
 
-unittest // Left- and right-recursion (is right-associative!)
+@safe unittest // Left- and right-recursion (is right-associative!)
 {
     enum LeftRightGrammar = `
       LeftRight:
@@ -2966,7 +2966,7 @@ unittest // Left- and right-recursion (is right-associative!)
     assert(result.matches == ["n", "+", "n", "+", "n", "+", "n"]);
 }
 
-unittest // Hidden left-recursion
+@safe unittest // Hidden left-recursion
 {
     enum HiddenLeft = `
       Test:
@@ -2980,7 +2980,7 @@ unittest // Hidden left-recursion
     assert(Test("bbca").successful);
 }
 
-unittest // Null-matching left-recursion
+@safe unittest // Null-matching left-recursion
 {
     enum NullMatch = `
       Test:
