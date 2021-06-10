@@ -40,7 +40,7 @@ module pegged.tester.testerparser;
 
 public import pegged.peg;
 private import pegged.parsetree;
-struct GenericTesterGrammar(ParseTree)
+@safe struct GenericTesterGrammar(ParseTree)
 {
     alias PEG=ParseTree;
     mixin DefaultPatters!ParseTree;

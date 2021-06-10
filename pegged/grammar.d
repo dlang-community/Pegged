@@ -224,7 +224,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
                 result = "import pegged.defaultparsetree : DefaultParseTree;\n";
             }
             result ~=
-                "struct Generic" ~ shortGrammarName ~ "(ParseTree)
+                "@safe struct Generic" ~ shortGrammarName ~ "(ParseTree)
 {
 //    static if (is(ParseTree == DefaultParseTree)) {
         alias PEG=ParseTree;
@@ -236,16 +236,16 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
     mixin DefaultPatters!ParseTree;
     //alias PEG=PeggedT!ParseTree;
 
-    struct " ~ grammarName ~ "\n    {
-    enum name = \"" ~ shortGrammarName ~ "\";
-    static ParseTree delegate(ParseTree)[string] before;
-    static ParseTree delegate(ParseTree)[string] after;
-    static ParseTree delegate(ParseTree)[string] rules;";
+    @safe struct " ~ grammarName ~ "\n    {
+        enum name = \"" ~ shortGrammarName ~ "\";
+        static ParseTree.Dynamic[string] before;
+        static ParseTree.Dynamic[string] after;
+        static ParseTree.Dynamic[string] rules;";
 
             if (withMemo == Memoization.yes) {
                 result ~= "
-    import std.typecons:Tuple, tuple;
-    static ParseTree[Tuple!(string, size_t)] memo;";
+       import std.typecons:Tuple, tuple;
+       static ParseTree[Tuple!(string, size_t)] memo;";
                 if (grammarInfo.leftRecursiveCycles.length > 0)
                     result ~= "
     import std.algorithm: canFind, countUntil, remove;
@@ -253,7 +253,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             }
 
             result ~= "
-    static this()\n    {\n";
+    static this() @trusted\n    {\n";
 
             ParseTree[] definitions = p.children[1 .. $];
             bool userDefinedSpacing;
@@ -275,6 +275,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
 
     template hooked(alias r, string name)
     {
+        @safe {
         static ParseTree hooked(ParseTree p)
         {
             ParseTree result;
@@ -297,6 +298,7 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
         static ParseTree hooked(string input)
         {
             return hooked!(r, name)(ParseTree(\"\",false,[],input));
+        }
         }
     }
 

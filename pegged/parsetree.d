@@ -50,8 +50,9 @@ mixin template ParseTreeM() {
     import std.array : array;
 
     alias ParseTree = typeof(this);
-    alias Dynamic = ParseTree delegate(ParseTree);
+    @safe {
 
+    alias Dynamic = ParseTree delegate(ParseTree) @safe;
     string name; /// The node name
     bool successful; /// Indicates whether a parsing was successful or not
     string[] matches; /// The matched input's parts. Some expressions match at more than one place, hence matches is an array.
@@ -130,7 +131,7 @@ mixin template ParseTreeM() {
      * @param successMsg String returned when there isn't an error
      * @param formatFailMsg Formating delegate function that generates the error message.
      */
-    string failMsg(string delegate(Position, string, string, const ParseTree) formatFailMsg = toDelegate(&defaultFormatFailMsg),
+    string failMsg(string delegate(Position, string, string, const ParseTree) @safe formatFailMsg = toDelegate(&defaultFormatFailMsg),
         string successMsg = "Sucess") const @property
         {
             foreach(i, child; children) {
@@ -174,7 +175,7 @@ mixin template ParseTreeM() {
             return result;
         }
 
-    immutable(ParseTree) idup() const @property
+    @trusted immutable(ParseTree) idup() const @property
         {
             return cast(immutable)dup();
         }
@@ -195,6 +196,7 @@ mixin template ParseTreeM() {
 
     ParseTree[] opSlice(size_t i, size_t j) {
         return children[i..j];
+    }
     }
 }
 

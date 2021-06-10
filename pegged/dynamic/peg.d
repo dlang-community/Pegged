@@ -13,14 +13,14 @@ private import pegged.parsetree : isParseTree;
 // private alias ParseTree=DefaultParseTree;
 // alias ParseTree delegate(ParseTree) Dynamic;
 
-struct DynamicPeg(ParseTree) {
+@safe struct DynamicPeg(ParseTree) {
     static {
-    static string getName(D)(D rule)
+        string getName(D)(D rule)
         {
             return callDynamic(rule, ParseTree()).name;
         }
 
-    ParseTree callDynamic(D)(D d, string s)
+        ParseTree callDynamic(D)(D d, string s)
         {
             static if (is(typeof(d) : ParseTree delegate(ParseTree)) || is(typeof(d) : ParseTree function(ParseTree)))
                 return d(ParseTree("",false,[], s));
@@ -34,7 +34,7 @@ struct DynamicPeg(ParseTree) {
                 assert(false, "Bad callDynamic, with type " ~ D.stringof);
         }
 
-    ParseTree callDynamic(D)(D d, ParseTree p)
+        ParseTree callDynamic(D)(D d, ParseTree p)
         {
             static if (is(typeof(d) : ParseTree delegate(ParseTree)) || is(typeof(d) : ParseTree function(ParseTree)))
                 return d(p);
@@ -48,7 +48,7 @@ struct DynamicPeg(ParseTree) {
                 static assert(false, "Bad callDynamic, with type " ~ D.stringof);
         }
 
-    ParseTree.Dynamic fail()
+        ParseTree.Dynamic fail()
         {
             return (ParseTree p)
             {
@@ -56,7 +56,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic eoi()
+        ParseTree.Dynamic eoi()
         {
             return (ParseTree p)
             {
@@ -67,7 +67,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic eps()
+        ParseTree.Dynamic eps()
         {
             return (ParseTree p)
             {
@@ -75,7 +75,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic any()
+        ParseTree.Dynamic any()
         {
             return(ParseTree p)
             {
@@ -86,7 +86,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic literal(string s)
+        ParseTree.Dynamic literal(string s)
         {
             return (ParseTree p)
             {
@@ -98,7 +98,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic charRange(dchar begin, dchar end)
+        ParseTree.Dynamic charRange(dchar begin, dchar end)
         {
             return (ParseTree p)
             {
@@ -111,7 +111,7 @@ struct DynamicPeg(ParseTree) {
 
         }
 
-    ParseTree.Dynamic wrapAround(B, M, A)(B before, M middle, A after)
+        ParseTree.Dynamic wrapAround(B, M, A)(B before, M middle, A after)
         {
             return(ParseTree p)
             {
@@ -133,7 +133,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic zeroOrMore(D)(D d)
+        ParseTree.Dynamic zeroOrMore(D)(D d)
         {
             return (ParseTree p)
             {
@@ -154,7 +154,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic oneOrMore(D)(D d)
+        ParseTree.Dynamic oneOrMore(D)(D d)
         {
             return(ParseTree p)
             {
@@ -185,7 +185,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic option(D)(D d)
+        ParseTree.Dynamic option(D)(D d)
         {
             return (ParseTree p)
             {
@@ -198,65 +198,65 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic and(T...)(T rules) if (T.length)
-    {
-        return (ParseTree p)
-        {
-            bool keepNode(ParseTree node)
-            {
-                return    node.name.startsWith("keep!(")
-                    || (  !node.name.startsWith("discard!(")
-                        //&& !node.name.startsWith("drop!(")
-                        && node.matches !is null
-                        //&& node.begin != node.end
-                        );
-            }
-
-
-            string name = "and!(" ~ ")";
-
-            ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end, []);
-
-            foreach(i,r; rules)
-            {
-                ParseTree temp = callDynamic(r, result);
-
-                result.end = temp.end;
-                if (temp.successful)
-                {
-                    if (keepNode(temp))
-                    {
-                        result.matches ~= temp.matches;
-                        if (temp.name.startsWith("drop!("))
-                        {}
-                        else if (temp.name.startsWith("propagate!("))
-                            result.children ~= temp.children;
-                        else
-                            result.children ~= temp;
-                    }
-                }
-                else
-                {
-                    result.children ~= temp;// add the failed node, to indicate which failed
-                    if (temp.matches.length > 0)
-                        result.matches ~= temp.matches[$-1];
-                    return result; // and end the parsing attempt right there
-                }
-            }
-            result.successful = true;
-            return result;
-        };
-    }
-
-    ParseTree.Dynamic or(T...)(T rules)
+        ParseTree.Dynamic and(T...)(T rules) if (T.length)
         {
             return (ParseTree p)
+            {
+                bool keepNode(ParseTree node)
+                {
+                    return    node.name.startsWith("keep!(")
+                        || (  !node.name.startsWith("discard!(")
+                            //&& !node.name.startsWith("drop!(")
+                            && node.matches !is null
+                            //&& node.begin != node.end
+                            );
+                }
+
+
+                string name = "and!(" ~ ")";
+
+                ParseTree result = ParseTree(name, false, [], p.input, p.end, p.end, []);
+
+                foreach(i,r; rules)
+                {
+                    ParseTree temp = callDynamic(r, result);
+
+                    result.end = temp.end;
+                    if (temp.successful)
+                    {
+                        if (keepNode(temp))
+                        {
+                            result.matches ~= temp.matches;
+                            if (temp.name.startsWith("drop!("))
+                            {}
+                            else if (temp.name.startsWith("propagate!("))
+                                result.children ~= temp.children;
+                            else
+                                result.children ~= temp;
+                        }
+                    }
+                    else
+                    {
+                        result.children ~= temp;// add the failed node, to indicate which failed
+                        if (temp.matches.length > 0)
+                            result.matches ~= temp.matches[$-1];
+                        return result; // and end the parsing attempt right there
+                    }
+                }
+                result.successful = true;
+                return result;
+            };
+        }
+
+        ParseTree.Dynamic or(T...)(T rules)
+        {
+            return (ParseTree p) @safe
             {
                 // error-management
                 ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, 0);
                 string[] errorStrings;
                 size_t errorStringChars;
-                string orErrorString;
+                //string orErrorString;
 
                 ParseTree[rules.length] results;
                 string[rules.length] names;
@@ -314,17 +314,18 @@ struct DynamicPeg(ParseTree) {
                         start += len + names[i].length + 4;
                     }
                 }
-                orErrorString = cast(string)(errString[0..$-4]);
-
-                longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
-                    ~ [orErrorString];             // and replacing it by the new, concatenated one.
+                (() @trusted {
+                    string orErrorString = cast(string)errString[0..$-4];
+                    longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
+                        ~ [orErrorString];             // and replacing it by the new, concatenated one.
+                })();
                 longestFail.name = "or";
                 longestFail.begin = p.end;
                 return longestFail;
             };
         }
 
-    ParseTree.Dynamic posLookahead(D)(D d)
+        ParseTree.Dynamic posLookahead(D)(D d)
         {
             return (ParseTree p)
             {
@@ -337,7 +338,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic negLookahead(D)(D d)
+        ParseTree.Dynamic negLookahead(D)(D d)
         {
             return (ParseTree p)
             {
@@ -350,7 +351,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic named(D)(D d, string name)
+        ParseTree.Dynamic named(D)(D d, string name)
         {
             return (ParseTree p)
             {
@@ -360,7 +361,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic action(D, A)(D d, A act)
+        ParseTree.Dynamic action(D, A)(D d, A act)
         {
             return (ParseTree p)
             {
@@ -368,7 +369,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic fuse(D)(D d)
+        ParseTree.Dynamic fuse(D)(D d)
         {
             return(ParseTree p)
             {
@@ -384,7 +385,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic discardChildren(D)(D d)
+        ParseTree.Dynamic discardChildren(D)(D d)
         {
             return (ParseTree p)
             {
@@ -394,7 +395,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic discardMatches(D)(D d)
+        ParseTree.Dynamic discardMatches(D)(D d)
         {
             return (ParseTree p)
             {
@@ -405,7 +406,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    static ParseTree.Dynamic discard(D)(D d)
+        static ParseTree.Dynamic discard(D)(D d)
         {
             return (ParseTree p)
             {
@@ -420,7 +421,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic drop(D)(D d)
+        ParseTree.Dynamic drop(D)(D d)
         {
             return (ParseTree p)
             {
@@ -432,7 +433,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic propagate(D)(D d)
+        ParseTree.Dynamic propagate(D)(D d)
         {
             return (ParseTree p)
             {
@@ -443,7 +444,7 @@ struct DynamicPeg(ParseTree) {
             };
         }
 
-    ParseTree.Dynamic keep(D)(D d)
+        ParseTree.Dynamic keep(D)(D d)
         {
             return (ParseTree p)
             {

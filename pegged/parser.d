@@ -137,7 +137,7 @@ module pegged.parser;
 import std.algorithm: startsWith;
 import std.functional: toDelegate;
 
-struct GenericPegged(ParseTree)
+@safe struct GenericPegged(ParseTree)
 {
     import pegged.peg : DefaultPatters, decimateTree, GetName;
     alias PEG=ParseTree;
@@ -156,7 +156,7 @@ struct GenericPegged(ParseTree)
     static ParseTree delegate(ParseTree)[string] before;
     static ParseTree delegate(ParseTree)[string] after;
     static ParseTree delegate(ParseTree)[string] rules;
-    static this()
+    static this() @trusted
     {
         rules["Grammar"] = toDelegate(&Grammar);
         rules["Definition"] = toDelegate(&Definition);

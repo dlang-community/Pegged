@@ -25,6 +25,7 @@ import std.conv;
 import std.string: strip;
 import std.typetuple;
 import pegged.parsetree : isParseTree;
+import std.exception : assumeUnique;
 
 // Returns quoted and escaped version of the input, but if the input is null, then return `"end of input"`.
 string stringified(string inp) @safe
@@ -148,7 +149,7 @@ struct Position
    ") == Position(2,4,8));
    ---
 */
-Position position(string s)
+Position position(string s) @safe
 {
     size_t col, line, index, prev_i;
     char prev_c;
@@ -178,12 +179,12 @@ Position position(string s)
 /**
    Same as previous overload, but from the begin of P.input to p.end
 */
-Position position(ParseTree)(const ParseTree p) if(isParseTree!ParseTree)
+Position position(ParseTree)(const ParseTree p) @safe if(isParseTree!ParseTree)
 {
     return position(p.input[0..p.end]);
 }
 
-unittest
+@safe unittest
 {
     assert(position("") == Position(0,0,0), "Null string, position 0.");
     assert(position("abc") == Position(0,3,3), "length 3 string, no line feed.");
@@ -376,7 +377,7 @@ version(unittest) {
     }
 }
 
-unittest // ParseTree testing
+@safe unittest // ParseTree testing
 {
     ParseTree p;
     assert(p == p, "Self-identity on null tree.");
@@ -431,7 +432,7 @@ unittest // ParseTree testing
     assert(p.failMsg == `Failure at line 0, col 1, after "i" expected "def", but got "nput"`);
 }
 
-unittest // softCompare
+@safe unittest // softCompare
 {
     ParseTree p = ParseTree("Name", true, ["abc", "", "def"], "input", 0, 1, null);
     ParseTree child = ParseTree("Child", true, ["abc", "", "def"], "input", 0, 1, null);
@@ -447,7 +448,7 @@ unittest // softCompare
 }
 
 
-unittest // 'fail' unit test
+@safe unittest // 'fail' unit test
 {
 
     ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
@@ -464,7 +465,7 @@ unittest // 'fail' unit test
 }
 
 
-unittest // 'eoi' unit test
+@safe unittest // 'eoi' unit test
 {
     ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
     ParseTree result = ParseTree.eoi(input);
@@ -485,7 +486,7 @@ unittest // 'eoi' unit test
 }
 
 
-unittest // 'any' unit test
+@safe unittest // 'any' unit test
 {
     ParseTree input = ParseTree("input", true, [], "This is the input string.", 0,0, null);
     ParseTree result = ParseTree.any(input);
@@ -523,7 +524,7 @@ unittest // 'any' unit test
 }
 
 
-unittest // word boundary
+@safe unittest // word boundary
 {
     ParseTree input = ParseTree("", false, [], "This is a word.");
     auto wb = [// "This"
@@ -554,7 +555,7 @@ unittest // word boundary
 }
 
 
-unittest // 'eps' unit test
+@safe unittest // 'eps' unit test
 {
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
 
@@ -713,7 +714,7 @@ template literalT(ParseTree, string s)
 
 }
 
-unittest // 'literal' unit test
+@safe unittest // 'literal' unit test
 {
 
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
@@ -857,7 +858,7 @@ template caseInsensitiveLiteralT(ParseTree, string s)
 
 }
 
-unittest // 'caseInsensitiveLiteral' unit test
+@safe unittest // 'caseInsensitiveLiteral' unit test
 {
     ParseTree input = ParseTree("input", true, [], "AbCdEf", 0,0, null);
 
@@ -1007,7 +1008,7 @@ template charRangeT(ParseTree, dchar begin, dchar end) if (begin <= end)
         }
 }
 
-unittest // 'charRange' unit test
+@safe unittest // 'charRange' unit test
 {
     ParseTree input = ParseTree("input", true, [], "abcdef", 0,0, null);
 
@@ -1328,7 +1329,7 @@ bool failedChildFixup(ParseTree)(ref ParseTree p, size_t failEnd) if (isParseTre
     }
 }
 
-unittest // 'and' unit test
+@safe unittest // 'and' unit test
 {
     mixin DefaultPatters!ParseTree;
     alias abc= ParseTree.literal!"abc";
@@ -1406,7 +1407,7 @@ version (unittest) {
     }
 }
 
-unittest // 'and' unit test with zeroOrMore and longest failing match
+@safe unittest // 'and' unit test with zeroOrMore and longest failing match
 {
     alias A = ParseTree.literal!"abc";
     alias B = ParseTree.literal!"def";
@@ -1422,7 +1423,7 @@ unittest // 'and' unit test with zeroOrMore and longest failing match
     assert(result.matches == []);
 }
 
-unittest // 'and' unit test with option and longest failing match
+@safe unittest // 'and' unit test with option and longest failing match
 {
 
     alias A = ParseTree.literal!"abc";
@@ -1439,7 +1440,7 @@ unittest // 'and' unit test with option and longest failing match
     assert(result.matches == []);
 }
 
-unittest // 'and' unit test with oneOrMore and longest failing match
+@safe unittest // 'and' unit test with oneOrMore and longest failing match
 {
 
     alias ParseTree.literal!"abc" A;
@@ -1532,9 +1533,9 @@ template wrapAroundT(ParseTree, alias before, alias target, alias after)
 
    So we know 'or' failed, that the 'and' sub-rule had the longest match, matching 'ab' and failing for [0-9] on index 2.
 */
-template orT(ParseTree, rules...) if (rules.length > 0)
-{
-    string ctfeGetNameOr()
+template orT(ParseTree, rules...) if (rules.length > 0) {
+    @safe {
+        string ctfeGetNameOr()
         {
             string name = "or!(";
             foreach(i,rule; rules)
@@ -1544,15 +1545,15 @@ template orT(ParseTree, rules...) if (rules.length > 0)
             return name;
         }
 
-    enum name = ctfeGetNameOr();
+        enum name = ctfeGetNameOr();
 
-    ParseTree orT(ParseTree p)
+        ParseTree orT(ParseTree p)
         {
             // error-management
             ParseTree longestFail = ParseTree(name, false, [], p.input, p.end, 0);
             string[] errorStrings;
             size_t errorStringChars;
-            string orErrorString;
+            //string orErrorString;
 
             ParseTree[rules.length] results;
             string[rules.length] names;
@@ -1640,7 +1641,8 @@ template orT(ParseTree, rules...) if (rules.length > 0)
                     start += len + names[i].length + 4;
                 }
             }
-            orErrorString = cast(string)(errString[0..$-4]);
+            string orErrorString = errString[0..$-4].idup;
+
 
             longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
                 longestFail.matches[0..$-1]  // discarding longestFail error message
@@ -1649,18 +1651,19 @@ template orT(ParseTree, rules...) if (rules.length > 0)
             return ParseTree(name, false, longestFail.matches, p.input, p.end, longestFail.end, children, children.maxFailEnd);
         }
 
-    ParseTree orT(string input)
+        ParseTree orT(string input)
         {
             return orT!(ParseTree,rules)(ParseTree("",false,[],input));
         }
 
-    string orT(GetName g)
+        string orT(GetName g)
         {
             return name;
         }
+    }
 }
 
-unittest // 'or' unit test
+@safe unittest // 'or' unit test
 {
 
     mixin DefaultPatters!ParseTree;
@@ -1733,7 +1736,8 @@ unittest // 'or' unit test
 */
 template longest_matchT(ParseTree, rules...) if (rules.length > 0)
 {
-    string ctfeGetNameOr()
+    @safe {
+        string ctfeGetNameOr()
         {
             string name = "longest_match!(";
             foreach(i,rule; rules)
@@ -1743,15 +1747,15 @@ template longest_matchT(ParseTree, rules...) if (rules.length > 0)
             return name;
         }
 
-    enum name = ctfeGetNameOr();
+        enum name = ctfeGetNameOr();
 
-    ParseTree longest_matchT(ParseTree p)
+        ParseTree longest_matchT(ParseTree p)
         {
             // error-management
             ParseTree longest, longestFail = ParseTree(name, false, [], p.input, p.end, 0);
             string[] errorStrings;
             size_t errorStringChars;
-            string orErrorString;
+            //string orErrorString;
 
             ParseTree[rules.length] results;
             string[rules.length] names;
@@ -1833,28 +1837,31 @@ template longest_matchT(ParseTree, rules...) if (rules.length > 0)
                     start += len + names[i].length + 4;
                 }
             }
-            orErrorString = cast(string)(errString[0..$-4]);
+            (() @trusted {
+                string orErrorString = cast(string)errString[0..$-4];
 
-            longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
-                longestFail.matches[0..$-1]  // discarding longestFail error message
-                ~ [orErrorString];             // and replacing it by the new, concatenated one.
+                longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
+                    longestFail.matches[0..$-1]  // discarding longestFail error message
+                    ~ [orErrorString];             // and replacing it by the new, concatenated one.
+            })();
             longestFail.name = name;
             longestFail.begin = p.end;
             return longestFail;
         }
 
-    ParseTree longest_matchT(string input)
+        ParseTree longest_matchT(string input)
         {
             return orT!(ParseTree, rules)(ParseTree("",false,[],input));
         }
 
-    string longest_matchT(GetName g)
+        string longest_matchT(GetName g)
         {
             return name;
         }
+    }
 }
 
-unittest // 'longest_match' unit test
+@safe unittest // 'longest_match' unit test
 {
     mixin DefaultPatters!ParseTree;
 
@@ -2120,7 +2127,7 @@ template keywordsT(ParseTree,kws...) if (kws.length > 0)
         }
 }
 
-unittest
+@safe unittest
 {
 
     alias kw = ParseTree.keywords!("abc","de","f");
@@ -2262,7 +2269,7 @@ template zeroOrMoreT(ParseTree, alias r)
         }
 }
 
-unittest // 'zeroOrMore' unit test
+@safe unittest // 'zeroOrMore' unit test
 {
     mixin DefaultPatters!ParseTree;
     alias literal!"a" a;
@@ -2432,7 +2439,7 @@ template oneOrMoreT(ParseTree, alias r)
         }
 }
 
-unittest // 'oneOrMore' unit test
+@safe unittest // 'oneOrMore' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{charRange}, q{oneOrMore}]);
     alias a = literal!"a";
@@ -2543,7 +2550,7 @@ template optionT(ParseTree, alias r)
         }
 }
 
-unittest // 'option' unit test
+@safe unittest // 'option' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{option}]);
     alias literal!"a" a;
@@ -2638,7 +2645,7 @@ template posLookaheadT(ParseTree, alias r)
         }
 }
 
-unittest // 'posLookahead' unit test
+@safe unittest // 'posLookahead' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{posLookahead}]);
 
@@ -2732,7 +2739,7 @@ template negLookaheadT(ParseTree, alias r)
         }
 }
 
-unittest // 'negLookahead' unit test
+@safe unittest // 'negLookahead' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{negLookahead}]);
 
@@ -2842,7 +2849,7 @@ template namedT(ParseTree, alias r, string name)
         }
 }
 
-unittest // 'named' unit test
+@safe unittest // 'named' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{or}, q{named}, q{charRange}]);
 
@@ -2926,7 +2933,7 @@ template definedT(ParseTree, alias r, string name)
         }
 }
 
-unittest // 'defined' unit test
+@safe unittest // 'defined' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{or}, q{named}, q{charRange}, q{defined}]);
 
@@ -2982,7 +2989,7 @@ template actionT(ParseTree, alias r, alias act)
         }
 }
 
-unittest // 'action' unit test
+@safe unittest // 'action' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{action}]);
 
@@ -3049,7 +3056,7 @@ template fuseT(ParseTree, alias r)
         }
 }
 
-unittest // 'fuse' unit test
+@safe unittest // 'fuse' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{oneOrMore}, q{fuse}, q{discard}]);
 
@@ -3172,7 +3179,7 @@ template discardT(ParseTree, alias r)
         }
 }
 
-unittest // 'discard' unit test
+@safe unittest // 'discard' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{oneOrMore}, q{discard}, q{and}]);
 
@@ -3254,7 +3261,7 @@ template dropT(ParseTree, alias r)
         }
 }
 
-unittest // 'drop' unit test
+@safe unittest // 'drop' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{charRange}, q{drop}, q{oneOrMore}, q{and}]);
 
@@ -3363,7 +3370,7 @@ template keepT(ParseTree, alias r)
         }
 }
 
-unittest // 'keep' unit test
+@safe unittest // 'keep' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{and}, q{named}, q{keep}]);
     // Grammar mimicry
@@ -3456,7 +3463,7 @@ template AddSpaceT(ParseTree, alias sp)
    ----
 */
 
-unittest // 'spaceAnd' unit test
+@safe unittest // 'spaceAnd' unit test
 {
     mixin DefaultPatters!(ParseTree, [q{literal}, q{and}, q{oneOrMore}, q{spaceAnd}, q{blank}, q{digit}]);
 
@@ -3760,7 +3767,7 @@ enum defaultNames =[
 /**
    Change the namespace of the grammar pattern in the ParseTree to scope if the mixin.
    names is the list of the pattern-names inside the ParseTree
- */
+*/
 mixin template DefaultPatters(ParseTree, string[] names = defaultNames) {
     private import std.format;
     static foreach(name; names) {
