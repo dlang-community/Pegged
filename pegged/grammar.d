@@ -221,7 +221,8 @@ string grammar(ParseTree, Memoization withMemo = Memoization.yes)(ParseTree defA
             string firstRuleName = generateCode(p.children[1].children[0]);
 
             if (optGrammar.parsetreeName == DefaultParseTree.stringof) {
-                result = "import pegged.defaultparsetree : DefaultParseTree;\n";
+
+                result = "import pegged.defaultparsetree;\n";
             }
             result ~=
                 "@safe struct Generic" ~ shortGrammarName ~ "(ParseTree)

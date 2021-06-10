@@ -14,3 +14,34 @@ clean:
 
 info:
 	@echo "DFILES = $(DFILES)"
+
+ALL_PEG:=${shell find examples -maxdepth 1 -type d -not -path examples}
+
+define Pegs
+$1/.done:
+	cd $1; dub test
+	touch $1/.done
+
+endef
+
+${foreach DONE,$(ALL_PEG), ${eval ${call Pegs,$(DONE)}}}
+
+DO_ALL := ${addsuffix /.done,$(ALL_PEG)}
+
+test-all: $(DO_ALL)
+
+test-clean:
+	rm -f $(DO_ALL)
+
+export DO_ALL_PEG=${foreach DONE,$(ALL_PEG), ${call Pegs,$(DONE)}}
+
+
+CALL_PEG:=${call Pegs,c}}
+
+export CALL_PEG
+
+show:
+	@echo "$$CALL_PEG"
+	@echo "$$DO_ALL_PEG"
+	@echo $(ALL_PEG)
+	@echo $(DO_ALL)

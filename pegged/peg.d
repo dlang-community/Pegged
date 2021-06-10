@@ -3732,6 +3732,7 @@ mixin template ParseCollectionsM() {
 enum defaultNames =[
     "eol",
     "eoi",
+    "named",
     "blank",
     "quote",
     "doublequote",
@@ -3759,9 +3760,14 @@ enum defaultNames =[
     "and",
     "or",
     "fail",
+    "fuse",
     "digits",
     "charRange",
+    "discard",
     "longest_match",
+    "spaceAnd",
+    "space",
+    "digit",
     ];
 
 /**
