@@ -1015,13 +1015,6 @@ version(unittest) {
 
 unittest // 'grammar' unit test: low-level functionalities
 {
-    pragma(msg, grammar(`
-    Test1:
-        Rule1 <- 'a'
-        Rule2 <- 'b'
-    `));
-
-
     mixin(grammar(`
     Test1:
         Rule1 <- 'a'
@@ -2894,7 +2887,6 @@ unittest // Direct left-recursion
         S <- E eoi
         E <- E '+n' / 'n'
     `;
-    pragma(msg, grammar(LeftGrammar));
     mixin(grammar(LeftGrammar));
     ParseTree result = Left("n+n+n+n");
     assert(result.successful);

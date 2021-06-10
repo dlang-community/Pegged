@@ -404,7 +404,6 @@ DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic
         throw new Exception("Bad grammar input: " ~ defAsParseTree.toString(""));
     }
 
-    pragma(msg, "ParseTree ", ParseTree);
     DynamicGrammar!ParseTree gram;
     foreach(name, rule; context)
     {
@@ -418,9 +417,6 @@ DynamicGrammar!ParseTree grammar(ParseTree)(string definition, ParseTree.Dynamic
     gram.grammarName = shortGrammarName;
 
     // Predefined spacing
-    pragma(msg, `ParseTree.Dynamic `, ParseTree.Dynamic);
-    pragma(msg, `gram.rules["Spacing"] `, typeof(gram.rules["Spacing"]));
-//    pragma(msg, `discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))))`, typeof(discard(zeroOrMore(or(literal(" "), literal("\t"), literal("\n"), literal("\r"))))));
     gram.rules["Spacing"] = DPEG.discard(DPEG.zeroOrMore(DPEG.or(DPEG.literal(" "), DPEG.literal("\t"), DPEG.literal("\n"), DPEG.literal("\r"))));
 
     ParseTree[] definitions = p.children[1 .. $];
