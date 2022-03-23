@@ -1,0 +1,3 @@
+
+test:
+	dub test

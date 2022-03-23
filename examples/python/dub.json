@@ -1,0 +1,12 @@
+{
+  "name": "python",
+  "description": "The Python-3 programming language grammar.",
+  "license": "PSF LICENSE",
+  "targetType": "library",
+  "dependencies": {
+    "pegged":  {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}
