@@ -689,6 +689,12 @@ DEDENT <- endOfLine
 NEWLINE <- endOfLine
 
 TYPE_COMMENT <- "#" "type" ":"
+
+Spacing <- (space / Comment)*
+
+Comment <- 
+         / LineComment
+LineComment <~ :'#' (!endOfLine .)* :endOfLine
 `;
 
 
