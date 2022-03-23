@@ -659,6 +659,7 @@ Keyword <-
   / "as"      / "def"      / "from"    / "nonlocal" / "while"
   / "assert"  / "del"      / "global"  / "not"      / "with"
   / "async"   / "elif"     / "if"      / "or"       / "yield"
+  / "type"
 
 NUMBER <- IntegerLiteral / FloatLiteral
 
@@ -686,6 +687,8 @@ Sign <- ("-" / "+")?
 INDENT <- "\t" / " "
 DEDENT <- endOfLine
 NEWLINE <- endOfLine
+
+TYPE_COMMENT <- "#" "type" ":"
 `;
 
 
