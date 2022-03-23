@@ -686,11 +686,9 @@ Sign <- ("-" / "+")?
 
 INDENT <- "\t" / " "
 DEDENT <- endOfLine
-NEWLINE <- endOfLine
+NEWLINE <- Comment endOfLine
 
 TYPE_COMMENT <- "#" "type" ":"
-
-Spacing <- (space / Comment)*
 
 Comment <- 
          / LineComment
