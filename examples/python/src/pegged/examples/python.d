@@ -524,7 +524,7 @@ atom <-
     / "None"
     / strings
     / NUMBER
-    / (tuple | group | genexp)
+    / (tuple_expr | group | genexp)
     / (list | listcomp)
     / (dict | set | dictcomp | setcomp)
     / "..."
@@ -534,7 +534,7 @@ list <-
     / "[" [star_named_expressions] "]"
 listcomp <- 
     / "[" named_expression for_if_clauses "]"
-tuple <-
+tuple_expr <-
       "(" (star_named_expression ","  star_named_expressions?  )? ")"
 group <- 
     / "(" (yield_expr | named_expression) ")"
