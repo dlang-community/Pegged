@@ -675,6 +675,8 @@ HexDigit < [0-9a-fA-F]
 FloatLiteral <- Sign? Integer "." Integer? (("e" / "E") Sign? Integer)?
 
 Sign <- ("-" / "+")?
+
+INDENT <- "\t" / " "
 `;
 
 
