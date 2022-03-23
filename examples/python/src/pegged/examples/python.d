@@ -650,8 +650,15 @@ StringPostfix < "c" / "w" / "d"
 ASYNC <- "async"
 
 NAME <~ !Keyword [a-zA-Z_] [a-zA-Z0-9_]*
-Keyword <- "abstract" / "alias" / "align" / "asm" / "assert" / "auto" / "await"
-	/ "body" / "bool" / "break" / "byte"
+# https://docs.python.org/3/reference/lexical_analysis.html#keywords
+Keyword <-
+  / "False"   / "await"    / "else"    / "import"   / "pass"
+  / "None"    / "break"    / "except"  / "in"       / "raise"
+  / "True"    / "class"    / "finally" / "is"       / "return"
+  / "and"     / "continue" / "for"     / "lambda"   / "try"
+  / "as"      / "def"      / "from"    / "nonlocal" / "while"
+  / "assert"  / "del"      / "global"  / "not"      / "with"
+  / "async"   / "elif"     / "if"      / "or"       / "yield"
 
 NUMBER <- IntegerLiteral / FloatLiteral
 
