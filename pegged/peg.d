@@ -36,6 +36,9 @@ package string stringified(string inp) pure
         return `"end of input"`;
 
     string[1] shell = [inp];
+	/* TODO: replace `format` with call to substitute!(isASCIIControlChar) that
+	 * only does escaping of control characters to make this `nothrow`. Reuse
+	 * http://mir-algorithm.libmir.org/mir_format.html#.printEscaped. */
     return "%(%s%)".format(shell);
 }
 
