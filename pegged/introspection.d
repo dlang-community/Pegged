@@ -120,8 +120,15 @@ pure GrammarInfo grammarInfo(ParseTree p)
                 idList[p.matches[0]] = true;
             else
                 foreach(child; p.children)
-                    foreach(name; findIdentifiers(child).keys)
+                {
+                    auto ids = findIdentifiers(child);
+                    static if (hasSystemAAKeys)
+                        auto keys = () @trusted { return ids.keys; } ();
+                    else
+                        auto keys = ids.keys;
+                    foreach(name; keys)
                         idList[name] = true;
+                }
 
             return idList;
         }
@@ -157,10 +164,14 @@ pure GrammarInfo grammarInfo(ParseTree p)
         while(changed)
         {
             changed = false;
-            foreach(rule1; graph.keys)
-                foreach(rule2; graph.keys)
+            static if (hasSystemAAKeys)
+                auto keys = () @trusted { return graph.keys; } ();
+            else
+                auto keys = graph.keys;
+            foreach(rule1; keys)
+                foreach(rule2; keys)
                     if (rule2 in path[rule1])
-                        foreach(rule3; graph.keys)
+                        foreach(rule3; keys)
                             if (rule3 in path[rule2] && rule3 !in path[rule1])
                             {
                                 path[rule1][rule3] = true;
@@ -600,3 +611,10 @@ ParseTree replaceInto(ParseTree parent, ParseTree child)
             branch = replaceInto(branch, child);
     return parent;
 }
+
+/* .keys is @safe after compiler version >= 2.098.0.
+ *
+ * See:
+ * https://dlang.org/changelog/2.098.0.html#bugfix-list and
+ * https://issues.dlang.org/show_bug.cgi?id=14439 */
+enum bool hasSystemAAKeys = __VERSION__ < 2098;
