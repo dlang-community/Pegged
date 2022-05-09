@@ -8,7 +8,9 @@ import std.stdio;
 
 import pegged.peg;
 
-alias ParseTree delegate(ParseTree) Dynamic;
+alias ParseTree delegate(ParseTree) @safe Dynamic;
+
+@safe:
 
 string getName(D)(D rule)
 {
@@ -17,9 +19,9 @@ string getName(D)(D rule)
 
 ParseTree callDynamic(D)(D d, string s)
 {
-    static if (is(typeof(d) : ParseTree delegate(ParseTree)) || is(typeof(d) : ParseTree function(ParseTree)))
+    static if (is(typeof(d) : ParseTree delegate(ParseTree) @safe) || is(typeof(d) : ParseTree function(ParseTree) @safe))
         return d(ParseTree("",false,[], s));
-    else static if (is(typeof(d) : ParseTree delegate(ParseTree) delegate()) || is(typeof(d) : ParseTree function(ParseTree) delegate()))
+    else static if (is(typeof(d) : ParseTree delegate(ParseTree) @safe delegate()) || is(typeof(d) : ParseTree function(ParseTree) @safe delegate()))
         return d()(ParseTree("",false,[], s));
     else static if (is(typeof(d) : ParseTree delegate(string)) || is(typeof(d) : ParseTree function(string)))
         return d(s);
@@ -31,9 +33,9 @@ ParseTree callDynamic(D)(D d, string s)
 
 ParseTree callDynamic(D)(D d, ParseTree p)
 {
-    static if (is(typeof(d) : ParseTree delegate(ParseTree)) || is(typeof(d) : ParseTree function(ParseTree)))
+    static if (is(typeof(d) : ParseTree delegate(ParseTree) @safe) || is(typeof(d) : ParseTree function(ParseTree) @safe))
         return d(p);
-    else static if (is(typeof(d) : ParseTree delegate(ParseTree) delegate()) || is(typeof(d) : ParseTree function(ParseTree) delegate()))
+    else static if (is(typeof(d) : ParseTree delegate(ParseTree) @safe delegate()) || is(typeof(d) : ParseTree function(ParseTree) @safe delegate()))
         return d()(p);
     else static if (is(typeof(d) : ParseTree delegate(string)) || is(typeof(d) : ParseTree function(string)))
         return d(p.input[p.end..$]);
@@ -245,7 +247,7 @@ Dynamic and(T...)(T rules) if (T.length)
 
 Dynamic or(T...)(T rules)
 {
-    return (ParseTree p)
+    return (ParseTree p) @safe
     {
         // error-management
         ParseTree longestFail = ParseTree("or", false, [], p.input, p.end, 0);
@@ -309,7 +311,7 @@ Dynamic or(T...)(T rules)
                 start += len + names[i].length + 4;
             }
         }
-        orErrorString = cast(string)(errString[0..$-4]);
+		() @trusted { orErrorString = cast(string)(errString[0..$-4]); } ();
 
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.

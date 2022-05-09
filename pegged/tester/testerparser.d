@@ -24,7 +24,7 @@ UnorderedBranch <
 
 Spacing <: (blank / Comment)*
 
-Comment <- 
+Comment <-
     / '//' (!eol .)* (eol)
     / '/*' (!'*/' .)* '*/'
     / NestedComment
@@ -76,7 +76,7 @@ struct GenericTesterGrammar(TParseTree)
         return "TesterGrammar.Root";
     }
 
-    static TParseTree Node(TParseTree p)
+    static TParseTree Node(TParseTree p) @safe
     {
          return pegged.peg.named!(pegged.peg.or!(pegged.peg.and!(pegged.peg.discard!(pegged.peg.wrapAround!(Spacing, pegged.peg.literal!("^"), Spacing)), pegged.peg.wrapAround!(Spacing, identifier, Spacing)), pegged.peg.and!(pegged.peg.wrapAround!(Spacing, identifier, Spacing), pegged.peg.zeroOrMore!(pegged.peg.wrapAround!(Spacing, pegged.peg.propagate!(pegged.peg.wrapAround!(Spacing, Branch, Spacing)), Spacing)))), "TesterGrammar.Node")(p);
     }
@@ -154,7 +154,7 @@ struct GenericTesterGrammar(TParseTree)
         return "TesterGrammar.Comment";
     }
 
-    static TParseTree NestedComment(TParseTree p)
+    static TParseTree NestedComment(TParseTree p) @safe
     {
          return pegged.peg.named!(pegged.peg.and!(pegged.peg.literal!("/+"), pegged.peg.or!(pegged.peg.and!(pegged.peg.negLookahead!(NestedCommentEnd), pegged.peg.any), NestedComment), NestedCommentEnd), "TesterGrammar.NestedComment")(p);
     }

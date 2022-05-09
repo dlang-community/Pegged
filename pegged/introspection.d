@@ -8,6 +8,8 @@ import std.typecons;
 
 import pegged.parser;
 
+@safe:
+
 /**
 The different kinds of recursion for a rule.
 'direct' means the rule name appears in its own definition. 'indirect' means the rule calls itself through another rule (the call chain can be long).
@@ -109,9 +111,9 @@ pure GrammarInfo grammarInfo(ParseTree p)
     also appear in the call graph when the rule has a name: hence, calls to predefined rules like 'identifier' or
     'digit' will appear, but not a call to '[0-9]+', considered here as an anonymous rule.
     */
-    bool[string][string] callGraph(ParseTree p)
+    bool[string][string] callGraph(ParseTree p) @safe
     {
-        bool[string] findIdentifiers(ParseTree p)
+        bool[string] findIdentifiers(ParseTree p) @safe
         {
             bool[string] idList;
             if (p.name == "Pegged.Identifier")
@@ -144,7 +146,7 @@ pure GrammarInfo grammarInfo(ParseTree p)
     It will propagate the calls to find all rules called by a given rule,
     directly (already in the call graph) or indirectly (through another rule).
     */
-    bool[string][string] closure(bool[string][string] graph)
+    bool[string][string] closure(bool[string][string] graph) @safe
     {
         bool[string][string] path;
         foreach(rule, children; graph) // deep-dupping, to avoid children aliasing
@@ -169,7 +171,7 @@ pure GrammarInfo grammarInfo(ParseTree p)
         return path;
     }
 
-    Recursive[string] recursions(bool[string][string] graph)
+    Recursive[string] recursions(bool[string][string] graph) @safe
     {
         bool[string][string] path = closure(graph);
 
@@ -189,7 +191,7 @@ pure GrammarInfo grammarInfo(ParseTree p)
         return result;
     }
 
-    NullMatch nullMatching(ParseTree p)
+    NullMatch nullMatching(ParseTree p) @safe
     {
         switch (p.name)
         {
@@ -250,7 +252,7 @@ pure GrammarInfo grammarInfo(ParseTree p)
         }
     }
 
-    InfiniteLoop infiniteLooping(ParseTree p)
+    InfiniteLoop infiniteLooping(ParseTree p) @safe
     {
         switch (p.name)
         {
@@ -292,7 +294,7 @@ pure GrammarInfo grammarInfo(ParseTree p)
         }
     }
 
-    LeftRecursive leftRecursion(ParseTree p, ref string[] cycle)
+    LeftRecursive leftRecursion(ParseTree p, ref string[] cycle) @safe
     {
         import std.algorithm.searching: countUntil;
         switch (p.name)
