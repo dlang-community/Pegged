@@ -1,0 +1,12 @@
+{
+  "name": "dgrammar",
+  "description": "It's a first pass through the http://dlang.org online spec. It's about 500 rules long! And hasn't been update. ",
+  "license": "Boost",
+  "targetType": "library",
+  "dependencies": {
+    "pegged":  {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}

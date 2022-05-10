@@ -25,8 +25,10 @@ import std.conv;
 import std.string: strip;
 import std.typetuple;
 
+@safe:
+
 // Returns quoted and escaped version of the input, but if the input is null, then return `"end of input"`.
-package string stringified(string inp) @safe
+package string stringified(string inp) pure
 {
     import std.format : format;
 
@@ -34,10 +36,13 @@ package string stringified(string inp) @safe
         return `"end of input"`;
 
     string[1] shell = [inp];
+	/* TODO: replace `format` with call to substitute!(isASCIIControlChar) that
+	 * only does escaping of control characters to make this `nothrow`. Reuse
+	 * http://mir-algorithm.libmir.org/mir_format.html#.printEscaped. */
     return "%(%s%)".format(shell);
 }
 
-@safe unittest // Run- & Compile-time.
+unittest // Run- & Compile-time.
 {
     static bool doTest()
     {
@@ -85,8 +90,8 @@ version (tracer)
     import std.algorithm.comparison : min;
 
     // Function pointers.
-    private static bool function(string ruleName, const ref ParseTree p) traceConditionFunction;
-    private static bool delegate(string ruleName, const ref ParseTree p) traceConditionDelegate;
+    private static bool function(string ruleName, const ref ParseTree p) @safe traceConditionFunction;
+    private static bool delegate(string ruleName, const ref ParseTree p) @safe traceConditionDelegate;
     private static int traceLevel;
     private static bool traceBlocked;
     private static bool logTraceLevel = false;
@@ -129,14 +134,14 @@ version (tracer)
      + setTraceConditionFunction(ruleName => ruleName.startsWith("MyGrammar"));
      + ---
      +/
-    void setTraceConditionFunction(bool delegate(string ruleName, const ref ParseTree p) condition)
+    void setTraceConditionFunction(bool delegate(string ruleName, const ref ParseTree p) @safe condition)
     {
         traceConditionDelegate = condition;
         traceConditionFunction = null;
     }
 
     /// ditto
-    void setTraceConditionFunction(bool function(string ruleName, const ref ParseTree p) condition)
+    void setTraceConditionFunction(bool function(string ruleName, const ref ParseTree p) @safe condition)
     {
         traceConditionFunction = condition;
         traceConditionDelegate = null;
@@ -254,7 +259,7 @@ struct ParseTree
     /**
     Basic toString for easy pretty-printing.
     */
-    string toString(string tabs = "") const
+    string toString(string tabs = "") const pure
     {
         string result = name;
 
@@ -275,7 +280,7 @@ struct ParseTree
     /**
      * Basic toString of only this node, without the children
      */
-    private string toStringThisNode(bool allChildrenSuccessful) const
+    private string toStringThisNode(bool allChildrenSuccessful) const pure
     {
         if (successful) {
             return to!string([begin, end]) ~ to!string(matches) ~ "\n";
@@ -294,8 +299,8 @@ struct ParseTree
      * @param successMsg String returned when there isn't an error
      * @param formatFailMsg Formating delegate function that generates the error message.
      */
-    string failMsg(string delegate(Position, string, string, const ParseTree) formatFailMsg = defaultFormatFailMsg,
-        string successMsg = "Sucess") const @property
+    string failMsg(string delegate(Position, string, string, const ParseTree) @safe pure formatFailMsg = defaultFormatFailMsg,
+        string successMsg = "Sucess") const @property pure
     {
         foreach(i, child; children) {
             if (!child.successful) {
@@ -323,7 +328,7 @@ struct ParseTree
         return successMsg;
     }
 
-    ParseTree dup() const @property
+    ParseTree dup() const @property pure nothrow
     {
         ParseTree result;
         result.name = name;
@@ -338,26 +343,26 @@ struct ParseTree
         return result;
     }
 
-    immutable(ParseTree) idup() const @property
+    immutable(ParseTree) idup() const @property @trusted pure nothrow
     {
         return cast(immutable)dup();
     }
 
     // Override opIndex operators
-    ref ParseTree opIndex(size_t index) {
+    ref inout(ParseTree) opIndex(size_t index) inout pure nothrow @nogc {
       return children[index];
     }
 
-    ref ParseTree[] opIndex() {
+    ref inout(ParseTree[]) opIndex() inout return pure {
         return children;
     }
 
-    size_t opDollar(size_t pos)()
+    size_t opDollar(size_t pos)() const pure nothrow @nogc
     {
         return children.length;
     }
 
-    ParseTree[] opSlice(size_t i, size_t j) {
+    inout(ParseTree)[] opSlice(size_t i, size_t j) inout pure nothrow @nogc {
         return children[i..j];
     }
 }
@@ -365,7 +370,7 @@ struct ParseTree
 /**
   * Default fail message formating function
   */
-auto defaultFormatFailMsg = delegate (Position pos, string left, string right, const ParseTree pt) 
+immutable defaultFormatFailMsg = delegate (Position pos, string left, string right, const ParseTree pt) pure
 {
     return "Failure at line " ~ to!string(pos.line) ~ ", col " ~ to!string(pos.col) ~ ", "
         ~ (left.length > 0 ? "after " ~ left.stringified ~ " " : "")
@@ -476,7 +481,7 @@ assert(position("abc
     ") == Position(2,4,8));
 ---
 */
-Position position(string s)
+Position position(string s) pure nothrow
 {
     size_t col, line, index, prev_i;
     char prev_c;
@@ -505,7 +510,7 @@ Position position(string s)
 /**
 Same as previous overload, but from the begin of P.input to p.end
 */
-Position position(const ParseTree p)
+Position position(const ParseTree p) pure nothrow
 {
     return position(p.input[0..p.end]);
 }
@@ -529,7 +534,7 @@ unittest
     assert(position("one\r\ntwo\r\nthree") == Position(2, 5, 15), "Three lines, DOS line endings");
 }
 
-string getName(alias expr)() @property
+string getName(alias expr)() @property @safe
 {
     static if (is(typeof( { expr(GetName()); })))
         return expr(GetName());
@@ -542,18 +547,18 @@ struct GetName {}
 /**
 Basic rule, that always fail without consuming.
 */
-ParseTree fail(ParseTree p)
+ParseTree fail(ParseTree p) pure nothrow @nogc
 {
     return ParseTree("fail", false, [], p.input, p.end, p.end, null);
 }
 
 /// ditto
-ParseTree fail(string input)
+ParseTree fail(string input) pure nothrow @nogc
 {
     return fail(ParseTree("", false, [], input));
 }
 
-string fail(GetName g)
+string fail(GetName g) pure nothrow @nogc
 {
     return "fail";
 }
@@ -576,7 +581,7 @@ unittest // 'fail' unit test
 /**
 Matches the end of input. Fails if there is any character left.
 */
-ParseTree eoi(ParseTree p)
+ParseTree eoi(ParseTree p) pure nothrow
 {
     if (p.end == p.input.length)
         return ParseTree("eoi", true, [], p.input, p.end, p.end);
@@ -585,12 +590,12 @@ ParseTree eoi(ParseTree p)
 }
 
 /// ditto
-ParseTree eoi(string input)
+ParseTree eoi(string input) pure nothrow
 {
     return eoi(ParseTree("", false, [], input));
 }
 
-string eoi(GetName g)
+string eoi(GetName g) pure nothrow
 {
     return "eoi";
 }
@@ -621,7 +626,7 @@ unittest // 'eoi' unit test
 Match any character. As long as there is at least a character left in the input, it succeeds.
 Conversely, it fails only if called at the end of the input.
 */
-ParseTree any(ParseTree p)
+ParseTree any(ParseTree p) pure nothrow
 {
     if (p.end < p.input.length)
         return ParseTree("any", true, [p.input[p.end..p.end+1]], p.input, p.end, p.end+1);
@@ -630,12 +635,12 @@ ParseTree any(ParseTree p)
 }
 
 /// ditto
-ParseTree any(string input)
+ParseTree any(string input) pure nothrow
 {
     return any(ParseTree("", false, [], input));
 }
 
-string any(GetName g)
+string any(GetName g) pure nothrow
 {
     return "any";
 }
@@ -680,10 +685,10 @@ unittest // 'any' unit test
 /**
 Predefined parser: matches word boundaries, as \b for regexes.
 */
-ParseTree wordBoundary(ParseTree p)
+ParseTree wordBoundary(ParseTree p) pure // TODO: nothrow?
 {
-	// TODO: I added more indexing guards and now this could probably use
-	//         some simplification.  Too tired to write it better. --Chad
+    // TODO: I added more indexing guards and now this could probably use
+    //         some simplification.  Too tired to write it better. --Chad
     bool matched =  (p.end == 0 && isAlpha(p.input.front()))
                  || (p.end == p.input.length && isAlpha(p.input.back()))
                  || (p.end > 0 && isAlpha(p.input[p.end-1])  && p.end < p.input.length && !isAlpha(p.input[p.end]))
@@ -695,12 +700,12 @@ ParseTree wordBoundary(ParseTree p)
 }
 
 /// ditto
-ParseTree wordBoundary(string input)
+ParseTree wordBoundary(string input) pure // TODO: nothrow?
 {
     return ParseTree("wordBoundary", isAlpha(input.front()), [], input, 0,0, null);
 }
 
-string wordBoundary(GetName g)
+string wordBoundary(GetName g) pure nothrow
 {
     return "wordBoundary";
 }
@@ -755,7 +760,7 @@ template literal(string s)
             auto prefix = p.input[p.end..$].byCodeUnit.commonPrefix(s.byCodeUnit);
             return ParseTree(name, false, [lit], p.input, p.end, p.end, null, p.end + prefix.length);
         }
-	}
+    }
 
     ParseTree literal(string input)
     {
@@ -1191,17 +1196,17 @@ unittest // 'charRange' unit test
 eps matches the empty string (usually denoted by the Greek letter 'epsilon') and always succeeds.
 It's equivalent to literal!"" (for example, it creates a match of [""]: one match, the empty string).
 */
-ParseTree eps(ParseTree p)
+ParseTree eps(ParseTree p) pure nothrow
 {
     return ParseTree("eps", true, [""], p.input, p.end, p.end);
 }
 
-ParseTree eps(string input)
+ParseTree eps(string input) pure nothrow
 {
     return eps(ParseTree("",false,[], input));
 }
 
-string eps(GetName g)
+string eps(GetName g) pure nothrow
 {
     return "eps";
 }
@@ -1294,10 +1299,10 @@ template and(rules...) if (rules.length > 0)
             return    node.name.startsWith("keep!(")
                 || (  !node.name.startsWith("discard!(")
                    //&& !node.name.startsWith("drop!(")
-                   && node.matches !is null
+                   && (node.matches !is null
+                   || node.failEnd >= node.end)
                    //&& node.begin != node.end
-                   )
-	            || (node.failEnd >= node.end);
+                   );
         }
 
         version (tracer)
@@ -1332,7 +1337,7 @@ template and(rules...) if (rules.length > 0)
             }
             else
             {
-                auto firstLongestFailedMatch = result.children.countUntil!(c => c.failEnd > temp.end);
+                auto firstLongestFailedMatch = result.children.firstLongestFailedMatch(temp.end);
                 if (firstLongestFailedMatch == -1) {
                     result.children ~= temp;// add the failed node, to indicate which failed
                     if (temp.matches.length > 0)
@@ -1345,8 +1350,8 @@ template and(rules...) if (rules.length > 0)
                     // so that it is no longer successful and we want to move its failedChild into its children.
                     failedChildFixup(result.children[firstLongestFailedMatch], result.children[firstLongestFailedMatch].failEnd);
                 }
-                result.end = result.children.map!(c => c.end).maxElement;
-                result.failEnd = result.children.map!(c => c.failEnd).maxElement;
+                result.end = result.children.maxEnd();
+                result.failEnd = result.children.maxFailEnd();
                 version (tracer)
                 {
                     if (shouldTrace(getName!(r)(), p))
@@ -1380,33 +1385,54 @@ template and(rules...) if (rules.length > 0)
         return name;
     }
 
-    // A child ParseTree has kept track of an alternate ParseTree (in failedChild) that matches longer.
-    // whenever the 'and' rule fails we want to rewrite that child so that the failedChild is
-    // moved into its children, the successful is set to false, the end is set the its failEnd,
-    // the failEnd is reset, and all that info is propagated upwards the tree so intermediate
-    // nodes reflect the proper state.
-    bool failedChildFixup(ref ParseTree p, size_t failEnd) {
-        if (p.failedChild.length > 0) {
-            p.children ~= p.failedChild[0];
-            p.failedChild = [];
-            p.successful = false;
-            p.end = p.failEnd;
-            p.failEnd = p.children.map!(c => c.failEnd).maxElement();
-            return true;
-        } else {
-            bool result = false;
-            foreach(ref c; p.children) {
-                if (c.failEnd != failEnd)
-                    continue;
-                if (failedChildFixup(c, failEnd)) {
-                    p.end = c.end;
-                    p.successful = false;
-                    p.failEnd = p.children.map!(c => c.failEnd).maxElement();
-                    result = true;
-                }
+}
+
+auto firstLongestFailedMatch(ParseTree[] children, size_t threshold) pure nothrow {
+    return children.countUntil!(c => c.failEnd > threshold);
+}
+
+auto maxFailEnd(ParseTree[] children) pure nothrow
+{
+    return children.map!(c => c.failEnd).maxElement;
+}
+
+auto maxEnd(ParseTree[] children) pure nothrow
+{
+    return children.map!(c => c.end).maxElement;
+}
+
+// A child ParseTree has kept track of an alternate ParseTree (in failedChild) that matches longer.
+// whenever the 'and' rule fails we want to rewrite that child so that the failedChild is
+// moved into its children, the successful is set to false, the end is set the its failEnd,
+// the failEnd is reset, and all that info is propagated upwards the tree so intermediate
+// nodes reflect the proper state.
+bool failedChildFixup(ref ParseTree p, size_t failEnd) pure nothrow
+{
+    if (p.failedChild.length > 0)
+    {
+        p.children ~= p.failedChild[0];
+        p.failedChild = [];
+        p.successful = false;
+        p.end = p.failEnd;
+        p.failEnd = p.children.map!(c => c.failEnd).maxElement();
+        return true;
+    }
+    else
+    {
+        bool result = false;
+        foreach (ref c; p.children)
+        {
+            if (c.failEnd != failEnd)
+                continue;
+            if (failedChildFixup(c, failEnd))
+            {
+                p.end = c.end;
+                p.successful = false;
+                p.failEnd = p.children.map!(c => c.failEnd).maxElement();
+                result = true;
             }
-            return result;
         }
+        return result;
     }
 }
 
@@ -1481,7 +1507,7 @@ unittest // 'and' unit test
 }
 
 version (unittest) {
-    static ParseTree getError(ref ParseTree p) {
+    static ParseTree getError(ref ParseTree p) pure nothrow @nogc {
         if (p.children.length > 0)
             return getError(p.children[$-1]);
         return p;
@@ -1538,7 +1564,7 @@ unittest // 'and' unit test with oneOrMore and longest failing match
 
 template wrapAround(alias before, alias target, alias after)
 {
-    ParseTree wrapAround(ParseTree p)
+    ParseTree wrapAround(ParseTree p) @safe
     {
         ParseTree temp = before(p);
         if (!temp.successful)
@@ -1557,12 +1583,12 @@ template wrapAround(alias before, alias target, alias after)
         return result;
     }
 
-    ParseTree wrapAround(string input)
+    ParseTree wrapAround(string input) @safe
     {
         return .wrapAround!(before, target, after)(ParseTree("",false,[],input));
     }
 
-    string wrapAround(GetName g)
+    string wrapAround(GetName g) @safe
     {
         return "wrapAround!(" ~ getName!(before)() ~
                 ", " ~ getName!(target)() ~
@@ -1644,8 +1670,8 @@ template or(rules...) if (rules.length > 0)
             incTraceLevel();
         }
 
-		// Real 'or' loop
-		foreach(i,r; rules)
+        // Real 'or' loop
+        foreach(i,r; rules)
         {
             version (tracer)
             {
@@ -1720,13 +1746,13 @@ template or(rules...) if (rules.length > 0)
                 start += len + names[i].length + 4;
             }
         }
-        orErrorString = cast(string)(errString[0..$-4]);
+		() @trusted { orErrorString = cast(string)(errString[0..$-4]); } ();
 
         longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
                               longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
-        auto children = results[].filter!(r => max(r.end, r.failEnd) >= maxFailedLength).array();
-        return ParseTree(name, false, longestFail.matches, p.input, p.end, longestFail.end, children, children.map!(c => c.failEnd).maxElement);
+        auto children = results[].getUpto(maxFailedLength);
+        return ParseTree(name, false, longestFail.matches, p.input, p.end, longestFail.end, children, children.maxFailEnd);
     }
 
     ParseTree or(string input)
@@ -1738,6 +1764,10 @@ template or(rules...) if (rules.length > 0)
     {
         return name;
     }
+}
+
+auto getUpto(ParseTree[] children, size_t minFailedLength) pure nothrow {
+    return children.filter!(r => max(r.end, r.failEnd) >= minFailedLength).array();
 }
 
 unittest // 'or' unit test
@@ -1911,7 +1941,7 @@ template longest_match(rules...) if (rules.length > 0)
                 start += len + names[i].length + 4;
             }
         }
-        orErrorString = cast(string)(errString[0..$-4]);
+		() @trusted { orErrorString = cast(string)(errString[0..$-4]); } ();
 
         longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
                               longestFail.matches[0..$-1]  // discarding longestFail error message
@@ -2010,111 +2040,111 @@ Compile-time switch trie from Brian Schott
 */
 class Trie(V) : TrieNode!(V)
 {
-	/**
-	 * Adds the given value to the trie with the given key
-	 */
-	void add(string key, V value) pure
-	{
-		TrieNode!(V) current = this;
-		foreach(dchar keyPart; key)
-		{
-			if ((keyPart in current.children) is null)
-			{
-				auto node = new TrieNode!(V);
-				current.children[keyPart] = node;
-				current = node;
-			}
-			else
-				current = current.children[keyPart];
-		}
-		current.value = value;
-	}
+    /**
+     * Adds the given value to the trie with the given key
+     */
+    void add(string key, V value) pure
+    {
+        TrieNode!(V) current = this;
+        foreach(dchar keyPart; key)
+        {
+            if ((keyPart in current.children) is null)
+            {
+                auto node = new TrieNode!(V);
+                current.children[keyPart] = node;
+                current = node;
+            }
+            else
+                current = current.children[keyPart];
+        }
+        current.value = value;
+    }
 }
 
 class TrieNode(V)
 {
-	V value;
-	TrieNode!(V)[dchar] children;
+    V value;
+    TrieNode!(V)[dchar] children;
 }
 
 string printCaseStatements(V)(TrieNode!(V) node, string indentString)
 {
-	string s = "";
-	string idnt = indentString;
+    string s = "";
+    string idnt = indentString;
 
-	void incIndent() { idnt ~= "  "; }
-	void decIndent() { idnt = idnt[2..$]; }
+    void incIndent() { idnt ~= "  "; }
+    void decIndent() { idnt = idnt[2..$]; }
 
-	void put(string k) { s ~= idnt ~ k; }
-	void append(string k) { s ~= k;}
+    void put(string k) { s ~= idnt ~ k; }
+    void append(string k) { s ~= k;}
 
-	foreach(dchar k, TrieNode!(V) v; node.children)
-	{
-		put("case '");
-		switch(k)
-		{
+    foreach(dchar k, TrieNode!(V) v; node.children)
+    {
+        put("case '");
+        switch(k)
+        {
             case '\n': append("\\n"); break;
             case '\t': append("\\t"); break;
             case '\r': append("\\r"); break;
             case 92:   append("\\");  break;
             default:   append(to!string(k));
-		}
-		append("':\n");
-		incIndent();
+        }
+        append("':\n");
+        incIndent();
 
-		put("temp.end++;\n");
-		if (v.children.length > 0)
-		{
-			put("if (temp.end >= temp.input.length)\n");
-			put("{\n");
-			incIndent();
+        put("temp.end++;\n");
+        if (v.children.length > 0)
+        {
+            put("if (temp.end >= temp.input.length)\n");
+            put("{\n");
+            incIndent();
 
-			if (node.children[k].value.length != 0)
+            if (node.children[k].value.length != 0)
                 put("return ParseTree(name, true, [`" ~ node.children[k].value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
 
-			append(";\n");
-			decIndent();
+            append(";\n");
+            decIndent();
 
-			put("}\n");
-			put("switch (temp.input[temp.end])\n");
-			put("{\n");
+            put("}\n");
+            put("switch (temp.input[temp.end])\n");
+            put("{\n");
 
-			incIndent();
-			append(printCaseStatements(v, idnt));
+            incIndent();
+            append(printCaseStatements(v, idnt));
 
-			put("default:\n");
-			incIndent();
-			if (v.value.length != 0)
+            put("default:\n");
+            incIndent();
+            if (v.value.length != 0)
                 put("return ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
-			append(";\n");
-			decIndent();
-			decIndent();
-			put("}\n");
-		}
-		else
-		{
-			if (v.value.length != 0)
+            append(";\n");
+            decIndent();
+            decIndent();
+            put("}\n");
+        }
+        else
+        {
+            if (v.value.length != 0)
                 put("return ParseTree(name, true, [`" ~ v.value ~ "`], temp.input, p.end, temp.end)");
             else
                 put("return ParseTree(name, false, [failString], p.input, p.end, p.end)");
-			append(";\n");
-		}
-	}
-	return s;
+            append(";\n");
+        }
+    }
+    return s;
 }
 
 string generateCaseTrie(string[] args ...)
 {
-	auto t = new Trie!(string);
-	foreach(arg; args)
-	{
-		t.add(arg, arg);
-	}
-	return printCaseStatements(t, "");
+    auto t = new Trie!(string);
+    foreach(arg; args)
+    {
+        t.add(arg, arg);
+    }
+    return printCaseStatements(t, "");
 }
 
 /**
@@ -3630,7 +3660,7 @@ mixin template decimateTree()
             ParseTree[] result;
             foreach(child; pt.children)
             {
-				import std.algorithm : startsWith;
+                import std.algorithm : startsWith;
 
                 if (  (isRule(child.name) && (child.matches.length != 0 || parseFailed))
                    || (!child.successful && child.children.length == 0)
@@ -3657,7 +3687,7 @@ mixin template decimateTree()
             foreach(ref child; pt.children)
             {
                 filterFailedChildren(child);
-				import std.algorithm : startsWith;
+                import std.algorithm : startsWith;
 
                 if (  (isRule(child.name) && (child.matches.length != 0 || parseFailed))
                    || (!child.successful && child.children.length == 0)
@@ -3693,7 +3723,7 @@ Discard one-child nodes and replace them with their children.
 Most grammar tend to produce long one-child/one-child branches,
 simplifyTree compacts these.
 */
-ParseTree simplifyTree(ParseTree p)
+ParseTree simplifyTree(ParseTree p) pure nothrow @nogc
 {
     foreach(ref child; p.children)
         child = simplifyTree(child);
@@ -3707,7 +3737,7 @@ ParseTree simplifyTree(ParseTree p)
 /**
 Returns: the number of nodes in a parse tree.
 */
-size_t size(ParseTree p)
+size_t size(ParseTree p) pure nothrow @nogc
 {
         size_t result = 1;
         foreach(child; p.children)

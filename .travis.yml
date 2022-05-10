@@ -1,0 +1,30 @@
+os: linux
+# Latest Ubuntu LTS
+dist: bionic
+language: d
+
+addons:
+    apt:
+        update: true
+        packages:
+            - gdb
+
+# Enable core dumps
+before_script:
+    - ulimit -c unlimited -S
+    - sudo mkdir /cores/ && sudo chmod 777 /cores/
+    - echo "/cores/%E.%p" | sudo tee /proc/sys/kernel/core_pattern
+
+after_failure:
+    - ./scripts/core-dump.sh
+
+jobs:
+    include:
+        - d: dmd-nightly
+        - d: dmd
+        - d: ldc
+          allow_failures:
+              - d: dmd-nightly
+
+script: ./ci.sh
+

@@ -1,0 +1,12 @@
+{
+  "name": "strings",
+  "description": "Example strings PEG grammar. Parses double-quoted strings. An example of how to do escaping and looking for an end marker.",
+  "license": "Boost",
+  "targetType": "library",
+  "dependencies": {
+    "pegged":  {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}

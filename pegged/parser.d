@@ -137,18 +137,20 @@ public import pegged.peg;
 import std.algorithm: startsWith;
 import std.functional: toDelegate;
 
+@safe:
+
 struct GenericPegged(TParseTree)
 {
-	import std.functional : toDelegate;
+    import std.functional : toDelegate;
     import pegged.dynamic.grammar;
-	static import pegged.peg;
-    struct Pegged
+    static import pegged.peg;
+    @safe struct Pegged
     {
     enum name = "Pegged";
-    static ParseTree delegate(ParseTree)[string] before;
-    static ParseTree delegate(ParseTree)[string] after;
-    static ParseTree delegate(ParseTree)[string] rules;
-    static this()
+    static ParseTree delegate(ParseTree) @safe [string] before;
+    static ParseTree delegate(ParseTree) @safe [string] after;
+    static ParseTree delegate(ParseTree) @safe [string] rules;
+    static this() @trusted
     {
         rules["Grammar"] = toDelegate(&Grammar);
         rules["Definition"] = toDelegate(&Definition);
@@ -256,7 +258,7 @@ struct GenericPegged(TParseTree)
 
     static bool isRule(string s)
     {
-		import std.algorithm : startsWith;
+        import std.algorithm : startsWith;
         return s.startsWith("Pegged.");
     }
     mixin decimateTree;

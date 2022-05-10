@@ -19,10 +19,12 @@ import pegged.peg;
 import pegged.parser;
 import pegged.dynamic.peg;
 
+@safe:
+
 struct ParameterizedRule
 {
     size_t numArgs;
-    Dynamic delegate(Dynamic[]) code;
+    Dynamic delegate(Dynamic[]) @safe code;
 
     Dynamic opCall(D...)(D rules)
     {
@@ -64,7 +66,7 @@ struct ParameterizedRule
     }
 }
 
-ParameterizedRule parameterizedRule(size_t n, Dynamic delegate(Dynamic[] d) code)
+ParameterizedRule parameterizedRule(size_t n, Dynamic delegate(Dynamic[] d) @safe code)
 {
     ParameterizedRule pr;
     pr.numArgs = n;
@@ -182,7 +184,7 @@ Dynamic makeRule(ParseTree def, Dynamic[string] context)
             throw new Exception("Unknown name: " ~ name);
     }
 
-    Dynamic ruleFromTree(ParseTree p)
+    Dynamic ruleFromTree(ParseTree p) @safe
     {
         //writeln("rfT: ", p.name, " ", p.matches);
         //Dynamic result;

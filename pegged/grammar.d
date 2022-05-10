@@ -14,7 +14,7 @@ import std.stdio;
 public import pegged.peg;
 import pegged.parser;
 
-
+@safe:
 
 /**
 Option enum to get internal memoization (parse results storing).
@@ -204,16 +204,16 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 string firstRuleName = generateCode(p.children[1].children[0]);
 
                 result =
-"struct Generic" ~ shortGrammarName ~ "(TParseTree)
+"@safe struct Generic" ~ shortGrammarName ~ "(TParseTree)
 {
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
     static import pegged.peg;
     struct " ~ grammarName ~ "\n    {
     enum name = \"" ~ shortGrammarName ~ "\";
-    static ParseTree delegate(ParseTree)[string] before;
-    static ParseTree delegate(ParseTree)[string] after;
-    static ParseTree delegate(ParseTree)[string] rules;";
+    static ParseTree delegate(ParseTree) @safe [string] before;
+    static ParseTree delegate(ParseTree) @safe [string] after;
+    static ParseTree delegate(ParseTree) @safe [string] rules;";
 
                 if (withMemo == Memoization.yes) {
                     result ~= "
@@ -226,7 +226,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
                 }
 
                 result ~= "
-    static this()\n    {\n";
+    static this() @trusted\n    {\n";
 
                 ParseTree[] definitions = p.children[1 .. $];
                 bool userDefinedSpacing;
@@ -248,7 +248,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
 
     template hooked(alias r, string name)
     {
-        static ParseTree hooked(ParseTree p)
+        static ParseTree hooked(ParseTree p) @safe
         {
             ParseTree result;
 
@@ -267,13 +267,13 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
             return result;
         }
 
-        static ParseTree hooked(string input)
+        static ParseTree hooked(string input) @safe
         {
             return hooked!(r, name)(ParseTree(\"\",false,[],input));
         }
     }
 
-    static void addRuleBefore(string parentRule, string ruleSyntax)
+    static void addRuleBefore(string parentRule, string ruleSyntax) @safe
     {
         // enum name is the current grammar name
         DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
@@ -283,7 +283,7 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
         before[parentRule] = rules[dg.startingRule];
     }
 
-    static void addRuleAfter(string parentRule, string ruleSyntax)
+    static void addRuleAfter(string parentRule, string ruleSyntax) @safe
     {
         // enum name is the current grammar named
         DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ \": \" ~ ruleSyntax, rules);
@@ -295,9 +295,9 @@ string grammar(Memoization withMemo = Memoization.yes)(ParseTree defAsParseTree)
         after[parentRule] = rules[dg.startingRule];
     }
 
-    static bool isRule(string s)
+    static bool isRule(string s) pure nothrow @nogc
     {
-		import std.algorithm : startsWith;
+        import std.algorithm : startsWith;
         return s.startsWith(\"" ~ shortGrammarName ~ ".\");
     }
 ";
@@ -2437,12 +2437,12 @@ version(unittest)
 {
     P foo(P)(P p) { return p;} // for testing actions
 
-    void badGrammar(string s)()
+    void badGrammar(string s)() @safe
     {
         assert(!__traits(compiles, {mixin(grammar(s));}), "This should fail: " ~ s);
     }
 
-    void goodGrammar(string s)()
+    void goodGrammar(string s)() @safe
     {
         assert(__traits(compiles, {mixin(grammar(s));}), "This should work: " ~ s);
     }
@@ -2625,7 +2625,7 @@ unittest // Memoization reset in composed grammars. Issue #162
 unittest // Test lambda syntax in semantic actions
 {
     import std.array;
-	import std.string : strip;
+    import std.string : strip;
 
     auto actions = [
 

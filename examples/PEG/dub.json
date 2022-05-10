@@ -1,0 +1,12 @@
+{
+  "name": "PEG",
+  "description": "The basic PEG grammar, as described by Ford.",
+  "license": "Boost",
+  "targetType": "library",
+  "dependencies": {
+    "pegged":  {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}

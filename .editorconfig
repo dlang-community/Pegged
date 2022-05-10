@@ -1,0 +1,14 @@
+# Editor config ripped from dlang repository : https://github.com/dlang/dlang.org/blob/master/.editorconfig
+root = true
+
+[*.{c,h,d,di,dd,ddoc,json,yml,sh}]
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+charset = utf-8
+
+[*.bat]
+end_of_line = crlf
+

@@ -1,0 +1,12 @@
+{
+  "name": "numbers",
+  "description": "Example numbers PEG grammar. Parses different kind of numbers: integral, floating point, hexadecimal.",
+  "license": "Boost",
+  "targetType": "library",
+  "dependencies": {
+    "pegged":  {
+      "version": "*",
+      "path": "../.."
+    }
+  }
+}
