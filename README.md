@@ -133,3 +133,8 @@ License
 -------
 
 **Pegged** is released with the Boost license (like most D projects). See [here](http://www.boost.org/LICENSE_1_0.txt) for more details.
+
+Contributing
+------------
+
+**Pegged** itself is used in its own development. In particular, the file [pegged/parser.d](pegged/parser.d) is generated from [examples/peggedgrammar/src/pegged/examples/peggedgrammar.d](examples/peggedgrammar/src/pegged/examples/peggedgrammar.d). Therefore [pegged/parser.d](pegged/parser.d) should not be edited by hand. However, if anything changes in any of the other files in [pegged/](pegged/), or in [examples/peggedgrammar/src/pegged/examples/peggedgrammar.d](examples/peggedgrammar/src/pegged/examples/peggedgrammar.d), the parser must be regenerated. How to do that is described in [pegged/dev](pegged/dev).
