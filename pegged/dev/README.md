@@ -7,5 +7,5 @@ The files used for Pegged development. Also, some files for possible, yet-to-com
 Regenerates `parser.d` according to the Pegged grammar in `examples/peggedgrammar.d`. Depends on an existing and functioning `parser.d`.
 
 ```
-rdmd -I../.. regenerate.d
+rdmd -I../.. -I../../examples/peggedgrammar/src -I../../examples/misc/src regenerate.d
 ```
