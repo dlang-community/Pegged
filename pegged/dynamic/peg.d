@@ -295,23 +295,12 @@ Dynamic or(T...)(T rules)
         // If more than one node failed at the same (farthest) position, we concatenate their error messages
 
 
-        char[] errString;// = new char[](errorStringChars);
-        errString.length = errorStringChars;
-        uint start = 0;
+        string errString;
+        errString.reserve(errorStringChars);
         foreach(i; 0..rules.length)
-        {
             if (failedLength[i] == maxFailedLength)
-            {
-                auto temp = results[i];
-                auto len = temp.matches[$-1].length;
-                auto nlen = names[i].length;
-                errString[start .. start+len] = temp.matches[$-1][];
-                errString[start+len .. start+len+names[i].length] = names[i][];
-                errString[start+len+nlen .. start+len+nlen+4] = " or ";
-                start += len + names[i].length + 4;
-            }
-        }
-		() @trusted { orErrorString = cast(string)(errString[0..$-4]); } ();
+                errString ~= results[i].matches[$-1] ~ names[i] ~ " or ";
+        orErrorString = errString[0..$-4];
 
         longestFail.matches = longestFail.matches[0..$-1]  // discarding longestFail error message
                             ~ [orErrorString];             // and replacing it by the new, concatenated one.
