@@ -30,7 +30,8 @@ void asModule(Memoization withMemo = Memoization.yes)(string moduleName, string 
     import std.stdio;
     auto f = File(fileName ~ ".d","w");
 
-    f.write("/++\nThis module was automatically generated from the following grammar:\n\n");
+    f.write("/+ DO NOT EDIT BY HAND!\n",
+            "This module was automatically generated from the following grammar:\n\n");
     f.write(grammarString);
     f.write("\n\n+/\n");
 

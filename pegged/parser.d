@@ -1,4 +1,4 @@
-/++
+/+ DO NOT EDIT BY HAND!
 This module was automatically generated from the following grammar:
 
 
@@ -109,7 +109,7 @@ TKNString   <- (&'q{' ('q' NestedList('{',DString,'}')))
 
 DLMString   <- ('q' doublequote) ( (&'{' NestedList('{',DString,'}'))
                                  / (&'[' NestedList('[',DString,']'))
-                                 / (&'$(LPAREN)' NestedList('(',DString,')'))
+                                 / (&'(' NestedList('(',DString,')'))
                                  / (&'<' NestedList('<',DString,'>'))
                                  ) doublequote
 
@@ -137,14 +137,12 @@ public import pegged.peg;
 import std.algorithm: startsWith;
 import std.functional: toDelegate;
 
-@safe:
-
-struct GenericPegged(TParseTree)
+@safe struct GenericPegged(TParseTree)
 {
     import std.functional : toDelegate;
     import pegged.dynamic.grammar;
     static import pegged.peg;
-    @safe struct Pegged
+    struct Pegged
     {
     enum name = "Pegged";
     static ParseTree delegate(ParseTree) @safe [string] before;
@@ -209,7 +207,7 @@ struct GenericPegged(TParseTree)
 
     template hooked(alias r, string name)
     {
-        static ParseTree hooked(ParseTree p)
+        static ParseTree hooked(ParseTree p) @safe
         {
             ParseTree result;
 
@@ -228,13 +226,13 @@ struct GenericPegged(TParseTree)
             return result;
         }
 
-        static ParseTree hooked(string input)
+        static ParseTree hooked(string input) @safe
         {
             return hooked!(r, name)(ParseTree("",false,[],input));
         }
     }
 
-    static void addRuleBefore(string parentRule, string ruleSyntax)
+    static void addRuleBefore(string parentRule, string ruleSyntax) @safe
     {
         // enum name is the current grammar name
         DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ ": " ~ ruleSyntax, rules);
@@ -244,19 +242,19 @@ struct GenericPegged(TParseTree)
         before[parentRule] = rules[dg.startingRule];
     }
 
-    static void addRuleAfter(string parentRule, string ruleSyntax)
+    static void addRuleAfter(string parentRule, string ruleSyntax) @safe
     {
         // enum name is the current grammar named
         DynamicGrammar dg = pegged.dynamic.grammar.grammar(name ~ ": " ~ ruleSyntax, rules);
-        foreach(name,rule; dg.rules)
+        foreach(ruleName,rule; dg.rules)
         {
-            if (name != "Spacing")
-                rules[name] = rule;
+            if (ruleName != "Spacing")
+                rules[ruleName] = rule;
         }
         after[parentRule] = rules[dg.startingRule];
     }
 
-    static bool isRule(string s)
+    static bool isRule(string s) pure nothrow @nogc
     {
         import std.algorithm : startsWith;
         return s.startsWith("Pegged.");
