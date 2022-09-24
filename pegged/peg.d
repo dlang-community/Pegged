@@ -28,7 +28,7 @@ import std.typetuple;
 @safe:
 
 // Returns quoted and escaped version of the input, but if the input is null, then return `"end of input"`.
-package string stringified(string inp) pure
+package string stringified(scope string inp) pure
 {
     import std.format : format;
 
@@ -39,7 +39,11 @@ package string stringified(string inp) pure
 	/* TODO: replace `format` with call to substitute!(isASCIIControlChar) that
 	 * only does escaping of control characters to make this `nothrow`. Reuse
 	 * http://mir-algorithm.libmir.org/mir_format.html#.printEscaped. */
-    return "%(%s%)".format(shell);
+
+    // FIXME: referencing local variable on non-scope parameter requires .idup
+    // to be @safe. Compiler is wrong about scope inference:
+    // https://issues.dlang.org/show_bug.cgi?id=20674
+    return format!"%(%s%)"((() @trusted => shell[].idup)());
 }
 
 unittest // Run- & Compile-time.
@@ -1755,8 +1759,12 @@ template or(rules...) if (rules.length > 0)
     }
 }
 
-auto getUpto(ParseTree[] children, size_t minFailedLength) pure nothrow {
-    return children.filter!(r => max(r.end, r.failEnd) >= minFailedLength).array();
+auto getUpto(scope ParseTree[] children, size_t minFailedLength) pure nothrow {
+    auto ret = children.filter!(r => max(r.end, r.failEnd) >= minFailedLength).array();
+
+    // FIXME: .array() garantees a copy of the elements. Compiler scope
+    // inference issue: https://issues.dlang.org/show_bug.cgi?id=20674
+    return ret.dup;
 }
 
 unittest // 'or' unit test
