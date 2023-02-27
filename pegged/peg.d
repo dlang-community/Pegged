@@ -31,11 +31,11 @@ import std.typetuple;
 package string stringified(scope string inp) pure
 {
     import std.format : format;
+    import std.range : only;
 
     if (inp is null)
         return `"end of input"`;
 
-    string[1] shell = [inp];
 	/* TODO: replace `format` with call to substitute!(isASCIIControlChar) that
 	 * only does escaping of control characters to make this `nothrow`. Reuse
 	 * http://mir-algorithm.libmir.org/mir_format.html#.printEscaped. */
@@ -43,7 +43,7 @@ package string stringified(scope string inp) pure
     // FIXME: referencing local variable on non-scope parameter requires .idup
     // to be @safe. Compiler is wrong about scope inference:
     // https://issues.dlang.org/show_bug.cgi?id=20674
-    return format!"%(%s%)"((() @trusted => shell[].idup)());
+    return inp.idup.only.format!"%(%s%)";
 }
 
 unittest // Run- & Compile-time.
