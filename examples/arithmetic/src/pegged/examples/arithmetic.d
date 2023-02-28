@@ -8,6 +8,8 @@ import std.conv: to;
 
 import pegged.grammar;
 
+@safe:
+
 mixin(grammar(`
 # Arithmetic grammar with variable terminal
 Arithmetic:

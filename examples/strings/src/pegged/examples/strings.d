@@ -2,6 +2,8 @@ module pegged.examples.strings;
 
 import pegged.grammar;
 
+@safe:
+
 mixin(grammar(`
 String:
 # Example of a rule for double-quoted strings

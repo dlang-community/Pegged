@@ -7,6 +7,8 @@ import pegged.grammar;
 
 import std.array;
 
+@safe:
+
 string[] nameStack;
 
 /// Semantic action to push a tag name on a stack
