@@ -5,6 +5,8 @@ module pegged.examples.numbers;
 
 import pegged.grammar;
 
+@safe:
+
 /// Numbers
 mixin(grammar(`
 Numbers:

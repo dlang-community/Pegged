@@ -7,6 +7,8 @@ version(unittest)
     import std.stdio;
 }
 
+@safe:
+
 mixin(grammar(`
 CSV:
 

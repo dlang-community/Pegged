@@ -8,6 +8,8 @@ import std.conv: to;
 
 import pegged.grammar;
 
+@safe:
+
 mixin(grammar(`
 Arithmetic:
     Term     < Factor (Add / Sub)*

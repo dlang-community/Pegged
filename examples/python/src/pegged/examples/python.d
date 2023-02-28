@@ -3,6 +3,8 @@ module pegged.examples.python;
 
 import pegged.grammar;
 
+@safe:
+
 // https://docs.python.org/3/reference/grammar.html
 // 3.10.3 Documentation » The Python Language Reference » 10. Full Grammar specification
 enum string pythonGrammar = `

@@ -30,9 +30,13 @@
     ],
     "subPackages": [
       "examples/arithmetic",
-      "examples/numbers",
-      "examples/strings",
+      "examples/composition",
       "examples/csv",
-      "examples/json"
+      "examples/json",
+      "examples/numbers",
+      "examples/python",
+      "examples/simple_arithmetic",
+      "examples/strings",
+      "examples/xml"
     ]
 }

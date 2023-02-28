@@ -6,6 +6,8 @@ module pegged.examples.composition;
 import pegged.grammar;
 import pegged.examples.strings, pegged.examples.numbers;
 
+@safe:
+
 mixin(grammar(`
 LOG:
     LogFile <- LogLine+ eoi

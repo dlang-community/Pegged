@@ -2,6 +2,8 @@ module pegged.examples.json;
 
 import pegged.grammar;
 
+@safe:
+
 mixin(grammar(`
 JSON:
     JSONObject <  :'{' (Pair (:',' Pair)*)? :'}'

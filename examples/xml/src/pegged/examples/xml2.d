@@ -2,6 +2,8 @@ module pegged.examples.xml2;
 
 import pegged.grammar;
 
+@safe:
+
 enum XMLgrammar = `
 XML:
 
