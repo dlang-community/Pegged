@@ -1739,7 +1739,7 @@ template or(rules...) if (rules.length > 0)
         foreach(i; 0..rules.length)
             if (failedLength[i] == maxFailedLength && results[i].matches.length > 0)
                 errString ~= results[i].matches[$-1] ~ names[i] ~ " or ";
-        orErrorString = errString[0..$-4];
+        orErrorString = errString[0 .. $ >= 4 ? $-4 : $];
 
         longestFail.matches = longestFail.matches.length == 0 ? [orErrorString] :
                               longestFail.matches[0..$-1]  // discarding longestFail error message
