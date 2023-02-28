@@ -9,6 +9,7 @@
             "path": "../.."
         }
     },
+    "dflags": [ "-preview=dip1000" ],
     "preGenerateCommands": [
         "rdmd -I$PEGGED_PACKAGE_DIR source/make.d"
     ],

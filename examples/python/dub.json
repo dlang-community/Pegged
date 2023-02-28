@@ -9,6 +9,7 @@
       "path": "../.."
     }
   },
+  "dflags": [ "-preview=dip1000" ],
   "dflags-dmd": [  "-lowmem" ],
   "dflags-ldc": [ "--lowmem" ]
 }

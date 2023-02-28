@@ -16,5 +16,6 @@
       "version": "*",
       "path": "../.."
     }
-  }
+  },
+  "dflags": [ "-preview=dip1000" ]
 }
