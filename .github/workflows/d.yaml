@@ -8,6 +8,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
         dc: [dmd-latest, ldc-latest, dmd-2.087.1, dmd-2.090.1, ldc-1.17.0, ldc-1.20.0]
+        exclude:
+          # dyld[2053]: missing symbol called
+          - { os: macOS-latest, dc: dmd-2.087.1 }
+          # ld: section __DATA/__thread_bss has type zero-fill but non-zero file offset
+          - { os: macOS-latest, dc: dmd-2.090.1 }
+          # needs -lowmem
+          - { os: windows-latest, dc: dmd-2.090.1 }
 
     runs-on: ${{ matrix.os }}
     steps:
