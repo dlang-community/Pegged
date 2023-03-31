@@ -62,7 +62,6 @@ def configure(conf):
         add_option('-wi')
         add_option('-ignore')
         add_option('-property')
-        add_option('-check-printf-calls')
         add_option('-g')
 
         if conf.options.mode == 'debug':
