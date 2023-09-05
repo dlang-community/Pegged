@@ -25,9 +25,9 @@ int main(string[] args)
 
     version (tracer)
     {
-        import std.experimental.logger;
+        import std.logger;
         import std.algorithm : startsWith;
-        sharedLog = new TraceLogger("TraceLog.txt");
+        sharedLog = cast(shared) new TraceLogger("TraceLog.txt");
         bool cond (string ruleName, const ref ParseTree p)
         {
             static startTrace = false;
