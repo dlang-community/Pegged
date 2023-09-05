@@ -90,7 +90,7 @@ unittest // Run- & Compile-time.
 
 version (tracer)
 {
-    import std.experimental.logger;
+    import std.logger;
     import std.algorithm.comparison : min;
 
     // Function pointers.
