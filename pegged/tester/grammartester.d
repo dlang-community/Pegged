@@ -237,6 +237,10 @@ private struct Differencer(T,P)
 		switch ( pattern.name )
 		{
 
+        case "TesterGrammar.ConciseBranch":
+            visited[0 .. $] = true;
+            break;
+
 		case "TesterGrammar.OrderedBranch":
 
 			level++;
@@ -623,7 +627,17 @@ unittest
 			}
 		}
 		`);
+
+	arithmeticTester.assertSimilar(`1*2 + 3/4`,
+		`
+		Term->
+		{
+			Factor->{..}
+			Add->Factor->{..}
+	    }
+		`);
 }
+
 
 /+ For reference:
 
