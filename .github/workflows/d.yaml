@@ -34,7 +34,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
         dc: [dmd-2.101.2] # Avoid https://dlang.org/changelog/2.102.0.html#build-cache
-        example: [arithmetic, csv, json, numbers, python, simple_arithmetic, strings, xml]
+        example: [arithmetic, c, csv, json, numbers, python, simple_arithmetic, strings, xml]
         exclude:
           # out of memory
           - { example: python }
