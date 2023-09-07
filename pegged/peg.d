@@ -90,7 +90,7 @@ unittest // Run- & Compile-time.
 
 version (tracer)
 {
-    import std.experimental.logger;
+    import std.logger;
     import std.algorithm.comparison : min;
 
     // Function pointers.
@@ -212,7 +212,7 @@ version (tracer)
 
     Example:
     ---
-    sharedLog = new TraceLogger("TraceLog.txt");
+    sharedLog = cast(shared) new TraceLogger("TraceLog.txt");
     ---
     */
     class TraceLogger : FileLogger
