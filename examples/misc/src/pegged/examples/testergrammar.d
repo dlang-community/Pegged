@@ -12,6 +12,7 @@ Node <
 Branch <
     / OrderedBranch
     / UnorderedBranch
+    / ConciseBranch
 
 OrderedBranch <
     / :'->' :'{' Node+ :'}'
@@ -20,6 +21,8 @@ OrderedBranch <
 UnorderedBranch <
     / :'~>' :'{' Node+ :'}'
     / :'~>' Node
+
+ConciseBranch < :'->' '{..}'
 
 Spacing <: (blank / Comment)*
 
