@@ -29,6 +29,7 @@
     ],
     "subPackages": [
       "examples/arithmetic",
+      "examples/c",
       "examples/composition",
       "examples/csv",
       "examples/json",
