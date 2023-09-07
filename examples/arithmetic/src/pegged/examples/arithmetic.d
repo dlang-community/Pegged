@@ -51,7 +51,7 @@ ArithmeticNoVar:
  *  or contains unexpected nodes, then will return NaN if T is a float or 0
  *  if T is a integral
  */
-T parseArithmetic(T = float, string grammarName = "ArithmeticNoVar")(ParseTree p,
+T parseArithmetic(T = float, string grammarName = "ArithmeticNoVar")(const ParseTree p,
     const T[string] variables = null)
 if (__traits(isArithmetic, T) && (grammarName == "ArithmeticNoVar" || grammarName == "Arithmetic"))
 {
@@ -105,15 +105,35 @@ if (__traits(isArithmetic, T) && (grammarName == "ArithmeticNoVar" || grammarNam
 
 unittest
 {   // Testing parsing arithmetic expression without variables
-    import std.stdio : writeln;
-
     string testExpression = "1 + 2 * (3 + 10 / 4)";
-    auto pNoVar = ArithmeticNoVar(testExpression);
-
-    //writeln(pNoVar);
-    writeln(pNoVar.matches);
+    const pNoVar = ArithmeticNoVar(testExpression);
 
     assert(pNoVar.successful);
+    assert(pNoVar.toString == q"EOS
+ArithmeticNoVar[0, 20]["1", "+", "2", "*", "3", "+", "10", "/", "4"]
+ +-ArithmeticNoVar.Term[0, 20]["1", "+", "2", "*", "3", "+", "10", "/", "4"]
+    +-ArithmeticNoVar.Factor[0, 2]["1"]
+    |  +-ArithmeticNoVar.Primary[0, 2]["1"]
+    |     +-ArithmeticNoVar.Number[0, 2]["1"]
+    +-ArithmeticNoVar.Add[2, 20]["+", "2", "*", "3", "+", "10", "/", "4"]
+       +-ArithmeticNoVar.Factor[4, 20]["2", "*", "3", "+", "10", "/", "4"]
+          +-ArithmeticNoVar.Primary[4, 6]["2"]
+          |  +-ArithmeticNoVar.Number[4, 6]["2"]
+          +-ArithmeticNoVar.Mul[6, 20]["*", "3", "+", "10", "/", "4"]
+             +-ArithmeticNoVar.Primary[8, 20]["3", "+", "10", "/", "4"]
+                +-ArithmeticNoVar.Parens[8, 20]["3", "+", "10", "/", "4"]
+                   +-ArithmeticNoVar.Term[9, 19]["3", "+", "10", "/", "4"]
+                      +-ArithmeticNoVar.Factor[9, 11]["3"]
+                      |  +-ArithmeticNoVar.Primary[9, 11]["3"]
+                      |     +-ArithmeticNoVar.Number[9, 11]["3"]
+                      +-ArithmeticNoVar.Add[11, 19]["+", "10", "/", "4"]
+                         +-ArithmeticNoVar.Factor[13, 19]["10", "/", "4"]
+                            +-ArithmeticNoVar.Primary[13, 16]["10"]
+                            |  +-ArithmeticNoVar.Number[13, 16]["10"]
+                            +-ArithmeticNoVar.Div[16, 19]["/", "4"]
+                               +-ArithmeticNoVar.Primary[18, 19]["4"]
+                                  +-ArithmeticNoVar.Number[18, 19]["4"]
+EOS");
 
     // Parsing as a float
     const f = parseArithmetic(pNoVar);
@@ -127,15 +147,40 @@ unittest
 unittest
 {
     // Testing parsing arithmetic expression witht variables
-    import std.stdio : writeln;
 
     string testExpressionWithVar = "1 + 2 * (3 + 10 / 4) + fooBar";
-    auto p = Arithmetic(testExpressionWithVar);
-
-    //writeln(p);
-    writeln(p.matches);
+    const p = Arithmetic(testExpressionWithVar);
 
     assert(p.successful);
+    assert(p.toString == q"EOS
+Arithmetic[0, 29]["1", "+", "2", "*", "3", "+", "10", "/", "4", "+", "fooBar"]
+ +-Arithmetic.Term[0, 29]["1", "+", "2", "*", "3", "+", "10", "/", "4", "+", "fooBar"]
+    +-Arithmetic.Factor[0, 2]["1"]
+    |  +-Arithmetic.Primary[0, 2]["1"]
+    |     +-Arithmetic.Number[0, 2]["1"]
+    +-Arithmetic.Add[2, 21]["+", "2", "*", "3", "+", "10", "/", "4"]
+    |  +-Arithmetic.Factor[4, 21]["2", "*", "3", "+", "10", "/", "4"]
+    |     +-Arithmetic.Primary[4, 6]["2"]
+    |     |  +-Arithmetic.Number[4, 6]["2"]
+    |     +-Arithmetic.Mul[6, 21]["*", "3", "+", "10", "/", "4"]
+    |        +-Arithmetic.Primary[8, 21]["3", "+", "10", "/", "4"]
+    |           +-Arithmetic.Parens[8, 21]["3", "+", "10", "/", "4"]
+    |              +-Arithmetic.Term[9, 19]["3", "+", "10", "/", "4"]
+    |                 +-Arithmetic.Factor[9, 11]["3"]
+    |                 |  +-Arithmetic.Primary[9, 11]["3"]
+    |                 |     +-Arithmetic.Number[9, 11]["3"]
+    |                 +-Arithmetic.Add[11, 19]["+", "10", "/", "4"]
+    |                    +-Arithmetic.Factor[13, 19]["10", "/", "4"]
+    |                       +-Arithmetic.Primary[13, 16]["10"]
+    |                       |  +-Arithmetic.Number[13, 16]["10"]
+    |                       +-Arithmetic.Div[16, 19]["/", "4"]
+    |                          +-Arithmetic.Primary[18, 19]["4"]
+    |                             +-Arithmetic.Number[18, 19]["4"]
+    +-Arithmetic.Add[21, 29]["+", "fooBar"]
+       +-Arithmetic.Factor[23, 29]["fooBar"]
+          +-Arithmetic.Primary[23, 29]["fooBar"]
+             +-Arithmetic.Variable[23, 29]["fooBar"]
+EOS");
 
     // Parsing as a float
     const float[string] fVars = ["fooBar": 10.25f];
@@ -154,11 +199,7 @@ unittest
 unittest
 {
     // Some additional test borrowed from simple_arithmetic
-    float interpreter(string expr)
-    {
-        auto p = ArithmeticNoVar(expr);
-        return parseArithmetic(p);
-    }
+    float interpreter(string expr) => ArithmeticNoVar(expr).parseArithmetic;
 
     assert(interpreter("1") == 1.0);
     assert(interpreter("-1") == -1.0);

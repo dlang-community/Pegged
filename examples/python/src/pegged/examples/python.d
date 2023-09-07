@@ -705,6 +705,8 @@ mixin(grammar(pythonGrammar));
 
 unittest
 {
-    import std.stdio;
-    writeln(Python(`m = "Hello";`));
+    assert(Python(`m = "Hello";`).toString == q"EOS
+Python[0, 0][]
+ +-Python.file[0, 0][]
+EOS"); // A clear sign that this grammar is malfunctioning!!
 }
