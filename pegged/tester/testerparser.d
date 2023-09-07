@@ -1,4 +1,4 @@
-/++
+/+ DO NOT EDIT BY HAND!
 This module was automatically generated from the following grammar:
 
 
@@ -34,7 +34,7 @@ Comment <-
 
 NestedComment <- '/+' (!NestedCommentEnd . / NestedComment) NestedCommentEnd
 
-# This is needed to make the /+ +/ nest when the grammar is placed into a D # nested comment ;$(RPAREN)
+# This is needed to make the /+ +/ nest when the grammar is placed into a D nested comment ;)
 NestedCommentEnd <- '+/'
 
 
@@ -42,6 +42,8 @@ NestedCommentEnd <- '+/'
 module pegged.tester.testerparser;
 
 public import pegged.peg;
+import std.algorithm: startsWith;
+import std.functional: toDelegate;
 
 @safe struct GenericTesterGrammar(TParseTree)
 {
