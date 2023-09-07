@@ -268,3 +268,41 @@ FloatLiteral <~ Sign? Integer "." Integer? (("e" / "E") Sign? Integer)?
 
 Sign <- "-" / "+"
 `;
+
+unittest
+{
+  import pegged.tester.grammartester: GrammarTester;
+
+  mixin(grammar(Cgrammar));
+
+  auto tester = new GrammarTester!(C, "FunctionDefinition");
+
+  const code = `
+    static int * f() {
+      int a; 
+      a = 2 + 2;
+      return &a;
+    }
+    `;
+
+    tester.assertSimilar(code, `
+        FunctionDefinition->
+        {
+          DeclarationSpecifiers->{
+            StorageClassSpecifier                      // static
+            DeclarationSpecifiers->TypeSpecifier       // int
+          } 
+          Declarator->{Pointer DirectDeclarator->{..}} // *f() 
+          CompoundStatement->{                         // f body
+            DeclarationList->{..}                      // int a;
+            StatementList->{ 
+              Statement->{..}                          // a = 2 + 2;
+              Statement->ReturnStatement->{            // return &a;
+                Return
+                Expression->{..}
+              }
+            }
+          }
+        }
+        `);
+}
