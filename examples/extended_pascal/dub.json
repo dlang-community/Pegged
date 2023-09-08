@@ -20,14 +20,13 @@
     "description": "Example parser for Extended Pascal.",
     "copyright": "Copyright © 2017, Bastiaan Veelo",
     "license": "Boost License 1.0",
+    "targetType": "executable",
     "configurations": [
         {
-            "name": "default",
-            "targetType": "executable"
+            "name": "default"
         },
         {
             "name": "tracer",
-            "targetType": "executable",
             "versions": ["tracer"],
             "subConfigurations": {
                 "pegged": "tracer"

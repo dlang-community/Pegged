@@ -38,8 +38,8 @@ int main(string[] args)
         }
         // Various ways of turning logging on and of:
         //setTraceConditionFunction(&cond);
-        setTraceConditionFunction(function(string ruleName, const ref ParseTree p) {return ruleName.startsWith("EP");});
-        //traceAll;
+        //setTraceConditionFunction(function(string ruleName, const ref ParseTree p) {return ruleName.startsWith("EP");});
+        traceAll;
     }
 
 
@@ -50,8 +50,8 @@ int main(string[] args)
         toHTML(parseTree, stripExtension(args[1]));
     }
     if (text || !html) {
-        parseTree.toString.toFile(stripExtension(args[1]) ~ ".txt");
+        File(stripExtension(args[1]) ~ ".txt", "w").write(parseTree.toString);
     }
 
-    return parseTree.successful;
+    return parseTree.successful ? 0 : 1;
 }
