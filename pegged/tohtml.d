@@ -133,9 +133,9 @@ details.leaf summary::-webkit-details-marker {
             auto firstNewLine = p.input[p.begin .. p.end].countUntil('\n');
             auto firstLine = p.input[p.begin .. firstNewLine >= 0 ? p.begin + firstNewLine : p.end];
             if (firstLine.length > 0)
-                file.write(">", firstLine, "<span><pre>", p.input[p.begin .. p.end], "</pre></span></code>");
+                file.write(">", firstLine, "<span><pre>", p.input[p.begin .. p.end].stripReturns, "</pre></span></code>");
             else // Insert the return-symbol so the mouse has something to hover over.
-                file.write(">&#x23ce;<span><pre>&#x23ce;", p.input[p.begin .. p.end], "</pre></span></code>");
+                file.write(">&#x23ce;<span><pre>&#x23ce;", p.input[p.begin .. p.end].stripReturns, "</pre></span></code>");
         }
 
         file.write("</summary>\n");
@@ -158,7 +158,7 @@ details.leaf summary::-webkit-details-marker {
  * Params:
  *      e = Defines if the tree is expanded.
  *      Details = Defines the details, as a list of strings, that are expanded
- *          when e is equal to `Expand.yes`, and not exapnded when e is equal to
+ *          when e is equal to `Expand.yes`, and not expanded when e is equal to
  *          `Expand.invert`. When no details are passed, each node is expanded.
  *      p = The ParseTree to represent.
  *      filename = The name of file where tree is written.
@@ -169,4 +169,13 @@ void toHTML(Expand e = Expand.no, Details...)(const ref ParseTree p,
     if (filename.endsWith(".html", ".htm") == 0)
         filename ~= ".html";
     toHTML!(e, Details)(p, File(filename, "w"));
+}
+
+/* Pegged should probably just read its input in text mode, so no "\r" occur and
+ * indices into the input are consistent across all platforms.
+ * https://forum.dlang.org/post/pf3lvo$2804$1@digitalmars.com
+ */
+string stripReturns(string str)
+{
+    return str.tr("\r", "", "d");
 }
