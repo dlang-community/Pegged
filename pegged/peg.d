@@ -1664,9 +1664,9 @@ template or(rules...) if (rules.length > 0)
         size_t errorStringChars;
         string orErrorString;
 
-        ParseTree[rules.length] results;
-        string[rules.length] names;
-        size_t[rules.length] failedLength;
+        ParseTree[] results = new ParseTree[rules.length];
+        string[] names = new string[rules.length];
+        size_t[] failedLength = new size_t[rules.length];
         size_t maxFailedLength;
 
         version (tracer)
@@ -1858,9 +1858,9 @@ template longest_match(rules...) if (rules.length > 0)
         size_t errorStringChars;
         string orErrorString;
 
-        ParseTree[rules.length] results;
-        string[rules.length] names;
-        size_t[rules.length] failedLength;
+        ParseTree[] results = new ParseTree[rules.length];
+        string[] names = new string[rules.length];
+        size_t[] failedLength = new size_t[rules.length];
         size_t maxFailedLength;
 
         version (tracer)
